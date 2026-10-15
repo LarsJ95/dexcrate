@@ -9,6 +9,7 @@ import { CameraCapture } from '../components/CameraCapture'
 import { CardDialog } from '../components/CardDialog'
 import { CardImage } from '../components/CardImage'
 import { CardZoom } from '../components/CardZoom'
+import { SetCardSheet } from '../components/SetCardSheet'
 import { DashboardView } from '../components/DashboardView'
 import { ScanPage } from '../pages/ScanPage'
 import { SetBinderPage } from '../pages/SetBinderPage'
@@ -141,6 +142,19 @@ function BinderPreview(): JSX.Element {
 export function Preview(): JSX.Element {
   const page = (params.get('page') ?? 'collection') as Route
   const noop = useMemo(() => () => undefined, [])
+  if ((params.get('page') ?? '') === 'setcard') {
+    return (
+      <Shell route="sets" email="demo@example.com" theme={theme} onToggleTheme={noop} onSignOut={noop}>
+        <SetCardSheet
+          lang="en"
+          card={{ id: 'sv03.5-016', localId: '016', name: 'Pidgey', image: 'https://assets.tcgdex.net/en/sv/sv03.5/016' }}
+          setName="151"
+          owned={0}
+          onClose={noop}
+        />
+      </Shell>
+    )
+  }
   if ((params.get('page') ?? '') === 'zoom') {
     return (
       <Shell route="collection" email="demo@example.com" theme={theme} onToggleTheme={noop} onSignOut={noop}>

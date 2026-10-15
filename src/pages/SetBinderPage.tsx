@@ -4,6 +4,7 @@ import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
 import { CardFace } from '../components/CardFace'
 import { CardPicture } from '../components/CardPicture'
+import { SetCardSheet } from '../components/SetCardSheet'
 import { getCardPrice, getSet, imageCandidates, isLang, setOfKey, type SetCard, type SetSummary } from '../lib/tcgdex'
 
 interface Props {
@@ -45,6 +46,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
   const [show, setShow] = useState<Show>('all')
   const [pageSize, setPageSize] = useState<PageSize>(readPageSize)
   const [cost, setCost] = useState<Cost | null>(null)
+  const [openCard, setOpenCard] = useState<SetCard | null>(null)
   const cancelCost = useRef(false)
 
   const slash = param.indexOf('/')
@@ -227,6 +229,17 @@ export function SetBinderPage({ param }: Props): JSX.Element {
         <p className="notice">No card list is available for this set.</p>
       )}
 
+      {openCard && isLang(lang) && (
+        <SetCardSheet
+          key={openCard.id}
+          lang={lang}
+          card={openCard}
+          setName={data.summary.name}
+          owned={data.owned.get(openCard.id) ?? 0}
+          onClose={() => setOpenCard(null)}
+        />
+      )}
+
       <div className="binder-pages">
         {pages.map((page, i) => (
           <section key={i} className="binder-page" aria-label={`Page ${i + 1}`}>
@@ -237,6 +250,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
                 const price = cost?.prices.get(c.id)
                 return (
                   <li key={c.id} className={`slot${qty ? ' have' : ' missing'}`}>
+                    <button type="button" className="slot-open" onClick={() => setOpenCard(c)} aria-label={`View ${c.name} #${c.localId}`}>
                     <CardPicture
                       sources={isLang(lang) ? imageCandidates(lang, data.summary.id, c.localId, c.image, 'low') : []}
                       alt={`${c.name} ${c.localId}${qty ? '' : ' (missing)'}`}
@@ -247,6 +261,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
                       <span className="slot-price">{price === null ? 'no price' : formatEur(price)}</span>
                     )}
                     {qty && qty > 1 && <span className="qty-badge">{qty}×</span>}
+                    </button>
                   </li>
                 )
               })}

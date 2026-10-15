@@ -2157,3 +2157,28 @@ button.zoom-trigger:hover:not(:disabled) {
     transform: scale(1);
   }
 }
+
+/* Binder-vak aantikbaar */
+button.slot-open {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-weight: inherit;
+  text-align: center;
+}
+
+button.slot-open:hover:not(:disabled) {
+  background: none;
+  border: 0;
+}
+
+button.slot-open:hover .card-img {
+  transform: translateY(-2px);
+}
+
+.slot .card-img {
+  transition: transform 150ms ease-out;
+}
