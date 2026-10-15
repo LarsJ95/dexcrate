@@ -46,7 +46,7 @@ Per referentie: wat precies overnemen, niet de hele site kopiëren.
 
 ## 3. Typografie
 
-- Display/koppen: Archivo (Google Fonts, nu via CDN; gewichten 700, 800)
+- Display/koppen: Archivo (zelf gehost in `src/assets/fonts`, variabel 400–800; gewichten 700, 800)
 - Body: Archivo (gewichten 400, 500, 600)
 - Mono (optioneel): geen
 - Fonts self-hosten, `font-display: swap`

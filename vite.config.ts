@@ -30,6 +30,8 @@ export default defineConfig({
       workbox: {
         // exceljs-chunk (~1 MB) alleen laden wanneer nodig, niet vooraf cachen.
         globIgnores: ['**/exceljs*.js'],
+        // Zelf gehoste fonts meenemen, zodat de app offline in de juiste letter laadt.
+        globPatterns: ['**/*.{js,css,html,woff2}'],
         navigateFallback: 'index.html',
         runtimeCaching: [
           {
@@ -44,11 +46,6 @@ export default defineConfig({
               expiration: { maxEntries: 2000, maxAgeSeconds: 60 * 60 * 24 * 60 },
               cacheableResponse: { statuses: [0, 200] },
             },
-          },
-          {
-            urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com',
-            handler: 'StaleWhileRevalidate',
-            options: { cacheName: 'fonts', expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 } },
           },
           // Supabase (je eigen data) en TCGdex-API worden bewust niet door de service worker gecachet.
         ],
