@@ -2,12 +2,26 @@ import { useEffect, useMemo, useState, type JSX, type PointerEvent } from 'react
 import { listSnapshots, type PriceSnapshot } from '../lib/db'
 import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
-import { getCardPrice, type CardmarketPrice } from '../lib/tcgdex'
+import { cardmarketUrl, getCardPrice, type CardmarketPrice } from '../lib/tcgdex'
 import type { Variant } from '../lib/types'
 
 interface Props {
   tcgdexId: string
   variant: Variant | null
+  /** Zoektekst voor Cardmarket als het product-id onbekend is. */
+  searchText: string
+}
+
+function CardmarketLink({ idProduct, searchText }: { idProduct: number | null; searchText: string }): JSX.Element {
+  return (
+    <a className="external-link" href={cardmarketUrl(idProduct, searchText)} target="_blank" rel="noopener noreferrer">
+      {idProduct ? 'Bekijk op Cardmarket' : 'Zoek op Cardmarket'}
+      <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14">
+        <path d="M6 3h7v7M13 3 5.5 10.5M11 9.5V13H3V5h3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <span className="visually-hidden"> (opent in nieuw tabblad)</span>
+    </a>
+  )
 }
 
 interface Point {
@@ -119,7 +133,7 @@ function LineChart({ points, label }: { points: Point[]; label: string }): JSX.E
 }
 
 /** Actuele Cardmarket-prijs plus dagelijks opgebouwd prijsverloop. */
-export function PriceHistory({ tcgdexId, variant }: Props): JSX.Element {
+export function PriceHistory({ tcgdexId, variant, searchText }: Props): JSX.Element {
   const [price, setPrice] = useState<{ key: string; value: CardmarketPrice | null } | null>(null)
   const [history, setHistory] = useState<{ key: string; rows: PriceSnapshot[] } | null>(null)
   const [historyError, setHistoryError] = useState<string | null>(null)
@@ -179,6 +193,7 @@ export function PriceHistory({ tcgdexId, variant }: Props): JSX.Element {
       ) : (
         <p className="muted">Geen Cardmarket-prijs bekend{reverse ? ' voor reverse holo' : ''}.</p>
       )}
+      <CardmarketLink idProduct={current?.idProduct ?? null} searchText={searchText} />
 
       {current && (
         <dl className="price-facts">

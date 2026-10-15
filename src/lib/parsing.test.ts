@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { normalizeChannel, parsePrice, parseQuantity, splitLanguage } from './excel'
-import { langFromName, lookupLang, parseCardmarket, setOfKey, splitKey, stripLangTag } from './tcgdex'
+import { cardmarketUrl, langFromName, lookupLang, parseCardmarket, setOfKey, splitKey, stripLangTag } from './tcgdex'
 
 describe('Excel-velden', () => {
   it('parseQuantity: "3x", "3", spaties; ongeldig → null', () => {
@@ -65,6 +65,18 @@ describe('parseCardmarket', () => {
     expect(p?.avg30).toBe(0.69)
     expect(p?.trendHolo).toBeNull()
     expect(p?.avg30Holo).toBeNull()
+  })
+
+  it('neemt het Cardmarket-product-id mee', () => {
+    expect(parseCardmarket({ pricing: { cardmarket: { unit: 'EUR', idProduct: 733746 } } })?.idProduct).toBe(733746)
+    expect(parseCardmarket({ pricing: { cardmarket: { unit: 'EUR', idProduct: 'x' } } })?.idProduct).toBeNull()
+  })
+
+  it('cardmarketUrl: productpagina of zoekopdracht', () => {
+    expect(cardmarketUrl(733746, 'Mew ex')).toBe('https://www.cardmarket.com/en/Pokemon/Products?idProduct=733746')
+    expect(cardmarketUrl(null, ' Mew ex 151 ')).toBe(
+      'https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=Mew%20ex%20151',
+    )
   })
 
   it('geen of andere valuta → null', () => {

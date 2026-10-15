@@ -463,7 +463,7 @@ export function CardDialog({
 
         {isCard && form.tcgdex_id && (
           <Section title="Marktprijs">
-            <PriceHistory tcgdexId={form.tcgdex_id} variant={form.variant || null} />
+            <PriceHistory tcgdexId={form.tcgdex_id} variant={form.variant || null} searchText={form.name} />
           </Section>
         )}
 

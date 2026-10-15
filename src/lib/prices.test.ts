@@ -4,6 +4,7 @@ import type { CardmarketPrice } from './tcgdex'
 import { EMPTY_CARD, type CardInput } from './types'
 
 const price = (patch: Partial<CardmarketPrice>): CardmarketPrice => ({
+  idProduct: null,
   updated: null,
   trend: null,
   low: null,

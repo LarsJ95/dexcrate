@@ -202,7 +202,7 @@ export function matchNumber(cards: readonly SetCard[], number: string): SetCard 
 
 const INFO_PREFIX = 'tcgdex:card:v1:'
 const INFO_TTL_MS = 7 * 24 * 60 * 60 * 1000 // namen/plaatjes veranderen zelden
-const PRICE_PREFIX = 'tcgdex:price:v1:'
+const PRICE_PREFIX = 'tcgdex:price:v2:' // v2: met idProduct
 const PRICE_TTL_MS = 6 * 60 * 60 * 1000 // TCGdex ververst prijzen dagelijks
 
 function readCache<T>(prefix: string, ttl: number, key: string): T | null {
@@ -235,6 +235,8 @@ const fetchCardRaw = memo(async (key: string): Promise<Record<string, unknown> |
 
 /** Cardmarket-prijzen in EUR. `null` = geen data. "Holo"-velden zijn de reverse-holoprijzen. */
 export interface CardmarketPrice {
+  /** Cardmarket-product-id, voor een directe link naar de productpagina. */
+  idProduct: number | null
   updated: string | null
   trend: number | null
   low: number | null
@@ -255,6 +257,7 @@ export function parseCardmarket(data: Record<string, unknown>): CardmarketPrice 
   const cm = isRecord(data.pricing) && isRecord(data.pricing.cardmarket) ? data.pricing.cardmarket : null
   if (!cm || (typeof cm.unit === 'string' && cm.unit !== 'EUR')) return null
   return {
+    idProduct: typeof cm.idProduct === 'number' && Number.isInteger(cm.idProduct) && cm.idProduct > 0 ? cm.idProduct : null,
     updated: optStr(cm.updated),
     trend: priceNum(cm.trend),
     low: priceNum(cm.low),
@@ -277,6 +280,15 @@ const fetchCardPrice = memo(async (key: string): Promise<CardmarketPrice | null>
   writeCache(PRICE_PREFIX, key, price ?? 'none')
   return price
 })
+
+/**
+ * Link naar Cardmarket: de productpagina als het product-id bekend is, anders een zoekopdracht.
+ * Formaat gebruikt door andere tools; door Cardmarkets botbescherming niet automatisch te controleren.
+ */
+export function cardmarketUrl(idProduct: number | null, searchText: string): string {
+  if (idProduct) return `https://www.cardmarket.com/en/Pokemon/Products?idProduct=${idProduct}`
+  return `https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=${encodeURIComponent(searchText.trim())}`
+}
 
 export function getCardPrice(key: string): Promise<CardmarketPrice | null> {
   return fetchCardPrice(key)
