@@ -172,6 +172,20 @@ export const IconBinder = (p: IconProps): JSX.Element => (
   </Svg>
 )
 
+export const IconEdit = (p: IconProps): JSX.Element => (
+  <Svg {...p}>
+    <path d="M4 20h4L19 9l-4-4L4 16z" />
+    <path d="m13.5 6.5 4 4" />
+  </Svg>
+)
+
+export const IconTag = (p: IconProps): JSX.Element => (
+  <Svg {...p}>
+    <path d="M3.5 12.5V4.5a1 1 0 0 1 1-1h8l8 8-9 9z" />
+    <circle cx="8.5" cy="8.5" r="1.5" />
+  </Svg>
+)
+
 export const IconMore = (p: IconProps): JSX.Element => (
   <Svg {...p}>
     <path d="M4 7h16M4 12h16M4 17h16" />

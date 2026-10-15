@@ -401,6 +401,20 @@ export function SetBinderPage({ param }: Props): JSX.Element {
         />
       )}
 
+      {variantGoal && (
+        <div className="variant-legend" aria-label="Legend">
+          {goal.variants.map((v) => (
+            <span key={v} className="legend-item">
+              <span className="slot-variants">
+                <span className="ok">{VARIANT_SHORT[v]}</span>
+              </span>
+              {VARIANT_LABELS[v]}
+            </span>
+          ))}
+          <span className="legend-item">Green: owned. Dashed outline: missing.</span>
+        </div>
+      )}
+
       <div className="binder-pages">
         {pages.map((page, i) => (
           <section key={i} className="binder-page" aria-label={`Page ${i + 1}`}>

@@ -13,18 +13,25 @@ const COLLECTION: NavItem = { route: 'collection', label: 'Collection', Icon: Ic
 const SCAN: NavItem = { route: 'scan', label: 'Scan', Icon: IconCamera }
 const SETS: NavItem = { route: 'sets', label: 'Sets', Icon: IconLayers }
 
-/** Pagina's die op mobiel onder "More" vallen; op desktop staan ze gewoon in de zijbalk. */
-export const MORE_ITEMS: NavItem[] = [
+/** Verzamelen: op mobiel onder "More", op desktop in de zijbalk. */
+export const COLLECT_ITEMS: NavItem[] = [
   { route: 'locations', label: 'Locations', Icon: IconBinder },
   { route: 'wishlist', label: 'Wishlist', Icon: IconStar },
   { route: 'transactions', label: 'Transactions', Icon: IconReceipt },
   { route: 'photos', label: 'Photos', Icon: IconImage },
+]
+
+/** Weinig gebruikt: apart onderaan gegroepeerd. */
+export const DATA_ITEMS: NavItem[] = [
   { route: 'import', label: 'Import', Icon: IconUpload },
   { route: 'backup', label: 'Backup', Icon: IconArchive },
   { route: 'settings', label: 'Settings', Icon: IconSettings },
 ]
 
-export const SIDE_NAV: NavItem[] = [OVERVIEW, COLLECTION, SCAN, SETS, ...MORE_ITEMS]
+export const MORE_ITEMS: NavItem[] = [...COLLECT_ITEMS, ...DATA_ITEMS]
+
+/** Zijbalk in groepen, gescheiden door een lijn. */
+export const SIDE_GROUPS: NavItem[][] = [[OVERVIEW, COLLECTION, SCAN, SETS, ...COLLECT_ITEMS], DATA_ITEMS]
 export const TAB_NAV: NavItem[] = [OVERVIEW, COLLECTION, SCAN, SETS, { route: 'more', label: 'More', Icon: IconMore }]
 
 /** Actieve tab: pagina's onder "More" laten de More-tab oplichten. */

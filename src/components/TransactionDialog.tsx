@@ -205,39 +205,11 @@ export function TransactionDialog({ tx, cards, purchases, onClose, onChanged }: 
       {result && result.missing.length > 0 && <p className="muted small">Missing for a final result: {result.missing.join(', ')}.</p>}
       {final && <p className="muted small">This sale is {TX_STATUS_LABELS[tx.status].toLowerCase()}: it does not count in your results and its cards are back in your collection.</p>}
 
-      {sale && !final && (
+      {sale && !final && next && (
         <div className="sheet-foot">
-          {next && (
-            <button type="button" onClick={() => changeStatus(next)} disabled={busy}>
-              Mark as {TX_STATUS_LABELS[next].toLowerCase()}
-            </button>
-          )}
-          <span className="spacer" />
-          {confirm ? (
-            <>
-              {confirm === 'returned' && (
-                <label className="inline-field">
-                  Refunded (€)
-                  <input inputMode="decimal" value={refund} placeholder="optional" onChange={(e) => setRefund(e.target.value)} />
-                </label>
-              )}
-              <button type="button" className="danger" onClick={() => changeStatus(confirm)} disabled={busy}>
-                Confirm {confirm === 'returned' ? 'return' : 'cancel'}
-              </button>
-              <button type="button" className="ghost" onClick={() => setConfirm(null)} disabled={busy}>
-                Keep
-              </button>
-            </>
-          ) : (
-            <>
-              <button type="button" className="ghost danger-text" onClick={() => setConfirm('cancelled')} disabled={busy}>
-                Cancel sale
-              </button>
-              <button type="button" className="ghost danger-text" onClick={() => setConfirm('returned')} disabled={busy}>
-                Returned
-              </button>
-            </>
-          )}
+          <button type="button" onClick={() => changeStatus(next)} disabled={busy}>
+            Mark as {TX_STATUS_LABELS[next].toLowerCase()}
+          </button>
         </div>
       )}
 
@@ -320,6 +292,40 @@ export function TransactionDialog({ tx, cards, purchases, onClose, onChanged }: 
             Add receipt
           </button>
         </fieldset>
+
+        {sale && !final && (
+          <fieldset className="form-group">
+            <legend>Cancel or return</legend>
+            <p className="muted small">The cards go back to your collection (for sale). The sale stays in your history but no longer counts.</p>
+            <div className="sheet-foot">
+              {confirm ? (
+                <>
+                  {confirm === 'returned' && (
+                    <label className="inline-field">
+                      Refunded (€)
+                      <input inputMode="decimal" value={refund} placeholder="optional" onChange={(e) => setRefund(e.target.value)} />
+                    </label>
+                  )}
+                  <button type="button" className="danger" onClick={() => changeStatus(confirm)} disabled={busy}>
+                    Confirm {confirm === 'returned' ? 'return' : 'cancel'}
+                  </button>
+                  <button type="button" className="ghost" onClick={() => setConfirm(null)} disabled={busy}>
+                    Keep sale
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button type="button" className="ghost danger-text" onClick={() => setConfirm('cancelled')} disabled={busy}>
+                    Cancel sale
+                  </button>
+                  <button type="button" className="ghost danger-text" onClick={() => setConfirm('returned')} disabled={busy}>
+                    Returned
+                  </button>
+                </>
+              )}
+            </div>
+          </fieldset>
+        )}
 
         {error && (
           <p className="error" role="alert">

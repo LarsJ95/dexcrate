@@ -118,6 +118,21 @@
   gap: var(--space-1);
 }
 
+.side-group {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.side-group + .side-group {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--line);
+}
+
+.more-nav {
+  display: grid;
+  gap: var(--space-3);
+}
+
 .side-nav a {
   display: flex;
   align-items: center;
@@ -2280,6 +2295,16 @@ button.tx-row.void {
   outline-offset: 2px;
 }
 
+.select-count {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.select-bar button {
+  gap: var(--space-1);
+  white-space: nowrap;
+}
+
 .select-badge {
   position: absolute;
   z-index: 2;
@@ -2299,10 +2324,9 @@ button.tx-row.void {
   bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
   z-index: 10;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-2) var(--space-3);
   background: var(--surface);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-l);
@@ -2487,6 +2511,24 @@ li.outside {
   font-size: var(--fs-small);
   font-weight: 700;
   line-height: 1.5;
+}
+
+.variant-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.legend-item .slot-variants {
+  padding-top: 0;
 }
 
 .slot-variants .ok {

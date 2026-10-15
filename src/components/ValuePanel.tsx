@@ -121,9 +121,8 @@ export function ValuePanel({ card, price }: Props): JSX.Element | null {
                   '…'
                 ) : cm ? (
                   <>
-                    <strong>{formatEur(cm.value)}</strong>
-                    <span className="muted small">
-                      {BASIS_LABELS[cm.basis]}
+                    <span className="small">
+                      The Market price above is the {BASIS_LABELS[cm.basis]}
                       {cm.reverse ? ', reverse holo price' : ''}
                       {price?.updated && dateText(price.updated) ? `, updated ${dateText(price.updated)}` : ''}
                     </span>

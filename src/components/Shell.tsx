@@ -2,7 +2,7 @@ import type { JSX, ReactNode } from 'react'
 import type { Theme } from '../hooks/useTheme'
 import type { Route } from '../lib/routes'
 import { IconLogout, IconMoon, IconSun, LogoMark } from './Icons'
-import { SIDE_NAV, TAB_NAV, isActiveTab } from './nav'
+import { SIDE_GROUPS, TAB_NAV, isActiveTab } from './nav'
 
 interface Props {
   route: Route
@@ -35,11 +35,15 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
           <span>Dexcrate</span>
         </a>
         <nav className="side-nav" aria-label="Main menu">
-          {SIDE_NAV.map(({ route: r, label, Icon }) => (
-            <a key={r} href={`#/${r}`} aria-current={route === r ? 'page' : undefined}>
-              <Icon />
-              <span>{label}</span>
-            </a>
+          {SIDE_GROUPS.map((group, i) => (
+            <div key={i} className="side-group">
+              {group.map(({ route: r, label, Icon }) => (
+                <a key={r} href={`#/${r}`} aria-current={route === r ? 'page' : undefined}>
+                  <Icon />
+                  <span>{label}</span>
+                </a>
+              ))}
+            </div>
           ))}
         </nav>
         <div className="side-foot">

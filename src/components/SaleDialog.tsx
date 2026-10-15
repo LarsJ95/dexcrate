@@ -153,6 +153,31 @@ export function SaleDialog({ cards, onClose, onSaved }: Props): JSX.Element {
   return (
     <Sheet title={cards.length === 1 ? `Sell ${cards[0].name}` : `Sell ${cards.length} cards`} onClose={onClose}>
       <form className="card-form" onSubmit={onSubmit} noValidate>
+        {/* Resultaat bovenaan: direct zichtbaar wat de verkoop oplevert of wat er nog ontbreekt. */}
+        {preview && (
+          <dl className="result-preview">
+            <div>
+              <dt>Revenue</dt>
+              <dd>{preview.revenue === null ? 'Unknown' : formatEur(preview.revenue)}</dd>
+            </div>
+            <div>
+              <dt>Costs</dt>
+              <dd>{preview.costs === null ? 'Unknown' : formatEur(preview.costs)}</dd>
+            </div>
+            <div>
+              <dt>Purchase cost</dt>
+              <dd>{preview.costBasis === null ? 'Unknown' : formatEur(preview.costBasis)}</dd>
+            </div>
+            <div>
+              <dt>Result</dt>
+              <dd className={preview.result === null ? undefined : preview.result >= 0 ? 'up' : 'down'}>
+                {preview.result === null ? 'Not final' : signedEur(preview.result)}
+              </dd>
+            </div>
+          </dl>
+        )}
+        {preview && preview.missing.length > 0 && <p className="muted small">Missing for a final result: {preview.missing.join(', ')}.</p>}
+
         {cards.length > 1 && (
           <div className="segmented" role="radiogroup" aria-label="Price">
             <button type="button" role="radio" aria-checked={!lot} onClick={() => setLot(false)}>
@@ -262,29 +287,6 @@ export function SaleDialog({ cards, onClose, onSaved }: Props): JSX.Element {
           <textarea value={notes} maxLength={2000} rows={2} onChange={(e) => setNotes(e.target.value)} />
         </label>
 
-        {preview && (
-          <dl className="result-preview">
-            <div>
-              <dt>Revenue</dt>
-              <dd>{preview.revenue === null ? 'Unknown' : formatEur(preview.revenue)}</dd>
-            </div>
-            <div>
-              <dt>Costs</dt>
-              <dd>{preview.costs === null ? 'Unknown' : formatEur(preview.costs)}</dd>
-            </div>
-            <div>
-              <dt>Purchase cost</dt>
-              <dd>{preview.costBasis === null ? 'Unknown' : formatEur(preview.costBasis)}</dd>
-            </div>
-            <div>
-              <dt>Result</dt>
-              <dd className={preview.result === null ? undefined : preview.result >= 0 ? 'up' : 'down'}>
-                {preview.result === null ? 'Not final' : signedEur(preview.result)}
-              </dd>
-            </div>
-          </dl>
-        )}
-        {preview && preview.missing.length > 0 && <p className="muted small">Missing for a final result: {preview.missing.join(', ')}.</p>}
 
         {error && (
           <p className="error" role="alert">

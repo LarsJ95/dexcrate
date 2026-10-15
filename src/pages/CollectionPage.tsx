@@ -10,7 +10,7 @@ import { PurchaseDialog } from '../components/PurchaseDialog'
 import { SaleDialog } from '../components/SaleDialog'
 import { useNewCardDefaults } from '../hooks/useNewCardDefaults'
 import { useTransactionsEnabled } from '../hooks/useTransactionsEnabled'
-import { IconPlus, IconSearch } from '../components/Icons'
+import { IconEdit, IconPlus, IconReceipt, IconSearch, IconTag } from '../components/Icons'
 import { useMarketPrices } from '../hooks/useMarketPrices'
 import { listCards, updateCard } from '../lib/db'
 import { marketValueOf, type MarketValue } from '../lib/prices'
@@ -451,17 +451,18 @@ export function CollectionPage(): JSX.Element {
 
       {selected !== null && (
         <div className="select-bar" role="region" aria-label="Selection">
-          <span>
-            {selectedCards.length === 0 ? 'Tap cards to select them' : `${selectedCards.length} selected`}
-          </span>
+          <span className="select-count">{selectedCards.length === 0 ? 'Tap cards' : `${selectedCards.length} selected`}</span>
           <span className="spacer" />
-          <button type="button" disabled={selectedCards.length === 0} onClick={() => setBulkFor(selectedCards)}>
+          <button type="button" className="small-btn" disabled={selectedCards.length === 0} onClick={() => setBulkFor(selectedCards)}>
+            <IconEdit size={16} />
             Edit
           </button>
-          <button type="button" disabled={!canBuy} onClick={() => setPurchaseFor(selectedCards)}>
-            Record purchase
+          <button type="button" className="small-btn" disabled={!canBuy} onClick={() => setPurchaseFor(selectedCards)} title="Record a purchase">
+            <IconReceipt size={16} />
+            Bought
           </button>
-          <button type="button" className="primary" disabled={!canSell} onClick={() => setSaleFor(selectedCards)}>
+          <button type="button" className="primary small-btn" disabled={!canSell} onClick={() => setSaleFor(selectedCards)}>
+            <IconTag size={16} />
             Sell
           </button>
         </div>
