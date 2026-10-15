@@ -13,6 +13,7 @@ import { SetCardSheet } from '../components/SetCardSheet'
 import { DashboardView } from '../components/DashboardView'
 import { IconArrowLeft, IconSearch } from '../components/Icons'
 import { BackupPage } from '../pages/BackupPage'
+import { CollectionPage } from '../pages/CollectionPage'
 import { ImportPage } from '../pages/ImportPage'
 import { LocationsPage } from '../pages/LocationsPage'
 import { MorePage } from '../pages/MorePage'
@@ -244,6 +245,7 @@ export function Preview(): JSX.Element {
     )
   }
   const extra = params.get('page') ?? ''
+  const extraPage = extra
   if (extra === 'sale' || extra === 'purchase' || extra === 'tx') {
     const picked = [CARDS[0].card, CARDS[4].card, CARDS[5].card]
     const demoTx: Transaction = {
@@ -272,7 +274,7 @@ export function Preview(): JSX.Element {
       </Shell>
     )
   }
-  if (page === 'more' || page === 'photos' || page === 'backup' || page === 'settings' || page === 'wishlist' || page === 'transactions' || page === 'import' || page === 'locations') {
+  if (page === 'more' || page === 'photos' || page === 'backup' || page === 'settings' || page === 'wishlist' || page === 'transactions' || page === 'import' || page === 'locations' || extraPage === 'collectionpage') {
     return (
       <Shell route={page} email="demo@example.com" theme={theme} onToggleTheme={noop} onSignOut={noop}>
         {page === 'more' && <MorePage />}
@@ -283,6 +285,7 @@ export function Preview(): JSX.Element {
         {page === 'transactions' && <TransactionsPage />}
         {page === 'import' && <ImportPage />}
         {page === 'locations' && <LocationsPage param="" />}
+        {extraPage === 'collectionpage' && <CollectionPage />}
       </Shell>
     )
   }

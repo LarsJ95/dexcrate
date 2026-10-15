@@ -105,6 +105,8 @@
   background: var(--surface);
   border-right: 1px solid var(--line);
   z-index: 20;
+  /* Veel menu-items: op lage schermen scrollen in plaats van afsnijden. */
+  overflow-y: auto;
 }
 
 .sidebar .brand {
@@ -2311,6 +2313,11 @@ button.tx-row.void {
   .select-bar {
     bottom: calc(var(--tabbar) + var(--space-3) + env(safe-area-inset-bottom, 0px));
   }
+}
+
+/* ---------- Extra filters (Collection) ---------- */
+.extra-filters > button {
+  justify-self: start;
 }
 
 /* ---------- Locaties ---------- */

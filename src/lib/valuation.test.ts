@@ -32,7 +32,7 @@ describe('TCGplayer-prijzen', () => {
 })
 
 describe('schattingen op basis van eigen instellingen', () => {
-  const settings = { conditionPct: { LP: 60 }, saleFeePct: 5, saleCostPerSale: 1 }
+  const settings = { ...EMPTY_SETTINGS, conditionPct: { LP: 60 }, saleFeePct: 5, saleCostPerSale: 1 }
 
   it('conditiecorrectie alleen als je die conditie hebt ingesteld', () => {
     expect(conditionEstimate(10, 'LP', settings)).toEqual({ value: 6, pct: 60 })
@@ -83,6 +83,7 @@ describe('parseSettings', () => {
       conditionPct: { NM: 100 },
       saleFeePct: 5,
       saleCostPerSale: null,
+      defaults: { language: null, condition: null, set_code: null, location_id: null },
     })
     expect(parseSettings(null)).toEqual(EMPTY_SETTINGS)
   })
@@ -108,7 +109,7 @@ describe('collectionBreakdown', () => {
       yours: { amount: 20, copies: 1 },
       net: null,
     })
-    const withCosts = collectionBreakdown(cards, market, own, { conditionPct: {}, saleFeePct: 10, saleCostPerSale: 1 })
+    const withCosts = collectionBreakdown(cards, market, own, { ...EMPTY_SETTINGS, saleFeePct: 10, saleCostPerSale: 1 })
     // a: per stuk 5 × 0,9 − 1 = 3,50; 2 stuks
     expect(withCosts.net).toEqual({ amount: 7, copies: 2 })
   })

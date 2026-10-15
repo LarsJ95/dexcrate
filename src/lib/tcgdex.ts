@@ -45,6 +45,8 @@ export interface CardInfo {
   tcgplayerId?: number | null
   /** Uitvoeringen die volgens TCGdex bestaan; null = onbekend (dan alles toestaan). */
   variants?: Variant[] | null
+  /** Illustrator volgens de catalogus; null = onbekend. */
+  illustrator?: string | null
   set: SetSummary
 }
 
@@ -282,7 +284,7 @@ export function matchNumber(cards: readonly SetCard[], number: string): SetCard 
 
 // --- Kaartinfo en prijzen, met cache in localStorage ---
 
-const INFO_PREFIX = 'tcgdex:card:v4:' // v4: met uitvoeringen (variants)
+const INFO_PREFIX = 'tcgdex:card:v5:' // v5: met uitvoeringen en illustrator
 const INFO_TTL_MS = 7 * 24 * 60 * 60 * 1000 // namen/plaatjes veranderen zelden
 const PRICE_PREFIX = 'tcgdex:price:v2:' // v2: met idProduct
 const PRICE_TTL_MS = 6 * 60 * 60 * 1000 // TCGdex ververst prijzen dagelijks
@@ -445,6 +447,7 @@ const fetchCardInfo = memo(async (key: string): Promise<CardInfo | null> => {
     image,
     tcgplayerId: findTcgplayerId(data),
     variants: parseVariants(data),
+    illustrator: typeof data.illustrator === 'string' && data.illustrator.trim() ? data.illustrator.trim() : null,
     set: { id: data.set.id, name: typeof data.set.name === 'string' ? data.set.name : data.set.id, logo },
   }
   writeCache(INFO_PREFIX, key, info)

@@ -1,5 +1,5 @@
 import type { SnapshotRow } from './prices'
-import type { Condition, Variant } from './types'
+import type { CardLanguage, Condition, Variant } from './types'
 
 // --- TCGplayer (VS, USD): apart tonen, nooit stilletjes omrekenen naar een Europese prijs ---
 
@@ -61,9 +61,23 @@ export interface UserSettings {
   saleFeePct: number | null
   /** Vaste kosten per verkoop (verzending, verpakking) in euro. */
   saleCostPerSale: number | null
+  /** Standaardwaarden voor nieuwe kaarten; leeg = geen standaard. */
+  defaults: NewCardDefaults
 }
 
-export const EMPTY_SETTINGS: UserSettings = { conditionPct: {}, saleFeePct: null, saleCostPerSale: null }
+export interface NewCardDefaults {
+  language: CardLanguage | null
+  condition: Condition | null
+  set_code: string | null
+  location_id: string | null
+}
+
+export const EMPTY_SETTINGS: UserSettings = {
+  conditionPct: {},
+  saleFeePct: null,
+  saleCostPerSale: null,
+  defaults: { language: null, condition: null, set_code: null, location_id: null },
+}
 
 const cents = (n: number): number => Math.round(n * 100)
 

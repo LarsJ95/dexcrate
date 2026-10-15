@@ -1,8 +1,14 @@
 import { useCallback, useEffect, useMemo, useState, type JSX } from 'react'
 import { CardDialog } from '../components/CardDialog'
+import { BulkEditDialog, type BulkChange } from '../components/BulkEditDialog'
 import { CardTile } from '../components/CardTile'
+import { useLocations } from '../hooks/useLocations'
+import { useSchemaV2 } from '../hooks/useSchemaV2'
+import { NO_EXTRA_FILTERS, activeFilterCount, matchesExtra, parseView, type ExtraFilters, type SavedView } from '../lib/collectionFilters'
+import { getCardInfo } from '../lib/tcgdex'
 import { PurchaseDialog } from '../components/PurchaseDialog'
 import { SaleDialog } from '../components/SaleDialog'
+import { useNewCardDefaults } from '../hooks/useNewCardDefaults'
 import { useTransactionsEnabled } from '../hooks/useTransactionsEnabled'
 import { IconPlus, IconSearch } from '../components/Icons'
 import { useMarketPrices } from '../hooks/useMarketPrices'
@@ -10,10 +16,34 @@ import { listCards, updateCard } from '../lib/db'
 import { marketValueOf, type MarketValue } from '../lib/prices'
 import { matchesSearch } from '../lib/search'
 import { formatEur } from '../lib/stats'
-import { STATUS_LABELS, canToggleSold, statusFields, type Card, type CardStatus } from '../lib/types'
+import {
+  CONDITION_LABELS,
+  LANGUAGE_LABELS,
+  STATUS_LABELS,
+  VARIANT_LABELS,
+  canToggleSold,
+  statusFields,
+  type Card,
+  type CardInput,
+  type CardStatus,
+} from '../lib/types'
 
 type StatusFilter = 'all' | 'owned' | CardStatus
 type SortKey = 'list' | 'priceDesc' | 'priceAsc' | 'marketDesc' | 'name' | 'set'
+const SORTS: readonly SortKey[] = ['list', 'priceDesc', 'priceAsc', 'marketDesc', 'name', 'set']
+const STATUS_FILTERS: readonly StatusFilter[] = ['all', 'owned', 'collection', 'for_sale', 'sold']
+
+/** Weergave (zoeken, filters, sortering) per apparaat onthouden. */
+const VIEW_KEY = 'dexcrate:collection-view'
+const DEFAULT_VIEW: SavedView<SortKey, StatusFilter> = { query: '', filter: 'owned', sort: 'list', extra: NO_EXTRA_FILTERS }
+
+function readView(): SavedView<SortKey, StatusFilter> {
+  try {
+    return parseView(localStorage.getItem(VIEW_KEY), SORTS, STATUS_FILTERS, DEFAULT_VIEW)
+  } catch {
+    return DEFAULT_VIEW // geen opslag: standaardweergave
+  }
+}
 
 const FILTERS: [StatusFilter, string][] = [
   ['owned', 'Owned'],
@@ -39,15 +69,33 @@ export function CollectionPage(): JSX.Element {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
-  const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState<StatusFilter>('owned')
-  const [sort, setSort] = useState<SortKey>('list')
+  const [initialView] = useState(readView)
+  const [query, setQuery] = useState(initialView.query)
+  const [filter, setFilter] = useState<StatusFilter>(initialView.filter)
+  const [sort, setSort] = useState<SortKey>(initialView.sort)
+  const [extra, setExtra] = useState<ExtraFilters>(initialView.extra)
+  const [showFilters, setShowFilters] = useState(activeFilterCount(initialView.extra) > 0)
+  const v2 = useSchemaV2() === true
+  const locations = useLocations(v2)
+  // Illustrator per cataloguskaart; alleen geladen als je op illustrator filtert.
+  const [illustrators, setIllustrators] = useState<ReadonlyMap<string, string | null>>(new Map())
+  const [bulkFor, setBulkFor] = useState<Card[] | null>(null)
+  const [lastBulk, setLastBulk] = useState<BulkChange[] | null>(null)
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(VIEW_KEY, JSON.stringify({ query, filter, sort, extra }))
+    } catch (err) {
+      console.warn('Weergave onthouden mislukt', err)
+    }
+  }, [query, filter, sort, extra])
   // Verkopen en aankopen als transactie (STAP5): kaarten selecteren en in één keer vastleggen.
   const salesTracked = useTransactionsEnabled() === true
   const [selected, setSelected] = useState<ReadonlySet<string> | null>(null)
   const [saleFor, setSaleFor] = useState<Card[] | null>(null)
   const [purchaseFor, setPurchaseFor] = useState<Card[] | null>(null)
   const [editing, setEditing] = useState<{ id: string | null } | null>(null)
+  const newCardDefaults = useNewCardDefaults()
   const [pending, setPending] = useState<ReadonlySet<string>>(new Set())
   const { prices, loading: pricesLoading } = useMarketPrices(cards)
 
@@ -77,7 +125,8 @@ export function CollectionPage(): JSX.Element {
 
   const visible = useMemo(() => {
     if (!cards) return []
-    const filtered = cards.filter((c) => matchesFilter(c, filter) && matchesSearch(c, query))
+    const illustratorOf = (c: CardInput): string | null | undefined => (c.tcgdex_id ? illustrators.get(c.tcgdex_id) : null)
+    const filtered = cards.filter((c) => matchesFilter(c, filter) && matchesSearch(c, query) && matchesExtra(c, extra, illustratorOf))
     const sorted = [...filtered]
     if (sort === 'priceDesc') sorted.sort((a, b) => relevantPrice(b) - relevantPrice(a))
     if (sort === 'priceAsc') sorted.sort((a, b) => relevantPrice(a) - relevantPrice(b))
@@ -93,7 +142,31 @@ export function CollectionPage(): JSX.Element {
       )
     }
     return sorted
-  }, [cards, query, filter, sort, marketById])
+  }, [cards, query, filter, sort, marketById, extra, illustrators])
+
+  const wantIllustrators = extra.illustrator.trim() !== ''
+  useEffect(() => {
+    if (!wantIllustrators || !cards) return
+    let cancelled = false
+    const keys = [...new Set(cards.flatMap((c) => (c.tcgdex_id ? [c.tcgdex_id] : [])))]
+    const found = new Map<string, string | null>()
+    let done = 0
+    for (const key of keys) {
+      getCardInfo(key)
+        .then((info) => found.set(key, info?.illustrator ?? null))
+        .catch((err: unknown) => {
+          console.warn(`Illustrator ophalen mislukt voor ${key}`, err)
+          found.set(key, null)
+        })
+        .finally(() => {
+          done += 1
+          if (!cancelled && (done % 10 === 0 || done === keys.length)) setIllustrators(new Map(found))
+        })
+    }
+    return () => {
+      cancelled = true
+    }
+  }, [wantIllustrators, cards])
 
   const counts = useMemo(() => {
     const out: Record<StatusFilter, number> = { all: 0, owned: 0, collection: 0, for_sale: 0, sold: 0 }
@@ -161,6 +234,21 @@ export function CollectionPage(): JSX.Element {
   const selectedCards = selected ? (cards ?? []).filter((c) => selected.has(c.id)) : []
   const canSell = selectedCards.length > 0 && selectedCards.every((c) => c.ownership === 'owned')
   const canBuy = selectedCards.length > 0 && selectedCards.every((c) => c.ownership === 'owned' || c.ownership === 'incoming')
+  /** Laatste bulkwijziging terugdraaien (oude waarden terugzetten). */
+  async function undoBulk(): Promise<void> {
+    if (!lastBulk) return
+    const changes = lastBulk
+    setLastBulk(null)
+    setActionError(null)
+    try {
+      const restored: Card[] = []
+      for (const ch of changes) restored.push(await updateCard(ch.id, ch.before))
+      setCards((list) => list?.map((c) => restored.find((r) => r.id === c.id) ?? c) ?? null)
+    } catch (err) {
+      setActionError(err instanceof Error ? `Undo failed: ${err.message}` : 'Undo failed.')
+    }
+  }
+
   const afterTransaction = (): void => {
     setSaleFor(null)
     setPurchaseFor(null)
@@ -230,6 +318,9 @@ export function CollectionPage(): JSX.Element {
             </button>
           ))}
         </div>
+        <button type="button" aria-expanded={showFilters} onClick={() => setShowFilters((s) => !s)}>
+          Filters{activeFilterCount(extra) > 0 ? ` (${activeFilterCount(extra)})` : ''}
+        </button>
         <select aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
           <option value="list">Date added</option>
           <option value="set">Set and number</option>
@@ -239,6 +330,81 @@ export function CollectionPage(): JSX.Element {
           <option value="name">Name A–Z</option>
         </select>
       </div>
+
+      {showFilters && (
+        <div className="panel extra-filters">
+          <div className="form-grid">
+            <label>
+              Language
+              <select value={extra.language} onChange={(e) => setExtra((f) => ({ ...f, language: e.target.value as ExtraFilters['language'] }))}>
+                <option value="">All</option>
+                <option value="none">Unknown</option>
+                {Object.entries(LANGUAGE_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Variant
+              <select value={extra.variant} onChange={(e) => setExtra((f) => ({ ...f, variant: e.target.value as ExtraFilters['variant'] }))}>
+                <option value="">All</option>
+                <option value="none">Unknown</option>
+                {Object.entries(VARIANT_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Condition
+              <select value={extra.condition} onChange={(e) => setExtra((f) => ({ ...f, condition: e.target.value as ExtraFilters['condition'] }))}>
+                <option value="">All</option>
+                <option value="none">Unknown</option>
+                {Object.entries(CONDITION_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {locations.length > 0 && (
+              <label>
+                Location
+                <select value={extra.location} onChange={(e) => setExtra((f) => ({ ...f, location: e.target.value }))}>
+                  <option value="">All</option>
+                  <option value="none">No location</option>
+                  {locations.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <label>
+              Illustrator
+              <input value={extra.illustrator} maxLength={60} placeholder="e.g. Arita" onChange={(e) => setExtra((f) => ({ ...f, illustrator: e.target.value }))} />
+            </label>
+          </div>
+          {activeFilterCount(extra) > 0 && (
+            <button type="button" className="ghost small-btn" onClick={() => setExtra(NO_EXTRA_FILTERS)}>
+              Clear filters
+            </button>
+          )}
+        </div>
+      )}
+
+      {lastBulk && (
+        <div className="notice" role="status">
+          <p>{lastBulk.length} cards changed.</p>
+          <button type="button" onClick={() => void undoBulk()}>
+            Undo
+          </button>
+        </div>
+      )}
 
       {unlinked > 0 && (
         <p className="notice">
@@ -289,6 +455,9 @@ export function CollectionPage(): JSX.Element {
             {selectedCards.length === 0 ? 'Tap cards to select them' : `${selectedCards.length} selected`}
           </span>
           <span className="spacer" />
+          <button type="button" disabled={selectedCards.length === 0} onClick={() => setBulkFor(selectedCards)}>
+            Edit
+          </button>
           <button type="button" disabled={!canBuy} onClick={() => setPurchaseFor(selectedCards)}>
             Record purchase
           </button>
@@ -298,6 +467,21 @@ export function CollectionPage(): JSX.Element {
         </div>
       )}
 
+      {bulkFor && (
+        <BulkEditDialog
+          cards={bulkFor}
+          locations={locations}
+          onClose={() => setBulkFor(null)}
+          onApplied={(rows, changes, error) => {
+            setCards((list) => list?.map((c) => rows.find((r) => r.id === c.id) ?? c) ?? null)
+            setLastBulk(changes.length > 0 ? changes : null)
+            setActionError(error)
+            setBulkFor(null)
+            setSelected(null)
+          }}
+        />
+      )}
+
       {saleFor && <SaleDialog cards={saleFor} onClose={() => setSaleFor(null)} onSaved={afterTransaction} />}
       {purchaseFor && <PurchaseDialog cards={purchaseFor} onClose={() => setPurchaseFor(null)} onSaved={afterTransaction} />}
 
@@ -305,6 +489,7 @@ export function CollectionPage(): JSX.Element {
         <CardDialog
           key={editing.id ?? 'new'}
           card={editingCard}
+          initial={editingCard ? undefined : { language: 'en', ...newCardDefaults }}
           defaultStatus={filter === 'for_sale' || filter === 'sold' ? filter : 'collection'}
           nextSortOrder={nextSortOrder}
           onClose={() => setEditing(null)}

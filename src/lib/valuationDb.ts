@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { CONDITION_LABELS, type Condition } from './types'
+import { CONDITION_LABELS, LANGUAGE_LABELS, type CardLanguage, type Condition } from './types'
 import { EMPTY_SETTINGS, type UserSettings } from './valuation'
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -88,15 +88,22 @@ export function parseSettings(raw: unknown): UserSettings {
   if (isRecord(raw.condition_pct)) {
     for (const [k, v] of Object.entries(raw.condition_pct)) {
       const n = numOrNull(v)
-      if (k in CONDITION_LABELS && n !== null && n >= 0 && n <= 200) pct[k as Condition] = n
+      if (Object.hasOwn(CONDITION_LABELS, k) && n !== null && n >= 0 && n <= 200) pct[k as Condition] = n
     }
   }
   const fee = numOrNull(raw.sale_fee_pct)
   const cost = numOrNull(raw.sale_cost_per_sale)
+  const d = isRecord(raw.defaults) ? raw.defaults : {}
   return {
     conditionPct: pct,
     saleFeePct: fee !== null && fee >= 0 && fee < 100 ? fee : null,
     saleCostPerSale: cost !== null && cost >= 0 ? cost : null,
+    defaults: {
+      language: typeof d.language === 'string' && Object.hasOwn(LANGUAGE_LABELS, d.language) ? (d.language as CardLanguage) : null,
+      condition: typeof d.condition === 'string' && Object.hasOwn(CONDITION_LABELS, d.condition) ? (d.condition as Condition) : null,
+      set_code: typeof d.set_code === 'string' && d.set_code.trim() ? d.set_code.trim().slice(0, 20) : null,
+      location_id: typeof d.location_id === 'string' && d.location_id ? d.location_id : null,
+    },
   }
 }
 
@@ -115,7 +122,7 @@ export function loadSettings(): Promise<UserSettings> {
 }
 
 export async function saveSettings(s: UserSettings): Promise<void> {
-  const settings = { condition_pct: s.conditionPct, sale_fee_pct: s.saleFeePct, sale_cost_per_sale: s.saleCostPerSale }
+  const settings = { condition_pct: s.conditionPct, sale_fee_pct: s.saleFeePct, sale_cost_per_sale: s.saleCostPerSale, defaults: s.defaults }
   const { error } = await supabase.from('user_settings').upsert({ settings }, { onConflict: 'user_id' })
   if (error) throw new Error(`Saving settings failed: ${error.message}`)
   settingsCache = Promise.resolve(s)

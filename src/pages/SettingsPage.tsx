@@ -1,16 +1,18 @@
 import { useEffect, useState, type FormEvent, type JSX } from 'react'
 import { useDbFeature } from '../hooks/useDbFeature'
-import { CONDITION_LABELS, type Condition } from '../lib/types'
-import type { UserSettings } from '../lib/valuation'
+import { useLocations } from '../hooks/useLocations'
+import { useSchemaV2 } from '../hooks/useSchemaV2'
+import { CONDITION_LABELS, LANGUAGE_LABELS, type CardLanguage, type Condition } from '../lib/types'
+import type { NewCardDefaults, UserSettings } from '../lib/valuation'
 import { hasValuations, loadSettings, saveSettings } from '../lib/valuationDb'
 
-type Form = { pct: Record<Condition, string>; fee: string; cost: string }
+type Form = { pct: Record<Condition, string>; fee: string; cost: string; defaults: NewCardDefaults }
 
 const numText = (n: number | null | undefined): string => (n === null || n === undefined ? '' : String(n))
 
 function toForm(s: UserSettings): Form {
   const pct = Object.fromEntries((Object.keys(CONDITION_LABELS) as Condition[]).map((c) => [c, numText(s.conditionPct[c])])) as Record<Condition, string>
-  return { pct, fee: numText(s.saleFeePct), cost: numText(s.saleCostPerSale) }
+  return { pct, fee: numText(s.saleFeePct), cost: numText(s.saleCostPerSale), defaults: s.defaults }
 }
 
 /** Leeg = niet ingesteld; anders een getal binnen de grenzen. */
@@ -25,6 +27,9 @@ function parseNumber(raw: string, min: number, max: number): number | null | 'in
 export function SettingsPage(): JSX.Element {
   const enabled = useDbFeature(hasValuations)
   const [form, setForm] = useState<Form | null>(null)
+  const locations = useLocations(useSchemaV2() === true)
+  const setDefault = <K extends keyof NewCardDefaults>(key: K, value: NewCardDefaults[K]): void =>
+    setForm((f) => (f ? { ...f, defaults: { ...f.defaults, [key]: value } } : f))
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
 
@@ -64,7 +69,7 @@ export function SettingsPage(): JSX.Element {
     setBusy(true)
     setMessage(null)
     try {
-      await saveSettings({ conditionPct: pct, saleFeePct: fee, saleCostPerSale: cost })
+      await saveSettings({ conditionPct: pct, saleFeePct: fee, saleCostPerSale: cost, defaults: { ...form.defaults, set_code: form.defaults.set_code?.trim().slice(0, 20) || null } })
       setMessage({ ok: true, text: 'Settings saved.' })
     } catch (err) {
       setMessage({ ok: false, text: err instanceof Error ? err.message : 'Saving failed.' })
@@ -124,6 +129,52 @@ export function SettingsPage(): JSX.Element {
                 Costs per sale (€)
                 <input inputMode="decimal" value={form.cost} placeholder="not set" onChange={(e) => setForm((f) => (f ? { ...f, cost: e.target.value } : f))} />
               </label>
+            </div>
+          </fieldset>
+
+          <fieldset className="form-group">
+            <legend>Defaults for new cards</legend>
+            <p className="muted small">Filled in when you add or scan a card; you can still change them per card.</p>
+            <div className="form-grid">
+              <label>
+                Language
+                <select value={form.defaults.language ?? ''} onChange={(e) => setDefault('language', (e.target.value || null) as CardLanguage | null)}>
+                  <option value="">No default</option>
+                  {(Object.keys(LANGUAGE_LABELS) as CardLanguage[]).map((l) => (
+                    <option key={l} value={l}>
+                      {LANGUAGE_LABELS[l]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Condition
+                <select value={form.defaults.condition ?? ''} onChange={(e) => setDefault('condition', (e.target.value || null) as Condition | null)}>
+                  <option value="">No default</option>
+                  {(Object.keys(CONDITION_LABELS) as Condition[]).map((c) => (
+                    <option key={c} value={c}>
+                      {CONDITION_LABELS[c]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Set
+                <input value={form.defaults.set_code ?? ''} maxLength={20} placeholder="e.g. MEW" onChange={(e) => setDefault('set_code', e.target.value || null)} />
+              </label>
+              {locations.length > 0 && (
+                <label>
+                  Location
+                  <select value={form.defaults.location_id ?? ''} onChange={(e) => setDefault('location_id', e.target.value || null)}>
+                    <option value="">No default</option>
+                    {locations.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
             </div>
           </fieldset>
 

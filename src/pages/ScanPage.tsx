@@ -8,6 +8,7 @@ import { listCards } from '../lib/db'
 import { findCandidates, type Candidate } from '../lib/match'
 import { uploadPhoto } from '../lib/photos'
 import { useDbFeature } from '../hooks/useDbFeature'
+import { useNewCardDefaults } from '../hooks/useNewCardDefaults'
 import { useSchemaV2 } from '../hooks/useSchemaV2'
 import { closeSession, earlierInSession, hasScanSessions, itemsFromRows, openSession, saveSessionItems, startSession, type ScanItem, type ScanSession } from '../lib/scanSessions'
 import {
@@ -47,6 +48,7 @@ export function ScanPage(): JSX.Element {
   const [keepPhoto, setKeepPhoto] = useState(false)
   const [photoError, setPhotoError] = useState<string | null>(null)
   const v2 = useSchemaV2() === true
+  const newCardDefaults = useNewCardDefaults()
   // Scansessie (STAP8): tussentijds bewaard, en waarschuwing bij nogmaals dezelfde kaart.
   const sessionsOn = useDbFeature(hasScanSessions) === true
   const [session, setSession] = useState<ScanSession | null>(null)
@@ -140,7 +142,11 @@ export function ScanPage(): JSX.Element {
       return
     }
     setDup(null)
-    setDraft({ values: await draftFromScan(r, c, lang), position: null })
+    // Standaardwaarden (conditie, locatie) aanvullen; wat de scan herkende gaat voor.
+    const { language: _lang, set_code: _set, ...extra } = newCardDefaults
+    void _lang
+    void _set
+    setDraft({ values: { ...extra, ...(await draftFromScan(r, c, lang)) }, position: null })
   }
 
   function rememberAdded(rows: Card[]): void {
