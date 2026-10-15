@@ -9,7 +9,6 @@ import { formatEur } from '../lib/stats'
 import {
   CONDITION_LABELS,
   LANGUAGE_LABELS,
-  LINK_STATUS_LABELS,
   VARIANT_LABELS,
   primaryPhoto,
   statusBadge,
@@ -24,6 +23,7 @@ import { ChangeBadge } from './ChangeBadge'
 import { Foil } from './Foil'
 import { PhotoManager } from './PhotoManager'
 import { PriceChart } from './PriceChart'
+import { ValuePanel } from './ValuePanel'
 import { SaleDialog } from './SaleDialog'
 
 interface Props {
@@ -164,18 +164,12 @@ export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props):
             )}
           </dl>
 
-          {(card.cert_number || card.link_status || card.notes) && (
+          {(card.cert_number || card.notes) && (
             <dl className="detail-meta">
               {card.cert_number && (
                 <div>
                   <dt>Certificate</dt>
                   <dd>{card.cert_number}</dd>
-                </div>
-              )}
-              {card.tcgdex_id && card.link_status && (
-                <div>
-                  <dt>Catalog link</dt>
-                  <dd>{LINK_STATUS_LABELS[card.link_status]}</dd>
                 </div>
               )}
               {card.notes && (
@@ -192,6 +186,8 @@ export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props):
           )}
         </div>
       </div>
+
+      <ValuePanel card={card} price={price} />
 
       {card.kind === 'card' && card.tcgdex_id && <PriceChart tcgdexId={card.tcgdex_id} reverse={card.variant === 'reverse'} />}
 

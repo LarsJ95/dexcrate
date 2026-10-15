@@ -1,6 +1,7 @@
 const API = 'https://api.tcgdex.net/v2'
 
 import type { CardLanguage, Variant } from './types'
+import { parseTcgplayer, type TcgplayerPrice } from './valuation'
 
 /** Talen met eigen sets/nummering in TCGdex. */
 export const LANGS = ['en', 'ja', 'zh-cn', 'zh-tw', 'ko'] as const
@@ -373,6 +374,22 @@ export function cardmarketUrl(idProduct: number | null, searchText: string): str
 
 export function getCardPrice(key: string): Promise<CardmarketPrice | null> {
   return fetchCardPrice(key)
+}
+
+const TCGP_PREFIX = 'tcgdex:tcgp:v1:'
+
+const fetchTcgplayer = memo(async (key: string): Promise<TcgplayerPrice | null> => {
+  const cached = readCache<TcgplayerPrice | 'none'>(TCGP_PREFIX, PRICE_TTL_MS, key)
+  if (cached) return cached === 'none' ? null : cached
+  const data = await fetchCardRaw(key)
+  const price = data ? parseTcgplayer(data) : null
+  writeCache(TCGP_PREFIX, key, price ?? 'none')
+  return price
+})
+
+/** TCGplayer-prijzen (VS, USD) via TCGdex; apart van Cardmarket, nooit omgerekend. */
+export function getTcgplayerPrice(key: string): Promise<TcgplayerPrice | null> {
+  return fetchTcgplayer(key)
 }
 
 /** TCGplayer-productnummer uit variants_detailed[].thirdParty.tcgplayer. */

@@ -20,6 +20,7 @@ import { SetsPage } from '../pages/SetsPage'
 import { overrideSchemaV2ForPreview } from '../lib/db'
 import { overrideTransactionsForPreview } from '../lib/transactions'
 import { overrideGoalForPreview } from '../lib/wishlist'
+import { overrideValuationsForPreview } from '../lib/valuationDb'
 import type { Transaction } from '../lib/transactionTypes'
 import { PurchaseDialog } from '../components/PurchaseDialog'
 import { SaleDialog } from '../components/SaleDialog'
@@ -40,6 +41,8 @@ if (previewV2) overrideSchemaV2ForPreview(true)
 if (params.get('goal') === 'variants') {
   overrideGoalForPreview({ variants: ['normal', 'reverse', 'holo'], languages: [], includeSecret: false, includeIncoming: false, wantedQty: 1 })
 }
+// ?v4=1: doen alsof STAP7 (waarderingen) gedraaid is.
+if (params.get('v4') === '1') overrideValuationsForPreview(true)
 // ?v3=1: doen alsof STAP5 (transacties) gedraaid is.
 if (params.get('v3') === '1') overrideTransactionsForPreview(true)
 

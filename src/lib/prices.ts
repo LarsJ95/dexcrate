@@ -146,7 +146,8 @@ export function summarizeMarket(cards: readonly CardInput[], prices: PriceMap): 
   let changeBase = 0
 
   for (const c of cards) {
-    if (c.status === 'sold' || c.kind !== 'card') continue
+    // Alleen wat je echt hebt: verkocht en onderweg tellen niet mee in de collectiewaarde.
+    if (c.status === 'sold' || c.ownership === 'incoming' || c.kind !== 'card') continue
     if (c.grading_company) graded += c.quantity
     const mv = marketValueOf(c, prices)
     if (!mv) {

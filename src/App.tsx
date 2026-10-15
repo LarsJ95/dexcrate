@@ -10,6 +10,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { ImportPage } from './pages/ImportPage'
 import { MorePage } from './pages/MorePage'
 import { PhotosPage } from './pages/PhotosPage'
+import { SettingsPage } from './pages/SettingsPage'
 import { TransactionsPage } from './pages/TransactionsPage'
 import { WishlistPage } from './pages/WishlistPage'
 import { ScanPage } from './pages/ScanPage'
@@ -59,6 +60,7 @@ function App(): JSX.Element {
       {route === 'transactions' && <TransactionsPage />}
       {route === 'photos' && <PhotosPage />}
       {route === 'import' && <ImportPage />}
+      {route === 'settings' && <SettingsPage />}
       {route === 'more' && <MorePage />}
     </Shell>
   )

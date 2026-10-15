@@ -1,4 +1,4 @@
-import { useMemo, type JSX } from 'react'
+import { useMemo, type JSX, type ReactNode } from 'react'
 import { summarizeMarket, topMovers, type Mover, type PriceMap, type SeriesPoint } from '../lib/prices'
 import { computeStats, formatEur, type Bucket } from '../lib/stats'
 import { thumbPath, type Card } from '../lib/types'
@@ -14,6 +14,8 @@ interface Props {
   series: SeriesPoint[] | null
   /** Kaart openen in de popup. */
   onOpenCard?: (id: string) => void
+  /** Waardeoverzicht onder het hoofdcijfer (kosten, marktwaarde, eigen waardering, resultaat). */
+  breakdown?: ReactNode
 }
 
 const pct = new Intl.NumberFormat('en-IE', { style: 'percent', maximumFractionDigits: 1 })
@@ -79,7 +81,7 @@ function MoverList({
   )
 }
 
-export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard }: Props): JSX.Element {
+export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard, breakdown }: Props): JSX.Element {
   const stats = useMemo(() => computeStats(cards), [cards])
   const market = useMemo(() => summarizeMarket(cards, prices), [cards, prices])
   const movers = useMemo(() => topMovers(cards, prices), [cards, prices])
@@ -120,6 +122,8 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
         )}
         {series && series.length >= 2 && <LineChart points={series} label="Value history" valueLabel="Value" />}
       </div>
+
+      {breakdown}
 
       {!pricesLoading && (
         <div className="movers">
