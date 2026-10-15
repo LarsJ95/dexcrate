@@ -165,6 +165,13 @@ export const IconArchive = (p: IconProps): JSX.Element => (
   </Svg>
 )
 
+export const IconBinder = (p: IconProps): JSX.Element => (
+  <Svg {...p}>
+    <rect x="5" y="3.5" width="14" height="17" rx="1.5" />
+    <path d="M9 3.5v17M12 8h4M12 11.5h4" />
+  </Svg>
+)
+
 export const IconMore = (p: IconProps): JSX.Element => (
   <Svg {...p}>
     <path d="M4 7h16M4 12h16M4 17h16" />

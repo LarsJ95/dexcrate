@@ -14,6 +14,7 @@ import { DashboardView } from '../components/DashboardView'
 import { IconArrowLeft, IconSearch } from '../components/Icons'
 import { BackupPage } from '../pages/BackupPage'
 import { ImportPage } from '../pages/ImportPage'
+import { LocationsPage } from '../pages/LocationsPage'
 import { MorePage } from '../pages/MorePage'
 import { SettingsPage } from '../pages/SettingsPage'
 import { TransactionsPage } from '../pages/TransactionsPage'
@@ -271,7 +272,7 @@ export function Preview(): JSX.Element {
       </Shell>
     )
   }
-  if (page === 'more' || page === 'photos' || page === 'backup' || page === 'settings' || page === 'wishlist' || page === 'transactions' || page === 'import') {
+  if (page === 'more' || page === 'photos' || page === 'backup' || page === 'settings' || page === 'wishlist' || page === 'transactions' || page === 'import' || page === 'locations') {
     return (
       <Shell route={page} email="demo@example.com" theme={theme} onToggleTheme={noop} onSignOut={noop}>
         {page === 'more' && <MorePage />}
@@ -281,6 +282,7 @@ export function Preview(): JSX.Element {
         {page === 'wishlist' && <WishlistPage />}
         {page === 'transactions' && <TransactionsPage />}
         {page === 'import' && <ImportPage />}
+        {page === 'locations' && <LocationsPage param="" />}
       </Shell>
     )
   }

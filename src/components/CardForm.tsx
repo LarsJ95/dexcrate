@@ -30,6 +30,7 @@ import {
 } from '../lib/types'
 import { useCardInfo } from '../hooks/useCardInfo'
 import { useSchemaV2 } from '../hooks/useSchemaV2'
+import { useLocations } from '../hooks/useLocations'
 import { useTransactionsEnabled } from '../hooks/useTransactionsEnabled'
 import { LinkPicker } from './LinkPicker'
 
@@ -70,6 +71,9 @@ interface FormState {
   notes: string
   edition: string
   cert_number: string
+  location_id: string
+  location_page: string
+  location_slot: string
 }
 
 const MAX_QTY = 9999
@@ -105,11 +109,14 @@ function initialState(src: CardInput | null, status: CardStatus): FormState {
     notes: src?.notes ?? '',
     edition: src?.edition ?? '',
     cert_number: src?.cert_number ?? '',
+    location_id: src?.location_id ?? '',
+    location_page: src?.location_page ? String(src.location_page) : '',
+    location_slot: src?.location_slot ? String(src.location_slot) : '',
   }
 }
 
 /** Velden die het formulier niet toont; bij een nieuwe regel overgenomen uit de bron. */
-type Untouched = 'sort_order' | 'image_path' | 'cardmarket_id' | 'location_id' | 'location_page' | 'location_slot' | 'import_batch_id'
+type Untouched = 'sort_order' | 'image_path' | 'cardmarket_id' | 'import_batch_id'
 
 // Foto wordt niet in het formulier bewerkt; bij bijwerken blijft image_path ongemoeid.
 type Validated = { error: string } | { value: Omit<CardInput, Untouched> }
@@ -142,6 +149,10 @@ function validate(f: FormState): Validated {
   if (edition.length > 60) return { error: 'Edition or stamp can be at most 60 characters.' }
   const cert = f.cert_number.trim()
   if (cert.length > 40) return { error: 'Certificate number can be at most 40 characters.' }
+  const page = f.location_id && f.location_page.trim() ? Number(f.location_page) : null
+  const pocket = f.location_id && f.location_slot.trim() ? Number(f.location_slot) : null
+  if (page !== null && (!Number.isInteger(page) || page < 1 || page > 999)) return { error: 'Page must be a whole number from 1 to 999.' }
+  if (pocket !== null && (!Number.isInteger(pocket) || pocket < 1 || pocket > 99)) return { error: 'Pocket must be a whole number from 1 to 99.' }
 
   let grade: number | null = null
   if (f.grading_company || f.grade.trim()) {
@@ -190,6 +201,9 @@ function validate(f: FormState): Validated {
       notes: notes || null,
       edition: sealed || !edition ? null : edition,
       cert_number: sealed || !f.grading_company || !cert ? null : cert,
+      location_id: f.location_id || null,
+      location_page: page,
+      location_slot: pocket,
     },
   }
 }
@@ -267,6 +281,8 @@ export function CardForm({
   const info = useCardInfo(isCard ? form.tcgdex_id : null)
   // Nieuwe velden pas tonen als de database ze kan opslaan (STAP4).
   const v2 = useSchemaV2() === true
+  const locations = useLocations(v2)
+  const chosenLocation = locations.find((l) => l.id === form.location_id) ?? null
   // Met transacties (STAP5) verkoop je via "Sell", zodat opbrengst en kosten worden vastgelegd.
   const salesTracked = useTransactionsEnabled() === true
   const wasSold = card?.ownership === 'sold'
@@ -537,6 +553,36 @@ export function CardForm({
             onSelect={(c, lang) => void onPick(c, lang)}
             onClear={() => setForm((f) => ({ ...f, tcgdex_id: null, link_status: null }))}
           />
+        </Group>
+      )}
+
+      {v2 && locations.length > 0 && (
+        <Group title="Location">
+          <div className="form-grid">
+            <label>
+              Where is it
+              <select value={form.location_id} onChange={(e) => set('location_id', e.target.value)}>
+                <option value="">No location</option>
+                {locations.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {chosenLocation?.page_size && (
+              <>
+                <label>
+                  Page
+                  <input type="number" min={1} max={999} value={form.location_page} onChange={(e) => set('location_page', e.target.value)} />
+                </label>
+                <label>
+                  Pocket
+                  <input type="number" min={1} max={chosenLocation.page_size} value={form.location_slot} onChange={(e) => set('location_slot', e.target.value)} />
+                </label>
+              </>
+            )}
+          </div>
         </Group>
       )}
 

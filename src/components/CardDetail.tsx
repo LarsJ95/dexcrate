@@ -2,7 +2,9 @@ import { useState, type JSX } from 'react'
 import { useCardInfo } from '../hooks/useCardInfo'
 import { useCardPrice } from '../hooks/useCardPrice'
 import { useSchemaV2 } from '../hooks/useSchemaV2'
+import { useLocations } from '../hooks/useLocations'
 import { useTransactionsEnabled } from '../hooks/useTransactionsEnabled'
+import { placeLabel } from '../lib/binder'
 import { updateCard } from '../lib/db'
 import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
@@ -57,6 +59,8 @@ export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props):
   // Eigen foto's beheren kan pas als STAP4 gedraaid is.
   const v2 = useSchemaV2() === true
   const main = primaryPhoto(card)
+  const locations = useLocations(v2)
+  const place = placeLabel(card, new Map(locations.map((l) => [l.id, l])))
 
   const facts = [
     card.language ? LANGUAGE_LABELS[card.language] : null,
@@ -164,8 +168,14 @@ export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props):
             )}
           </dl>
 
-          {(card.cert_number || card.notes) && (
+          {(card.cert_number || card.notes || place) && (
             <dl className="detail-meta">
+              {place && (
+                <div>
+                  <dt>Location</dt>
+                  <dd>{place}</dd>
+                </div>
+              )}
               {card.cert_number && (
                 <div>
                   <dt>Certificate</dt>

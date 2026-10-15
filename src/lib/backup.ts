@@ -6,6 +6,7 @@ export const BACKUP_VERSION = 1
 /** Tabellen in herstelvolgorde (verwijzingen eerst). */
 export const BACKUP_TABLES = [
   'locations',
+  'binder_slots',
   'import_batches',
   'cards',
   'card_photos',
@@ -16,6 +17,7 @@ export const BACKUP_TABLES = [
   'collection_goals',
   'wishlist_items',
   'user_settings',
+  'scan_sessions',
 ] as const
 export type BackupTable = (typeof BACKUP_TABLES)[number]
 
