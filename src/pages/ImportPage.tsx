@@ -1,4 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type JSX } from 'react'
+import { CsvImport } from '../components/CsvImport'
 import { countCards, insertCards } from '../lib/db'
 import { parseWorkbook } from '../lib/excel'
 import { resolveTcgdexIds } from '../lib/match'
@@ -81,9 +82,13 @@ export function ImportPage(): JSX.Element {
   return (
     <section className="page">
       <h1>Import</h1>
+
+      <CsvImport />
+
+      <h2 className="section-title">Your original Excel file</h2>
       {existing !== null && existing > 0 && (
         <p className="notice">
-          Your collection already has {existing} rows. Import is disabled to prevent duplicates.
+          Your collection already has {existing} rows. The Excel import is only for an empty collection; use a CSV file to add more cards.
         </p>
       )}
 

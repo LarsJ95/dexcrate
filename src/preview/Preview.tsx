@@ -13,6 +13,7 @@ import { SetCardSheet } from '../components/SetCardSheet'
 import { DashboardView } from '../components/DashboardView'
 import { IconArrowLeft, IconSearch } from '../components/Icons'
 import { BackupPage } from '../pages/BackupPage'
+import { ImportPage } from '../pages/ImportPage'
 import { MorePage } from '../pages/MorePage'
 import { SettingsPage } from '../pages/SettingsPage'
 import { TransactionsPage } from '../pages/TransactionsPage'
@@ -270,7 +271,7 @@ export function Preview(): JSX.Element {
       </Shell>
     )
   }
-  if (page === 'more' || page === 'photos' || page === 'backup' || page === 'settings' || page === 'wishlist' || page === 'transactions') {
+  if (page === 'more' || page === 'photos' || page === 'backup' || page === 'settings' || page === 'wishlist' || page === 'transactions' || page === 'import') {
     return (
       <Shell route={page} email="demo@example.com" theme={theme} onToggleTheme={noop} onSignOut={noop}>
         {page === 'more' && <MorePage />}
@@ -279,6 +280,7 @@ export function Preview(): JSX.Element {
         {page === 'settings' && <SettingsPage />}
         {page === 'wishlist' && <WishlistPage />}
         {page === 'transactions' && <TransactionsPage />}
+        {page === 'import' && <ImportPage />}
       </Shell>
     )
   }

@@ -2313,6 +2313,37 @@ button.tx-row.void {
   }
 }
 
+/* ---------- CSV-import ---------- */
+.csv-import .file {
+  margin: 0;
+}
+
+.import-table {
+  max-height: 480px;
+}
+
+.import-table td {
+  vertical-align: top;
+}
+
+.import-table tr.invalid {
+  opacity: 0.7;
+}
+
+.import-table td.small span {
+  display: block;
+}
+
+.match-choice {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.notice-inline {
+  color: var(--amber);
+  font-weight: 600;
+}
+
 /* ---------- Waardering ---------- */
 .value-panel {
   display: grid;
