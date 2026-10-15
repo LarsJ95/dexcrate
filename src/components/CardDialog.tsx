@@ -20,6 +20,7 @@ import {
   type Variant,
 } from '../lib/types'
 import { CardImage } from './CardImage'
+import { IconClose } from './Icons'
 import { LinkPicker } from './LinkPicker'
 import { PriceHistory } from './PriceHistory'
 
@@ -299,8 +300,8 @@ export function CardDialog({
       <form onSubmit={onSubmit} noValidate>
         <header className="dialog-head">
           <h2 id="card-dialog-title">{card ? card.name : 'Kaart toevoegen'}</h2>
-          <button type="button" className="ghost icon" onClick={() => ref.current?.close()} aria-label="Sluiten">
-            ✕
+          <button type="button" className="ghost icon-btn" onClick={() => ref.current?.close()} aria-label="Sluiten">
+            <IconClose />
           </button>
         </header>
 
@@ -479,7 +480,7 @@ export function CardDialog({
           <button type="button" className="ghost" onClick={() => ref.current?.close()} disabled={busy}>
             Annuleren
           </button>
-          <button type="submit" disabled={busy}>
+          <button type="submit" className="primary" disabled={busy}>
             {busy ? 'Opslaan…' : 'Opslaan'}
           </button>
         </footer>

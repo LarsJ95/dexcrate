@@ -27,6 +27,8 @@ export interface SetSummary {
   /** Totaal aantal kaarten incl. secret rares; alleen bekend na ophalen van de setdetails. */
   total?: number
   releaseDate?: string | null
+  /** Serie-id (bv. "SV"), nodig om een plaatjes-URL af te leiden. */
+  serieId?: string | null
 }
 
 /** Weergave-info van één kaart. `key` = "<taal>/<kaart-id>", zoals opgeslagen in tcgdex_id. */
@@ -142,6 +144,7 @@ const fetchSet = memo(async (k: string): Promise<{ summary: SetSummary; cards: S
       // Sommige sets (bv. Chinese) hebben een telling maar geen kaartenlijst.
       total: Math.max(countTotal, cards.length),
       releaseDate: optStr(data.releaseDate),
+      serieId: isRecord(data.serie) ? optStr(data.serie.id) : null,
     },
     cards,
   }
@@ -200,7 +203,7 @@ export function matchNumber(cards: readonly SetCard[], number: string): SetCard 
 
 // --- Kaartinfo en prijzen, met cache in localStorage ---
 
-const INFO_PREFIX = 'tcgdex:card:v1:'
+const INFO_PREFIX = 'tcgdex:card:v2:' // v2: afgeleide plaatjes-URL's
 const INFO_TTL_MS = 7 * 24 * 60 * 60 * 1000 // namen/plaatjes veranderen zelden
 const PRICE_PREFIX = 'tcgdex:price:v2:' // v2: met idProduct
 const PRICE_TTL_MS = 6 * 60 * 60 * 1000 // TCGdex ververst prijzen dagelijks
@@ -309,6 +312,11 @@ const fetchCardInfo = memo(async (key: string): Promise<CardInfo | null> => {
     // Japanse/Chinese kaartdetails missen soms het plaatje; de setlijst heeft het wel.
     const set = await getSet(parts.lang, data.set.id)
     image ??= set?.cards.find((c) => c.id === data.id)?.image ?? null
+    // Laatste poging: het plaatje bestaat soms wel op de CDN terwijl de API het niet noemt.
+    // Bestaat het niet, dan valt CardImage via onError terug op "Geen foto".
+    if (!image && set?.summary.serieId && localId) {
+      image = `https://assets.tcgdex.net/${parts.lang}/${set.summary.serieId}/${data.set.id}/${localId}`
+    }
     logo ??= set?.summary.logo ?? null
   }
   const info: CardInfo = {

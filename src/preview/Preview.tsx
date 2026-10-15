@@ -1,0 +1,77 @@
+/**
+ * Ontwerppreview (alleen dev, http://localhost:5173/preview.html?theme=dark&page=collectie).
+ * Echte componenten met verzonnen voorbeelddata, zodat het uiterlijk zonder inloggen te bekijken is.
+ */
+import { useMemo, type JSX } from 'react'
+import { CardTile } from '../components/CardTile'
+import { Shell } from '../components/Shell'
+import type { MarketValue } from '../lib/prices'
+import type { Route } from '../lib/routes'
+import { EMPTY_CARD, type Card, type CardInput } from '../lib/types'
+
+const params = new URLSearchParams(location.search)
+const theme = params.get('theme') === 'light' ? 'light' : 'dark'
+document.documentElement.dataset.theme = theme
+
+let n = 0
+function demo(patch: Partial<CardInput>): Card {
+  n += 1
+  return {
+    ...EMPTY_CARD,
+    name: 'Demo',
+    ...patch,
+    id: `demo-${n}`,
+    user_id: 'demo',
+    created_at: '',
+    updated_at: '',
+  }
+}
+
+const CARDS: { card: Card; market: MarketValue | null }[] = [
+  { card: demo({ name: 'Mew ex', set_code: 'MEW', card_number: '151', tcgdex_id: 'en/sv03.5-151', purchase_price: 6.5, variant: 'holo', condition: 'NM' }), market: { value: 7.34, basis: 'trend', reverse: false, change30: 0.06 } },
+  { card: demo({ name: 'Charizard ex', set_code: 'MEW', card_number: '6', tcgdex_id: 'en/sv03.5-006', status: 'for_sale', sale_price: 8.35 }), market: { value: 7.9, basis: 'trend', reverse: false, change30: -0.04 } },
+  { card: demo({ name: 'Oranguru V', set_code: 'ASR', card_number: '133', tcgdex_id: 'en/swsh10-133', purchase_price: 0.75 }), market: { value: 0.77, basis: 'trend', reverse: false, change30: 0 } },
+  { card: demo({ name: 'Mega Charizard X ex', set_code: 'PFL', card_number: '13', tcgdex_id: 'en/me02-013', status: 'sold', sale_price: 24 }), market: { value: 22.1, basis: 'trend', reverse: false, change30: 0.12 } },
+  { card: demo({ name: 'Vivillon', set_code: 'SV8', card_number: '107', tcgdex_id: 'ja/SV8-107', language: 'ja', quantity: 3, purchase_price: 1.5 }), market: { value: 1.28, basis: 'trend', reverse: false, change30: -0.09 } },
+  { card: demo({ name: 'Arbok', set_code: 'TEF', card_number: '176', tcgdex_id: 'en/sv05-176', grading_company: 'PSA', grade: 10, purchase_price: 40 }), market: { value: 3.1, basis: 'trend', reverse: false, change30: 0.02 } },
+  { card: demo({ name: 'Chaos Rising Booster Box', kind: 'sealed', purchase_price: 201.9 }), market: null },
+  { card: demo({ name: 'Morpeko', set_code: 'CBB3C', card_number: '14', language: 'zh-cn', purchase_price: 3.5 }), market: null },
+]
+
+export function Preview(): JSX.Element {
+  const page = (params.get('page') ?? 'collectie') as Route
+  const noop = useMemo(() => () => undefined, [])
+  return (
+    <Shell route={page} email="demo@voorbeeld.nl" theme={theme} onToggleTheme={noop} onSignOut={noop}>
+      <section className="page">
+        <div className="page-head">
+          <div>
+            <h1>Collectie</h1>
+            <p className="muted">12 stuks, marktwaarde € 61,73</p>
+          </div>
+          <button type="button" className="primary">Kaart toevoegen</button>
+        </div>
+        <div className="filters">
+          <div className="search">
+            <input type="search" placeholder="Zoek op naam, set, nummer of kanaal" aria-label="Zoeken" />
+          </div>
+          <div className="segmented" role="group" aria-label="Status">
+            <button type="button" aria-pressed="true">In bezit <span className="count">10</span></button>
+            <button type="button" aria-pressed="false">In collectie <span className="count">8</span></button>
+            <button type="button" aria-pressed="false">Te koop <span className="count">2</span></button>
+            <button type="button" aria-pressed="false">Verkocht <span className="count">1</span></button>
+          </div>
+          <select aria-label="Sorteren">
+            <option>Volgorde van invoer</option>
+          </select>
+        </div>
+        <ul className="binder">
+          {CARDS.map(({ card, market }) => (
+            <CardTile key={card.id} card={card} market={market} onOpen={noop} onToggleSold={noop} />
+          ))}
+        </ul>
+      </section>
+    </Shell>
+  )
+}
+

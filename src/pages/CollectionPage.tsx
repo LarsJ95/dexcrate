@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type JSX } from 'react'
 import { CardDialog } from '../components/CardDialog'
 import { CardTile } from '../components/CardTile'
+import { IconPlus, IconSearch } from '../components/Icons'
 import { useMarketPrices } from '../hooks/useMarketPrices'
 import { listCards, updateCard } from '../lib/db'
 import { marketValueOf, type MarketValue } from '../lib/prices'
@@ -179,19 +180,23 @@ export function CollectionPage(): JSX.Element {
             </p>
           )}
         </div>
-        <button type="button" onClick={() => setEditing({ id: null })}>
+        <button type="button" className="primary" onClick={() => setEditing({ id: null })}>
+          <IconPlus size={18} />
           Kaart toevoegen
         </button>
       </div>
 
       <div className="filters">
-        <input
-          type="search"
-          placeholder="Zoek op naam, set, nummer of kanaal"
-          aria-label="Zoeken"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
+        <div className="search">
+          <IconSearch size={18} />
+          <input
+            type="search"
+            placeholder="Zoek op naam, set, nummer of kanaal"
+            aria-label="Zoeken"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
         <div className="segmented" role="group" aria-label="Status">
           {FILTERS.map(([key, label]) => (
             <button key={key} type="button" aria-pressed={filter === key} onClick={() => setFilter(key)}>

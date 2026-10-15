@@ -1,46 +1,89 @@
-:root {
-  --page: #e9eef5;
-  --surface: #ffffff;
-  --sleeve: #f7f9fc;
-  --ink: #14213d;
-  --muted: #56617a;
-  --line: #cfd7e3;
+/* ==========================================================================
+   Kaartenmap: ontwerpsysteem
+   Donker marineblauw als basis, Pokémon-geel als enige felle accent.
+   Kaartfoto's zijn de blikvanger; de interface eromheen blijft rustig.
+   ========================================================================== */
+
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #0a1226;
+  --bg-glow: rgb(61 125 202 / 0.14);
+  --surface: #111b36;
+  --surface-2: #17244a;
+  --surface-3: #1e2d5a;
+  --line: #24335f;
+  --line-strong: #34477d;
+  --ink: #eaf0ff;
+  --ink-soft: #c3cde8;
+  --muted: #8f9dc4;
+
   --yellow: #ffcb05;
-  --navy: #14213d;
-  --on-navy: #ffffff;
-  --sold: #12805a;
-  --sold-bg: #dff3ea;
-  --forsale: #8a5a00;
-  --forsale-bg: #fff3c4;
-  --danger: #c4320a;
-  --radius-s: 6px;
-  --radius-m: 10px;
+  --yellow-hover: #ffd83d;
+  --on-yellow: #1a1300;
+  --blue: #5b9bff;
+  --red: #ff6257;
+  --green: #3fd99a;
+  --amber: #ffb547;
+
+  --green-bg: rgb(63 217 154 / 0.14);
+  --amber-bg: rgb(255 181 71 / 0.15);
+  --red-bg: rgb(255 98 87 / 0.14);
+
+  --logo-top: #ff6257;
+  --logo-bottom: #eaf0ff;
+  --logo-band: #0a1226;
+
+  --shadow-card: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 8px 24px rgb(0 0 0 / 0.25);
+  --shadow-pop: 0 18px 48px rgb(0 0 0 / 0.45);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #f2f5fb;
+  --bg-glow: rgb(61 125 202 / 0.1);
+  --surface: #ffffff;
+  --surface-2: #eef2fa;
+  --surface-3: #e3e9f6;
+  --line: #dbe2ef;
+  --line-strong: #c3cde2;
+  --ink: #0e1a3a;
+  --ink-soft: #2c3a63;
+  --muted: #5a6789;
+
+  --blue: #2563eb;
+  --red: #d63a2f;
+  --green: #0e8f5b;
+  --amber: #a35f00;
+
+  --green-bg: rgb(14 143 91 / 0.1);
+  --amber-bg: rgb(255 181 71 / 0.22);
+  --red-bg: rgb(214 58 47 / 0.1);
+
+  --logo-top: #e3463b;
+  --logo-bottom: #ffffff;
+  --logo-band: #0e1a3a;
+
+  --shadow-card: 0 1px 2px rgb(14 26 58 / 0.06), 0 6px 18px rgb(14 26 58 / 0.06);
+  --shadow-pop: 0 18px 48px rgb(14 26 58 / 0.18);
+}
+
+:root {
+  --radius-s: 8px;
+  --radius-m: 12px;
+  --radius-l: 18px;
+  --sidebar: 236px;
+  --tabbar: 64px;
 
   font-family: 'Archivo', system-ui, 'Segoe UI', Roboto, sans-serif;
   font-size: 16px;
-  line-height: 1.45;
-  color-scheme: light dark;
+  line-height: 1.5;
   color: var(--ink);
-  background: var(--page);
+  background: var(--bg);
   -webkit-font-smoothing: antialiased;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --page: #0d1424;
-    --surface: #162038;
-    --sleeve: #1b2744;
-    --ink: #e7ecf6;
-    --muted: #9aa6bf;
-    --line: #2a3756;
-    --navy: #ffcb05;
-    --on-navy: #14213d;
-    --sold: #5fd3a1;
-    --sold-bg: #123a2d;
-    --forsale: #ffd75e;
-    --forsale-bg: #3a3112;
-    --danger: #ff8a65;
-  }
+  text-rendering: optimizeLegibility;
 }
 
 *,
@@ -52,7 +95,10 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--page);
+  background:
+    radial-gradient(1200px 600px at 85% -10%, var(--bg-glow), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
 }
 
 h1,
@@ -62,21 +108,77 @@ h3 {
   font-weight: 800;
   line-height: 1.1;
   margin: 0;
+  letter-spacing: -0.005em;
 }
 
 p {
   margin: 0;
 }
 
+a {
+  color: var(--blue);
+}
+
+/* ---------- Knoppen ---------- */
 button {
   font: inherit;
   font-weight: 600;
   cursor: pointer;
-  border: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px solid var(--line);
   border-radius: var(--radius-s);
   padding: 0.6rem 1rem;
-  background: var(--navy);
-  color: var(--on-navy);
+  background: var(--surface-2);
+  color: var(--ink);
+  transition: background-color 120ms, border-color 120ms, transform 120ms;
+}
+
+button:hover:not(:disabled) {
+  background: var(--surface-3);
+  border-color: var(--line-strong);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+button.primary {
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: var(--on-yellow);
+}
+
+button.primary:hover:not(:disabled) {
+  background: var(--yellow-hover);
+  border-color: var(--yellow-hover);
+}
+
+button.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink-soft);
+}
+
+button.ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--line);
+}
+
+button.danger {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+
+button.danger-text {
+  color: var(--red);
+}
+
+button.icon-btn {
+  padding: 0.5rem;
 }
 
 button:disabled {
@@ -84,31 +186,62 @@ button:disabled {
   cursor: not-allowed;
 }
 
-:is(button, a, input, select, summary):focus-visible {
-  outline: 3px solid var(--yellow);
+:is(button, a, input, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--yellow);
   outline-offset: 2px;
 }
 
+/* ---------- Formulieren ---------- */
 input,
 select {
   font: inherit;
-  padding: 0.55rem 0.7rem;
+  padding: 0.6rem 0.75rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-s);
-  background: var(--surface);
+  background: var(--surface-2);
   color: var(--ink);
   min-width: 0;
+  transition: border-color 120ms, background-color 120ms;
+}
+
+input:hover,
+select:hover {
+  border-color: var(--line-strong);
+}
+
+input:focus,
+select:focus {
+  border-color: var(--blue);
+  background: var(--surface);
+}
+
+input::placeholder {
+  color: var(--muted);
 }
 
 input[type='radio'],
 input[type='checkbox'] {
-  accent-color: var(--navy);
-  width: 1.1rem;
-  height: 1.1rem;
+  accent-color: var(--yellow);
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+input[type='date'] {
+  color-scheme: inherit;
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *,
+  *::before,
+  *::after {
     transition: none !important;
     animation: none !important;
   }

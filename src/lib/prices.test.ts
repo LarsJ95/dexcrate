@@ -21,13 +21,18 @@ const price = (patch: Partial<CardmarketPrice>): CardmarketPrice => ({
 
 describe('marketValue', () => {
   it('gebruikt de trendprijs, anders 30- of 7-daags gemiddelde', () => {
-    expect(marketValue(price({ trend: 1.5, avg30: 2 }), null)).toEqual({ value: 1.5, basis: 'trend', reverse: false })
+    expect(marketValue(price({ trend: 1.5, avg30: 2 }), null)).toEqual({ value: 1.5, basis: 'trend', reverse: false, change30: -0.25 })
     expect(marketValue(price({ avg30: 2, avg7: 3 }), 'holo')?.basis).toBe('avg30')
     expect(marketValue(price({ avg7: 3 }), 'normal')?.basis).toBe('avg7')
   })
 
   it('reverse holo gebruikt de holo-velden en valt niet terug op de normale prijs', () => {
-    expect(marketValue(price({ trend: 0.08, trendHolo: 0.28 }), 'reverse')).toEqual({ value: 0.28, basis: 'trend', reverse: true })
+    expect(marketValue(price({ trend: 0.08, trendHolo: 0.28 }), 'reverse')).toEqual({
+      value: 0.28,
+      basis: 'trend',
+      reverse: true,
+      change30: null,
+    })
     expect(marketValue(price({ trend: 0.74 }), 'reverse')).toBeNull()
   })
 

@@ -1,9 +1,12 @@
 import { useEffect, useState, type JSX } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { Login } from './components/Login'
+import { Shell } from './components/Shell'
+import { ROUTES } from './lib/routes'
 import { useHashRoute } from './hooks/useHashRoute'
-import { DashboardPage } from './pages/DashboardPage'
+import { useTheme } from './hooks/useTheme'
 import { CollectionPage } from './pages/CollectionPage'
+import { DashboardPage } from './pages/DashboardPage'
 import { ImportPage } from './pages/ImportPage'
 import { ScanPage } from './pages/ScanPage'
 import { SetBinderPage } from './pages/SetBinderPage'
@@ -11,21 +14,11 @@ import { SetsPage } from './pages/SetsPage'
 import { supabase } from './lib/supabase'
 import './App.css'
 
-const ROUTES = ['overzicht', 'collectie', 'scan', 'sets', 'import'] as const
-type Route = (typeof ROUTES)[number]
-
-const NAV: { route: Route; label: string }[] = [
-  { route: 'overzicht', label: 'Overzicht' },
-  { route: 'collectie', label: 'Collectie' },
-  { route: 'scan', label: 'Scannen' },
-  { route: 'sets', label: 'Sets' },
-  { route: 'import', label: 'Import' },
-]
-
 function App(): JSX.Element {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const { route, param } = useHashRoute(ROUTES, 'overzicht')
+  const { theme, toggle } = useTheme()
 
   useEffect(() => {
     supabase.auth
@@ -39,6 +32,11 @@ function App(): JSX.Element {
     return () => data.subscription.unsubscribe()
   }, [])
 
+  // Nieuwe pagina: bovenaan beginnen.
+  useEffect(() => {
+    window.scrollTo({ top: 0 })
+  }, [route, param])
+
   async function signOut(): Promise<void> {
     const { error } = await supabase.auth.signOut()
     if (error) console.error('Uitloggen mislukt', error)
@@ -48,28 +46,13 @@ function App(): JSX.Element {
   if (!session) return <Login />
 
   return (
-    <>
-      <header className="topbar">
-        <span className="brand">Kaartenmap</span>
-        <nav className="tabs" aria-label="Hoofdmenu">
-          {NAV.map((n) => (
-            <a key={n.route} href={`#/${n.route}`} aria-current={route === n.route ? 'page' : undefined}>
-              {n.label}
-            </a>
-          ))}
-        </nav>
-        <button type="button" className="ghost" onClick={signOut}>
-          Uitloggen
-        </button>
-      </header>
-      <main>
-        {route === 'overzicht' && <DashboardPage />}
-        {route === 'collectie' && <CollectionPage />}
-        {route === 'scan' && <ScanPage />}
-        {route === 'sets' && (param ? <SetBinderPage key={param} param={param} /> : <SetsPage />)}
-        {route === 'import' && <ImportPage />}
-      </main>
-    </>
+    <Shell route={route} email={session.user.email ?? null} theme={theme} onToggleTheme={toggle} onSignOut={() => void signOut()}>
+      {route === 'overzicht' && <DashboardPage />}
+      {route === 'collectie' && <CollectionPage />}
+      {route === 'scan' && <ScanPage />}
+      {route === 'sets' && (param ? <SetBinderPage key={param} param={param} /> : <SetsPage />)}
+      {route === 'import' && <ImportPage />}
+    </Shell>
   )
 }
 

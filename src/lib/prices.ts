@@ -7,7 +7,12 @@ export interface MarketValue {
   basis: 'trend' | 'avg30' | 'avg7'
   /** Reverse-holoprijs gebruikt. */
   reverse: boolean
+  /** Beweging: trend t.o.v. 30-daags gemiddelde (0,1 = +10%); null als niet te bepalen. */
+  change30: number | null
 }
+
+const change = (now: number | null, base: number | null): number | null =>
+  now !== null && base !== null && base > 0 ? now / base - 1 : null
 
 /**
  * Marktwaarde van één exemplaar: Cardmarket-trend, anders 30- of 7-daags gemiddelde.
@@ -17,9 +22,9 @@ export function marketValue(p: CardmarketPrice | null | undefined, variant: Vari
   if (!p) return null
   const reverse = variant === 'reverse'
   const [trend, avg30, avg7] = reverse ? [p.trendHolo, p.avg30Holo, p.avg7Holo] : [p.trend, p.avg30, p.avg7]
-  if (trend !== null) return { value: trend, basis: 'trend', reverse }
-  if (avg30 !== null) return { value: avg30, basis: 'avg30', reverse }
-  if (avg7 !== null) return { value: avg7, basis: 'avg7', reverse }
+  if (trend !== null) return { value: trend, basis: 'trend', reverse, change30: change(trend, avg30) }
+  if (avg30 !== null) return { value: avg30, basis: 'avg30', reverse, change30: null }
+  if (avg7 !== null) return { value: avg7, basis: 'avg7', reverse, change30: change(avg7, avg30) }
   return null
 }
 

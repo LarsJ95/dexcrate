@@ -4,6 +4,7 @@ import type { MarketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
 import { CONDITION_LABELS, STATUS_LABELS, VARIANT_LABELS, type Card } from '../lib/types'
 import { CardImage } from './CardImage'
+import { ChangeBadge } from './ChangeBadge'
 
 interface Props {
   card: Card
@@ -16,9 +17,9 @@ interface Props {
 }
 
 /** De prijs die bij de status hoort: vraag-/verkoopprijs, of wat je betaalde. */
-function shownPrice(card: Card): { label: string; value: number } | null {
+function ownPrice(card: Card): { label: string; value: number } | null {
   if (card.status !== 'collection' && card.sale_price !== null) {
-    return { label: card.status === 'sold' ? 'Verkocht voor' : 'Vraagprijs', value: card.sale_price }
+    return { label: card.status === 'sold' ? 'Verkocht' : 'Vraagprijs', value: card.sale_price }
   }
   if (card.purchase_price !== null) return { label: 'Betaald', value: card.purchase_price }
   return null
@@ -27,64 +28,62 @@ function shownPrice(card: Card): { label: string; value: number } | null {
 function CardTileBase({ card, market, onOpen, onToggleSold, busy }: Props): JSX.Element {
   const info = useCardInfo(card.tcgdex_id)
   const setLabel = info?.set.name ?? card.set_code
-  const price = shownPrice(card)
+  const own = ownPrice(card)
   const details = [
     card.variant && card.variant !== 'normal' ? VARIANT_LABELS[card.variant] : null,
     card.condition ? CONDITION_LABELS[card.condition] : null,
-    card.grading_company ? `${card.grading_company} ${card.grade ?? ''}`.trim() : null,
   ].filter(Boolean)
+  const showMarket = card.kind === 'card' && card.tcgdex_id !== null
 
   return (
     <li className={`tile status-${card.status}`}>
-      <button type="button" className="tile-open" onClick={() => onOpen(card.id)} aria-label={`${card.name} bewerken`}>
+      <button type="button" className="tile-open" onClick={() => onOpen(card.id)} aria-label={`${card.name} openen`}>
         <CardImage tcgdexId={card.tcgdex_id} kind={card.kind} name={card.name} />
+        <span className="sheen" aria-hidden="true" />
+        {card.status !== 'collection' && <span className={`status-badge ${card.status}`}>{STATUS_LABELS[card.status]}</span>}
         {card.quantity > 1 && <span className="qty-badge">{card.quantity}×</span>}
-        {card.grading_company && <span className="grade-badge">{card.grading_company} {card.grade}</span>}
+        {card.grading_company && (
+          <span className="grade-badge">
+            {card.grading_company} {card.grade}
+          </span>
+        )}
       </button>
+
       <div className="tile-body">
         <p className="tile-name" title={card.name}>{card.name}</p>
         <p className="tile-meta">
-          {card.kind === 'sealed' ? 'Sealed product' : [setLabel, card.card_number].filter(Boolean).join(' ')}
+          {card.kind === 'sealed' ? 'Sealed product' : [setLabel, card.card_number && `#${card.card_number}`].filter(Boolean).join(' ')}
+          {details.length > 0 && <span>, {details.join(', ')}</span>}
         </p>
-        {details.length > 0 && <p className="tile-meta">{details.join(', ')}</p>}
-        <p className="tile-price">
-          {price ? (
-            <>
-              <span className="muted small">{price.label} </span>
-              <strong>{formatEur(price.value)}</strong>
-            </>
-          ) : (
-            <span className="muted small">Geen prijs</span>
+
+        <dl className="tile-prices">
+          <div>
+            <dt>{own?.label ?? 'Prijs'}</dt>
+            <dd>{own ? formatEur(own.value) : '–'}</dd>
+          </div>
+          {showMarket && (
+            <div className="tile-market">
+              <dt>Markt{card.grading_company ? ' (raw)' : ''}</dt>
+              <dd>
+                {market === undefined ? '…' : market ? formatEur(market.value) : '–'}
+                {market && <ChangeBadge change={market.change30} />}
+              </dd>
+            </div>
           )}
-        </p>
-        {card.kind === 'card' && card.tcgdex_id && market !== undefined && (
-          <p className="tile-market small">
-            {market ? (
-              <>
-                Markt <strong>{formatEur(market.value)}</strong>
-                {card.grading_company && <span className="muted"> (ongegradeerd)</span>}
-              </>
-            ) : (
-              <span className="muted">Geen marktprijs</span>
-            )}
-          </p>
+        </dl>
+
+        {card.status !== 'collection' && (
+          <button
+            type="button"
+            className={`status-toggle${card.status === 'sold' ? ' on' : ''}`}
+            aria-pressed={card.status === 'sold'}
+            title={card.status === 'sold' ? 'Terugzetten naar te koop' : undefined}
+            disabled={busy}
+            onClick={() => onToggleSold(card.id)}
+          >
+            {card.status === 'sold' ? 'Verkocht ✓' : 'Markeer als verkocht'}
+          </button>
         )}
-        <div className="tile-foot">
-          {card.status === 'collection' ? (
-            <span className="status-pill">{STATUS_LABELS.collection}</span>
-          ) : (
-            <button
-              type="button"
-              className={`status-toggle${card.status === 'sold' ? ' on' : ''}`}
-              aria-pressed={card.status === 'sold'}
-              aria-label={`${card.name}: ${STATUS_LABELS[card.status]}. Klik om te wisselen tussen te koop en verkocht.`}
-              disabled={busy}
-              onClick={() => onToggleSold(card.id)}
-            >
-              {STATUS_LABELS[card.status]}
-            </button>
-          )}
-        </div>
       </div>
     </li>
   )
