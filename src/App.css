@@ -1010,7 +1010,7 @@ label.check {
 
 .chart .axis {
   fill: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-small);
   font-family: inherit;
 }
 
@@ -1043,7 +1043,7 @@ label.check {
   background: var(--surface-3);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-s);
-  font-size: 0.82rem;
+  font-size: var(--fs-small);
   white-space: nowrap;
   pointer-events: none;
   box-shadow: var(--shadow-float);
@@ -1052,7 +1052,7 @@ label.check {
 .chart details summary {
   cursor: pointer;
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: var(--fs-small);
 }
 
 .table-scroll {
@@ -1808,7 +1808,7 @@ a.stat:hover {
 }
 
 .form-group {
-  gap: var(--space-2);
+  gap: var(--gap-inner);
   padding-top: var(--space-3);
 }
 
@@ -1817,7 +1817,7 @@ a.stat:hover {
 }
 
 .form-grid {
-  gap: var(--space-2) var(--space-3);
+  gap: var(--gap-inner);
 }
 
 .card-form label {
@@ -1835,7 +1835,7 @@ a.stat:hover {
 
 @media (max-width: 560px) {
   .sheet-body {
-    padding: var(--space-3) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+    padding: var(--space-4) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
   }
 
   .form-grid {

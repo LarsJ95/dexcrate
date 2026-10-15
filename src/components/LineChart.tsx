@@ -9,7 +9,7 @@ export interface Point {
 /** Startbreedte; daarna de echte breedte van het vak, zodat tekst niet mee-schaalt. */
 const DEFAULT_W = 600
 const H = 170
-const PAD = { top: 12, right: 12, bottom: 24, left: 52 }
+const PAD = { top: 12, right: 12, bottom: 28, left: 64 }
 
 const dateFmt = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' })
 const fullDateFmt = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
