@@ -1527,6 +1527,38 @@ a.stat:hover {
   border-radius: var(--radius-l);
 }
 
+/* Twee pagina's naast elkaar op brede schermen, zoals een opengeslagen map. */
+.binder-pages {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 540px));
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.binder-page {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.binder-page-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.set-binder {
+  max-width: none;
+}
+
+.cost-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
 .slot {
   position: relative;
   border-radius: 6px;

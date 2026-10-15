@@ -14,6 +14,9 @@ interface Row extends Group {
   summary: SetSummary | null
 }
 
+type SortKey = 'progress' | 'name' | 'release' | 'owned'
+type Filter = 'all' | 'almost' | 'complete'
+
 const pct = new Intl.NumberFormat('nl-NL', { style: 'percent', maximumFractionDigits: 0 })
 
 /** Kaarten in bezit (niet verkocht) gegroepeerd per set. */
@@ -34,10 +37,14 @@ function groupOwnedBySet(cards: readonly Card[]): Group[] {
   return [...map.values()]
 }
 
+const ratioOf = (r: Row): number => (r.summary?.total ? Math.min(1, r.owned.size / r.summary.total) : 0)
+
 export function SetsPage(): JSX.Element {
   const [cards, setCards] = useState<Card[] | null>(null)
   const [rows, setRows] = useState<Row[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [sort, setSort] = useState<SortKey>('progress')
+  const [filter, setFilter] = useState<Filter>('all')
 
   useEffect(() => {
     let cancelled = false
@@ -45,9 +52,8 @@ export function SetsPage(): JSX.Element {
       .then((list) => {
         if (cancelled) return
         setCards(list)
-        const groups = groupOwnedBySet(list)
         return Promise.all(
-          groups.map(async (g) => ({
+          groupOwnedBySet(list).map(async (g) => ({
             ...g,
             summary: await getSet(g.lang, g.setId)
               .then((s) => s?.summary ?? null)
@@ -68,9 +74,30 @@ export function SetsPage(): JSX.Element {
     }
   }, [])
 
-  const sorted = useMemo(() => {
-    const ratio = (r: Row): number => (r.summary?.total ? r.owned.size / r.summary.total : 0)
-    return [...(rows ?? [])].sort((a, b) => ratio(b) - ratio(a) || b.owned.size - a.owned.size)
+  const visible = useMemo(() => {
+    const list = (rows ?? []).filter((r) => {
+      const ratio = ratioOf(r)
+      if (filter === 'complete') return ratio >= 1
+      if (filter === 'almost') return ratio >= 0.75 && ratio < 1
+      return true
+    })
+    const name = (r: Row): string => r.summary?.name ?? r.setId
+    const sorters: Record<SortKey, (a: Row, b: Row) => number> = {
+      progress: (a, b) => ratioOf(b) - ratioOf(a) || b.owned.size - a.owned.size,
+      owned: (a, b) => b.owned.size - a.owned.size,
+      name: (a, b) => name(a).localeCompare(name(b), 'nl'),
+      release: (a, b) => (b.summary?.releaseDate ?? '').localeCompare(a.summary?.releaseDate ?? ''),
+    }
+    return [...list].sort(sorters[sort])
+  }, [rows, sort, filter])
+
+  const counts = useMemo(() => {
+    const all = rows ?? []
+    return {
+      all: all.length,
+      almost: all.filter((r) => ratioOf(r) >= 0.75 && ratioOf(r) < 1).length,
+      complete: all.filter((r) => ratioOf(r) >= 1).length,
+    }
   }, [rows])
 
   const unlinked = useMemo(
@@ -90,20 +117,44 @@ export function SetsPage(): JSX.Element {
         </div>
       </div>
 
+      <div className="filters">
+        <div className="segmented" role="group" aria-label="Filter">
+          {(
+            [
+              ['all', 'Alle sets'],
+              ['almost', 'Bijna compleet'],
+              ['complete', 'Compleet'],
+            ] as const
+          ).map(([key, label]) => (
+            <button key={key} type="button" aria-pressed={filter === key} onClick={() => setFilter(key)}>
+              {label} <span className="count">{counts[key]}</span>
+            </button>
+          ))}
+        </div>
+        <select aria-label="Sorteren" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
+          <option value="progress">Voortgang</option>
+          <option value="owned">Aantal in bezit</option>
+          <option value="release">Nieuwste eerst</option>
+          <option value="name">Naam A–Z</option>
+        </select>
+      </div>
+
       {unlinked > 0 && (
         <p className="notice">
           {unlinked} {unlinked === 1 ? 'kaart telt' : 'kaarten tellen'} niet mee omdat ze nog niet gekoppeld zijn.
         </p>
       )}
-      {sorted.length === 0 && <p className="empty">Nog geen gekoppelde kaarten in bezit.</p>}
+      {rows.length === 0 && <p className="empty">Nog geen gekoppelde kaarten in bezit.</p>}
+      {rows.length > 0 && visible.length === 0 && <p className="empty">Geen sets voor dit filter.</p>}
 
       <ul className="set-list">
-        {sorted.map((r) => {
+        {visible.map((r) => {
           const total = r.summary?.total ?? 0
-          const ratio = total ? Math.min(1, r.owned.size / total) : 0
+          const ratio = ratioOf(r)
+          const name = r.summary?.name ?? r.setId
           return (
             <li key={`${r.lang}/${r.setId}`}>
-              <a className="set-row" href={`#/sets/${r.lang}/${encodeURIComponent(r.setId)}`}>
+              <a className={`set-row${ratio >= 1 ? ' set-complete' : ''}`} href={`#/sets/${r.lang}/${encodeURIComponent(r.setId)}`}>
                 <span className="set-logo">
                   {r.summary?.logo ? (
                     <img
@@ -117,14 +168,24 @@ export function SetsPage(): JSX.Element {
                   ) : null}
                 </span>
                 <span className="set-info">
-                  <span className="set-name">{r.summary?.name ?? r.setId}</span>
-                  <span className="meter" role="meter" aria-valuemin={0} aria-valuemax={total || 1} aria-valuenow={r.owned.size} aria-label={`${r.summary?.name ?? r.setId}: ${r.owned.size} van ${total || '?'}`}>
+                  <span className="set-name">{name}</span>
+                  <span
+                    className="meter"
+                    role="meter"
+                    aria-valuemin={0}
+                    aria-valuemax={total || 1}
+                    aria-valuenow={r.owned.size}
+                    aria-label={`${name}: ${r.owned.size} van ${total || '?'}`}
+                  >
                     <span className="meter-fill" style={{ width: `${ratio * 100}%` }} />
                   </span>
+                  {r.summary?.releaseDate && <span className="muted small">{r.summary.releaseDate.slice(0, 4)}</span>}
                 </span>
                 <span className="set-count">
-                  <strong>{r.owned.size}</strong>/{total || '?'}
-                  {total > 0 && <span className="muted small"> {pct.format(ratio)}</span>}
+                  <span>
+                    <strong>{r.owned.size}</strong>/{total || '?'}
+                  </span>
+                  {total > 0 && <span className="muted small">{pct.format(ratio)}</span>}
                 </span>
               </a>
             </li>

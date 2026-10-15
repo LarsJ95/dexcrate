@@ -2,12 +2,12 @@
  * Ontwerppreview (alleen dev, http://localhost:5173/preview.html?theme=dark&page=collectie).
  * Echte componenten met verzonnen voorbeelddata, zodat het uiterlijk zonder inloggen te bekijken is.
  */
-import { useMemo, type JSX } from 'react'
+import { useEffect, useMemo, useState, type JSX } from 'react'
 import { CardTile } from '../components/CardTile'
 import { Shell } from '../components/Shell'
 import { DashboardView } from '../components/DashboardView'
 import type { MarketValue, PriceMap } from '../lib/prices'
-import type { CardmarketPrice } from '../lib/tcgdex'
+import { getSet, imageUrl, type CardmarketPrice, type SetCard } from '../lib/tcgdex'
 import type { Route } from '../lib/routes'
 import { EMPTY_CARD, type Card, type CardInput } from '../lib/types'
 
@@ -73,9 +73,67 @@ const SERIES = Array.from({ length: 30 }, (_, i) => ({
   value: 160 + Math.round((Math.sin(i / 4) * 8 + i * 0.6) * 100) / 100,
 }))
 
+/** Binder-uiterlijk met een echte set (151) en verzonnen bezit. */
+function BinderPreview(): JSX.Element {
+  const [cards, setCards] = useState<SetCard[]>([])
+  const cols = params.get('cols') === '4' ? 4 : 3
+  const size = cols * 3
+  useEffect(() => {
+    getSet('en', 'sv03.5')
+      .then((s) => setCards(s?.cards.slice(0, size * 2) ?? []))
+      .catch((err: unknown) => console.error(err))
+  }, [size])
+  const pages = [cards.slice(0, size), cards.slice(size, size * 2)]
+  return (
+    <section className="page">
+      <a href="#/sets" className="back">← Alle sets</a>
+      <div className="page-head">
+        <div>
+          <h1>151</h1>
+          <p className="muted">11 van 207 kaarten in bezit, uitgebracht 2023-09-22</p>
+        </div>
+      </div>
+      <div className="panel cost-panel">
+        <div>
+          <span className="stat-label">Kosten om af te maken</span>
+          <p className="meter-value">€ 1.284,55</p>
+          <p className="muted small">196 ontbrekende kaarten tegen Cardmarket-trendprijs; 3 zonder prijs (niet meegeteld).</p>
+        </div>
+        <button type="button" className="primary">Opnieuw berekenen</button>
+      </div>
+      <div className="binder-pages">
+        {pages.map((page, i) => (
+          <section key={i} className="binder-page">
+            <p className="binder-page-label">Pagina {i + 1}</p>
+            <ul className="binder set-binder" style={{ ['--binder-cols' as string]: cols }}>
+              {page.map((c, j) => {
+                const have = (i * size + j) % 3 === 0
+                return (
+                  <li key={c.id} className={`slot${have ? ' have' : ' missing'}`}>
+                    <img className="card-img" src={imageUrl(c.image, 'low') ?? ''} alt="" />
+                    <span className="slot-num">{c.localId}</span>
+                    {!have && <span className="slot-price">€ {(j * 0.37 + 0.1).toFixed(2).replace('.', ',')}</span>}
+                  </li>
+                )
+              })}
+            </ul>
+          </section>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 export function Preview(): JSX.Element {
   const page = (params.get('page') ?? 'collectie') as Route
   const noop = useMemo(() => () => undefined, [])
+  if (page === 'sets') {
+    return (
+      <Shell route={page} email="demo@voorbeeld.nl" theme={theme} onToggleTheme={noop} onSignOut={noop}>
+        <BinderPreview />
+      </Shell>
+    )
+  }
   if (page === 'overzicht') {
     return (
       <Shell route={page} email="demo@voorbeeld.nl" theme={theme} onToggleTheme={noop} onSignOut={noop}>
