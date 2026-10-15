@@ -213,6 +213,8 @@ export interface Card extends CardInput {
   updated_at: string
   /** Eigen foto's (leeg vóór STAP4 of als er geen zijn). */
   photos: CardPhoto[]
+  /** Deel-verkoop: de regel waaruit deze is afgesplitst (sinds STAP5); anders null. */
+  split_from: string | null
 }
 
 /** Hoofdfoto: de gemarkeerde, anders de oudste; null als er geen is. */

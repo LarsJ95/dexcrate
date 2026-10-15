@@ -9,6 +9,7 @@ import {
   OWNERSHIP_LABELS,
   PHOTO_LABELS,
   VARIANT_LABELS,
+  EMPTY_CARD,
   deriveStatus,
   fromStatus,
   type Card,
@@ -101,6 +102,7 @@ export function toCard(r: unknown): Card | null {
     import_batch_id: strOrNull(r.import_batch_id),
     sort_order: Math.trunc(numOrNull(r.sort_order) ?? 0),
     photos,
+    split_from: strOrNull(r.split_from),
   }
 }
 
@@ -153,7 +155,11 @@ export function hasSchemaV2(): Promise<boolean> {
  * (de kolom bestaat alleen na STAP3). Sinds STAP4: zonder image_path (foto's staan in card_photos).
  */
 export function toRow(input: Partial<CardInput>, v2: boolean): Record<string, unknown> {
-  const row: Record<string, unknown> = { ...input }
+  // Alleen kaartvelden: een volledige Card (id, photos, ...) als bron mag geen database-velden meesturen.
+  const row: Record<string, unknown> = {}
+  for (const key of Object.keys(EMPTY_CARD) as (keyof CardInput)[]) {
+    if (key in input) row[key] = input[key]
+  }
   if (input.ownership !== undefined && input.availability !== undefined) {
     row.status = deriveStatus(input.ownership, input.availability)
   }

@@ -92,6 +92,13 @@ describe('toRow (app → database)', () => {
     expect(toRow({ image_path: null }, false)).toEqual({ image_path: null })
   })
 
+  it('volledige kaart als bron: geen id, fotos of andere databasevelden meesturen (splitsen)', () => {
+    const full = { ...input, id: 'x', user_id: 'u', created_at: '', updated_at: '', photos: [], split_from: null }
+    const row = toRow(full, true)
+    for (const f of ['id', 'user_id', 'created_at', 'updated_at', 'photos', 'split_from']) expect(f in row).toBe(false)
+    expect(row.name).toBe('Mew')
+  })
+
   it('met STAP4 nooit de oude fotokolom', () => {
     const row = toRow({ ...input, image_path: 'u/oud.jpg' }, true)
     expect('image_path' in row).toBe(false)

@@ -51,6 +51,7 @@ function demo(patch: Partial<CardInput>): Card {
     created_at: '',
     updated_at: '',
     photos: [],
+    split_from: null,
   }
 }
 
