@@ -7,7 +7,9 @@ import { CardPicture } from '../components/CardPicture'
 import { listCards } from '../lib/db'
 import { findCandidates, type Candidate } from '../lib/match'
 import { uploadPhoto } from '../lib/photos'
+import { useDbFeature } from '../hooks/useDbFeature'
 import { useSchemaV2 } from '../hooks/useSchemaV2'
+import { closeSession, earlierInSession, hasScanSessions, itemsFromRows, openSession, saveSessionItems, startSession, type ScanItem, type ScanSession } from '../lib/scanSessions'
 import {
   draftFromScan,
   prepareImage,
@@ -45,6 +47,24 @@ export function ScanPage(): JSX.Element {
   const [keepPhoto, setKeepPhoto] = useState(false)
   const [photoError, setPhotoError] = useState<string | null>(null)
   const v2 = useSchemaV2() === true
+  // Scansessie (STAP8): tussentijds bewaard, en waarschuwing bij nogmaals dezelfde kaart.
+  const sessionsOn = useDbFeature(hasScanSessions) === true
+  const [session, setSession] = useState<ScanSession | null>(null)
+  const [sessionError, setSessionError] = useState<string | null>(null)
+  const [dup, setDup] = useState<{ candidate: Candidate | null; recognition: Recognition; lang: Lang; earlier: ScanItem } | null>(null)
+
+  useEffect(() => {
+    if (!sessionsOn) return
+    let cancelled = false
+    openSession()
+      .then((s) => {
+        if (!cancelled) setSession(s)
+      })
+      .catch((err: unknown) => console.warn('Scansessie laden mislukt', err))
+    return () => {
+      cancelled = true
+    }
+  }, [sessionsOn])
 
   useEffect(() => {
     let cancelled = false
@@ -110,16 +130,50 @@ export function ScanPage(): JSX.Element {
     }
   }
 
-  async function chooseSingle(c: Candidate | null, r: Recognition, lang: Lang): Promise<void> {
+  async function chooseSingle(c: Candidate | null, r: Recognition, lang: Lang, force = false): Promise<void> {
+    // Al in deze sessie toegevoegd? Eerst vragen, zodat je niet per ongeluk dezelfde kaart twee keer toevoegt.
+    const earlier = session
+      ? earlierInSession(session.items, { tcgdex_id: c?.key ?? null, variant: r.variant, name: r.nameEnglish || r.namePrinted, set_code: r.setCode || null, card_number: r.cardNumber || null })
+      : null
+    if (earlier && !force) {
+      setDup({ candidate: c, recognition: r, lang, earlier })
+      return
+    }
+    setDup(null)
     setDraft({ values: await draftFromScan(r, c, lang), position: null })
   }
 
   function rememberAdded(rows: Card[]): void {
+    if (sessionsOn) void addToSession(rows)
     setCards((list) => [...list, ...rows])
     setAdded((a) => [...a, ...rows.map((r) => r.name)].slice(-8))
   }
 
+  async function addToSession(rows: Card[]): Promise<void> {
+    try {
+      const s = session ?? (await startSession())
+      const items = [...s.items, ...itemsFromRows(rows)]
+      await saveSessionItems(s.id, items)
+      setSession({ ...s, items })
+      setSessionError(null)
+    } catch (err) {
+      setSessionError(err instanceof Error ? err.message : 'Saving the scan session failed.')
+    }
+  }
+
+  async function endSession(): Promise<void> {
+    if (!session) return
+    try {
+      await closeSession(session.id)
+      setSession(null)
+      setAdded([])
+    } catch (err) {
+      setSessionError(err instanceof Error ? err.message : 'Closing the scan session failed.')
+    }
+  }
+
   function reset(): void {
+    setDup(null)
     setPhase({ kind: 'idle' })
     setImage(null)
   }
@@ -167,9 +221,35 @@ export function ScanPage(): JSX.Element {
         aria-hidden="true"
       />
 
-      {added.length > 0 && (
-        <p className="success" role="status">
-          Added: {added.join(', ')}
+      {session && session.items.length > 0 ? (
+        <div className="panel scan-session">
+          <div className="sheet-foot">
+            <span className="stat-label">
+              This session: {session.items.reduce((n, i) => n + i.quantity, 0)} cards, saved
+            </span>
+            <span className="spacer" />
+            <button type="button" className="ghost small-btn" onClick={() => void endSession()}>
+              End session
+            </button>
+          </div>
+          <p className="small">
+            {session.items
+              .slice(-8)
+              .map((i) => `${i.quantity > 1 ? `${i.quantity}× ` : ''}${i.name}`)
+              .join(', ')}
+            {session.items.length > 8 ? ` and ${session.items.length - 8} more` : ''}
+          </p>
+        </div>
+      ) : (
+        added.length > 0 && (
+          <p className="success" role="status">
+            Added: {added.join(', ')}
+          </p>
+        )
+      )}
+      {sessionError && (
+        <p className="error" role="alert">
+          {sessionError}
         </p>
       )}
       {photoError && (
@@ -230,7 +310,7 @@ export function ScanPage(): JSX.Element {
       {phase.kind === 'single' && (
         <div className="scan-result">
           <div className="panel">
-            <span className="stat-label">Herkend</span>
+            <span className="stat-label">Recognised</span>
             <p className="scan-name">{phase.recognition.nameEnglish || phase.recognition.namePrinted}</p>
             <p className="muted small">
               {[
@@ -245,6 +325,24 @@ export function ScanPage(): JSX.Element {
             </p>
             {phase.recognition.notes && <p className="muted small">{phase.recognition.notes}</p>}
           </div>
+
+          {dup && (
+            <div className="notice" role="alert">
+              <p>
+                You already added {dup.earlier.name}
+                {dup.earlier.card_number ? ` #${dup.earlier.card_number}` : ''} in this session
+                {dup.earlier.at ? ` at ${new Date(dup.earlier.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : ''}. Is this another copy?
+              </p>
+              <div className="sheet-foot">
+                <button type="button" className="primary" onClick={() => void chooseSingle(dup.candidate, dup.recognition, dup.lang, true)}>
+                  Add another copy
+                </button>
+                <button type="button" className="ghost" onClick={reset}>
+                  Skip, it’s the same card
+                </button>
+              </div>
+            </div>
+          )}
 
           <h2>Pick the right card</h2>
           {phase.candidates.length === 0 && (
@@ -267,7 +365,7 @@ export function ScanPage(): JSX.Element {
                     />
                     <span className="cand-name">{c.name}</span>
                     <span className="muted small">{c.setName} {c.localId}</span>
-                    <span className="cand-reason small">{i === 0 ? 'Beste match' : c.reason}</span>
+                    <span className="cand-reason small">{i === 0 ? 'Best match' : c.reason}</span>
                     {owned && <span className="small">Owned {owned}×</span>}
                   </button>
                 </li>
