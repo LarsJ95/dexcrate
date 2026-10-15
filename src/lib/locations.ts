@@ -9,7 +9,7 @@ const intOrNull = (v: unknown): number | null => (typeof v === 'number' && Numbe
 
 function toLocation(r: unknown): Location | null {
   if (!isRecord(r) || typeof r.id !== 'string' || typeof r.name !== 'string') return null
-  const kind = typeof r.kind === 'string' && r.kind in LOCATION_KIND_LABELS ? (r.kind as Location['kind']) : 'other'
+  const kind = typeof r.kind === 'string' && Object.hasOwn(LOCATION_KIND_LABELS, r.kind) ? (r.kind as Location['kind']) : 'other'
   return { id: r.id, name: r.name, kind, page_size: intOrNull(r.page_size), sort_order: intOrNull(r.sort_order) ?? 0 }
 }
 
@@ -18,7 +18,7 @@ function toPlanned(r: unknown): PlannedSlot | null {
   const page = intOrNull(r.page)
   const slot = intOrNull(r.slot)
   if (page === null || slot === null) return null
-  const variant = typeof r.variant === 'string' && r.variant in VARIANT_LABELS ? (r.variant as Variant) : null
+  const variant = typeof r.variant === 'string' && Object.hasOwn(VARIANT_LABELS, r.variant) ? (r.variant as Variant) : null
   return { id: r.id, location_id: r.location_id, page, slot, tcgdex_id: typeof r.tcgdex_id === 'string' ? r.tcgdex_id : null, label: r.label, variant }
 }
 

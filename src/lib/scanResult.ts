@@ -32,7 +32,7 @@ function toRecognition(r: Record<string, unknown>, index: number): Recognition {
     position: typeof r.position === 'number' && Number.isInteger(r.position) ? r.position : index + 1,
     namePrinted: str(r.name_printed),
     nameEnglish: str(r.name_english),
-    language: lang in LANGUAGE_LABELS ? (lang as CardLanguage) : null,
+    language: Object.hasOwn(LANGUAGE_LABELS, lang) ? (lang as CardLanguage) : null,
     setCode: str(r.set_code),
     cardNumber: str(r.card_number),
     setTotal: str(r.set_total),

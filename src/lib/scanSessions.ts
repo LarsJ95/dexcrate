@@ -33,7 +33,7 @@ export function toItem(r: unknown): ScanItem | null {
     set_code: str(r.set_code),
     card_number: str(r.card_number),
     tcgdex_id: str(r.tcgdex_id),
-    variant: typeof r.variant === 'string' && r.variant in VARIANT_LABELS ? (r.variant as Variant) : null,
+    variant: typeof r.variant === 'string' && Object.hasOwn(VARIANT_LABELS, r.variant) ? (r.variant as Variant) : null,
     quantity: typeof r.quantity === 'number' && r.quantity > 0 ? r.quantity : 1,
     at: str(r.at) ?? '',
   }

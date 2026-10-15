@@ -34,7 +34,7 @@ const numOrNull = (v: unknown): number | null => {
 
 /** Waarde alleen accepteren als die in de lijst met toegestane sleutels staat. */
 function oneOf<K extends string>(v: unknown, allowed: Record<K, unknown>): K | null {
-  return typeof v === 'string' && v in allowed ? (v as K) : null
+  return typeof v === 'string' && Object.hasOwn(allowed, v) ? (v as K) : null
 }
 
 const STATUSES: Record<CardStatus, true> = { collection: true, for_sale: true, sold: true }

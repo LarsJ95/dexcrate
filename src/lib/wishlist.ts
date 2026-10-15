@@ -13,7 +13,7 @@ const numOrNull = (v: unknown): number | null => {
   return Number.isFinite(n) ? n : null
 }
 function oneOf<K extends string>(v: unknown, allowed: Record<K, unknown>): K | null {
-  return typeof v === 'string' && v in allowed ? (v as K) : null
+  return typeof v === 'string' && Object.hasOwn(allowed, v) ? (v as K) : null
 }
 
 let schemaCheck: Promise<boolean> | null = null
