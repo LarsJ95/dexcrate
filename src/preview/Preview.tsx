@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState, type JSX } from 'react'
 import { CardTile } from '../components/CardTile'
 import { Shell } from '../components/Shell'
 import { DashboardView } from '../components/DashboardView'
+import { ScanPage } from '../pages/ScanPage'
 import type { MarketValue, PriceMap } from '../lib/prices'
 import { getSet, imageUrl, type CardmarketPrice, type SetCard } from '../lib/tcgdex'
 import type { Route } from '../lib/routes'
@@ -127,6 +128,13 @@ function BinderPreview(): JSX.Element {
 export function Preview(): JSX.Element {
   const page = (params.get('page') ?? 'collectie') as Route
   const noop = useMemo(() => () => undefined, [])
+  if (page === 'scan') {
+    return (
+      <Shell route={page} email="demo@voorbeeld.nl" theme={theme} onToggleTheme={noop} onSignOut={noop}>
+        <ScanPage />
+      </Shell>
+    )
+  }
   if (page === 'sets') {
     return (
       <Shell route={page} email="demo@voorbeeld.nl" theme={theme} onToggleTheme={noop} onSignOut={noop}>
