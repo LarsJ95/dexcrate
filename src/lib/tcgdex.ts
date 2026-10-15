@@ -26,6 +26,8 @@ export interface SetSummary {
   abbr?: string | null
   /** Totaal aantal kaarten incl. secret rares; alleen bekend na ophalen van de setdetails. */
   total?: number
+  /** Officiële telling (zonder secret rares); alleen bekend na ophalen van de setdetails. */
+  official?: number | null
   releaseDate?: string | null
   /** Serie-id (bv. "SV"), nodig om een plaatjes-URL af te leiden. */
   serieId?: string | null
@@ -185,6 +187,7 @@ const fetchSet = memo(async (k: string): Promise<{ summary: SetSummary; cards: S
   if (!isRecord(data) || typeof data.id !== 'string') return null
   const cards = parseCards(data.cards)
   const countTotal = isRecord(data.cardCount) && typeof data.cardCount.total === 'number' ? data.cardCount.total : 0
+  const countOfficial = isRecord(data.cardCount) && typeof data.cardCount.official === 'number' ? data.cardCount.official : null
   return {
     summary: {
       id: data.id,
@@ -193,6 +196,7 @@ const fetchSet = memo(async (k: string): Promise<{ summary: SetSummary; cards: S
       abbr: isRecord(data.abbreviation) ? optStr(data.abbreviation.official) : null,
       // Sommige sets (bv. Chinese) hebben een telling maar geen kaartenlijst.
       total: Math.max(countTotal, cards.length),
+      official: countOfficial,
       releaseDate: optStr(data.releaseDate),
       serieId: isRecord(data.serie) ? optStr(data.serie.id) : null,
     },

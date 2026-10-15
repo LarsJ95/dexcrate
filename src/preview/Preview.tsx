@@ -19,6 +19,7 @@ import { SetBinderPage } from '../pages/SetBinderPage'
 import { SetsPage } from '../pages/SetsPage'
 import { overrideSchemaV2ForPreview } from '../lib/db'
 import { overrideTransactionsForPreview } from '../lib/transactions'
+import { overrideGoalForPreview } from '../lib/wishlist'
 import type { Transaction } from '../lib/transactionTypes'
 import { PurchaseDialog } from '../components/PurchaseDialog'
 import { SaleDialog } from '../components/SaleDialog'
@@ -35,6 +36,10 @@ document.documentElement.dataset.theme = theme
 // ?v2=1: doen alsof STAP4 gedraaid is (nieuwe velden en foto's zichtbaar).
 const previewV2 = params.get('v2') === '1'
 if (previewV2) overrideSchemaV2ForPreview(true)
+// ?goal=variants: doen alsof STAP6 gedraaid is, met een doel per uitvoering (normaal + reverse + holo).
+if (params.get('goal') === 'variants') {
+  overrideGoalForPreview({ variants: ['normal', 'reverse', 'holo'], languages: [], includeSecret: false, includeIncoming: false, wantedQty: 1 })
+}
 // ?v3=1: doen alsof STAP5 (transacties) gedraaid is.
 if (params.get('v3') === '1') overrideTransactionsForPreview(true)
 
