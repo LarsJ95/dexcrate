@@ -219,3 +219,9 @@ export interface Card extends CardInput {
 export function primaryPhoto(c: Pick<Card, 'photos'>): CardPhoto | null {
   return c.photos.find((p) => p.is_primary) ?? c.photos[0] ?? null
 }
+
+/** Kleine versie van de hoofdfoto voor tegels en lijsten (of de oude enkele foto van vóór STAP4). */
+export function thumbPath(c: Pick<Card, 'photos' | 'image_path'>): string | null {
+  const p = primaryPhoto(c)
+  return p ? (p.thumb_path ?? p.path) : c.image_path
+}

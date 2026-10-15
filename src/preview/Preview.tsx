@@ -15,6 +15,7 @@ import { IconArrowLeft, IconSearch } from '../components/Icons'
 import { ScanPage } from '../pages/ScanPage'
 import { SetBinderPage } from '../pages/SetBinderPage'
 import { SetsPage } from '../pages/SetsPage'
+import { overrideSchemaV2ForPreview } from '../lib/db'
 import type { MarketValue, PriceMap } from '../lib/prices'
 import { getSet, imageUrl, type CardmarketPrice, type SetCard } from '../lib/tcgdex'
 import type { Route } from '../lib/routes'
@@ -23,6 +24,10 @@ import { EMPTY_CARD, fromStatus, type Card, type CardInput } from '../lib/types'
 const params = new URLSearchParams(location.search)
 const theme = params.get('theme') === 'light' ? 'light' : 'dark'
 document.documentElement.dataset.theme = theme
+
+// ?v2=1: doen alsof STAP4 gedraaid is (nieuwe velden en foto's zichtbaar).
+const previewV2 = params.get('v2') === '1'
+if (previewV2) overrideSchemaV2ForPreview(true)
 
 // ?freeze=1: holo-glans midden in de beweging stilzetten, voor screenshots.
 if (params.get('freeze') === '1') {
@@ -48,7 +53,16 @@ function demo(patch: Partial<CardInput>): Card {
 }
 
 const CARDS: { card: Card; market: MarketValue | null }[] = [
-  { card: demo({ name: 'Mew ex', set_code: 'MEW', card_number: '151', tcgdex_id: 'en/sv03.5-151', purchase_price: 6.5, variant: 'holo', condition: 'NM' }), market: { value: 7.34, basis: 'trend', reverse: false, change30: 0.06 } },
+  {
+    card: {
+      ...demo({ name: 'Mew ex', set_code: 'MEW', card_number: '151', tcgdex_id: 'en/sv03.5-151', purchase_price: 6.5, variant: 'holo', condition: 'NM', notes: previewV2 ? 'Bought at the Utrecht card fair.' : null }),
+      photos: previewV2
+        ? [
+            { id: 'ph1', card_id: 'demo-1', path: 'demo/1.jpg', thumb_path: 'demo/1-thumb.jpg', label: 'front', is_primary: true, created_at: '2026-10-01' },
+            { id: 'ph2', card_id: 'demo-1', path: 'demo/2.jpg', thumb_path: 'demo/2-thumb.jpg', label: 'back', is_primary: false, created_at: '2026-10-02' },
+          ]
+        : [],
+    }, market: { value: 7.34, basis: 'trend', reverse: false, change30: 0.06 } },
   { card: demo({ name: 'Charizard ex', set_code: 'MEW', card_number: '6', tcgdex_id: 'en/sv03.5-006', status: 'for_sale', sale_price: 8.35, variant: 'reverse' }), market: { value: 7.9, basis: 'trend', reverse: false, change30: -0.04 } },
   { card: demo({ name: 'Oranguru V', set_code: 'ASR', card_number: '133', tcgdex_id: 'en/swsh10-133', purchase_price: 0.75 }), market: { value: 0.77, basis: 'trend', reverse: false, change30: 0 } },
   { card: demo({ name: 'Mega Charizard X ex', set_code: 'PFL', card_number: '13', tcgdex_id: 'en/me02-013', status: 'sold', sale_price: 24 }), market: { value: 22.1, basis: 'trend', reverse: false, change30: 0.12 } },

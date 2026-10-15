@@ -1,17 +1,33 @@
-import { updateCard } from './db'
+import { toPhoto } from './db'
 import { supabase } from './supabase'
-import type { Card } from './types'
+import type { CardPhoto, PhotoLabel } from './types'
 
 const BUCKET = 'card-photos'
-/** Klein genoeg voor snelle lijsten (±100 KB), groot genoeg om de kaart te herkennen. */
-const MAX_EDGE = 900
+const TABLE = 'card_photos'
+const COLUMNS = 'id, card_id, path, thumb_path, label, is_primary, created_at'
+/** Weergaveversie: scherp genoeg om in te zoomen. */
+const DISPLAY_EDGE = 2000
+/** Thumbnail voor overzichten (±30 KB). */
+const THUMB_EDGE = 400
+const MAX_ORIGINAL_BYTES = 25 * 1024 * 1024
 /** Ondertekende links zijn een uur geldig; we vernieuwen ruim op tijd. */
 const URL_TTL_S = 60 * 60
 const URL_REFRESH_MS = 50 * 60 * 1000
 
-async function shrink(source: Blob): Promise<Blob> {
-  const bitmap = await createImageBitmap(source, { imageOrientation: 'from-image' })
-  const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height))
+interface Resized {
+  blob: Blob
+  width: number
+  height: number
+}
+
+async function resize(source: Blob, maxEdge: number, quality: number): Promise<Resized> {
+  let bitmap: ImageBitmap
+  try {
+    bitmap = await createImageBitmap(source, { imageOrientation: 'from-image' })
+  } catch {
+    throw new Error('This browser cannot read this photo format. Use JPEG, PNG or WebP.')
+  }
+  const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height))
   const canvas = document.createElement('canvas')
   canvas.width = Math.round(bitmap.width * scale)
   canvas.height = Math.round(bitmap.height * scale)
@@ -19,47 +35,142 @@ async function shrink(source: Blob): Promise<Blob> {
   if (!ctx) throw new Error('This browser cannot process photos.')
   ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
   bitmap.close()
-  return new Promise<Blob>((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not compress the photo.'))), 'image/jpeg', 0.85),
+  const blob = await new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not compress the photo.'))), 'image/jpeg', quality),
   )
+  return { blob, width: canvas.width, height: canvas.height }
 }
 
-function friendly(message: string): string {
-  // Bucket of kolom bestaat nog niet: STAP3 is niet gedraaid.
-  if (/bucket not found|image_path/i.test(message)) return 'Photo storage is not set up yet (run STAP3 in Supabase).'
+/** Foutmelding begrijpelijk maken; ontbrekende tabel of bucket betekent dat STAP4 nog niet gedraaid is. */
+export function friendlyPhotoError(message: string): string {
+  if (/bucket not found|card_photos|relation .* does not exist|schema cache/i.test(message)) {
+    return 'Photo storage is not set up yet (run STAP4 in Supabase).'
+  }
   return message
 }
 
-/** Slaat een foto op als eigen afbeelding van de kaart en geeft de bijgewerkte kaart terug. */
-export async function setCardPhoto(card: Card, photo: Blob): Promise<Card> {
-  const { data: auth, error: authError } = await supabase.auth.getUser()
-  if (authError || !auth.user) throw new Error('Not signed in.')
-  const blob = await shrink(photo)
-  const path = `${auth.user.id}/${card.id}-${Date.now()}.jpg`
-  const { error } = await supabase.storage.from(BUCKET).upload(path, blob, { contentType: 'image/jpeg', upsert: false })
-  if (error) throw new Error(friendly(`Uploading the photo failed: ${error.message}`))
-  let updated: Card
-  try {
-    updated = await updateCard(card.id, { image_path: path })
-  } catch (err) {
-    await supabase.storage.from(BUCKET).remove([path])
-    throw new Error(friendly(err instanceof Error ? err.message : 'Saving the photo failed.'))
-  }
-  if (card.image_path) await removeFile(card.image_path)
-  return updated
+const EXTENSIONS: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/heic': 'heic',
+  'image/heif': 'heif',
+  'image/gif': 'gif',
 }
 
-/** Verwijdert de eigen foto van een kaart. */
-export async function clearCardPhoto(card: Card): Promise<Card> {
-  const updated = await updateCard(card.id, { image_path: null })
-  if (card.image_path) await removeFile(card.image_path)
-  return updated
+/** Bestandsextensie voor het origineel; onbekend type → "bin" (wordt dan niet als plaatje geserveerd). */
+export function originalExtension(type: string): string {
+  return EXTENSIONS[type.toLowerCase()] ?? 'bin'
 }
 
-async function removeFile(path: string): Promise<void> {
-  const { error } = await supabase.storage.from(BUCKET).remove([path])
+async function currentUserId(): Promise<string> {
+  const { data, error } = await supabase.auth.getUser()
+  if (error || !data.user) throw new Error('Not signed in.')
+  return data.user.id
+}
+
+async function removeFiles(paths: readonly string[]): Promise<void> {
+  if (paths.length === 0) return
+  const { error } = await supabase.storage.from(BUCKET).remove([...paths])
   // Een achtergebleven bestand is niet erg; wel loggen.
-  if (error) console.warn('Oude foto verwijderen mislukt', error)
+  if (error) console.warn('Fotobestanden verwijderen mislukt', error)
+}
+
+function single(data: unknown, action: string): CardPhoto {
+  const photo = toPhoto(data)
+  if (!photo) throw new Error(`${action} failed: unexpected response from the database.`)
+  return photo
+}
+
+export interface UploadOptions {
+  /** Kaartregel; null = foto-inbox (later koppelen). */
+  cardId: string | null
+  label: PhotoLabel
+  /** Direct als hoofdfoto instellen (bv. eerste foto van een kaart). */
+  makePrimary?: boolean
+}
+
+/**
+ * Eén foto opslaan: origineel ongewijzigd, plus een weergaveversie en een thumbnail.
+ * Mislukt een stap, dan worden al geüploade bestanden opgeruimd.
+ */
+export async function uploadPhoto(file: Blob, fileName: string | null, opts: UploadOptions): Promise<CardPhoto> {
+  if (file.size > MAX_ORIGINAL_BYTES) throw new Error('This photo is too large (max. 25 MB).')
+  const uid = await currentUserId()
+  const display = await resize(file, DISPLAY_EDGE, 0.88)
+  const thumb = await resize(file, THUMB_EDGE, 0.8)
+  const id = crypto.randomUUID()
+  const files: { path: string; blob: Blob; type: string }[] = [
+    { path: `${uid}/${id}.jpg`, blob: display.blob, type: 'image/jpeg' },
+    { path: `${uid}/${id}-thumb.jpg`, blob: thumb.blob, type: 'image/jpeg' },
+    { path: `${uid}/${id}-original.${originalExtension(file.type)}`, blob: file, type: file.type || 'application/octet-stream' },
+  ]
+  const uploaded: string[] = []
+  try {
+    for (const f of files) {
+      const { error } = await supabase.storage.from(BUCKET).upload(f.path, f.blob, { contentType: f.type, upsert: false })
+      if (error) throw new Error(friendlyPhotoError(`Uploading the photo failed: ${error.message}`))
+      uploaded.push(f.path)
+    }
+    const { data, error } = await supabase
+      .from(TABLE)
+      .insert({
+        id,
+        card_id: opts.cardId,
+        path: files[0].path,
+        thumb_path: files[1].path,
+        original_path: files[2].path,
+        original_name: fileName ? fileName.slice(0, 200) : null,
+        label: opts.label,
+        is_primary: false,
+        width: display.width,
+        height: display.height,
+        bytes: file.size,
+      })
+      .select(COLUMNS)
+      .single()
+    if (error) throw new Error(friendlyPhotoError(`Saving the photo failed: ${error.message}`))
+    const photo = single(data, 'Saving the photo')
+    return opts.makePrimary && opts.cardId ? await setPrimaryPhoto(photo) : photo
+  } catch (err) {
+    await removeFiles(uploaded)
+    throw err
+  }
+}
+
+/** Hoofdfoto instellen: eerst de huidige uitzetten (er mag er maar één zijn), dan deze aanzetten. */
+export async function setPrimaryPhoto(photo: CardPhoto): Promise<CardPhoto> {
+  if (!photo.card_id) throw new Error('Link the photo to a card first.')
+  const off = await supabase.from(TABLE).update({ is_primary: false }).eq('card_id', photo.card_id).eq('is_primary', true)
+  if (off.error) throw new Error(friendlyPhotoError(`Updating the photo failed: ${off.error.message}`))
+  const { data, error } = await supabase.from(TABLE).update({ is_primary: true }).eq('id', photo.id).select(COLUMNS).single()
+  if (error) throw new Error(friendlyPhotoError(`Updating the photo failed: ${error.message}`))
+  return single(data, 'Updating the photo')
+}
+
+/** Label wijzigen of de foto aan een (andere) kaartregel koppelen; null = terug naar de inbox. */
+export async function updatePhoto(id: string, patch: { label?: PhotoLabel; card_id?: string | null }): Promise<CardPhoto> {
+  // Verplaatsen naar een andere kaart: niet als hoofdfoto meenemen.
+  const body = 'card_id' in patch ? { ...patch, is_primary: false } : patch
+  const { data, error } = await supabase.from(TABLE).update(body).eq('id', id).select(COLUMNS).single()
+  if (error) throw new Error(friendlyPhotoError(`Updating the photo failed: ${error.message}`))
+  return single(data, 'Updating the photo')
+}
+
+/** Foto definitief verwijderen: eerst de rij, dan de bestanden (origineel, weergave, thumbnail). */
+export async function deletePhoto(photo: CardPhoto): Promise<void> {
+  const { data, error } = await supabase.from(TABLE).delete().eq('id', photo.id).select('original_path')
+  if (error) throw new Error(friendlyPhotoError(`Deleting the photo failed: ${error.message}`))
+  const row = Array.isArray(data) ? (data[0] as Record<string, unknown> | undefined) : undefined
+  const original = typeof row?.original_path === 'string' ? row.original_path : null
+  await removeFiles([photo.path, photo.thumb_path, original].filter((p): p is string => Boolean(p)))
+}
+
+/** Foto's die nog aan geen kaart gekoppeld zijn, nieuwste eerst. */
+export async function listInboxPhotos(): Promise<CardPhoto[]> {
+  const { data, error } = await supabase.from(TABLE).select(COLUMNS).is('card_id', null).order('created_at', { ascending: false })
+  if (error) throw new Error(friendlyPhotoError(`Loading photos failed: ${error.message}`))
+  return (data as unknown[]).flatMap((r) => toPhoto(r) ?? [])
 }
 
 // --- Ondertekende links, gebundeld opgevraagd (één verzoek voor een hele lijst) ---

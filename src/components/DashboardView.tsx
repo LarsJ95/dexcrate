@@ -1,7 +1,7 @@
 import { useMemo, type JSX } from 'react'
 import { summarizeMarket, topMovers, type Mover, type PriceMap, type SeriesPoint } from '../lib/prices'
 import { computeStats, formatEur, type Bucket } from '../lib/stats'
-import type { Card } from '../lib/types'
+import { thumbPath, type Card } from '../lib/types'
 import { CardImage } from './CardImage'
 import { ChangeBadge } from './ChangeBadge'
 import { LineChart } from './LineChart'
@@ -59,7 +59,7 @@ function MoverList({
               {/* Naam uit de zichtbare tekst (naam, nummer, prijs); de thumbnail herhaalt alleen de naam. */}
               <button type="button" className="mover" onClick={() => onOpenCard?.(card.id)}>
                 <span aria-hidden="true">
-                  <CardImage tcgdexId={card.tcgdex_id} kind={card.kind} name={card.name} photoPath={card.image_path}
+                  <CardImage tcgdexId={card.tcgdex_id} kind={card.kind} name={card.name} photoPath={thumbPath(card)}
             detail={[card.set_code, card.card_number && `#${card.card_number}`].filter(Boolean).join(' ')} />
                 </span>
                 <span className="mover-name">

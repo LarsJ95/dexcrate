@@ -129,6 +129,11 @@ export const V2_FIELDS = [
 
 let schemaCheck: Promise<boolean> | null = null
 
+/** Alleen voor de ontwerppreview (dev): schemaversie vastzetten zonder database. */
+export function overrideSchemaV2ForPreview(v2: boolean): void {
+  schemaCheck = Promise.resolve(v2)
+}
+
 /** True als STAP4 in de database staat. Bij een netwerkfout wordt het later opnieuw geprobeerd. */
 export function hasSchemaV2(): Promise<boolean> {
   schemaCheck ??= (async () => {

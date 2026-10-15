@@ -161,9 +161,13 @@ create table if not exists public.card_photos (
   user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
   -- null = nog niet gekoppeld (foto-inbox). Kaart verwijderd → foto blijft, wordt ontkoppeld.
   card_id     uuid references public.cards (id) on delete set null,
+  -- Weergaveversie (JPEG, max. 2000 px).
   path        text not null check (char_length(path) between 1 and 300),
   -- Kleine versie voor overzichten.
   thumb_path  text check (char_length(thumb_path) <= 300),
+  -- Origineel bestand zoals geüpload (ongewijzigd).
+  original_path text check (char_length(original_path) <= 300),
+  original_name text check (char_length(original_name) <= 200),
   label       text not null default 'front'
     check (label in ('front', 'back', 'detail', 'damage', 'slab', 'scan', 'other')),
   is_primary  boolean not null default false,

@@ -6,7 +6,8 @@ import { CardFace } from '../components/CardFace'
 import { CardPicture } from '../components/CardPicture'
 import { listCards } from '../lib/db'
 import { findCandidates, type Candidate } from '../lib/match'
-import { setCardPhoto } from '../lib/photos'
+import { uploadPhoto } from '../lib/photos'
+import { useSchemaV2 } from '../hooks/useSchemaV2'
 import {
   draftFromScan,
   prepareImage,
@@ -40,6 +41,10 @@ export function ScanPage(): JSX.Element {
   const [draft, setDraft] = useState<{ values: Partial<CardInput>; position: number | null } | null>(null)
   const [donePositions, setDonePositions] = useState<ReadonlySet<number>>(new Set())
   const [added, setAdded] = useState<string[]>([])
+  // Herkennen en de foto bewaren zijn aparte keuzes: alleen bewaren als je dat aanvinkt.
+  const [keepPhoto, setKeepPhoto] = useState(false)
+  const [photoError, setPhotoError] = useState<string | null>(null)
+  const v2 = useSchemaV2() === true
 
   useEffect(() => {
     let cancelled = false
@@ -167,6 +172,11 @@ export function ScanPage(): JSX.Element {
           Added: {added.join(', ')}
         </p>
       )}
+      {photoError && (
+        <p className="error" role="alert">
+          The card was added, but its scan photo was not saved: {photoError}
+        </p>
+      )}
 
       <div className="scan-stage">
         {image ? (
@@ -181,6 +191,12 @@ export function ScanPage(): JSX.Element {
           <button type="button" className="ghost" onClick={() => inputRef.current?.click()} disabled={busy}>
             Choose from files
           </button>
+          {v2 && mode === 'single' && (
+            <label className="check">
+              <input type="checkbox" checked={keepPhoto} onChange={(e) => setKeepPhoto(e.target.checked)} />
+              Also save this scan as a photo of the card
+            </label>
+          )}
           {busy && <p aria-live="polite">{phase.message}</p>}
           {phase.kind === 'error' && <p className="error" role="alert">{phase.message}</p>}
         </div>
@@ -279,15 +295,16 @@ export function ScanPage(): JSX.Element {
           onSaved={(rows) => {
             rememberAdded(rows)
             const position = draft.position
-            // Losse scan zonder officiële afbeelding: de scanfoto wordt de kaartfoto.
+            // Scanfoto alleen bewaren als je dat koos. Hoofdfoto alleen als er geen officiële afbeelding is.
             const photo = image?.blob
-            if (position === null && photo) {
+            if (keepPhoto && position === null && photo) {
               for (const row of rows) {
-                if (!row.tcgdex_id && !row.image_path) {
-                  setCardPhoto(row, photo)
-                    .then((updated) => setCards((list) => list.map((c) => (c.id === updated.id ? updated : c))))
-                    .catch((err: unknown) => console.warn('Scanfoto bewaren mislukt', err))
-                }
+                uploadPhoto(photo, null, { cardId: row.id, label: 'scan', makePrimary: !row.tcgdex_id })
+                  .then((saved) => setCards((list) => list.map((c) => (c.id === row.id ? { ...c, photos: [...c.photos, saved] } : c))))
+                  .catch((err: unknown) => {
+                    console.warn('Scanfoto bewaren mislukt', err)
+                    setPhotoError(err instanceof Error ? err.message : 'Saving the scan photo failed.')
+                  })
               }
             }
             setDraft(null)

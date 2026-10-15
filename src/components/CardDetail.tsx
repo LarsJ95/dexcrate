@@ -1,8 +1,8 @@
-import { useRef, useState, type ChangeEvent, type JSX } from 'react'
+import { useState, type JSX } from 'react'
 import { useCardInfo } from '../hooks/useCardInfo'
 import { useCardPrice } from '../hooks/useCardPrice'
+import { useSchemaV2 } from '../hooks/useSchemaV2'
 import { updateCard } from '../lib/db'
-import { clearCardPhoto, setCardPhoto } from '../lib/photos'
 import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
 import {
@@ -10,17 +10,18 @@ import {
   LANGUAGE_LABELS,
   LINK_STATUS_LABELS,
   VARIANT_LABELS,
+  primaryPhoto,
   statusBadge,
   statusFields,
   type Card,
   type CardStatus,
 } from '../lib/types'
-import { CameraCapture } from './CameraCapture'
 import { CardImage } from './CardImage'
 import { CardmarketLink } from './CardmarketLink'
 import { CardZoom } from './CardZoom'
 import { ChangeBadge } from './ChangeBadge'
 import { Foil } from './Foil'
+import { PhotoManager } from './PhotoManager'
 import { PriceChart } from './PriceChart'
 
 interface Props {
@@ -45,10 +46,10 @@ export function CardDetail({ card, onEdit, onSaved, onChanged }: Props): JSX.Ele
   const market = marketValue(price, card.variant)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [cameraOpen, setCameraOpen] = useState(false)
-  const [photoBusy, setPhotoBusy] = useState(false)
   const [zoomOpen, setZoomOpen] = useState(false)
-  const fileRef = useRef<HTMLInputElement>(null)
+  // Eigen foto's beheren kan pas als STAP4 gedraaid is.
+  const v2 = useSchemaV2() === true
+  const main = primaryPhoto(card)
 
   const facts = [
     card.language ? LANGUAGE_LABELS[card.language] : null,
@@ -62,37 +63,6 @@ export function CardDetail({ card, onEdit, onSaved, onChanged }: Props): JSX.Ele
   // Resultaat: verkocht → verkoop − aankoop; anders marktwaarde − aankoop (op papier).
   const reference = card.status === 'sold' ? card.sale_price : (market?.value ?? null)
   const result = card.purchase_price !== null && reference !== null ? (cents(reference) - cents(card.purchase_price)) * card.quantity / 100 : null
-
-  async function savePhoto(photo: Blob): Promise<void> {
-    setCameraOpen(false)
-    setPhotoBusy(true)
-    setError(null)
-    try {
-      onChanged(await setCardPhoto(card, photo))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Saving the photo failed.')
-    } finally {
-      setPhotoBusy(false)
-    }
-  }
-
-  async function removePhoto(): Promise<void> {
-    setPhotoBusy(true)
-    setError(null)
-    try {
-      onChanged(await clearCardPhoto(card))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Removing the photo failed.')
-    } finally {
-      setPhotoBusy(false)
-    }
-  }
-
-  function onFile(e: ChangeEvent<HTMLInputElement>): void {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (file) void savePhoto(file)
-  }
 
   async function markSold(): Promise<void> {
     if (busy) return
@@ -116,7 +86,7 @@ export function CardDetail({ card, onEdit, onSaved, onChanged }: Props): JSX.Ele
       tcgdexId={card.tcgdex_id}
       kind={card.kind}
       name={card.name}
-      photoPath={card.image_path}
+      photoPath={main?.path ?? card.image_path}
       detail={[card.set_code, card.card_number && `#${card.card_number}`].filter(Boolean).join(' ')}
       quality="high"
     />
@@ -135,17 +105,6 @@ export function CardDetail({ card, onEdit, onSaved, onChanged }: Props): JSX.Ele
             {image}
             {card.status !== 'sold' && <Foil variant={card.variant} seed={card.id} />}
           </button>
-          <div className="photo-actions">
-            <button type="button" className="ghost small-btn" onClick={() => setCameraOpen(true)} disabled={photoBusy}>
-              {photoBusy ? 'Saving…' : card.image_path ? 'Change photo' : 'Add photo'}
-            </button>
-            {card.image_path && (
-              <button type="button" className="ghost small-btn" onClick={() => void removePhoto()} disabled={photoBusy}>
-                Remove
-              </button>
-            )}
-          </div>
-          <input ref={fileRef} type="file" accept="image/*" className="visually-hidden" tabIndex={-1} aria-hidden="true" onChange={onFile} />
         </div>
 
         <div className="detail-info">
@@ -225,17 +184,7 @@ export function CardDetail({ card, onEdit, onSaved, onChanged }: Props): JSX.Ele
 
       {card.kind === 'card' && card.tcgdex_id && <PriceChart tcgdexId={card.tcgdex_id} reverse={card.variant === 'reverse'} />}
 
-      {cameraOpen && (
-        <CameraCapture
-          wide={false}
-          onCapture={(file) => void savePhoto(file)}
-          onPickFile={() => {
-            setCameraOpen(false)
-            fileRef.current?.click()
-          }}
-          onClose={() => setCameraOpen(false)}
-        />
-      )}
+      {v2 && <PhotoManager card={card} onChange={onChanged} />}
 
       {error && (
         <p className="error" role="alert">
