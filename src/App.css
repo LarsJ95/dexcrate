@@ -467,6 +467,12 @@
   left: var(--space-2);
 }
 
+/* Onderweg: neutrale badge. */
+.status-badge.collection {
+  background: var(--badge-bg);
+  color: var(--white);
+}
+
 .status-badge.for_sale {
   background: var(--yellow);
   color: var(--on-yellow);
@@ -732,6 +738,27 @@
 .detail-set {
   color: var(--ink-soft);
   font-weight: 600;
+}
+
+.detail-meta {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.detail-meta dt {
+  font-size: var(--fs-label);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.detail-meta dd {
+  margin: 0;
+}
+
+.detail-notes {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .chips {

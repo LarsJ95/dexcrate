@@ -4,11 +4,19 @@ import { normalizeChannel, parsePrice } from '../lib/excel'
 import type { Candidate } from '../lib/match'
 import { getSet, lookupLang, type Lang } from '../lib/tcgdex'
 import {
+  AVAILABILITY_LABELS,
   CONDITION_LABELS,
+  EMPTY_CARD,
   GRADING_LABELS,
   LANGUAGE_LABELS,
+  OWNERSHIP_LABELS,
   STATUS_LABELS,
   VARIANT_LABELS,
+  deriveStatus,
+  fromStatus,
+  isHeld,
+  statusBadge,
+  type Availability,
   type Card,
   type CardInput,
   type CardLanguage,
@@ -16,6 +24,8 @@ import {
   type Condition,
   type GradingCompany,
   type ItemKind,
+  type LinkStatus,
+  type Ownership,
   type Variant,
 } from '../lib/types'
 import { useCardInfo } from '../hooks/useCardInfo'
@@ -41,7 +51,9 @@ interface FormState {
   quantity: string
   kind: ItemKind
   tcgdex_id: string | null
-  status: CardStatus
+  link_status: LinkStatus | null
+  ownership: Ownership
+  availability: Availability
   language: CardLanguage | ''
   condition: Condition | ''
   variant: Variant | ''
@@ -53,6 +65,9 @@ interface FormState {
   sale_price: string
   sale_channel: string
   sale_date: string
+  notes: string
+  edition: string
+  cert_number: string
 }
 
 const MAX_QTY = 9999
@@ -63,6 +78,8 @@ const priceText = (n: number | null): string => (n === null ? '' : n.toFixed(2))
 const today = (): string => new Date().toLocaleDateString('sv-SE') // yyyy-mm-dd in lokale tijd
 
 function initialState(src: CardInput | null, status: CardStatus): FormState {
+  // Gevraagde status gelijk aan de huidige: bezit en beschikbaarheid ongemoeid laten (bv. onderweg, gereserveerd).
+  const start = src && src.status === status ? { ownership: src.ownership, availability: src.availability } : fromStatus(status)
   return {
     name: src?.name ?? '',
     set_code: src?.set_code ?? '',
@@ -70,7 +87,8 @@ function initialState(src: CardInput | null, status: CardStatus): FormState {
     quantity: String(src?.quantity ?? 1),
     kind: src?.kind ?? 'card',
     tcgdex_id: src?.tcgdex_id ?? null,
-    status,
+    link_status: src?.link_status ?? null,
+    ...start,
     language: src ? (src.language ?? '') : 'en',
     condition: src?.condition ?? '',
     variant: src?.variant ?? '',
@@ -81,12 +99,18 @@ function initialState(src: CardInput | null, status: CardStatus): FormState {
     purchase_date: src?.purchase_date ?? '',
     sale_price: priceText(src?.sale_price ?? null),
     sale_channel: src?.sale_channel ?? '',
-    sale_date: status === 'sold' && !src?.sale_date ? today() : (src?.sale_date ?? ''),
+    sale_date: start.ownership === 'sold' && !src?.sale_date ? today() : (src?.sale_date ?? ''),
+    notes: src?.notes ?? '',
+    edition: src?.edition ?? '',
+    cert_number: src?.cert_number ?? '',
   }
 }
 
+/** Velden die het formulier niet toont; bij een nieuwe regel overgenomen uit de bron. */
+type Untouched = 'sort_order' | 'image_path' | 'cardmarket_id' | 'location_id' | 'location_page' | 'location_slot' | 'import_batch_id'
+
 // Foto wordt niet in het formulier bewerkt; bij bijwerken blijft image_path ongemoeid.
-type Validated = { error: string } | { value: Omit<CardInput, 'sort_order' | 'image_path'> }
+type Validated = { error: string } | { value: Omit<CardInput, Untouched> }
 
 function optionalPrice(raw: string, label: string): { error: string } | { value: number | null } {
   if (!raw.trim()) return { value: null }
@@ -107,11 +131,15 @@ function validate(f: FormState): Validated {
 
   const purchase = optionalPrice(f.purchase_price, 'purchase price')
   if ('error' in purchase) return purchase
-  const sale = optionalPrice(f.sale_price, f.status === 'sold' ? 'sale price' : 'asking price')
+  // Een onbekende verkoop- of vraagprijs mag leeg blijven: onbekend is niet 0.
+  const sale = optionalPrice(f.sale_price, f.ownership === 'sold' ? 'sale price' : 'asking price')
   if ('error' in sale) return sale
-  if (f.status !== 'collection' && sale.value === null) {
-    return { error: f.status === 'sold' ? 'Enter the sale price.' : 'Enter an asking price.' }
-  }
+  const notes = f.notes.trim()
+  if (notes.length > 2000) return { error: 'Notes can be at most 2000 characters.' }
+  const edition = f.edition.trim()
+  if (edition.length > 60) return { error: 'Edition or stamp can be at most 60 characters.' }
+  const cert = f.cert_number.trim()
+  if (cert.length > 40) return { error: 'Certificate number can be at most 40 characters.' }
 
   let grade: number | null = null
   if (f.grading_company || f.grade.trim()) {
@@ -130,7 +158,9 @@ function validate(f: FormState): Validated {
   if ((purchaseChannel?.length ?? 0) > 50 || (saleChannel?.length ?? 0) > 50) return { error: 'Channel is too long (max. 50 characters).' }
 
   const sealed = f.kind === 'sealed'
-  const hasSale = f.status !== 'collection'
+  const status = deriveStatus(f.ownership, f.availability)
+  // Vraagprijs (te koop/gereserveerd) of verkoopprijs (verkocht); bij ruil of weggeven geen prijs.
+  const hasSale = f.ownership === 'sold' || (isHeld(f.ownership) && f.availability !== 'keep')
   return {
     value: {
       name,
@@ -139,7 +169,10 @@ function validate(f: FormState): Validated {
       quantity: qty,
       kind: f.kind,
       tcgdex_id: sealed ? null : f.tcgdex_id,
-      status: f.status,
+      link_status: sealed || !f.tcgdex_id ? null : f.link_status,
+      status,
+      ownership: f.ownership,
+      availability: isHeld(f.ownership) ? f.availability : 'keep',
       language: sealed ? null : f.language || null,
       condition: f.condition || null,
       variant: sealed ? null : f.variant || null,
@@ -151,7 +184,10 @@ function validate(f: FormState): Validated {
       // Verkoopgegevens alleen bewaren als de kaart te koop staat of verkocht is.
       sale_price: hasSale ? sale.value : null,
       sale_channel: hasSale ? saleChannel : null,
-      sale_date: f.status === 'sold' ? f.sale_date || null : null,
+      sale_date: f.ownership === 'sold' ? f.sale_date || null : null,
+      notes: notes || null,
+      edition: sealed || !edition ? null : edition,
+      cert_number: sealed || !f.grading_company || !cert ? null : cert,
     },
   }
 }
@@ -163,6 +199,7 @@ function Select<K extends string>({
   onChange,
   empty = 'Unknown',
   allowed = null,
+  required = false,
 }: {
   label: string
   value: K | ''
@@ -171,13 +208,15 @@ function Select<K extends string>({
   empty?: string
   /** Alleen deze keuzes tonen (bv. uitvoeringen volgens de catalogus); een afwijkende huidige waarde blijft zichtbaar. */
   allowed?: readonly K[] | null
+  /** Geen lege keuze tonen. */
+  required?: boolean
 }): JSX.Element {
   const keys = (Object.keys(options) as K[]).filter((k) => !allowed || allowed.includes(k) || k === value)
   return (
     <label>
       {label}
       <select value={value} onChange={(e) => onChange(e.target.value as K | '')}>
-        <option value="">{empty}</option>
+        {!required && <option value="">{empty}</option>}
         {keys.map((k) => (
           <option key={k} value={k}>
             {allowed && !allowed.includes(k) ? `${options[k]} (not in catalog)` : options[k]}
@@ -215,7 +254,11 @@ export function CardForm({
   const set = <K extends keyof FormState>(key: K, value: FormState[K]): void => setForm((f) => ({ ...f, [key]: value }))
 
   // Status wijzigen bij een regel met meerdere stuks → vragen hoeveel er meegaan.
-  const canSplit = card !== null && card.quantity > 1 && form.status !== card.status
+  const canSplit =
+    card !== null && card.quantity > 1 && (form.ownership !== card.ownership || form.availability !== card.availability)
+  const formStatus = deriveStatus(form.ownership, form.availability)
+  // Snelkeuze actief alleen bij de drie gewone combinaties (niet bij onderweg, gereserveerd, geruild of weggegeven).
+  const plain = (form.ownership === 'owned' && form.availability !== 'reserved') || form.ownership === 'sold'
   const isCard = form.kind === 'card'
 
   // Uitvoeringen die volgens TCGdex bestaan voor de gekoppelde kaart (bv. een ex-kaart: alleen holo).
@@ -224,8 +267,19 @@ export function CardForm({
   const variantMismatch = form.variant !== '' && allowedVariants !== null && !allowedVariants.includes(form.variant)
   const onlyVariant = allowedVariants?.length === 1 ? allowedVariants[0] : null
 
+  function changeOwnership(ownership: Ownership, availability?: Availability): void {
+    setForm((f) => ({
+      ...f,
+      ownership,
+      availability: availability ?? (isHeld(ownership) ? f.availability : 'keep'),
+      sale_date: ownership === 'sold' && !f.sale_date ? today() : f.sale_date,
+    }))
+  }
+
+  /** Snelkeuze: de drie meest gebruikte combinaties. */
   function changeStatus(status: CardStatus): void {
-    setForm((f) => ({ ...f, status, sale_date: status === 'sold' && !f.sale_date ? today() : f.sale_date }))
+    const next = fromStatus(status)
+    changeOwnership(next.ownership, next.availability)
   }
 
   async function onPick(c: Candidate, lang: Lang): Promise<void> {
@@ -233,6 +287,7 @@ export function CardForm({
     setForm((f) => ({
       ...f,
       tcgdex_id: c.key,
+      link_status: 'manual',
       card_number: number,
       // Aziatische kaart gekozen terwijl de taal Europees staat → taal meenemen.
       language: lookupLang(f.language || null) === lang ? f.language : lang,
@@ -266,12 +321,12 @@ export function CardForm({
     setError(null)
     try {
       if (card && canSplit && moved < card.quantity) {
-        const { original, created } = await splitCard(card, moved, { ...result.value, image_path: card.image_path, sort_order: card.sort_order })
+        const { original, created } = await splitCard(card, moved, { ...card, ...result.value })
         onSaved([original, created])
       } else if (card) {
         onSaved([await updateCard(card.id, result.value)])
       } else {
-        onSaved([await insertCard({ ...result.value, image_path: source?.image_path ?? null, sort_order: nextSortOrder })])
+        onSaved([await insertCard({ ...EMPTY_CARD, ...source, ...result.value, sort_order: nextSortOrder })])
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Saving failed.')
@@ -299,7 +354,7 @@ export function CardForm({
     <form className="card-form" onSubmit={onSubmit} noValidate>
       <div className="segmented status-switch" role="radiogroup" aria-label="Status">
         {(Object.keys(STATUS_LABELS) as CardStatus[]).map((s) => (
-          <button key={s} type="button" role="radio" aria-checked={form.status === s} onClick={() => changeStatus(s)}>
+          <button key={s} type="button" role="radio" aria-checked={plain && formStatus === s} onClick={() => changeStatus(s)}>
             {STATUS_LABELS[s]}
           </button>
         ))}
@@ -309,9 +364,22 @@ export function CardForm({
         <label className="split">
           How many of the {card.quantity}?
           <input type="number" min={1} max={card.quantity} value={splitQty} onChange={(e) => setSplitQty(e.target.value)} />
-          <span className="muted small">The rest stays "{STATUS_LABELS[card.status]}".</span>
+          <span className="muted small">The rest stays "{statusBadge(card) ?? 'Owned'}".</span>
         </label>
       )}
+
+      <div className="form-grid">
+        <Select label="Ownership" value={form.ownership} options={OWNERSHIP_LABELS} required onChange={(v) => v && changeOwnership(v)} />
+        {isHeld(form.ownership) && (
+          <Select
+            label="Availability"
+            value={form.availability}
+            options={AVAILABILITY_LABELS}
+            required
+            onChange={(v) => v && set('availability', v)}
+          />
+        )}
+      </div>
 
       <Group title="Card">
         <label>
@@ -366,9 +434,21 @@ export function CardForm({
             />
           )}
           {isCard && form.grading_company && (
+            <>
+              <label>
+                Grade
+                <input inputMode="decimal" value={form.grade} onChange={(e) => set('grade', e.target.value)} placeholder="10" />
+              </label>
+              <label>
+                Certificate no.
+                <input value={form.cert_number} onChange={(e) => set('cert_number', e.target.value)} maxLength={40} />
+              </label>
+            </>
+          )}
+          {isCard && (
             <label>
-              Grade
-              <input inputMode="decimal" value={form.grade} onChange={(e) => set('grade', e.target.value)} placeholder="10" />
+              Edition or stamp
+              <input value={form.edition} onChange={(e) => set('edition', e.target.value)} maxLength={60} placeholder="e.g. Staff stamp" />
             </label>
           )}
         </div>
@@ -405,14 +485,14 @@ export function CardForm({
         </div>
       </Group>
 
-      {form.status !== 'collection' && (
-        <Group title={form.status === 'sold' ? 'Sale' : 'For sale'}>
+      {formStatus !== 'collection' && form.ownership !== 'traded' && form.ownership !== 'given_away' && (
+        <Group title={form.ownership === 'sold' ? 'Sale' : 'For sale'}>
           <div className="form-grid">
             <label>
-              {form.status === 'sold' ? 'Sold for (€)' : 'Asking (€)'}
+              {form.ownership === 'sold' ? 'Sold for (€)' : 'Asking (€)'}
               <input inputMode="decimal" value={form.sale_price} onChange={(e) => set('sale_price', e.target.value)} placeholder="0.00" />
             </label>
-            {form.status === 'sold' && (
+            {form.ownership === 'sold' && (
               <label>
                 Date
                 <input type="date" value={form.sale_date} onChange={(e) => set('sale_date', e.target.value)} />
@@ -431,10 +511,15 @@ export function CardForm({
             cardNumber={form.card_number}
             value={form.tcgdex_id}
             onSelect={(c, lang) => void onPick(c, lang)}
-            onClear={() => set('tcgdex_id', null)}
+            onClear={() => setForm((f) => ({ ...f, tcgdex_id: null, link_status: null }))}
           />
         </Group>
       )}
+
+      <label>
+        Notes
+        <textarea value={form.notes} onChange={(e) => set('notes', e.target.value)} maxLength={2000} rows={2} />
+      </label>
 
       {error && (
         <p className="error" role="alert">

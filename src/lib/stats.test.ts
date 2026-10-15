@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { computeStats, formatEur } from './stats'
-import { EMPTY_CARD, type CardInput } from './types'
+import { EMPTY_CARD, fromStatus, type CardInput } from './types'
 
-const card = (patch: Partial<CardInput>): CardInput => ({ ...EMPTY_CARD, name: 'Test', ...patch })
+// Status in de test → ook bezit en beschikbaarheid, zoals de app ze opslaat.
+const card = (patch: Partial<CardInput>): CardInput => ({
+  ...EMPTY_CARD,
+  name: 'Test',
+  ...(patch.status ? fromStatus(patch.status) : {}),
+  ...patch,
+})
 
 describe('computeStats', () => {
   it('telt per stuk en rekent regeltotaal als aantal × stukprijs', () => {
@@ -43,6 +49,14 @@ describe('computeStats', () => {
     // Niemand heeft een aankoopprijs: netto is niet definitief.
     expect(s.costUnknown).toBe(6)
     expect(s.netComplete).toBe(false)
+  })
+
+  it('geruild of weggegeven telt niet als verkoop', () => {
+    const s = computeStats([
+      card({ ownership: 'traded', availability: 'keep', status: 'sold', purchase_price: 3 }),
+      card({ ownership: 'given_away', availability: 'keep', status: 'sold', purchase_price: 1 }),
+    ])
+    expect(s.sold.count).toBe(0)
   })
 
   it('netto is definitief als alle bedragen bekend zijn', () => {

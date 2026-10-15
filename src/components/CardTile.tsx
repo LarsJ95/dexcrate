@@ -2,7 +2,7 @@ import { memo, type JSX } from 'react'
 import { useCardInfo } from '../hooks/useCardInfo'
 import type { MarketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
-import { CONDITION_LABELS, STATUS_LABELS, VARIANT_LABELS, type Card } from '../lib/types'
+import { CONDITION_LABELS, VARIANT_LABELS, canToggleSold, statusBadge, type Card } from '../lib/types'
 import { CardImage } from './CardImage'
 import { ChangeBadge } from './ChangeBadge'
 import { Foil } from './Foil'
@@ -44,7 +44,7 @@ function CardTileBase({ card, market, onOpen, onToggleSold, busy }: Props): JSX.
         <CardImage tcgdexId={card.tcgdex_id} kind={card.kind} name={card.name} photoPath={card.image_path}
           detail={[card.set_code, card.card_number && `#${card.card_number}`].filter(Boolean).join(' ')} />
         {card.status !== 'sold' && <Foil variant={card.variant} seed={card.id} />}
-        {card.status !== 'collection' && <span className={`status-badge ${card.status}`}>{STATUS_LABELS[card.status]}</span>}
+        {statusBadge(card) && <span className={`status-badge ${card.status}`}>{statusBadge(card)}</span>}
         {card.quantity > 1 && <span className="qty-badge">{card.quantity}×</span>}
         {card.grading_company && (
           <span className="grade-badge">
@@ -76,7 +76,7 @@ function CardTileBase({ card, market, onOpen, onToggleSold, busy }: Props): JSX.
           )}
         </dl>
 
-        {card.status !== 'collection' && (
+        {canToggleSold(card) && (
           <button
             type="button"
             className={`status-toggle${card.status === 'sold' ? ' on' : ''}`}

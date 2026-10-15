@@ -3,7 +3,7 @@ import type { Candidate } from './match'
 import { supabase } from './supabase'
 import { getSet, type Lang } from './tcgdex'
 import { plainNumber, toScanResult, type Recognition, type ScanMode, type ScanResult } from './scanResult'
-import type { CardInput } from './types'
+import { statusFields, type CardInput } from './types'
 
 export { plainNumber, type Recognition, type ScanMode, type ScanResult } from './scanResult'
 
@@ -57,7 +57,7 @@ export async function draftFromScan(r: Recognition, c: Candidate | null, lang: L
     name: r.nameEnglish || r.namePrinted,
     language: r.language,
     variant: r.variant,
-    status: 'collection',
+    ...statusFields('collection'),
     set_code: r.setCode || null,
     card_number: r.cardNumber ? plainNumber(r.cardNumber) : null,
     tcgdex_id: null,

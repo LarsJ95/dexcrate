@@ -1,12 +1,19 @@
 import type { SnapshotRow } from './prices'
 import { supabase } from './supabase'
 import {
+  AVAILABILITY_LABELS,
   CONDITION_LABELS,
   GRADING_LABELS,
   LANGUAGE_LABELS,
+  LINK_STATUS_LABELS,
+  OWNERSHIP_LABELS,
+  PHOTO_LABELS,
   VARIANT_LABELS,
+  deriveStatus,
+  fromStatus,
   type Card,
   type CardInput,
+  type CardPhoto,
   type CardStatus,
 } from './types'
 
@@ -31,9 +38,32 @@ function oneOf<K extends string>(v: unknown, allowed: Record<K, unknown>): K | n
 
 const STATUSES: Record<CardStatus, true> = { collection: true, for_sale: true, sold: true }
 
-/** Database-rij → getypeerd object; onverwachte vorm wordt overgeslagen. */
-function toCard(r: unknown): Card | null {
+const intOrNull = (v: unknown): number | null => {
+  const n = numOrNull(v)
+  return n === null ? null : Math.trunc(n)
+}
+
+/** Fotorij (card_photos) → object; onverwachte vorm wordt overgeslagen. */
+export function toPhoto(r: unknown): CardPhoto | null {
+  if (!isRecord(r) || typeof r.id !== 'string' || typeof r.path !== 'string') return null
+  return {
+    id: r.id,
+    card_id: strOrNull(r.card_id),
+    path: r.path,
+    thumb_path: strOrNull(r.thumb_path),
+    label: oneOf(r.label, PHOTO_LABELS) ?? 'other',
+    is_primary: r.is_primary === true,
+    created_at: str(r.created_at),
+  }
+}
+
+/** Database-rij → getypeerd object; onverwachte vorm wordt overgeslagen. Rijen van vóór STAP4 krijgen afgeleide waarden. */
+export function toCard(r: unknown): Card | null {
   if (!isRecord(r) || typeof r.id !== 'string') return null
+  const status = oneOf(r.status, STATUSES) ?? 'collection'
+  const derived = fromStatus(status)
+  const photos = Array.isArray(r.card_photos) ? r.card_photos.flatMap((p: unknown) => toPhoto(p) ?? []) : []
+  photos.sort((a, b) => a.created_at.localeCompare(b.created_at))
   return {
     id: r.id,
     user_id: str(r.user_id),
@@ -45,7 +75,9 @@ function toCard(r: unknown): Card | null {
     quantity: Math.max(1, Math.trunc(numOrNull(r.quantity) ?? 1)),
     kind: r.kind === 'sealed' ? 'sealed' : 'card',
     tcgdex_id: strOrNull(r.tcgdex_id),
-    status: oneOf(r.status, STATUSES) ?? 'collection',
+    status,
+    ownership: oneOf(r.ownership, OWNERSHIP_LABELS) ?? derived.ownership,
+    availability: oneOf(r.availability, AVAILABILITY_LABELS) ?? derived.availability,
     language: oneOf(r.language, LANGUAGE_LABELS),
     condition: oneOf(r.condition, CONDITION_LABELS),
     variant: oneOf(r.variant, VARIANT_LABELS),
@@ -58,7 +90,17 @@ function toCard(r: unknown): Card | null {
     sale_channel: strOrNull(r.sale_channel),
     sale_date: strOrNull(r.sale_date),
     image_path: strOrNull(r.image_path),
+    notes: strOrNull(r.notes),
+    cert_number: strOrNull(r.cert_number),
+    edition: strOrNull(r.edition),
+    link_status: oneOf(r.link_status, LINK_STATUS_LABELS),
+    cardmarket_id: intOrNull(r.cardmarket_id),
+    location_id: strOrNull(r.location_id),
+    location_page: intOrNull(r.location_page),
+    location_slot: intOrNull(r.location_slot),
+    import_batch_id: strOrNull(r.import_batch_id),
     sort_order: Math.trunc(numOrNull(r.sort_order) ?? 0),
+    photos,
   }
 }
 
@@ -68,10 +110,66 @@ function single(data: unknown): Card {
   return row
 }
 
+// --- Schemaversie: STAP4 gedraaid of niet ---
+
+/** Velden die pas bestaan na STAP4. Zonder STAP4 worden ze niet meegestuurd, zodat opslaan blijft werken. */
+export const V2_FIELDS = [
+  'ownership',
+  'availability',
+  'notes',
+  'cert_number',
+  'edition',
+  'link_status',
+  'cardmarket_id',
+  'location_id',
+  'location_page',
+  'location_slot',
+  'import_batch_id',
+] as const satisfies readonly (keyof CardInput)[]
+
+let schemaCheck: Promise<boolean> | null = null
+
+/** True als STAP4 in de database staat. Bij een netwerkfout wordt het later opnieuw geprobeerd. */
+export function hasSchemaV2(): Promise<boolean> {
+  schemaCheck ??= (async () => {
+    const { error } = await supabase.from(TABLE).select('ownership').limit(1)
+    if (!error) return true
+    // 42703 = kolom bestaat niet (PostgREST meldt het soms alleen in de tekst).
+    if (error.code === '42703' || /ownership/.test(error.message)) return false
+    schemaCheck = null
+    throw new Error(`Checking the database failed: ${error.message}`)
+  })()
+  return schemaCheck
+}
+
+/**
+ * Wat naar de database gaat. Status altijd afgeleid van bezit + beschikbaarheid.
+ * Vóór STAP4: zonder de nieuwe velden, en image_path alleen als die gevuld is of bewust gewist wordt
+ * (de kolom bestaat alleen na STAP3). Sinds STAP4: zonder image_path (foto's staan in card_photos).
+ */
+export function toRow(input: Partial<CardInput>, v2: boolean): Record<string, unknown> {
+  const row: Record<string, unknown> = { ...input }
+  if (input.ownership !== undefined && input.availability !== undefined) {
+    row.status = deriveStatus(input.ownership, input.availability)
+  }
+  if (v2) {
+    delete row.image_path
+    return row
+  }
+  for (const f of V2_FIELDS) delete row[f]
+  const clearingPhoto = Object.keys(input).length === 1 && input.image_path === null
+  if (!input.image_path && !clearingPhoto) delete row.image_path
+  return row
+}
+
+const SELECT_V1 = '*'
+const SELECT_V2 = '*, card_photos(id, card_id, path, thumb_path, label, is_primary, created_at)'
+
 export async function listCards(): Promise<Card[]> {
+  const v2 = await hasSchemaV2()
   const { data, error } = await supabase
     .from(TABLE)
-    .select('*')
+    .select(v2 ? SELECT_V2 : SELECT_V1)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true })
   if (error) throw new Error(`Loading failed: ${error.message}`)
@@ -87,33 +185,32 @@ export async function countCards(): Promise<number> {
   return count ?? 0
 }
 
-/**
- * Zonder eigen foto het veld weglaten, zodat opslaan ook werkt zolang STAP3 (kolom image_path) nog niet gedraaid is.
- */
-function payload<T extends Partial<CardInput>>(input: T): T | Omit<T, 'image_path'> {
-  if (input.image_path) return input
-  const { image_path: _skip, ...rest } = input
-  void _skip
-  return rest
-}
-
 export async function insertCards(input: readonly CardInput[]): Promise<Card[]> {
+  const v2 = await hasSchemaV2()
   // Eén insert-statement: alles of niets.
-  const { data, error } = await supabase.from(TABLE).insert(input.map(payload)).select('*')
+  const { data, error } = await supabase
+    .from(TABLE)
+    .insert(input.map((c) => toRow(c, v2)))
+    .select(v2 ? SELECT_V2 : SELECT_V1)
   if (error) throw new Error(`Saving failed: ${error.message}`)
   return (data as unknown[]).map(single)
 }
 
 export async function insertCard(input: CardInput): Promise<Card> {
-  const { data, error } = await supabase.from(TABLE).insert(payload(input)).select('*').single()
+  const v2 = await hasSchemaV2()
+  const { data, error } = await supabase.from(TABLE).insert(toRow(input, v2)).select(v2 ? SELECT_V2 : SELECT_V1).single()
   if (error) throw new Error(`Saving failed: ${error.message}`)
   return single(data)
 }
 
 export async function updateCard(id: string, patch: Partial<CardInput>): Promise<Card> {
-  // Een expliciet `image_path: null` (foto verwijderen) moet wél mee.
-  const body = 'image_path' in patch && patch.image_path === null ? patch : payload(patch)
-  const { data, error } = await supabase.from(TABLE).update(body).eq('id', id).select('*').single()
+  const v2 = await hasSchemaV2()
+  const { data, error } = await supabase
+    .from(TABLE)
+    .update(toRow(patch, v2))
+    .eq('id', id)
+    .select(v2 ? SELECT_V2 : SELECT_V1)
+    .single()
   if (error) throw new Error(`Saving failed: ${error.message}`)
   return single(data)
 }

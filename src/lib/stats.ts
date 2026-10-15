@@ -50,7 +50,8 @@ const safeDiv = (a: number, b: number): number => (b === 0 ? 0 : a / b)
 /** Zelfde formules als het Excel-tabblad "Totaal"; aantallen tellen per stuk. */
 export function computeStats(cards: readonly CardInput[]): Stats {
   const salePrice = (c: CardInput): number | null => c.sale_price
-  const sold = bucket(cards.filter((c) => c.status === 'sold'), salePrice)
+  // Alleen echte verkopen; geruild of weggegeven heeft geen opbrengst.
+  const sold = bucket(cards.filter((c) => c.ownership === 'sold'), salePrice)
   const forSale = bucket(cards.filter((c) => c.status === 'for_sale'), salePrice)
   // "Gekocht" = alles met een aankoopprijs, ongeacht de huidige status.
   const bought = bucket(cards.filter((c) => c.purchase_price !== null), (c) => c.purchase_price)

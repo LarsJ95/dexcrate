@@ -1,6 +1,6 @@
 import type { CellValue, Workbook, Worksheet } from 'exceljs'
 import { langFromName, stripLangTag } from './tcgdex'
-import { EMPTY_CARD, type CardInput, type CardLanguage, type ItemKind } from './types'
+import { EMPTY_CARD, statusFields, type CardInput, type CardLanguage, type ItemKind } from './types'
 
 export interface ParseResult {
   cards: CardInput[]
@@ -134,13 +134,13 @@ export async function parseWorkbook(data: ArrayBuffer): Promise<ParseResult> {
   // Verkooplijst → te koop / verkocht; aankooplijst → in collectie (zelfde mapping als 003_migrate_to_cards.sql).
   const sales: CardInput[] = readRows(soldSheet, 'Sold', warnings).map((r, i) => ({
     ...base(r, i),
-    status: parseBool(soldSheet.getRow(r.row).getCell(7).value) ? 'sold' : 'for_sale',
+    ...statusFields(parseBool(soldSheet.getRow(r.row).getCell(7).value) ? 'sold' : 'for_sale'),
     sale_price: r.price,
     sale_channel: r.channel,
   }))
   const purchases: CardInput[] = readRows(sheet(wb, 'Bought'), 'Bought', warnings).map((r, i) => ({
     ...base(r, 1000 + i),
-    status: 'collection',
+    ...statusFields('collection'),
     purchase_price: r.price,
     purchase_channel: r.channel,
   }))

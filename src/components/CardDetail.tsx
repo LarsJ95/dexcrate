@@ -5,7 +5,16 @@ import { updateCard } from '../lib/db'
 import { clearCardPhoto, setCardPhoto } from '../lib/photos'
 import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
-import { CONDITION_LABELS, LANGUAGE_LABELS, STATUS_LABELS, VARIANT_LABELS, type Card, type CardStatus } from '../lib/types'
+import {
+  CONDITION_LABELS,
+  LANGUAGE_LABELS,
+  LINK_STATUS_LABELS,
+  VARIANT_LABELS,
+  statusBadge,
+  statusFields,
+  type Card,
+  type CardStatus,
+} from '../lib/types'
 import { CameraCapture } from './CameraCapture'
 import { CardImage } from './CardImage'
 import { CardmarketLink } from './CardmarketLink'
@@ -46,6 +55,7 @@ export function CardDetail({ card, onEdit, onSaved, onChanged }: Props): JSX.Ele
     card.variant ? VARIANT_LABELS[card.variant] : null,
     card.condition ? CONDITION_LABELS[card.condition] : null,
     card.grading_company ? `${card.grading_company} ${card.grade ?? ''}`.trim() : null,
+    card.edition,
     card.quantity > 1 ? `${card.quantity}×` : null,
   ].filter((f): f is string => f !== null)
 
@@ -94,7 +104,7 @@ export function CardDetail({ card, onEdit, onSaved, onChanged }: Props): JSX.Ele
     setBusy(true)
     setError(null)
     try {
-      onSaved([await updateCard(card.id, { status: 'sold', sale_date: new Date().toLocaleDateString('sv-SE') })])
+      onSaved([await updateCard(card.id, { ...statusFields('sold'), sale_date: new Date().toLocaleDateString('sv-SE') })])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Update failed.')
       setBusy(false)
@@ -146,7 +156,7 @@ export function CardDetail({ card, onEdit, onSaved, onChanged }: Props): JSX.Ele
           </p>
 
           <div className="chips">
-            <span className={`chip status-${card.status}`}>{STATUS_LABELS[card.status]}</span>
+            <span className={`chip status-${card.status}`}>{statusBadge(card) ?? 'In collection'}</span>
             {facts.map((f) => (
               <span key={f} className="chip">
                 {f}
@@ -183,6 +193,29 @@ export function CardDetail({ card, onEdit, onSaved, onChanged }: Props): JSX.Ele
               </div>
             )}
           </dl>
+
+          {(card.cert_number || card.link_status || card.notes) && (
+            <dl className="detail-meta">
+              {card.cert_number && (
+                <div>
+                  <dt>Certificate</dt>
+                  <dd>{card.cert_number}</dd>
+                </div>
+              )}
+              {card.tcgdex_id && card.link_status && (
+                <div>
+                  <dt>Catalog link</dt>
+                  <dd>{LINK_STATUS_LABELS[card.link_status]}</dd>
+                </div>
+              )}
+              {card.notes && (
+                <div>
+                  <dt>Notes</dt>
+                  <dd className="detail-notes">{card.notes}</dd>
+                </div>
+              )}
+            </dl>
+          )}
 
           {card.kind === 'card' && (
             <CardmarketLink idProduct={price?.idProduct ?? null} searchText={[card.name, card.card_number].filter(Boolean).join(' ')} />

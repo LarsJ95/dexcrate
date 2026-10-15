@@ -18,7 +18,7 @@ import { SetsPage } from '../pages/SetsPage'
 import type { MarketValue, PriceMap } from '../lib/prices'
 import { getSet, imageUrl, type CardmarketPrice, type SetCard } from '../lib/tcgdex'
 import type { Route } from '../lib/routes'
-import { EMPTY_CARD, type Card, type CardInput } from '../lib/types'
+import { EMPTY_CARD, fromStatus, type Card, type CardInput } from '../lib/types'
 
 const params = new URLSearchParams(location.search)
 const theme = params.get('theme') === 'light' ? 'light' : 'dark'
@@ -37,11 +37,13 @@ function demo(patch: Partial<CardInput>): Card {
   return {
     ...EMPTY_CARD,
     name: 'Demo',
+    ...(patch.status ? fromStatus(patch.status) : {}),
     ...patch,
     id: `demo-${n}`,
     user_id: 'demo',
     created_at: '',
     updated_at: '',
+    photos: [],
   }
 }
 

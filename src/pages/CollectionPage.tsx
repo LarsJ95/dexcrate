@@ -6,7 +6,7 @@ import { useMarketPrices } from '../hooks/useMarketPrices'
 import { listCards, updateCard } from '../lib/db'
 import { marketValueOf, type MarketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
-import { STATUS_LABELS, type Card, type CardStatus } from '../lib/types'
+import { STATUS_LABELS, canToggleSold, statusFields, type Card, type CardStatus } from '../lib/types'
 
 type StatusFilter = 'all' | 'owned' | CardStatus
 type SortKey = 'list' | 'priceDesc' | 'priceAsc' | 'marketDesc' | 'name' | 'set'
@@ -106,14 +106,14 @@ export function CollectionPage(): JSX.Element {
   const toggleSold = useCallback(
     async (id: string): Promise<void> => {
       const current = cards?.find((c) => c.id === id)
-      if (!current || current.status === 'collection' || pending.has(id)) return
+      if (!current || !canToggleSold(current) || pending.has(id)) return
       // Meerdere stuks: via het bewerkscherm, zodat je kunt kiezen hoeveel.
       if (current.quantity > 1) {
         setEditing({ id })
         return
       }
       const nextStatus: CardStatus = current.status === 'sold' ? 'for_sale' : 'sold'
-      const patch = { status: nextStatus, sale_date: nextStatus === 'sold' ? new Date().toLocaleDateString('sv-SE') : null }
+      const patch = { ...statusFields(nextStatus), sale_date: nextStatus === 'sold' ? new Date().toLocaleDateString('sv-SE') : null }
       setActionError(null)
       setPending((p) => new Set(p).add(id))
       setCards((list) => list?.map((c) => (c.id === id ? { ...c, ...patch } : c)) ?? null)
