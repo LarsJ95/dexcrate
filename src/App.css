@@ -5,7 +5,7 @@
 /* ---------- Hulpklassen ---------- */
 .center {
   text-align: center;
-  padding: 4rem 1rem;
+  padding: var(--space-8) var(--space-4);
   color: var(--muted);
 }
 
@@ -36,10 +36,10 @@
 
 .notice {
   display: grid;
-  gap: 0.6rem;
+  gap: var(--space-2);
   justify-items: start;
-  padding: 0.85rem 1rem;
-  border-radius: var(--radius-m);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-l);
   border: 1px solid var(--line);
   border-left: 3px solid var(--accent-line);
   background: var(--surface);
@@ -47,7 +47,7 @@
 }
 
 .empty {
-  padding: 3.5rem 1rem;
+  padding: var(--space-7) var(--space-4);
   text-align: center;
   color: var(--muted);
   border: 1px dashed var(--line-strong);
@@ -60,13 +60,12 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-l);
   padding: var(--pad-panel);
-  box-shadow: var(--shadow-card);
 }
 
 .external-link {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: var(--space-1);
   font-weight: 600;
   text-decoration: none;
 }
@@ -83,7 +82,7 @@
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: var(--space-2);
   font-weight: 800;
   font-size: 1.35rem;
   letter-spacing: 0.01em;
@@ -101,27 +100,27 @@
   width: var(--sidebar);
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  padding: calc(1.25rem + env(safe-area-inset-top, 0px)) 0.9rem 1rem;
+  gap: var(--space-5);
+  padding: calc(var(--space-4) + env(safe-area-inset-top, 0px)) var(--space-4) var(--space-4);
   background: var(--surface);
   border-right: 1px solid var(--line);
   z-index: 20;
 }
 
 .sidebar .brand {
-  padding: 0 0.5rem;
+  padding: 0 var(--space-2);
 }
 
 .side-nav {
   display: grid;
-  gap: 0.2rem;
+  gap: var(--space-1);
 }
 
 .side-nav a {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.65rem 0.75rem;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-3);
   border-radius: var(--radius-s);
   color: var(--muted);
   font-weight: 600;
@@ -142,11 +141,11 @@
 .side-nav a[aria-current='page']::before {
   content: '';
   position: absolute;
-  left: -0.9rem;
-  top: 0.5rem;
-  bottom: 0.5rem;
+  left: calc(-1 * var(--space-4));
+  top: var(--space-2);
+  bottom: var(--space-2);
   width: 3px;
-  border-radius: 0 3px 3px 0;
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
   background: var(--accent-line);
 }
 
@@ -157,8 +156,8 @@
 .side-foot {
   margin-top: auto;
   display: grid;
-  gap: 0.5rem;
-  padding: 0.75rem 0.5rem 0;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-2) 0;
   border-top: 1px solid var(--line);
 }
 
@@ -172,12 +171,12 @@
 
 .side-actions {
   display: flex;
-  gap: 0.25rem;
+  gap: var(--space-1);
 }
 
 .main {
   margin-left: var(--sidebar);
-  padding: 2rem clamp(1rem, 3vw, 2.5rem) 4rem;
+  padding: var(--space-6) clamp(var(--space-4), 3vw, var(--space-6)) var(--space-8);
 }
 
 .mobile-bar,
@@ -192,7 +191,7 @@
 
   .main {
     margin-left: 0;
-    padding: 1.25rem 1rem calc(var(--tabbar) + 2rem + env(safe-area-inset-bottom, 0px));
+    padding: var(--space-4) var(--space-4) calc(var(--tabbar) + var(--space-6) + env(safe-area-inset-bottom, 0px));
   }
 
   .mobile-bar {
@@ -202,7 +201,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: calc(0.55rem + env(safe-area-inset-top, 0px)) 0.75rem 0.55rem 1rem;
+    padding: calc(var(--space-2) + env(safe-area-inset-top, 0px)) var(--space-3) var(--space-2) var(--space-4);
     background: color-mix(in oklab, var(--bg) 85%, transparent);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--line);
@@ -220,7 +219,7 @@
     grid-template-columns: repeat(5, 1fr);
     align-items: end;
     height: calc(var(--tabbar) + env(safe-area-inset-bottom, 0px));
-    padding: 0 0.25rem env(safe-area-inset-bottom, 0px);
+    padding: 0 var(--space-1) env(safe-area-inset-bottom, 0px);
     background: color-mix(in oklab, var(--surface) 92%, transparent);
     backdrop-filter: blur(12px);
     border-top: 1px solid var(--line);
@@ -229,8 +228,8 @@
   .tab-bar a {
     display: grid;
     justify-items: center;
-    gap: 0.15rem;
-    padding: 0.5rem 0.1rem 0.55rem;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-1) var(--space-2);
     font-size: 0.7rem;
     font-weight: 600;
     color: var(--muted);
@@ -255,7 +254,7 @@
     border-radius: 50%;
     background: var(--yellow);
     color: var(--on-yellow);
-    box-shadow: 0 6px 18px rgb(255 203 5 / 0.35), 0 0 0 4px var(--bg);
+    box-shadow: 0 0 0 var(--space-1) var(--bg);
   }
 
   .tab-bar a.tab-scan[aria-current='page'] .tab-icon {
@@ -280,7 +279,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 1rem;
+  gap: var(--space-4);
   flex-wrap: wrap;
 }
 
@@ -290,13 +289,13 @@
 }
 
 .page-head p {
-  margin-top: 0.35rem;
+  margin-top: var(--space-1);
 }
 
 .filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  gap: var(--space-2);
 }
 
 .search {
@@ -307,7 +306,7 @@
 
 .search svg {
   position: absolute;
-  left: 0.75rem;
+  left: var(--space-3);
   top: 50%;
   transform: translateY(-50%);
   color: var(--muted);
@@ -316,24 +315,25 @@
 
 .search input {
   width: 100%;
-  padding-left: 2.4rem;
+  /* icoonpositie + icoon (18px) + tussenruimte */
+  padding-left: calc(var(--space-3) + 18px + var(--space-2));
 }
 
 .segmented {
   display: inline-flex;
   flex-wrap: wrap;
-  padding: 3px;
-  gap: 2px;
+  padding: var(--space-1);
+  gap: var(--space-1);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: calc(var(--radius-s) + 3px);
+  border-radius: calc(var(--radius-s) + var(--space-1));
 }
 
 .segmented button {
   border: 0;
   background: transparent;
   color: var(--muted);
-  padding: 0.45rem 0.8rem;
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-s);
 }
 
@@ -377,7 +377,7 @@
   padding: 0;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
-  gap: 1.1rem 1rem;
+  gap: var(--space-4) var(--space-4);
 }
 
 .binder:empty {
@@ -387,7 +387,7 @@
 @media (max-width: 480px) {
   .binder {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.9rem 0.65rem;
+    gap: var(--space-4) var(--space-3);
   }
 }
 
@@ -402,12 +402,11 @@
   display: block;
   padding: 0;
   border: 0;
-  border-radius: 4.5% / 3.2%;
+  border-radius: var(--radius-card);
   background: none;
   overflow: hidden;
   isolation: isolate;
-  box-shadow: var(--shadow-card);
-  transition: transform 180ms ease, box-shadow 180ms ease;
+  transition: transform 180ms ease;
 }
 
 .tile-open:hover:not(:disabled) {
@@ -440,7 +439,6 @@
   .tile-open:hover,
   .tile-open:focus-visible {
     transform: translateY(-4px);
-    box-shadow: var(--shadow-pop);
   }
 
   .tile-open:hover .sheen,
@@ -461,7 +459,7 @@
 .card-img.placeholder {
   display: grid;
   place-items: center;
-  padding: 0.75rem;
+  padding: var(--space-3);
   text-align: center;
   font-size: 0.85rem;
   font-weight: 600;
@@ -487,13 +485,13 @@
   font-size: 0.72rem;
   font-weight: 800;
   line-height: 1;
-  padding: 0.3rem 0.5rem;
-  border-radius: 999px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
 }
 
 .status-badge {
-  top: 0.45rem;
-  left: 0.45rem;
+  top: var(--space-2);
+  left: var(--space-2);
   backdrop-filter: blur(6px);
 }
 
@@ -503,23 +501,23 @@
 }
 
 .status-badge.sold {
-  background: rgb(10 18 38 / 0.8);
+  background: var(--badge-bg);
   color: var(--green);
 }
 
 .qty-badge {
-  top: 0.45rem;
-  right: 0.45rem;
-  background: rgb(10 18 38 / 0.82);
-  color: #fff;
+  top: var(--space-2);
+  right: var(--space-2);
+  background: var(--badge-bg);
+  color: var(--white);
 }
 
 .grade-badge {
-  left: 0.45rem;
-  bottom: 0.45rem;
-  background: #fff;
-  color: #0e1a3a;
-  border-radius: 4px;
+  left: var(--space-2);
+  bottom: var(--space-2);
+  background: var(--grade-bg);
+  color: var(--on-grade);
+  border-radius: var(--radius-xs);
 }
 
 .tile.status-sold .card-img {
@@ -528,8 +526,8 @@
 
 .tile-body {
   display: grid;
-  gap: 0.15rem;
-  padding: 0.65rem 0.15rem 0;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-1) 0;
   min-width: 0;
 }
 
@@ -551,8 +549,8 @@
 .tile-prices {
   display: flex;
   justify-content: space-between;
-  gap: 0.5rem;
-  margin: 0.4rem 0 0;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
 }
 
 .tile-prices div {
@@ -572,7 +570,7 @@
   font-weight: 700;
   display: flex;
   align-items: baseline;
-  gap: 0.3rem;
+  gap: var(--space-1);
   flex-wrap: wrap;
 }
 
@@ -584,7 +582,7 @@
 .change {
   display: inline-flex;
   align-items: center;
-  gap: 0.15rem;
+  gap: var(--space-1);
   font-size: 0.72rem;
   font-weight: 700;
 }
@@ -602,10 +600,10 @@
 }
 
 .status-toggle {
-  margin-top: 0.5rem;
-  padding: 0.35rem 0.6rem;
+  margin-top: var(--space-2);
+  padding: var(--space-1) var(--space-2);
   font-size: 0.78rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--amber-bg);
   border-color: transparent;
   color: var(--amber);
@@ -631,18 +629,18 @@
   border-radius: var(--radius-l);
   background: var(--surface);
   color: var(--ink);
-  box-shadow: var(--shadow-pop);
+  box-shadow: var(--shadow-float);
 }
 
 .card-sheet::backdrop {
-  background: rgb(4 8 20 / 0.6);
+  background: var(--scrim-soft);
   backdrop-filter: blur(3px);
 }
 
 .sheet-body {
   display: grid;
   gap: var(--gap-section);
-  padding: 1.25rem 1.5rem 1.5rem;
+  padding: var(--space-4) var(--space-5) var(--space-5);
 }
 
 @media (max-width: 560px) {
@@ -657,7 +655,7 @@
   }
 
   .sheet-body {
-    padding: 1rem 1rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
+    padding: var(--space-4) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -665,7 +663,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .sheet-head h2:focus,
@@ -683,7 +681,7 @@
 
 .sheet-foot {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-2);
   flex-wrap: wrap;
   align-items: center;
 }
@@ -701,20 +699,19 @@
 .detail-top {
   display: grid;
   grid-template-columns: 220px 1fr;
-  gap: 1.5rem;
+  gap: var(--space-5);
   align-items: start;
 }
 
 @media (max-width: 560px) {
   .detail-top {
     grid-template-columns: 132px 1fr;
-    gap: 1rem;
+    gap: var(--space-4);
   }
 }
 
 .detail-image .card-img {
-  border-radius: 4.5% / 3.2%;
-  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-card);
 }
 
 .detail-info {
@@ -732,14 +729,14 @@
 .chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: var(--space-1);
 }
 
 .chip {
   font-size: var(--fs-label);
   font-weight: 600;
-  padding: 0.25rem 0.6rem;
-  border-radius: 999px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-s);
   background: var(--surface-2);
   color: var(--ink-soft);
   border: 1px solid var(--line);
@@ -766,7 +763,7 @@
 
 .detail-prices div {
   display: grid;
-  gap: 0.1rem;
+  gap: var(--space-1);
 }
 
 .detail-prices dt {
@@ -782,7 +779,7 @@
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: var(--space-1);
 }
 
 .detail-market {
@@ -805,14 +802,14 @@
   border: 0;
   border-top: 1px solid var(--line);
   margin: 0;
-  padding: 1rem 0 0;
+  padding: var(--space-4) 0 0;
   min-width: 0;
 }
 
 .form-group legend {
   font-weight: 700;
   font-size: 1rem;
-  padding-right: 0.5rem;
+  padding-right: var(--space-2);
 }
 
 .form-grid {
@@ -826,8 +823,8 @@
 }
 
 .split {
-  padding: 0.85rem 1rem;
-  border-radius: var(--radius-m);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-s);
   background: var(--amber-bg);
   color: var(--ink);
 }
@@ -839,7 +836,7 @@
 label.check {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
   font-weight: 500;
   color: var(--ink);
 }
@@ -853,13 +850,13 @@ label.check {
 .link-current {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--space-3);
   flex-wrap: wrap;
 }
 
 .link-thumb {
   width: 46px;
-  border-radius: 3px;
+  border-radius: var(--radius-card);
 }
 
 .link-title {
@@ -868,18 +865,18 @@ label.check {
 
 .link-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-2);
   margin-left: auto;
 }
 
 .link-search {
   display: grid;
-  gap: 0.6rem;
+  gap: var(--space-2);
 }
 
 .link-search-row {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-2);
   flex-wrap: wrap;
 }
 
@@ -893,19 +890,19 @@ label.check {
   padding: 0;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .candidate {
   width: 100%;
   display: grid;
   justify-items: start;
-  gap: 0.2rem;
+  gap: var(--space-1);
   text-align: left;
-  padding: 0.45rem;
+  padding: var(--space-2);
   font-weight: 400;
   background: var(--surface-2);
-  border-radius: var(--radius-m);
+  border-radius: var(--radius-l);
 }
 
 .candidate img,
@@ -913,7 +910,7 @@ label.check {
   width: 100%;
   aspect-ratio: 63 / 88;
   object-fit: contain;
-  border-radius: 4.5% / 3.2%;
+  border-radius: var(--radius-card);
 }
 
 .candidate.selected {
@@ -934,13 +931,13 @@ label.check {
 /* ---------- Prijzen & grafiek ---------- */
 .price-history {
   display: grid;
-  gap: 0.85rem;
+  gap: var(--space-3);
 }
 
 .price-facts,
 .market-facts {
   display: grid;
-  gap: 0.75rem;
+  gap: var(--space-3);
   margin: 0;
 }
 
@@ -953,7 +950,7 @@ label.check {
 }
 
 .price-facts div {
-  padding: 0.6rem 0.75rem;
+  padding: var(--space-2) var(--space-3);
   background: var(--surface-2);
   border-radius: var(--radius-s);
 }
@@ -967,7 +964,7 @@ label.check {
 
 .price-facts dd,
 .market-facts dd {
-  margin: 0.15rem 0 0;
+  margin: var(--space-1) 0 0;
   font-weight: 700;
 }
 
@@ -982,7 +979,7 @@ label.check {
 .chart {
   margin: 0;
   display: grid;
-  gap: 0.4rem;
+  gap: var(--space-2);
 }
 
 .chart-box {
@@ -1031,15 +1028,15 @@ label.check {
   position: absolute;
   transform: translate(-50%, calc(-100% - 10px));
   display: grid;
-  gap: 0.1rem;
-  padding: 0.4rem 0.6rem;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-2);
   background: var(--surface-3);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-s);
   font-size: 0.82rem;
   white-space: nowrap;
   pointer-events: none;
-  box-shadow: var(--shadow-pop);
+  box-shadow: var(--shadow-float);
 }
 
 .chart details summary {
@@ -1062,7 +1059,7 @@ label.check {
 .table-scroll th,
 .table-scroll td {
   text-align: left;
-  padding: 0.3rem 0.5rem;
+  padding: var(--space-1) var(--space-2);
   border-bottom: 1px solid var(--line);
 }
 
@@ -1075,14 +1072,13 @@ label.check {
   position: relative;
   overflow: hidden;
   display: grid;
-  gap: 0.3rem;
-  padding: clamp(1.25rem, 3vw, 2rem);
+  gap: var(--space-1);
+  padding: clamp(var(--space-4), 3vw, var(--space-6));
   border-radius: var(--radius-l);
   border: 1px solid var(--line);
   background:
-    radial-gradient(600px 300px at 100% 0%, rgb(255 203 5 / 0.12), transparent 60%),
+    radial-gradient(600px 300px at 100% 0%, var(--accent-glow), transparent 60%),
     linear-gradient(140deg, var(--surface-3), var(--surface));
-  box-shadow: var(--shadow-card);
 }
 
 /* Subtiele vangbal-ring als watermerk. */
@@ -1094,8 +1090,8 @@ label.check {
   width: 260px;
   height: 260px;
   border-radius: 50%;
-  border: 22px solid rgb(255 255 255 / 0.04);
-  background: linear-gradient(transparent 46%, rgb(255 255 255 / 0.04) 46% 54%, transparent 54%);
+  border: 22px solid var(--watermark);
+  background: linear-gradient(transparent 46%, var(--watermark) 46% 54%, transparent 54%);
   pointer-events: none;
 }
 
@@ -1109,7 +1105,7 @@ label.check {
 .hero-sub {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem 1.25rem;
+  gap: var(--space-2) var(--space-4);
   color: var(--ink-soft);
 }
 
@@ -1122,12 +1118,12 @@ label.check {
 .stat-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .stat {
   display: grid;
-  gap: 0.2rem;
+  gap: var(--space-1);
   padding: var(--pad-panel);
   background: var(--surface);
   border: 1px solid var(--line);
@@ -1173,7 +1169,7 @@ a.stat:hover {
 .meter {
   display: block;
   height: 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   overflow: hidden;
   background: color-mix(in oklab, var(--accent-line) 16%, var(--surface-2));
 }
@@ -1181,14 +1177,14 @@ a.stat:hover {
 .meter-fill {
   display: block;
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--accent-line);
 }
 
 .averages {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 0.75rem;
+  gap: var(--space-3);
   margin: 0;
 }
 
@@ -1196,7 +1192,7 @@ a.stat:hover {
   padding: var(--pad-panel);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--radius-m);
+  border-radius: var(--radius-l);
 }
 
 .averages dt {
@@ -1206,23 +1202,23 @@ a.stat:hover {
 }
 
 .averages dd {
-  margin: 0.15rem 0 0;
+  margin: var(--space-1) 0 0;
   font-size: var(--fs-stat);
   font-weight: 800;
 }
 
 .market {
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .market-main {
   display: grid;
-  gap: 0.15rem;
+  gap: var(--space-1);
 }
 
 .section-title {
   font-size: var(--fs-h2);
-  margin-top: 0.5rem;
+  margin-top: var(--space-2);
 }
 
 .panel-title {
@@ -1232,7 +1228,7 @@ a.stat:hover {
 .split-panels {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .stat-value.up {
@@ -1244,13 +1240,13 @@ a.stat:hover {
 }
 
 .hero .chart {
-  margin-top: 0.75rem;
+  margin-top: var(--space-3);
 }
 
 .movers {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .mover-list {
@@ -1258,7 +1254,7 @@ a.stat:hover {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.35rem;
+  gap: var(--space-1);
 }
 
 .mover {
@@ -1266,8 +1262,8 @@ a.stat:hover {
   display: grid;
   grid-template-columns: 38px 1fr auto;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0.35rem 0.4rem;
+  gap: var(--space-3);
+  padding: var(--space-1) var(--space-2);
   border: 0;
   border-radius: var(--radius-s);
   background: transparent;
@@ -1284,7 +1280,7 @@ a.stat:hover {
 .mover img,
 .mover .card-img {
   width: 38px;
-  border-radius: 3px;
+  border-radius: var(--radius-card);
 }
 
 .mover-name {
@@ -1312,9 +1308,9 @@ a.stat:hover {
 .scan-stage {
   display: grid;
   grid-template-columns: minmax(140px, 220px) 1fr;
-  gap: 1.5rem;
+  gap: var(--space-5);
   align-items: center;
-  padding: 1.25rem;
+  padding: var(--space-4);
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-l);
@@ -1333,7 +1329,7 @@ a.stat:hover {
   max-width: 220px;
   aspect-ratio: 63 / 88;
   object-fit: cover;
-  border-radius: var(--radius-m);
+  border-radius: var(--radius-l);
   border: 1px solid var(--line);
   background: var(--surface-2);
 }
@@ -1355,7 +1351,7 @@ a.stat:hover {
 
 .scan-actions {
   display: grid;
-  gap: 0.6rem;
+  gap: var(--space-2);
   justify-items: start;
 }
 
@@ -1367,8 +1363,8 @@ a.stat:hover {
 
 .scan-button {
   font-size: 1.1rem;
-  padding: 0.9rem 1.75rem;
-  border-radius: 999px;
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-pill);
   background: var(--yellow);
   border-color: var(--yellow);
   color: var(--on-yellow);
@@ -1386,7 +1382,7 @@ a.stat:hover {
 
 .scan-result h2 {
   font-size: var(--fs-h2);
-  margin-top: 0.5rem;
+  margin-top: var(--space-2);
 }
 
 .scan-name {
@@ -1396,7 +1392,7 @@ a.stat:hover {
 
 .scan-foot {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-2);
   flex-wrap: wrap;
 }
 
@@ -1405,18 +1401,18 @@ a.stat:hover {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .scan-row {
   display: grid;
   grid-template-columns: auto 64px 1fr auto;
   align-items: center;
-  gap: 0.85rem;
-  padding: 0.65rem 0.85rem;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-3);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--radius-m);
+  border-radius: var(--radius-l);
 }
 
 .scan-row.on {
@@ -1433,12 +1429,12 @@ a.stat:hover {
   aspect-ratio: 63 / 88;
   object-fit: contain;
   display: block;
-  border-radius: 3px;
+  border-radius: var(--radius-card);
 }
 
 .scan-info {
   display: grid;
-  gap: 0.25rem;
+  gap: var(--space-1);
   min-width: 0;
 }
 
@@ -1466,19 +1462,19 @@ a.stat:hover {
   display: flex;
   flex-wrap: wrap;
   align-items: end;
-  gap: 0.75rem;
-  padding: 0.9rem 1rem;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4);
   background: var(--surface);
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius-m);
-  box-shadow: var(--shadow-pop);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-float);
   position: sticky;
-  bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
 }
 
 @media (max-width: 860px) {
   .scan-bulk {
-    bottom: calc(var(--tabbar) + 0.75rem + env(safe-area-inset-bottom, 0px));
+    bottom: calc(var(--tabbar) + var(--space-3) + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -1501,7 +1497,7 @@ a.stat:hover {
   padding: 0;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 @media (max-width: 420px) {
@@ -1514,8 +1510,8 @@ a.stat:hover {
   display: grid;
   grid-template-columns: 88px 1fr auto;
   align-items: center;
-  gap: 1rem;
-  padding: 0.9rem 1rem;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-4);
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-l);
@@ -1543,7 +1539,7 @@ a.stat:hover {
 
 .set-info {
   display: grid;
-  gap: 0.45rem;
+  gap: var(--space-2);
   min-width: 0;
 }
 
@@ -1572,8 +1568,8 @@ a.stat:hover {
 .set-binder {
   grid-template-columns: repeat(var(--binder-cols, 3), minmax(0, 1fr));
   max-width: calc(var(--binder-cols, 3) * 210px);
-  gap: 0.6rem;
-  padding: 0.9rem;
+  gap: var(--space-2);
+  padding: var(--space-4);
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-l);
@@ -1583,13 +1579,13 @@ a.stat:hover {
 .binder-pages {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 540px));
-  gap: 1.25rem;
+  gap: var(--space-4);
   align-items: start;
 }
 
 .binder-page {
   display: grid;
-  gap: 0.4rem;
+  gap: var(--space-2);
 }
 
 .binder-page-label {
@@ -1606,20 +1602,20 @@ a.stat:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  gap: var(--space-4);
   flex-wrap: wrap;
 }
 
 .slot {
   position: relative;
-  border-radius: 6px;
-  padding: 0.3rem;
+  border-radius: var(--radius-s);
+  padding: var(--space-1);
   background: var(--surface-2);
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
 .slot .card-img {
-  border-radius: 4.5% / 3.2%;
+  border-radius: var(--radius-card);
 }
 
 .slot.missing .card-img {
@@ -1632,7 +1628,7 @@ a.stat:hover {
   text-align: center;
   font-size: 0.75rem;
   color: var(--muted);
-  padding-top: 0.25rem;
+  padding-top: var(--space-1);
 }
 
 .slot.have .slot-num {
@@ -1659,10 +1655,10 @@ a.stat:hover {
   overflow: hidden;
   display: grid;
   align-content: end;
-  padding: 3rem;
+  padding: var(--space-7);
   background:
-    radial-gradient(700px 400px at 30% 30%, rgb(255 203 5 / 0.16), transparent 60%),
-    linear-gradient(160deg, #13224d, #0a1226);
+    radial-gradient(700px 400px at 30% 30%, var(--brand-panel-glow), transparent 60%),
+    linear-gradient(160deg, var(--brand-panel-top), var(--brand-panel-bottom));
 }
 
 .login-fan {
@@ -1676,10 +1672,9 @@ a.stat:hover {
   position: absolute;
   width: 180px;
   aspect-ratio: 63 / 88;
-  border-radius: 12px;
-  border: 1px solid rgb(255 255 255 / 0.12);
-  background: linear-gradient(150deg, rgb(255 255 255 / 0.09), rgb(255 255 255 / 0.02));
-  box-shadow: 0 20px 50px rgb(0 0 0 / 0.35);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--brand-card-line);
+  background: linear-gradient(150deg, var(--brand-card-from), var(--brand-card-to));
 }
 
 .login-fan span:nth-child(1) {
@@ -1688,7 +1683,7 @@ a.stat:hover {
 
 .login-fan span:nth-child(2) {
   transform: translate(0, -20px);
-  background: linear-gradient(150deg, rgb(255 203 5 / 0.35), rgb(255 203 5 / 0.08));
+  background: linear-gradient(150deg, var(--brand-card-accent-from), var(--brand-card-accent-to));
 }
 
 .login-fan span:nth-child(3) {
@@ -1701,24 +1696,24 @@ a.stat:hover {
   font-size: clamp(1.4rem, 2.6vw, 2.1rem);
   font-weight: 800;
   line-height: 1.15;
-  color: #eaf0ff;
+  color: var(--brand-panel-ink);
 }
 
 .login-panel {
   display: grid;
   place-items: center;
-  padding: 2rem 1.25rem;
+  padding: var(--space-6) var(--space-4);
 }
 
 .login-panel form {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-4);
   width: min(100%, 360px);
 }
 
 .login-panel h1 {
   font-size: 1.8rem;
-  margin-top: 0.75rem;
+  margin-top: var(--space-3);
 }
 
 @media (max-width: 760px) {
@@ -1728,7 +1723,7 @@ a.stat:hover {
 
   .login-brand {
     min-height: 220px;
-    padding: 1.5rem;
+    padding: var(--space-5);
   }
 
   .login-fan span {
@@ -1738,19 +1733,19 @@ a.stat:hover {
 
 /* ---------- Import ---------- */
 .file {
-  margin: 1rem 0;
+  margin: var(--space-4) 0;
   max-width: 420px;
 }
 
 .preview table {
   border-collapse: collapse;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
 }
 
 .preview th,
 .preview td {
   text-align: left;
-  padding: 0.35rem 1.5rem 0.35rem 0;
+  padding: var(--space-1) var(--space-5) var(--space-1) 0;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1771,13 +1766,13 @@ a.stat:hover {
   font-weight: 800;
   font-size: 0.9rem;
   color: var(--ink-soft);
-  padding: 0.3rem 0.5rem;
+  padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-s);
   background: var(--surface-2);
 }
 
 .set-row.set-empty {
-  padding-block: 0.6rem;
+  padding-block: var(--space-2);
 }
 
 .set-row.set-empty .set-name {
@@ -1787,8 +1782,8 @@ a.stat:hover {
 
 /* ---------- Compacte popup en formulier ---------- */
 .sheet-body {
-  gap: 0.9rem;
-  padding: 1rem 1.25rem 1.25rem;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-4) var(--space-4);
 }
 
 .sheet-head h2 {
@@ -1797,12 +1792,12 @@ a.stat:hover {
 
 .card-form,
 .card-detail {
-  gap: 0.9rem;
+  gap: var(--space-4);
 }
 
 .form-group {
-  gap: 0.55rem;
-  padding-top: 0.7rem;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
 }
 
 .form-group legend {
@@ -1810,25 +1805,25 @@ a.stat:hover {
 }
 
 .form-grid {
-  gap: 0.55rem 0.65rem;
+  gap: var(--space-2) var(--space-3);
 }
 
 .card-form label {
-  gap: 0.2rem;
+  gap: var(--space-1);
 }
 
 .card-form input,
 .card-form select {
-  padding: 0.45rem 0.6rem;
+  padding: var(--space-2) var(--space-2);
 }
 
 .card-form .split {
-  padding: 0.6rem 0.8rem;
+  padding: var(--space-2) var(--space-3);
 }
 
 @media (max-width: 560px) {
   .sheet-body {
-    padding: 0.85rem 0.9rem calc(1rem + env(safe-area-inset-bottom, 0px));
+    padding: var(--space-3) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
   }
 
   .form-grid {
@@ -1841,7 +1836,7 @@ a.stat:hover {
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: #000;
+  background: var(--camera-bg);
   display: grid;
   place-items: center;
 }
@@ -1860,8 +1855,8 @@ a.stat:hover {
   width: min(70vw, 50vh);
   aspect-ratio: 63 / 88;
   border: 3px solid var(--yellow);
-  border-radius: 14px;
-  box-shadow: 0 0 0 100vmax rgb(0 0 0 / 0.35);
+  border-radius: var(--radius-card);
+  box-shadow: 0 0 0 100vmax var(--camera-dim);
   pointer-events: none;
 }
 
@@ -1872,16 +1867,16 @@ a.stat:hover {
 
 .camera-close {
   position: absolute;
-  top: calc(0.75rem + env(safe-area-inset-top, 0px));
-  right: 0.75rem;
-  background: rgb(0 0 0 / 0.5);
+  top: calc(var(--space-3) + env(safe-area-inset-top, 0px));
+  right: var(--space-3);
+  background: var(--camera-control);
   border: 0;
-  color: #fff;
+  color: var(--white);
   border-radius: 50%;
 }
 
 .camera-close:hover:not(:disabled) {
-  background: rgb(0 0 0 / 0.7);
+  background: var(--camera-control-hover);
   border: 0;
 }
 
@@ -1891,15 +1886,15 @@ a.stat:hover {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  padding: 1.25rem 1.5rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
-  background: linear-gradient(transparent, rgb(0 0 0 / 0.6));
+  padding: var(--space-4) var(--space-5) calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(transparent, var(--camera-shade));
 }
 
 .camera-files {
   justify-self: start;
-  background: rgb(255 255 255 / 0.15);
+  background: var(--camera-glass);
   border: 0;
-  color: #fff;
+  color: var(--white);
 }
 
 .camera-shutter {
@@ -1907,40 +1902,40 @@ a.stat:hover {
   height: 72px;
   padding: 0;
   border-radius: 50%;
-  background: #fff;
+  background: var(--white);
   border: 4px solid var(--yellow);
-  box-shadow: 0 0 0 4px rgb(255 255 255 / 0.35);
+  box-shadow: 0 0 0 4px var(--camera-ring);
 }
 
 .camera-shutter:hover:not(:disabled) {
-  background: #fff;
+  background: var(--white);
   border-color: var(--yellow-hover);
 }
 
 .camera-error {
   position: relative;
   display: grid;
-  gap: 0.75rem;
+  gap: var(--space-3);
   justify-items: center;
   max-width: 320px;
-  padding: 1.25rem;
+  padding: var(--space-4);
   text-align: center;
-  color: #fff;
-  background: rgb(0 0 0 / 0.6);
-  border-radius: var(--radius-m);
+  color: var(--white);
+  background: var(--camera-shade);
+  border-radius: var(--radius-l);
 }
 
 /* ---------- Eigen foto ---------- */
 .photo-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem;
-  margin-top: 0.4rem;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
 }
 
 button.small-btn {
   font-size: var(--fs-small);
-  padding: 0.3rem 0.55rem;
+  padding: var(--space-1) var(--space-2);
 }
 
 /* ---------- Getekende kaartvoorkant (geen foto beschikbaar) ---------- */
@@ -1949,22 +1944,22 @@ button.small-btn {
   display: grid;
   align-content: center;
   justify-items: center;
-  gap: 0.4rem;
+  gap: var(--space-2);
   padding: 12% 10%;
   text-align: center;
-  border-radius: 4.5% / 3.2%;
+  border-radius: var(--radius-card);
   overflow: hidden;
   color: var(--ink);
   background:
-    radial-gradient(120% 80% at 20% 0%, rgb(255 203 5 / 0.22), transparent 55%),
-    radial-gradient(120% 80% at 100% 100%, rgb(91 155 255 / 0.22), transparent 55%),
+    radial-gradient(120% 80% at 20% 0%, var(--face-glow-accent), transparent 55%),
+    radial-gradient(120% 80% at 100% 100%, var(--face-glow-blue), transparent 55%),
     linear-gradient(160deg, var(--surface-3), var(--surface-2));
   box-shadow: inset 0 0 0 5px var(--surface), inset 0 0 0 6px var(--line-strong);
 }
 
 .card-face.sealed {
   background:
-    radial-gradient(120% 80% at 50% 0%, rgb(255 203 5 / 0.3), transparent 60%),
+    radial-gradient(120% 80% at 50% 0%, var(--face-glow-sealed), transparent 60%),
     linear-gradient(160deg, var(--surface-3), var(--surface));
 }
 
@@ -2011,7 +2006,7 @@ button.small-btn {
 /* ---------- Holo-glans ---------- */
 .foil-wrap {
   position: relative;
-  border-radius: 4.5% / 3.2%;
+  border-radius: var(--radius-card);
   overflow: hidden;
   isolation: isolate;
 }
@@ -2040,9 +2035,9 @@ button.small-btn {
   background: linear-gradient(
     105deg,
     transparent 40%,
-    rgb(255 255 255 / 0.55) 46%,
-    rgb(255 225 140 / 0.5) 48.5%,
-    rgb(150 210 255 / 0.5) 51%,
+    var(--foil-holo-1) 46%,
+    var(--foil-holo-2) 48.5%,
+    var(--foil-holo-3) 51%,
     transparent 57%
   );
 }
@@ -2052,11 +2047,11 @@ button.small-btn {
   background: linear-gradient(
     105deg,
     transparent 30%,
-    rgb(255 120 200 / 0.3) 38%,
-    rgb(255 230 120 / 0.32) 44%,
-    rgb(120 255 200 / 0.3) 50%,
-    rgb(120 180 255 / 0.32) 56%,
-    rgb(200 140 255 / 0.3) 62%,
+    var(--foil-rev-1) 38%,
+    var(--foil-rev-2) 44%,
+    var(--foil-rev-3) 50%,
+    var(--foil-rev-4) 56%,
+    var(--foil-rev-5) 62%,
     transparent 70%
   );
 }
@@ -2114,7 +2109,7 @@ button.zoom-trigger:hover:not(:disabled) {
   height: 100dvh;
   max-height: 100dvh;
   margin: 0;
-  padding: 16px;
+  padding: var(--space-4);
   border: 0;
   background: transparent;
   display: grid;
@@ -2133,14 +2128,14 @@ button.zoom-trigger:hover:not(:disabled) {
 }
 
 .card-zoom-image .card-img {
-  border-radius: 4.5% / 3.2%;
-  box-shadow: var(--shadow-pop);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-float);
 }
 
 .card-zoom-close {
   position: fixed;
-  top: calc(16px + env(safe-area-inset-top, 0px));
-  right: 16px;
+  top: calc(var(--space-4) + env(safe-area-inset-top, 0px));
+  right: var(--space-4);
   border: 0;
   border-radius: 50%;
   background: var(--surface);

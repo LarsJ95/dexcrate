@@ -41,9 +41,16 @@
   --logo-band: #0a1226;
 
   --scrim: rgb(4 8 20 / 0.86);
+  --scrim-soft: rgb(4 8 20 / 0.6);
 
-  --shadow-card: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 8px 24px rgb(0 0 0 / 0.25);
-  --shadow-pop: 0 18px 48px rgb(0 0 0 / 0.45);
+  --accent-glow: rgb(255 203 5 / 0.12);
+  --watermark: rgb(255 255 255 / 0.04);
+  --face-glow-accent: rgb(255 203 5 / 0.22);
+  --face-glow-blue: rgb(91 155 255 / 0.22);
+  --face-glow-sealed: rgb(255 203 5 / 0.3);
+
+  /* Diepte alleen voor zwevende lagen: popup, vergrote kaart, tooltip, zwevende balk. */
+  --shadow-float: 0 16px 48px rgb(0 0 0 / 0.45);
 }
 
 :root[data-theme='light'] {
@@ -78,20 +85,66 @@
   --logo-band: #0e1a3a;
 
   --scrim: rgb(4 8 20 / 0.86);
+  --scrim-soft: rgb(4 8 20 / 0.6);
 
-  --shadow-card: 0 1px 2px rgb(14 26 58 / 0.06), 0 6px 18px rgb(14 26 58 / 0.06);
-  --shadow-pop: 0 18px 48px rgb(14 26 58 / 0.18);
+  --shadow-float: 0 16px 48px rgb(14 26 58 / 0.18);
 }
 
 :root {
+  /* Spacing: alleen deze waarden (DESIGN.md §5). */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* Radius (DESIGN.md §6): badges / bediening / vlakken / statuspillen / echte kaartvorm. */
+  --radius-xs: 4px;
   --radius-s: 8px;
-  --radius-m: 14px;
-  --radius-l: 14px;
+  --radius-l: 16px;
+  --radius-pill: 999px;
+  --radius-card: 4.5% / 3.2%;
 
   /* Eén ritme: ruimte tussen blokken en binnen vlakken. */
-  --gap-section: 1.25rem;
-  --gap-inner: 0.75rem;
-  --pad-panel: 1.1rem 1.25rem;
+  --gap-section: var(--space-5);
+  --gap-inner: var(--space-3);
+  --pad-panel: var(--space-4);
+
+  /* Vaste kleuren, gelijk in beide thema's: badges en camera liggen op foto's, het inlogpaneel is altijd donker. */
+  --white: #fff;
+  --on-red: #fff;
+  --badge-bg: rgb(10 18 38 / 0.82);
+  --grade-bg: #fff;
+  --on-grade: #0e1a3a;
+  --camera-bg: #000;
+  --camera-dim: rgb(0 0 0 / 0.35);
+  --camera-control: rgb(0 0 0 / 0.5);
+  --camera-control-hover: rgb(0 0 0 / 0.7);
+  --camera-shade: rgb(0 0 0 / 0.6);
+  --camera-glass: rgb(255 255 255 / 0.15);
+  --camera-ring: rgb(255 255 255 / 0.35);
+  --brand-panel-top: #13224d;
+  --brand-panel-bottom: #0a1226;
+  --brand-panel-glow: rgb(255 203 5 / 0.16);
+  --brand-panel-ink: #eaf0ff;
+  --brand-card-line: rgb(255 255 255 / 0.12);
+  --brand-card-from: rgb(255 255 255 / 0.09);
+  --brand-card-to: rgb(255 255 255 / 0.02);
+  --brand-card-accent-from: rgb(255 203 5 / 0.35);
+  --brand-card-accent-to: rgb(255 203 5 / 0.08);
+
+  /* Holo-glans (DESIGN.md §9). */
+  --foil-holo-1: rgb(255 255 255 / 0.55);
+  --foil-holo-2: rgb(255 225 140 / 0.5);
+  --foil-holo-3: rgb(150 210 255 / 0.5);
+  --foil-rev-1: rgb(255 120 200 / 0.3);
+  --foil-rev-2: rgb(255 230 120 / 0.32);
+  --foil-rev-3: rgb(120 255 200 / 0.3);
+  --foil-rev-4: rgb(120 180 255 / 0.32);
+  --foil-rev-5: rgb(200 140 255 / 0.3);
 
   /* Typeschaal */
   --fs-label: 0.8rem;
@@ -108,6 +161,12 @@
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+@media (max-width: 480px) {
+  :root {
+    --gap-section: var(--space-4);
+  }
 }
 
 *,
@@ -150,10 +209,10 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.45rem;
+  gap: var(--space-2);
   border: 1px solid var(--line);
   border-radius: var(--radius-s);
-  padding: 0.6rem 1rem;
+  padding: var(--space-2) var(--space-4);
   background: var(--surface-2);
   color: var(--ink);
   transition: background-color 120ms, border-color 120ms, transform 120ms;
@@ -193,7 +252,7 @@ button.ghost:hover:not(:disabled) {
 button.danger {
   background: var(--red);
   border-color: var(--red);
-  color: #fff;
+  color: var(--on-red);
 }
 
 button.danger-text {
@@ -201,7 +260,7 @@ button.danger-text {
 }
 
 button.icon-btn {
-  padding: 0.5rem;
+  padding: var(--space-2);
 }
 
 button:disabled {
@@ -218,7 +277,7 @@ button:disabled {
 input,
 select {
   font: inherit;
-  padding: 0.6rem 0.75rem;
+  padding: var(--space-2) var(--space-3);
   border: 1px solid var(--line);
   border-radius: var(--radius-s);
   background: var(--surface-2);
@@ -255,7 +314,7 @@ input[type='date'] {
 
 label {
   display: grid;
-  gap: 0.35rem;
+  gap: var(--space-1);
   font-weight: 600;
   font-size: var(--fs-label);
   color: var(--ink-soft);
