@@ -2625,7 +2625,7 @@ button.small-btn {
   color: var(--ink);
   background:
     radial-gradient(120% 80% at 20% 0%, var(--face-glow-accent), transparent 55%),
-    radial-gradient(120% 80% at 100% 100%, var(--face-glow-blue), transparent 55%),
+    radial-gradient(120% 80% at 100% 100%, var(--face-glow-cool), transparent 55%),
     linear-gradient(160deg, var(--surface-3), var(--surface-2));
   box-shadow: inset 0 0 0 5px var(--surface), inset 0 0 0 6px var(--line-strong);
 }

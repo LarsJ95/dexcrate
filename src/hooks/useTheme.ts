@@ -21,7 +21,7 @@ export function useTheme(): { theme: Theme; toggle: () => void } {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0a1226' : '#f2f5fb')
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0e0d12' : '#f4f3f6')
     try {
       localStorage.setItem(STORAGE_KEY, theme)
     } catch (err) {
