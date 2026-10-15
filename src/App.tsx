@@ -5,6 +5,7 @@ import { Shell } from './components/Shell'
 import { ROUTES } from './lib/routes'
 import { useHashRoute } from './hooks/useHashRoute'
 import { useTheme } from './hooks/useTheme'
+import { BackupPage } from './pages/BackupPage'
 import { CollectionPage } from './pages/CollectionPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { ImportPage } from './pages/ImportPage'
@@ -60,6 +61,7 @@ function App(): JSX.Element {
       {route === 'transactions' && <TransactionsPage />}
       {route === 'photos' && <PhotosPage />}
       {route === 'import' && <ImportPage />}
+      {route === 'backup' && <BackupPage />}
       {route === 'settings' && <SettingsPage />}
       {route === 'more' && <MorePage />}
     </Shell>

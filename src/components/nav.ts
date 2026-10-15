@@ -1,6 +1,6 @@
 import type { JSX } from 'react'
 import type { Route } from '../lib/routes'
-import { IconCamera, IconCards, IconHome, IconImage, IconLayers, IconMore, IconReceipt, IconSettings, IconStar, IconUpload } from './Icons'
+import { IconArchive, IconCamera, IconCards, IconHome, IconImage, IconLayers, IconMore, IconReceipt, IconSettings, IconStar, IconUpload } from './Icons'
 
 export interface NavItem {
   route: Route
@@ -19,6 +19,7 @@ export const MORE_ITEMS: NavItem[] = [
   { route: 'transactions', label: 'Transactions', Icon: IconReceipt },
   { route: 'photos', label: 'Photos', Icon: IconImage },
   { route: 'import', label: 'Import', Icon: IconUpload },
+  { route: 'backup', label: 'Backup', Icon: IconArchive },
   { route: 'settings', label: 'Settings', Icon: IconSettings },
 ]
 

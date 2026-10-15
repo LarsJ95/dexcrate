@@ -12,7 +12,11 @@ import { CardZoom } from '../components/CardZoom'
 import { SetCardSheet } from '../components/SetCardSheet'
 import { DashboardView } from '../components/DashboardView'
 import { IconArrowLeft, IconSearch } from '../components/Icons'
+import { BackupPage } from '../pages/BackupPage'
 import { MorePage } from '../pages/MorePage'
+import { SettingsPage } from '../pages/SettingsPage'
+import { TransactionsPage } from '../pages/TransactionsPage'
+import { WishlistPage } from '../pages/WishlistPage'
 import { PhotosPage } from '../pages/PhotosPage'
 import { ScanPage } from '../pages/ScanPage'
 import { SetBinderPage } from '../pages/SetBinderPage'
@@ -266,10 +270,15 @@ export function Preview(): JSX.Element {
       </Shell>
     )
   }
-  if (page === 'more' || page === 'photos') {
+  if (page === 'more' || page === 'photos' || page === 'backup' || page === 'settings' || page === 'wishlist' || page === 'transactions') {
     return (
       <Shell route={page} email="demo@example.com" theme={theme} onToggleTheme={noop} onSignOut={noop}>
-        {page === 'more' ? <MorePage /> : <PhotosPage />}
+        {page === 'more' && <MorePage />}
+        {page === 'photos' && <PhotosPage />}
+        {page === 'backup' && <BackupPage />}
+        {page === 'settings' && <SettingsPage />}
+        {page === 'wishlist' && <WishlistPage />}
+        {page === 'transactions' && <TransactionsPage />}
       </Shell>
     )
   }
