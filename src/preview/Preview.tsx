@@ -20,6 +20,13 @@ const params = new URLSearchParams(location.search)
 const theme = params.get('theme') === 'light' ? 'light' : 'dark'
 document.documentElement.dataset.theme = theme
 
+// ?freeze=1: holo-glans midden in de beweging stilzetten, voor screenshots.
+if (params.get('freeze') === '1') {
+  const style = document.createElement('style')
+  style.textContent = '.foil::before{animation-delay:-5.8s!important;animation-play-state:paused!important}'
+  document.head.appendChild(style)
+}
+
 let n = 0
 function demo(patch: Partial<CardInput>): Card {
   n += 1
@@ -36,7 +43,7 @@ function demo(patch: Partial<CardInput>): Card {
 
 const CARDS: { card: Card; market: MarketValue | null }[] = [
   { card: demo({ name: 'Mew ex', set_code: 'MEW', card_number: '151', tcgdex_id: 'en/sv03.5-151', purchase_price: 6.5, variant: 'holo', condition: 'NM' }), market: { value: 7.34, basis: 'trend', reverse: false, change30: 0.06 } },
-  { card: demo({ name: 'Charizard ex', set_code: 'MEW', card_number: '6', tcgdex_id: 'en/sv03.5-006', status: 'for_sale', sale_price: 8.35 }), market: { value: 7.9, basis: 'trend', reverse: false, change30: -0.04 } },
+  { card: demo({ name: 'Charizard ex', set_code: 'MEW', card_number: '6', tcgdex_id: 'en/sv03.5-006', status: 'for_sale', sale_price: 8.35, variant: 'reverse' }), market: { value: 7.9, basis: 'trend', reverse: false, change30: -0.04 } },
   { card: demo({ name: 'Oranguru V', set_code: 'ASR', card_number: '133', tcgdex_id: 'en/swsh10-133', purchase_price: 0.75 }), market: { value: 0.77, basis: 'trend', reverse: false, change30: 0 } },
   { card: demo({ name: 'Mega Charizard X ex', set_code: 'PFL', card_number: '13', tcgdex_id: 'en/me02-013', status: 'sold', sale_price: 24 }), market: { value: 22.1, basis: 'trend', reverse: false, change30: 0.12 } },
   { card: demo({ name: 'Vivillon', set_code: 'SV8', card_number: '107', tcgdex_id: 'ja/SV8-107', language: 'ja', quantity: 3, purchase_price: 1.5 }), market: { value: 1.28, basis: 'trend', reverse: false, change30: -0.09 } },

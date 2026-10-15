@@ -10,6 +10,7 @@ import { CameraCapture } from './CameraCapture'
 import { CardImage } from './CardImage'
 import { CardmarketLink } from './CardmarketLink'
 import { ChangeBadge } from './ChangeBadge'
+import { Foil } from './Foil'
 import { PriceChart } from './PriceChart'
 
 interface Props {
@@ -102,8 +103,17 @@ export function CardDetail({ card, onEdit, onSaved, onChanged }: Props): JSX.Ele
     <div className="card-detail">
       <div className="detail-top">
         <div className="detail-image">
-          <CardImage tcgdexId={card.tcgdex_id} kind={card.kind} name={card.name} photoPath={card.image_path}
-          detail={[card.set_code, card.card_number && `#${card.card_number}`].filter(Boolean).join(' ')} quality="high" />
+          <div className="foil-wrap">
+            <CardImage
+              tcgdexId={card.tcgdex_id}
+              kind={card.kind}
+              name={card.name}
+              photoPath={card.image_path}
+              detail={[card.set_code, card.card_number && `#${card.card_number}`].filter(Boolean).join(' ')}
+              quality="high"
+            />
+            {card.status !== 'sold' && <Foil variant={card.variant} seed={card.id} />}
+          </div>
           <div className="photo-actions">
             <button type="button" className="ghost small-btn" onClick={() => setCameraOpen(true)} disabled={photoBusy}>
               {photoBusy ? 'Saving…' : card.image_path ? 'Change photo' : 'Add photo'}

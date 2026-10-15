@@ -2007,3 +2007,74 @@ button.small-btn {
 .scan-thumb .card-face-detail {
   display: none;
 }
+
+/* ---------- Holo-glans ---------- */
+.foil-wrap {
+  position: relative;
+  border-radius: 4.5% / 3.2%;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.foil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* Eén brede gradiëntlaag die af en toe over de kaart schuift: alleen transform, dus goedkoop. */
+.foil::before {
+  content: '';
+  position: absolute;
+  inset: -20% -150%;
+  transform: translateX(-45%) rotate(0.001deg);
+  animation: foil-sweep 7s ease-in-out var(--foil-delay, 0s) infinite;
+  mix-blend-mode: overlay;
+  will-change: transform;
+}
+
+.foil-holo::before {
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgb(255 255 255 / 0.55) 46%,
+    rgb(255 225 140 / 0.5) 48.5%,
+    rgb(150 210 255 / 0.5) 51%,
+    transparent 57%
+  );
+}
+
+/* Reverse holo: zachtere regenboog over de hele kaart. */
+.foil-reverse::before {
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgb(255 120 200 / 0.3) 38%,
+    rgb(255 230 120 / 0.32) 44%,
+    rgb(120 255 200 / 0.3) 50%,
+    rgb(120 180 255 / 0.32) 56%,
+    rgb(200 140 255 / 0.3) 62%,
+    transparent 70%
+  );
+}
+
+/* 7 s cyclus: ±1,5 s glans, daarna rust. */
+@keyframes foil-sweep {
+  0%,
+  72% {
+    transform: translateX(-45%) rotate(0.001deg);
+  }
+  94%,
+  100% {
+    transform: translateX(45%) rotate(0.001deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .foil {
+    display: none;
+  }
+}
