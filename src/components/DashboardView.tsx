@@ -56,9 +56,12 @@ function MoverList({
         <ol className="mover-list">
           {items.map(({ card, market }) => (
             <li key={card.id}>
-              <button type="button" className="mover" onClick={() => onOpenCard?.(card.id)} aria-label={`Open ${card.name}`}>
-                <CardImage tcgdexId={card.tcgdex_id} kind={card.kind} name={card.name} photoPath={card.image_path}
-          detail={[card.set_code, card.card_number && `#${card.card_number}`].filter(Boolean).join(' ')} />
+              {/* Naam uit de zichtbare tekst (naam, nummer, prijs); de thumbnail herhaalt alleen de naam. */}
+              <button type="button" className="mover" onClick={() => onOpenCard?.(card.id)}>
+                <span aria-hidden="true">
+                  <CardImage tcgdexId={card.tcgdex_id} kind={card.kind} name={card.name} photoPath={card.image_path}
+            detail={[card.set_code, card.card_number && `#${card.card_number}`].filter(Boolean).join(' ')} />
+                </span>
                 <span className="mover-name">
                   {card.name}
                   {card.card_number && <span className="muted"> #{card.card_number}</span>}

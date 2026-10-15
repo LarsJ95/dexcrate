@@ -39,7 +39,8 @@ function CardTileBase({ card, market, onOpen, onToggleSold, busy }: Props): JSX.
 
   return (
     <li className={`tile status-${card.status}`}>
-      <button type="button" className="tile-open" onClick={() => onOpen(card.id)} aria-label={`Open ${card.name}`}>
+      {/* Naam uit de inhoud (foto-alt of getekende voorkant + badges), zodat die overeenkomt met wat je ziet. */}
+      <button type="button" className="tile-open" onClick={() => onOpen(card.id)}>
         <CardImage tcgdexId={card.tcgdex_id} kind={card.kind} name={card.name} photoPath={card.image_path}
           detail={[card.set_code, card.card_number && `#${card.card_number}`].filter(Boolean).join(' ')} />
         {card.status !== 'sold' && <Foil variant={card.variant} seed={card.id} />}

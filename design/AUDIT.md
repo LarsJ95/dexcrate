@@ -74,5 +74,5 @@ Datum: 15-10-2026. Bron: `src/index.css`, `src/App.css`, componenten in `src/`. 
    - Accessibility op alle preview-pagina's (Overview, Collection, kaart-popup, set-kaart, Sets, setlijst, binder, Scan, vergrote kaart), donker en licht: 100 (incl. contrast). Best practices 100 na favicon in preview.html.
    - Toetsenbord: logische tabvolgorde, focusring overal zichtbaar (2px, `--focus`); popups houden focus vast.
    - Reduced motion: 0 lopende animaties, 0 overgangen, holo-glans verborgen.
-   - Open: Lighthouse-melding "label-content-name-mismatch" (niet meegeteld in de score) op kaarttegels en stijgers/dalers: aria-label "Open <naam>" bevat niet alle zichtbare tekst (badges, prijs).
+   - "label-content-name-mismatch" opgelost 15-10-2026: kaarttegels en stijgers/dalers krijgen hun naam uit de zichtbare inhoud (thumbnail bij stijgers/dalers verborgen voor schermlezers).
    - Open: Overview vergelijken met Collectr (screenshots ontbreken); test op echt toestel (gebruiker).
