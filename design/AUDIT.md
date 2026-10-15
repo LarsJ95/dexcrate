@@ -69,4 +69,10 @@ Datum: 15-10-2026. Bron: `src/index.css`, `src/App.css`, componenten in `src/`. 
 3. **Verboden-lijst**: blur vervangen door effen vlakken; verlopen weg of expliciet toestaan; tekstglyphs vervangen door SVG-iconen uit de bestaande iconenset. ✔ Gedaan 15-10-2026: geen `backdrop-filter` meer; nieuwe iconen vinkje, pijl omhoog/omlaag/links, streepje; verlopen toegestaan (§11).
 4. **Per pagina** (telkens screenshots 1440 en 390 px + alle states): app-schil/navigatie → Collection (tegels) → kaart-popup → Overview → Sets/binder → Scan → Import → Login. ✔ Gedaan 15-10-2026 behalve Overview-vergelijking met Collectr (wacht op screenshots). Breakpoints nu alleen 480 / 768 / 1024; geen tekst meer onder 14px.
 5. **Animaties**: alleen transform/opacity; holo-glans en hover-glans vastleggen in §9 of verwijderen. ✔ Gedaan 15-10-2026: hover-glans en kleurovergangen weg; tillen 4px (150 ms); popup 200 ms (mobiel omhoog); laadstatus via opacity.
-6. **Kwaliteitscheck** per pagina volgens §12 (Lighthouse, toetsenbord, reduced motion, CLS).
+6. **Kwaliteitscheck** per pagina volgens §12 (Lighthouse, toetsenbord, reduced motion, CLS). ✔ Gedaan 15-10-2026:
+   - Lighthouse 13.5.0, productiebuild (login): mobiel Performance 97 / Accessibility 100 / Best practices 100, desktop 100/100/100; CLS 0.
+   - Accessibility op alle preview-pagina's (Overview, Collection, kaart-popup, set-kaart, Sets, setlijst, binder, Scan, vergrote kaart), donker en licht: 100 (incl. contrast). Best practices 100 na favicon in preview.html.
+   - Toetsenbord: logische tabvolgorde, focusring overal zichtbaar (2px, `--focus`); popups houden focus vast.
+   - Reduced motion: 0 lopende animaties, 0 overgangen, holo-glans verborgen.
+   - Open: Lighthouse-melding "label-content-name-mismatch" (niet meegeteld in de score) op kaarttegels en stijgers/dalers: aria-label "Open <naam>" bevat niet alle zichtbare tekst (badges, prijs).
+   - Open: Overview vergelijken met Collectr (screenshots ontbreken); test op echt toestel (gebruiker).
