@@ -1,8 +1,9 @@
-import { memo, type CSSProperties, type JSX } from 'react'
+import { memo, useEffect, type CSSProperties, type JSX } from 'react'
 import { useCardInfo } from '../hooks/useCardInfo'
 import { foilStyleFor } from '../lib/cardTraits'
 import { energyColor } from '../lib/energy'
 import type { MarketValue } from '../lib/prices'
+import { registerRunner, speciesName } from '../lib/runner'
 import { formatEur } from '../lib/stats'
 import { CONDITION_LABELS, VARIANT_LABELS, canToggleSold, statusBadge, thumbPath, type Card } from '../lib/types'
 import { CardImage } from './CardImage'
@@ -48,6 +49,14 @@ function CardTileBase({ card, market, onOpen, onToggleSold, busy, selected, sale
   const type = info?.types?.[0]
   // Typestreep onder de kaart in de kleur van het energietype (DESIGN.md §4).
   const typeStyle = type ? ({ '--t': energyColor(type) } as CSSProperties) : undefined
+
+  // Pokémon die je hebt mogen langsrennen (DESIGN.md §9).
+  const dexId = info?.dexId ?? null
+  const runnerName = info ? speciesName(info.name) : ''
+  const owned = card.ownership === 'owned'
+  useEffect(() => {
+    if (dexId && owned) registerRunner({ dexId, name: runnerName, type: type ?? null })
+  }, [dexId, owned, runnerName, type])
 
   return (
     <li className={`tile status-${card.status}${selected ? ' is-selected' : ''}${type ? ' has-type' : ''}`} style={typeStyle}>

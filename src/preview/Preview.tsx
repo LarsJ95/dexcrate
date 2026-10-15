@@ -26,6 +26,7 @@ import { SetBinderPage } from '../pages/SetBinderPage'
 import { SetsPage } from '../pages/SetsPage'
 import { overrideSchemaV2ForPreview } from '../lib/db'
 import { showMoment } from '../lib/moments'
+import { seedRunnerForPreview } from '../lib/runner'
 import { overrideTransactionsForPreview } from '../lib/transactions'
 import { overrideGoalForPreview } from '../lib/wishlist'
 import { overrideValuationsForPreview } from '../lib/valuationDb'
@@ -97,6 +98,12 @@ const CARDS: { card: Card; market: MarketValue | null }[] = [
   { card: demo({ name: 'Chaos Rising Booster Box', kind: 'sealed', purchase_price: 201.9 }), market: null },
   { card: demo({ name: 'Morpeko', set_code: 'CBB3C', card_number: '14', language: 'zh-cn', purchase_price: 3.5 }), market: null },
 ]
+
+// ?runner=<dexId>: deze Pokémon rent na `at` ms voor de screenshot (na 7 s) langs.
+if (params.get('runner')) {
+  const dexId = Number(params.get('runner'))
+  seedRunnerForPreview([{ dexId, name: params.get('runnername') ?? 'Pikachu', type: 'Lightning' }], 7000 - Number(params.get('at') ?? 2500))
+}
 
 // ?moment=reveal|catch|complete&at=ms: moment zo starten dat de screenshot (na 7 s) op `at` ms valt.
 const momentParam = params.get('moment')
