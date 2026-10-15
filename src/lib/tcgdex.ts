@@ -1,6 +1,6 @@
 const API = 'https://api.tcgdex.net/v2'
 
-import type { CardLanguage } from './types'
+import type { CardLanguage, Variant } from './types'
 
 /** Talen met eigen sets/nummering in TCGdex. */
 export const LANGS = ['en', 'ja', 'zh-cn', 'zh-tw', 'ko'] as const
@@ -40,6 +40,8 @@ export interface CardInfo {
   image: string | null
   /** TCGplayer-productnummer (als TCGdex het kent), voor een extra plaatjesbron. */
   tcgplayerId?: number | null
+  /** Uitvoeringen die volgens TCGdex bestaan; null = onbekend (dan alles toestaan). */
+  variants?: Variant[] | null
   set: SetSummary
 }
 
@@ -275,7 +277,7 @@ export function matchNumber(cards: readonly SetCard[], number: string): SetCard 
 
 // --- Kaartinfo en prijzen, met cache in localStorage ---
 
-const INFO_PREFIX = 'tcgdex:card:v3:' // v3: met TCGplayer-productnummer
+const INFO_PREFIX = 'tcgdex:card:v4:' // v4: met uitvoeringen (variants)
 const INFO_TTL_MS = 7 * 24 * 60 * 60 * 1000 // namen/plaatjes veranderen zelden
 const PRICE_PREFIX = 'tcgdex:price:v2:' // v2: met idProduct
 const PRICE_TTL_MS = 6 * 60 * 60 * 1000 // TCGdex ververst prijzen dagelijks
@@ -379,6 +381,19 @@ export function findTcgplayerId(data: Record<string, unknown>): number | null {
   return null
 }
 
+const VARIANT_KEYS: readonly Variant[] = ['normal', 'holo', 'reverse', 'firstEdition']
+
+/**
+ * Bestaande uitvoeringen uit het TCGdex-object `variants` (bv. { normal: false, holo: true, reverse: false }).
+ * Ontbreekt het object of staat alles op false, dan null: onbekend, geen beperking.
+ */
+export function parseVariants(data: Record<string, unknown>): Variant[] | null {
+  const v = data.variants
+  if (!isRecord(v)) return null
+  const list = VARIANT_KEYS.filter((k) => v[k] === true)
+  return list.length > 0 ? list : null
+}
+
 const fetchCardInfo = memo(async (key: string): Promise<CardInfo | null> => {
   const cached = readCache<CardInfo>(INFO_PREFIX, INFO_TTL_MS, key)
   if (cached) return cached
@@ -408,6 +423,7 @@ const fetchCardInfo = memo(async (key: string): Promise<CardInfo | null> => {
     localId,
     image,
     tcgplayerId: findTcgplayerId(data),
+    variants: parseVariants(data),
     set: { id: data.set.id, name: typeof data.set.name === 'string' ? data.set.name : data.set.id, logo },
   }
   writeCache(INFO_PREFIX, key, info)

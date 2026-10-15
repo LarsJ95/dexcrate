@@ -18,6 +18,7 @@ import {
   type ItemKind,
   type Variant,
 } from '../lib/types'
+import { useCardInfo } from '../hooks/useCardInfo'
 import { LinkPicker } from './LinkPicker'
 
 interface Props {
@@ -161,21 +162,25 @@ function Select<K extends string>({
   options,
   onChange,
   empty = 'Unknown',
+  allowed = null,
 }: {
   label: string
   value: K | ''
   options: Record<K, string>
   onChange: (v: K | '') => void
   empty?: string
+  /** Alleen deze keuzes tonen (bv. uitvoeringen volgens de catalogus); een afwijkende huidige waarde blijft zichtbaar. */
+  allowed?: readonly K[] | null
 }): JSX.Element {
+  const keys = (Object.keys(options) as K[]).filter((k) => !allowed || allowed.includes(k) || k === value)
   return (
     <label>
       {label}
       <select value={value} onChange={(e) => onChange(e.target.value as K | '')}>
         <option value="">{empty}</option>
-        {(Object.keys(options) as K[]).map((k) => (
+        {keys.map((k) => (
           <option key={k} value={k}>
-            {options[k]}
+            {allowed && !allowed.includes(k) ? `${options[k]} (not in catalog)` : options[k]}
           </option>
         ))}
       </select>
@@ -212,6 +217,12 @@ export function CardForm({
   // Status wijzigen bij een regel met meerdere stuks → vragen hoeveel er meegaan.
   const canSplit = card !== null && card.quantity > 1 && form.status !== card.status
   const isCard = form.kind === 'card'
+
+  // Uitvoeringen die volgens TCGdex bestaan voor de gekoppelde kaart (bv. een ex-kaart: alleen holo).
+  const info = useCardInfo(isCard ? form.tcgdex_id : null)
+  const allowedVariants = info?.variants ?? null
+  const variantMismatch = form.variant !== '' && allowedVariants !== null && !allowedVariants.includes(form.variant)
+  const onlyVariant = allowedVariants?.length === 1 ? allowedVariants[0] : null
 
   function changeStatus(status: CardStatus): void {
     setForm((f) => ({ ...f, status, sale_date: status === 'sold' && !f.sale_date ? today() : f.sale_date }))
@@ -335,7 +346,13 @@ export function CardForm({
           {isCard && (
             <>
               <Select label="Language" value={form.language} options={LANGUAGE_LABELS} onChange={(v) => set('language', v)} />
-              <Select label="Variant" value={form.variant} options={VARIANT_LABELS} onChange={(v) => set('variant', v)} />
+              <Select
+                label="Variant"
+                value={form.variant}
+                options={VARIANT_LABELS}
+                allowed={allowedVariants}
+                onChange={(v) => set('variant', v)}
+              />
             </>
           )}
           <Select label="Condition" value={form.condition} options={CONDITION_LABELS} onChange={(v) => set('condition', v)} />
@@ -355,6 +372,20 @@ export function CardForm({
             </label>
           )}
         </div>
+        {isCard && variantMismatch && (
+          <p className="notice small" role="status">
+            The catalog (TCGdex) does not list {VARIANT_LABELS[form.variant as Variant]} for this card
+            {allowedVariants && `; it exists as ${allowedVariants.map((v) => VARIANT_LABELS[v]).join(', ')}`}.
+          </p>
+        )}
+        {isCard && onlyVariant && form.variant !== onlyVariant && (
+          <p className="small muted">
+            This card only exists as {VARIANT_LABELS[onlyVariant]}.{' '}
+            <button type="button" className="ghost small-btn" onClick={() => set('variant', onlyVariant)}>
+              Set to {VARIANT_LABELS[onlyVariant]}
+            </button>
+          </p>
+        )}
         <label className="check">
           <input type="checkbox" checked={!isCard} onChange={(e) => set('kind', e.target.checked ? 'sealed' : 'card')} />
           Sealed product

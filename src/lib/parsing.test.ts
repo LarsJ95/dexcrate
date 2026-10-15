@@ -9,6 +9,7 @@ import {
   limitlessJpUrl,
   lookupLang,
   parseCardmarket,
+  parseVariants,
   setOfKey,
   splitKey,
   stripLangTag,
@@ -132,5 +133,18 @@ describe('TCGplayer als terugvalbron', () => {
       'https://tcgplayer-cdn.tcgplayer.com/product/587687_400w.jpg',
     ])
     expect(tcgplayerImageUrl(null, 'low')).toBeNull()
+  })
+})
+
+describe('parseVariants', () => {
+  it('geeft alleen de bestaande uitvoeringen (Mega Gardevoir ex: alleen holo)', () => {
+    expect(parseVariants({ variants: { firstEdition: false, holo: true, normal: false, reverse: false, wPromo: false } })).toEqual(['holo'])
+    expect(parseVariants({ variants: { normal: true, reverse: true, holo: false } })).toEqual(['normal', 'reverse'])
+  })
+
+  it('onbekend als TCGdex niets of alleen false meldt', () => {
+    expect(parseVariants({})).toBeNull()
+    expect(parseVariants({ variants: { normal: false, holo: false } })).toBeNull()
+    expect(parseVariants({ variants: 'x' })).toBeNull()
   })
 })
