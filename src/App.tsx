@@ -20,6 +20,7 @@ import { SetBinderPage } from './pages/SetBinderPage'
 import { SetsPage } from './pages/SetsPage'
 import { supabase } from './lib/supabase'
 import './App.css'
+import { Loading } from './components/Loading'
 
 function App(): JSX.Element {
   const [session, setSession] = useState<Session | null>(null)
@@ -49,7 +50,7 @@ function App(): JSX.Element {
     if (error) console.error('Uitloggen mislukt', error)
   }
 
-  if (loading) return <p className="center">Loading…</p>
+  if (loading) return <Loading center />
   if (!session) return <Login />
 
   return (

@@ -6,6 +6,7 @@ import { CONDITION_LABELS, LANGUAGE_LABELS, type CardLanguage, type Condition } 
 import type { NewCardDefaults, UserSettings } from '../lib/valuation'
 import { hasValuations, loadSettings, saveSettings } from '../lib/valuationDb'
 import { setMotionPreference, useMotion, useMotionPreference } from '../lib/motion'
+import { Loading } from '../components/Loading'
 
 type Form = { pct: Record<Condition, string>; fee: string; cost: string; defaults: NewCardDefaults }
 
@@ -117,7 +118,7 @@ export function SettingsPage(): JSX.Element {
       </div>
 
       <MotionSetting />
-      {!form && !message && <p aria-live="polite">Loading…</p>}
+      {!form && !message && <Loading />}
       {form && (
         <form className="card-form panel" onSubmit={onSubmit} noValidate>
           <fieldset className="form-group">

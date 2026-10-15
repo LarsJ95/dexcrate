@@ -1,5 +1,9 @@
-import { useEffect, useMemo, useRef, useState, type JSX } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type JSX } from 'react'
 import { listCards } from '../lib/db'
+import { ENERGY_TYPES } from '../lib/cardTraits'
+import { energyColor } from '../lib/energy'
+import { burstFrom } from '../lib/fx'
+import { showMoment } from '../lib/moments'
 import { DEFAULT_GOAL, goalProgress, goalRequirements, type GoalSettings, type OwnedCopy, type RequirementState } from '../lib/goals'
 import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
@@ -12,6 +16,7 @@ import { IconArrowLeft } from '../components/Icons'
 import { SetCardSheet } from '../components/SetCardSheet'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import { getCardInfo, getCardPrice, getSet, imageCandidates, isLang, setOfKey, type SetCard, type SetSummary } from '../lib/tcgdex'
+import { Loading } from '../components/Loading'
 
 interface Props {
   /** "<taal>/<set-id>" uit de URL. */
@@ -44,6 +49,31 @@ const VARIANT_SHORT: Record<Variant, string> = { normal: 'N', holo: 'H', reverse
 const stateKey = (s: RequirementState): string => `${s.req.cardId}|${s.req.variant ?? 'any'}`
 
 const PAGE_SIZE_KEY = 'dexcrate:binder-page-size'
+/** Kaarten in bezit bij het vorige bezoek, om nieuwe in hun vak te laten springen. */
+const SEEN_KEY = 'dexcrate:binder-seen:'
+/** Set al gevierd als compleet; weer weg als de set niet meer compleet is. */
+const COMPLETE_KEY = 'dexcrate:set-complete:'
+const MAX_NEW = 12
+const SPARKLE_COLORS = ENERGY_TYPES.filter((t) => t !== 'Colorless').map(energyColor)
+
+function readSeen(key: string): Set<string> | null {
+  try {
+    const raw = localStorage.getItem(key)
+    const parsed: unknown = raw ? JSON.parse(raw) : null
+    return Array.isArray(parsed) ? new Set(parsed.filter((x): x is string => typeof x === 'string')) : null
+  } catch {
+    return null // geen opslag of kapotte waarde: als eerste bezoek behandelen
+  }
+}
+
+function remember(key: string, value: string | null): void {
+  try {
+    if (value === null) localStorage.removeItem(key)
+    else localStorage.setItem(key, value)
+  } catch (err) {
+    console.warn('Binderstatus onthouden mislukt', err)
+  }
+}
 const OLD_PAGE_SIZE_KEY = 'binderline:binder-page-size'
 
 function readPageSize(): PageSize {
@@ -229,6 +259,47 @@ export function SetBinderPage({ param }: Props): JSX.Element {
     return out
   }, [visible, pageSize])
 
+  // Nieuw sinds het vorige bezoek (eerste bezoek: niets); daarna onthouden wat je nu hebt.
+  const newIds = useMemo<ReadonlySet<string>>(() => {
+    if (!data) return new Set()
+    const owned = [...data.owned].filter(([, qty]) => qty > 0).map(([id]) => id)
+    const seen = readSeen(`${SEEN_KEY}${lang}/${setId}`)
+    return new Set(seen ? owned.filter((id) => !seen.has(id)).slice(0, MAX_NEW) : [])
+  }, [data, lang, setId])
+
+  useEffect(() => {
+    if (!data) return
+    const owned = [...data.owned].filter(([, qty]) => qty > 0).map(([id]) => id)
+    remember(`${SEEN_KEY}${lang}/${setId}`, JSON.stringify(owned))
+    if (newIds.size === 0) return
+    // Glinster zodra de nieuwe kaarten in hun vak landen.
+    const timer = window.setTimeout(() => {
+      document.querySelectorAll('.slot.is-new .slot-open').forEach((el, i) => {
+        window.setTimeout(() => burstFrom(el, { colors: SPARKLE_COLORS, count: 14, speed: 4, gravity: 0.06 }), i * 120)
+      })
+    }, 450)
+    return () => clearTimeout(timer)
+  }, [data, newIds, lang, setId])
+
+  const isComplete = progress !== null && progress.total > 0 && progress.done >= progress.total
+
+  // Set compleet: één keer vieren; niet meer compleet, dan mag het later opnieuw.
+  useEffect(() => {
+    if (!data || !progress) return
+    const key = `${COMPLETE_KEY}${lang}/${setId}`
+    if (!isComplete) {
+      remember(key, null)
+      return
+    }
+    try {
+      if (localStorage.getItem(key)) return
+    } catch {
+      return // geen opslag: niet bij elk bezoek opnieuw vieren
+    }
+    remember(key, '1')
+    showMoment({ kind: 'complete', setName: data.summary.name })
+  }, [data, progress, isComplete, lang, setId])
+
   const costSummary = useMemo(() => {
     if (!cost || !progress) return null
     let cents = 0
@@ -245,7 +316,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
 
   if (!valid) return <p className="page error">Invalid set. <a href="#/sets">Back to sets</a></p>
   if (error) return <p className="page error" role="alert">{error} <a href="#/sets">Back to sets</a></p>
-  if (!data || !progress) return <p className="center" aria-live="polite">Loading…</p>
+  if (!data || !progress) return <Loading center />
 
   const total = progress.cardsTotal
   const ownedCount = progress.cardsOwned
@@ -268,7 +339,9 @@ export function SetBinderPage({ param }: Props): JSX.Element {
       </a>
       <div className="page-head">
         <div>
-          <h1>{data.summary.name}</h1>
+          <h1>
+            {data.summary.name} {isComplete && <span className="complete-badge">Complete</span>}
+          </h1>
           <p className="muted">
             {ownedCount} of {total} cards
             {variantGoal && `, ${progress.done} of ${progress.total} versions`}
@@ -281,6 +354,17 @@ export function SetBinderPage({ param }: Props): JSX.Element {
             Goal settings
           </button>
         )}
+      </div>
+
+      <div
+        className="set-progress"
+        role="progressbar"
+        aria-label={`${unit} collected`}
+        aria-valuemin={0}
+        aria-valuemax={progress.total}
+        aria-valuenow={progress.done}
+      >
+        <span style={{ width: `${progress.total > 0 ? (progress.done / progress.total) * 100 : 0}%` }} />
       </div>
 
       {(progress.duplicates > 0 || progress.ordered > 0 || progress.unknownVariant > 0 || variantsLoading) && (
@@ -443,7 +527,11 @@ export function SetBinderPage({ param }: Props): JSX.Element {
                 }
                 const versioned = states.filter((st) => st.req.variant !== null)
                 return (
-                  <li key={c.id} className={`slot${complete ? ' have' : ' missing'}${inGoal ? '' : ' outside'}`}>
+                  <li
+                    key={c.id}
+                    className={`slot${complete ? ' have' : ' missing'}${inGoal ? '' : ' outside'}${newIds.has(c.id) ? ' is-new' : ''}`}
+                    style={newIds.has(c.id) ? ({ '--pop-delay': `${[...newIds].indexOf(c.id) * 120}ms` } as CSSProperties) : undefined}
+                  >
                     <button
                       type="button"
                       className="slot-open"

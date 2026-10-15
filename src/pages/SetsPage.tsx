@@ -3,6 +3,7 @@ import { IconSearch } from '../components/Icons'
 import { listCards } from '../lib/db'
 import { digitalSetIds, getSetList, LANGS, setOfKey, type Lang, type SetSummary } from '../lib/tcgdex'
 import type { Card } from '../lib/types'
+import { Loading } from '../components/Loading'
 
 type SortKey = 'newest' | 'oldest' | 'progress' | 'name'
 type Scope = 'all' | 'owned' | 'almost' | 'complete'
@@ -176,9 +177,7 @@ export function SetsPage(): JSX.Element {
       </div>
 
       {!sets || sets.lang !== lang ? (
-        <p className="center" aria-live="polite">
-          Loading…
-        </p>
+        <Loading center />
       ) : visible.length === 0 ? (
         <p className="empty">No sets match.</p>
       ) : (

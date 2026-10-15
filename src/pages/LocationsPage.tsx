@@ -10,6 +10,7 @@ import { listCards, updateCard } from '../lib/db'
 import { deleteLocation, deletePlanned, hasBinderPlanning, listLocations, listPlanned, saveLocation, savePlanned } from '../lib/locations'
 import { matchesSearch } from '../lib/search'
 import { thumbPath, type Card } from '../lib/types'
+import { Loading } from '../components/Loading'
 
 interface Props {
   /** Locatie-id uit de URL (#/locations/<id>), of leeg voor het overzicht. */
@@ -169,7 +170,7 @@ export function LocationsPage({ param }: Props): JSX.Element {
     )
   }
   if (error && !locations) return <p className="page error" role="alert">{error}</p>
-  if (!locations) return <p className="center" aria-live="polite">Loading…</p>
+  if (!locations) return <Loading center />
 
   // --- Overzicht ---
   if (!param) {

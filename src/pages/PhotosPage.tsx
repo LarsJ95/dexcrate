@@ -10,6 +10,7 @@ import { useUploadQueue } from '../hooks/useUploadQueue'
 import { listCards } from '../lib/db'
 import { deletePhoto, listInboxPhotos, setPrimaryPhoto, updatePhoto, uploadPhoto } from '../lib/photos'
 import { PHOTO_LABELS, type Card, type CardPhoto, type PhotoLabel } from '../lib/types'
+import { Loading } from '../components/Loading'
 
 /** Foto-inbox: foto's uploaden zonder dat de kaart al bekend is, en later koppelen. */
 export function PhotosPage(): JSX.Element {
@@ -143,7 +144,7 @@ export function PhotosPage(): JSX.Element {
         </p>
       )}
 
-      {photos === null && !loadError && <p aria-live="polite">Loading…</p>}
+      {photos === null && !loadError && <Loading />}
       {photos?.length === 0 && queue.length === 0 && <p className="empty">No unlinked photos. Photos you link to a card appear in that card's details.</p>}
 
       {photos && photos.length > 0 && (

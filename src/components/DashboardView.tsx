@@ -1,10 +1,12 @@
 import { useMemo, type JSX, type ReactNode } from 'react'
+import { useCountUp } from '../hooks/useCountUp'
 import { summarizeMarket, topMovers, type Mover, type PriceMap, type SeriesPoint } from '../lib/prices'
 import { computeStats, formatEur, type Bucket } from '../lib/stats'
 import { thumbPath, type Card } from '../lib/types'
 import { CardImage } from './CardImage'
 import { ChangeBadge } from './ChangeBadge'
 import { LineChart } from './LineChart'
+import { Spotlight } from './Spotlight'
 
 interface Props {
   cards: Card[]
@@ -85,6 +87,7 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
   const stats = useMemo(() => computeStats(cards), [cards])
   const market = useMemo(() => summarizeMarket(cards, prices), [cards, prices])
   const movers = useMemo(() => topMovers(cards, prices), [cards, prices])
+  const shownValue = useCountUp(pricesLoading ? null : market.owned.value)
 
   if (cards.length === 0) {
     return (
@@ -105,7 +108,7 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
 
       <div className="hero">
         <span className="stat-label">Collection value</span>
-        <p className="hero-value">{pricesLoading ? '…' : formatEur(market.owned.value)}</p>
+        <p className="hero-value">{pricesLoading || shownValue === null ? '…' : formatEur(shownValue)}</p>
         {!pricesLoading && (
           <div className="hero-sub">
             {market.change30 !== null && <ChangeBadge change={market.change30} label="vs 30-day average" />}
@@ -122,6 +125,8 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
         )}
         {series && series.length >= 2 && <LineChart points={series} label="Value history" valueLabel="Value" />}
       </div>
+
+      {!pricesLoading && movers.valuable[0] && <Spotlight item={movers.valuable[0]} onOpenCard={onOpenCard} />}
 
       {breakdown}
 

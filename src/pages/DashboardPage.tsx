@@ -6,6 +6,7 @@ import { useMarketPrices } from '../hooks/useMarketPrices'
 import { listCards, listSnapshotsFor } from '../lib/db'
 import { portfolioSeries, type SnapshotRow } from '../lib/prices'
 import type { Card } from '../lib/types'
+import { Loading } from '../components/Loading'
 
 export function DashboardPage(): JSX.Element {
   const [cards, setCards] = useState<Card[] | null>(null)
@@ -60,7 +61,7 @@ export function DashboardPage(): JSX.Element {
       </section>
     )
   }
-  if (!cards) return <p className="center" aria-live="polite">Loading…</p>
+  if (!cards) return <Loading center />
 
   const openCard = openId ? (cards.find((c) => c.id === openId) ?? null) : null
 

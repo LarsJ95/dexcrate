@@ -2,6 +2,7 @@ import { useState, type FormEvent, type JSX, type ReactNode } from 'react'
 import { deleteCard, insertCard, splitCard, updateCard } from '../lib/db'
 import { normalizeChannel, parsePrice } from '../lib/excel'
 import type { Candidate } from '../lib/match'
+import { celebrateNewCards } from '../lib/moments'
 import { getSet, lookupLang, type Lang } from '../lib/tcgdex'
 import {
   AVAILABILITY_LABELS,
@@ -352,7 +353,9 @@ export function CardForm({
       } else if (card) {
         onSaved([await updateCard(card.id, result.value)])
       } else {
-        onSaved([await insertCard({ ...EMPTY_CARD, ...source, ...result.value, sort_order: nextSortOrder })])
+        const created = await insertCard({ ...EMPTY_CARD, ...source, ...result.value, sort_order: nextSortOrder })
+        onSaved([created])
+        void celebrateNewCards([created])
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Saving failed.')

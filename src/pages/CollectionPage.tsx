@@ -27,6 +27,7 @@ import {
   type CardInput,
   type CardStatus,
 } from '../lib/types'
+import { Loading } from '../components/Loading'
 
 type StatusFilter = 'all' | 'owned' | CardStatus
 type SortKey = 'list' | 'priceDesc' | 'priceAsc' | 'marketDesc' | 'name' | 'set'
@@ -426,7 +427,7 @@ export function CollectionPage(): JSX.Element {
           </button>
         </div>
       )}
-      {!cards && !loadError && <p aria-live="polite">Loading…</p>}
+      {!cards && !loadError && <Loading />}
       {cards && cards.length === 0 && (
         <p className="empty">
           Your collection is empty. Add a card or <a href="#/import">import your Excel file</a>.

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type JSX } from 'react'
 import { insertCards } from '../lib/db'
+import { celebrateNewCards } from '../lib/moments'
 import { findCandidates, type Candidate } from '../lib/match'
 import { draftFromScan, type Recognition } from '../lib/scan'
 import { imageCandidatesForKey, lookupLang } from '../lib/tcgdex'
@@ -98,7 +99,9 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
           }
         }),
       )
-      onAdded(await insertCards(inputs))
+      const rows = await insertCards(inputs)
+      onAdded(rows)
+      void celebrateNewCards(rows)
       setAdded((s) => new Set([...s, ...selected.map((r) => r.rec.position)]))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Adding failed.')

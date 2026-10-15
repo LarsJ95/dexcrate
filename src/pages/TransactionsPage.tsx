@@ -7,6 +7,7 @@ import { formatEur } from '../lib/stats'
 import { TX_KIND_LABELS, TX_STATUS_LABELS, isVoid, type Transaction } from '../lib/transactionTypes'
 import { listTransactions } from '../lib/transactions'
 import type { Card } from '../lib/types'
+import { Loading } from '../components/Loading'
 
 type KindFilter = 'all' | 'sale' | 'purchase'
 const FILTERS: [KindFilter, string][] = [
@@ -122,7 +123,7 @@ export function TransactionsPage(): JSX.Element {
           {error}
         </p>
       )}
-      {txs === null && !error && <p aria-live="polite">Loading…</p>}
+      {txs === null && !error && <Loading />}
       {txs?.length === 0 && <p className="empty">No purchases or sales yet.</p>}
 
       {visible.length > 0 && (

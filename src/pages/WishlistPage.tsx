@@ -10,6 +10,7 @@ import { matchesWords } from '../lib/search'
 import { formatEur } from '../lib/stats'
 import { CONDITION_LABELS, LANGUAGE_LABELS, VARIANT_LABELS, type Card, type CardLanguage, type Variant } from '../lib/types'
 import { listWishlist, ownedForWish, type WishlistItem } from '../lib/wishlist'
+import { Loading } from '../components/Loading'
 
 const PRIORITY: Record<1 | 2 | 3, string> = { 1: 'High priority', 2: '', 3: 'Low priority' }
 
@@ -131,7 +132,7 @@ export function WishlistPage(): JSX.Element {
           {error}
         </p>
       )}
-      {items === null && !error && <p aria-live="polite">Loading…</p>}
+      {items === null && !error && <Loading />}
       {items?.length === 0 && <p className="empty">Your wishlist is empty. Add cards here, or from a set's missing cards.</p>}
       {items && items.length > 0 && visible.length === 0 && <p className="empty">No wishes match these filters.</p>}
 

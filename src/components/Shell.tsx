@@ -2,6 +2,7 @@ import type { JSX, ReactNode } from 'react'
 import type { Theme } from '../hooks/useTheme'
 import type { Route } from '../lib/routes'
 import { IconLogout, IconMoon, IconSun, LogoMark } from './Icons'
+import { Moments } from './Moments'
 import { SIDE_GROUPS, TAB_NAV, isActiveTab } from './nav'
 
 interface Props {
@@ -71,6 +72,7 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
       </header>
 
       <main className="main">{children}</main>
+      <Moments />
 
       <nav className="tab-bar" aria-label="Main menu">
         {TAB_NAV.map(({ route: r, label, Icon }) => (

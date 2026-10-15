@@ -219,10 +219,16 @@
   /* Bliksem als standaardsymbool in het achtergrondpatroon. */
   --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-6 -6 36 36'%3E%3Cpath d='M13 2 4 14h6l-1 8 9-12h-6l1-8z'/%3E%3C/svg%3E");
 
-  /* Pokébal, gelijk in beide thema's. */
+  /* Pokébal en kaartachterkant, gelijk in beide thema's. */
   --ball-red: #e3350d;
   --ball-line: #1b1b1f;
   --ball-white: #f3f1ec;
+  --ball-glow: #fff7b0;
+  --card-back-edge: #e8e2d6;
+  --card-back-ring: rgb(255 255 255 / 0.1);
+  --card-back-1: #3a0e14;
+  --card-back-2: #7d1a1f;
+  --card-back-3: #2b0b10;
 
   /* Typeschaal */
   --stretch-display: 118%;
