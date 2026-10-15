@@ -2,15 +2,17 @@ import { useEffect, useState, type JSX } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { Login } from './components/Login'
 import { useHashRoute } from './hooks/useHashRoute'
+import { DashboardPage } from './pages/DashboardPage'
 import { ImportPage } from './pages/ImportPage'
 import { ItemsPage } from './pages/ItemsPage'
 import { supabase } from './lib/supabase'
 import './App.css'
 
-const ROUTES = ['verkoop', 'aankopen', 'import'] as const
+const ROUTES = ['overzicht', 'verkoop', 'aankopen', 'import'] as const
 type Route = (typeof ROUTES)[number]
 
 const NAV: { route: Route; label: string }[] = [
+  { route: 'overzicht', label: 'Overzicht' },
   { route: 'verkoop', label: 'Verkoop' },
   { route: 'aankopen', label: 'Aankopen' },
   { route: 'import', label: 'Import' },
@@ -19,7 +21,7 @@ const NAV: { route: Route; label: string }[] = [
 function App(): JSX.Element {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
-  const route = useHashRoute(ROUTES, 'verkoop')
+  const route = useHashRoute(ROUTES, 'overzicht')
 
   useEffect(() => {
     supabase.auth
@@ -57,6 +59,7 @@ function App(): JSX.Element {
         </button>
       </header>
       <main>
+        {route === 'overzicht' && <DashboardPage />}
         {route === 'verkoop' && <ItemsPage key="sales" table="sales" />}
         {route === 'aankopen' && <ItemsPage key="purchases" table="purchases" />}
         {route === 'import' && <ImportPage />}
