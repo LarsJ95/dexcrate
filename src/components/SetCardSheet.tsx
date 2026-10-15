@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState, type JSX, type MouseEvent } from 'react'
+import { useCardInfo } from '../hooks/useCardInfo'
 import { useCardPrice } from '../hooks/useCardPrice'
+import { foilStyleFor } from '../lib/cardTraits'
+import { applyPageType } from '../lib/energy'
 import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
 import type { Lang, SetCard } from '../lib/tcgdex'
@@ -7,6 +10,8 @@ import { CardImage } from './CardImage'
 import { CardmarketLink } from './CardmarketLink'
 import { CardZoom } from './CardZoom'
 import { ChangeBadge } from './ChangeBadge'
+import { HoloCard } from './HoloCard'
+import { EnergyIcon, RaritySymbols } from './RaritySymbols'
 import { IconClose, IconStar } from './Icons'
 import { WishlistDialog } from './WishlistDialog'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
@@ -28,6 +33,12 @@ export function SetCardSheet({ lang, card, setName, owned, setCode, onClose }: P
   const [zoomOpen, setZoomOpen] = useState(false)
   const [wishOpen, setWishOpen] = useState(false)
   const [wished, setWished] = useState(false)
+  const info = useCardInfo(`${lang}/${card.id}`)
+  const type = info?.types?.[0] ?? null
+  const foil = foilStyleFor(null, info?.rarity)
+
+  // De app kleurt mee met het energietype van de kaart in beeld (DESIGN.md §4).
+  useEffect(() => (type ? applyPageType(type) : undefined), [type])
   const wishlist = useWishlistEnabled() === true
   const key = `${lang}/${card.id}`
   const price = useCardPrice(key)
@@ -66,7 +77,9 @@ export function SetCardSheet({ lang, card, setName, owned, setCode, onClose }: P
       )}
       {zoomOpen && (
         <CardZoom label={card.name} onClose={() => setZoomOpen(false)}>
-          {image}
+          <HoloCard foil={foil} interactive>
+            {image}
+          </HoloCard>
         </CardZoom>
       )}
       <div className="sheet-body">
@@ -82,8 +95,8 @@ export function SetCardSheet({ lang, card, setName, owned, setCode, onClose }: P
         <div className="card-detail">
           <div className="detail-top">
             <div className="detail-image">
-              <button type="button" className="foil-wrap zoom-trigger" onClick={() => setZoomOpen(true)} aria-label={`Enlarge ${card.name}`}>
-                {image}
+              <button type="button" className="zoom-trigger" onClick={() => setZoomOpen(true)} aria-label={`Enlarge ${card.name}`}>
+                <HoloCard foil={foil}>{image}</HoloCard>
               </button>
             </div>
 
@@ -93,6 +106,18 @@ export function SetCardSheet({ lang, card, setName, owned, setCode, onClose }: P
               </p>
               <div className="chips">
                 <span className={`chip${owned ? ' status-sold' : ''}`}>{owned ? `Owned ${owned}×` : 'Missing'}</span>
+                {info?.rarity && (
+                  <span className="chip">
+                    <RaritySymbols rarity={info.rarity} />
+                    {info.rarity}
+                  </span>
+                )}
+                {type && (
+                  <span className="chip chip-type">
+                    <EnergyIcon type={type} />
+                    {type}
+                  </span>
+                )}
               </div>
 
               <dl className="detail-prices">

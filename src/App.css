@@ -2677,13 +2677,6 @@ button.small-btn {
 }
 
 /* ---------- Holo-glans ---------- */
-.foil-wrap {
-  position: relative;
-  border-radius: var(--radius-card);
-  overflow: hidden;
-  isolation: isolate;
-}
-
 .foil {
   position: absolute;
   inset: 0;
@@ -2715,8 +2708,8 @@ button.small-btn {
   );
 }
 
-/* Reverse holo: zachtere regenboog over de hele kaart. */
-.foil-reverse::before {
+/* Illustration rare en reverse holo: zachte regenboog over de hele kaart. */
+.foil-illustration::before {
   background: linear-gradient(
     105deg,
     transparent 30%,
@@ -2727,6 +2720,169 @@ button.small-btn {
     var(--foil-rev-5) 62%,
     transparent 70%
   );
+}
+
+/* Special illustration rare en secret rare: fellere, bredere regenboog. */
+.foil-special::before {
+  background: linear-gradient(
+    105deg,
+    transparent 22%,
+    var(--foil-sp-1) 32%,
+    var(--foil-sp-2) 40%,
+    var(--foil-sp-3) 48%,
+    var(--foil-sp-4) 56%,
+    var(--foil-sp-5) 64%,
+    transparent 76%
+  );
+}
+
+/* Hyper rare: gouden streep. */
+.foil-gold::before {
+  background: linear-gradient(105deg, transparent 36%, var(--foil-gold-1) 44%, var(--foil-gold-2) 50%, var(--foil-gold-1) 56%, transparent 64%);
+}
+
+[data-motion='off'] .foil {
+  display: none;
+}
+
+/* ---------- Holokaart: kantelen en glans per zeldzaamheid (DESIGN.md §9) ---------- */
+.holo-card {
+  --rx: 0deg;
+  --ry: 0deg;
+  --mx: 50%;
+  --my: 42%;
+  --hyp: 0.3;
+  position: relative;
+  border-radius: var(--radius-card);
+  transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));
+  will-change: transform;
+}
+
+.holo-card .card-img {
+  border-radius: var(--radius-card);
+}
+
+.holo-card.is-interactive {
+  touch-action: none;
+  cursor: grab;
+}
+
+.holo-foil,
+.holo-glare {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.holo-glare {
+  background: radial-gradient(
+    farthest-corner circle at var(--mx) var(--my),
+    var(--glare-1) 0%,
+    var(--glare-2) 28%,
+    var(--glare-3) 92%
+  );
+  mix-blend-mode: overlay;
+  opacity: calc(0.35 + var(--hyp) * 0.5);
+}
+
+.holo-foil {
+  mix-blend-mode: color-dodge;
+  background-size: 300% 300%, 100% 100%, 100% 100%;
+  background-position: var(--mx) var(--my), center, center;
+}
+
+[data-foil='holo'] .holo-foil {
+  opacity: 0.42;
+  filter: brightness(0.7) contrast(1.6) saturate(1.3);
+  background-image: repeating-linear-gradient(115deg, var(--holo-a) 0%, var(--holo-b) 6%, var(--holo-c) 12%, var(--holo-d) 18%, var(--holo-e) 24%, var(--holo-a) 30%);
+}
+
+[data-foil='illustration'] .holo-foil {
+  opacity: 0.32;
+  filter: brightness(0.75) contrast(1.4);
+  background-image:
+    repeating-linear-gradient(125deg, var(--holo-a) 0%, var(--holo-b) 8%, var(--holo-c) 16%, var(--holo-d) 24%, var(--holo-a) 32%),
+    repeating-linear-gradient(35deg, var(--holo-etch) 0 1px, transparent 1px 5px);
+}
+
+[data-foil='special'] .holo-foil {
+  opacity: 0.6;
+  filter: brightness(0.8) contrast(1.7) saturate(1.5);
+  background-image:
+    repeating-linear-gradient(110deg, var(--holo-a) 0%, var(--holo-b) 5%, var(--holo-c) 10%, var(--holo-d) 15%, var(--holo-e) 20%, var(--holo-a) 25%),
+    radial-gradient(circle at 30% 40%, var(--holo-spark) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 70% 20%, var(--holo-spark) 0 0.8px, transparent 1.4px);
+  background-size: 300% 300%, 17px 17px, 23px 23px;
+  background-position: var(--mx) var(--my), 0 0, 0 0;
+}
+
+[data-foil='gold'] .holo-foil {
+  opacity: 0.7;
+  filter: brightness(0.85) contrast(1.4);
+  background-image:
+    linear-gradient(115deg, transparent 18%, var(--gold-a) 38%, var(--gold-b) 48%, var(--gold-c) 56%, var(--gold-d) 66%, transparent 84%),
+    radial-gradient(circle at 50% 50%, var(--gold-a) 0 0.9px, transparent 1.5px);
+  background-size: 300% 300%, 13px 13px;
+  background-position: var(--mx) var(--my), 0 0;
+}
+
+[data-foil='gold'] .holo-glare {
+  mix-blend-mode: soft-light;
+}
+
+.card-zoom-image .holo-card {
+  box-shadow: var(--shadow-float);
+}
+
+/* Zonder animaties: kaart staat recht, vaste rustige glans. */
+[data-motion='off'] .holo-card {
+  transform: none;
+}
+
+/* ---------- Zeldzaamheid en type ---------- */
+.rarity-symbols {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  flex: none;
+  fill: var(--rarity-ink);
+}
+
+.rarity-symbols .gold {
+  fill: var(--rarity-gold);
+}
+
+.tile-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.chip:has(svg) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.chip-type {
+  background: color-mix(in oklab, var(--type) 20%, var(--surface-2));
+  border-color: color-mix(in oklab, var(--type) 55%, transparent);
+  color: var(--ink);
+}
+
+/* Typestreep onder de kaart in de kleur van het energietype. */
+.tile.has-type .tile-open::after {
+  content: '';
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--t);
+  z-index: 2;
 }
 
 /* 7 s cyclus: ±1,5 s glans, daarna rust. */
@@ -2767,6 +2923,7 @@ button.zoom-trigger {
   width: 100%;
   padding: 0;
   border: 0;
+  border-radius: var(--radius-card);
   background: none;
   cursor: zoom-in;
 }

@@ -1,5 +1,7 @@
-import { memo, type JSX } from 'react'
+import { memo, type CSSProperties, type JSX } from 'react'
 import { useCardInfo } from '../hooks/useCardInfo'
+import { foilStyleFor } from '../lib/cardTraits'
+import { energyColor } from '../lib/energy'
 import type { MarketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
 import { CONDITION_LABELS, VARIANT_LABELS, canToggleSold, statusBadge, thumbPath, type Card } from '../lib/types'
@@ -7,6 +9,7 @@ import { CardImage } from './CardImage'
 import { ChangeBadge } from './ChangeBadge'
 import { Foil } from './Foil'
 import { IconCheck } from './Icons'
+import { RaritySymbols } from './RaritySymbols'
 
 interface Props {
   card: Card
@@ -42,14 +45,17 @@ function CardTileBase({ card, market, onOpen, onToggleSold, busy, selected, sale
   const showMarket = card.kind === 'card' && card.tcgdex_id !== null
   const selecting = selected !== undefined
   const showToggle = !selecting && canToggleSold(card) && !(salesTracked && card.ownership === 'sold')
+  const type = info?.types?.[0]
+  // Typestreep onder de kaart in de kleur van het energietype (DESIGN.md §4).
+  const typeStyle = type ? ({ '--t': energyColor(type) } as CSSProperties) : undefined
 
   return (
-    <li className={`tile status-${card.status}${selected ? ' is-selected' : ''}`}>
+    <li className={`tile status-${card.status}${selected ? ' is-selected' : ''}${type ? ' has-type' : ''}`} style={typeStyle}>
       {/* Naam uit de inhoud (foto-alt of getekende voorkant + badges), zodat die overeenkomt met wat je ziet. */}
       <button type="button" className="tile-open" onClick={() => onOpen(card.id)} aria-pressed={selecting ? selected : undefined}>
         <CardImage tcgdexId={card.tcgdex_id} kind={card.kind} name={card.name} photoPath={thumbPath(card)}
           detail={[card.set_code, card.card_number && `#${card.card_number}`].filter(Boolean).join(' ')} />
-        {card.status !== 'sold' && <Foil variant={card.variant} seed={card.id} />}
+        {card.status !== 'sold' && <Foil foil={foilStyleFor(card.variant, info?.rarity)} seed={card.id} />}
         {statusBadge(card) && <span className={`status-badge ${card.status}`}>{statusBadge(card)}</span>}
         {card.quantity > 1 && <span className="qty-badge">{card.quantity}×</span>}
         {selected && (
@@ -66,7 +72,10 @@ function CardTileBase({ card, market, onOpen, onToggleSold, busy, selected, sale
       </button>
 
       <div className="tile-body">
-        <p className="tile-name" title={card.name}>{card.name}</p>
+        <div className="tile-title">
+          <p className="tile-name" title={card.name}>{card.name}</p>
+          <RaritySymbols rarity={info?.rarity} />
+        </div>
         <p className="tile-meta">
           {card.kind === 'sealed' ? 'Sealed product' : [setLabel, card.card_number && `#${card.card_number}`].filter(Boolean).join(' ')}
           {details.length > 0 && <span>, {details.join(', ')}</span>}

@@ -1,3 +1,5 @@
+import type { Variant } from './types'
+
 /**
  * Kenmerken van een kaart uit de TCGdex-catalogus: energietype, zeldzaamheid, kaarttype (ex, V …)
  * en Pokédex-nummer. TCGdex levert deze waarden in het Engels voor en/ja/zh/ko.
@@ -99,4 +101,16 @@ export function parseRarity(v: unknown): string | null {
 /** Kaarttype-achtervoegsel (ex, EX, V, VMAX …), of null. */
 export function parseSuffix(v: unknown): string | null {
   return typeof v === 'string' && v.trim() !== '' ? v.trim() : null
+}
+
+/**
+ * Glans voor een kaart: de zeldzaamheid bepaalt hem; zonder glans-zeldzaamheid geeft de uitvoering
+ * (holo, reverse holo) een eenvoudige glans.
+ */
+export function foilStyleFor(variant: Variant | null, rarity: string | null | undefined): FoilStyle {
+  const byRarity = rarityRule(rarity).foil
+  if (byRarity !== 'none') return byRarity
+  if (variant === 'holo') return 'holo'
+  if (variant === 'reverse') return 'illustration'
+  return 'none'
 }

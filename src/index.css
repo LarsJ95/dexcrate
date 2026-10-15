@@ -179,6 +179,29 @@
   --foil-rev-3: rgb(120 255 200 / 0.3);
   --foil-rev-4: rgb(120 180 255 / 0.32);
   --foil-rev-5: rgb(200 140 255 / 0.3);
+  --foil-sp-1: rgb(255 59 122 / 0.45);
+  --foil-sp-2: rgb(255 184 0 / 0.45);
+  --foil-sp-3: rgb(77 255 158 / 0.45);
+  --foil-sp-4: rgb(51 214 255 / 0.45);
+  --foil-sp-5: rgb(140 91 255 / 0.45);
+  --foil-gold-1: rgb(255 231 160 / 0.5);
+  --foil-gold-2: rgb(255 247 214 / 0.75);
+
+  /* Kantelende holokaart: glans per zeldzaamheid (DESIGN.md §9). */
+  --glare-1: rgb(255 255 255 / 0.6);
+  --glare-2: rgb(255 255 255 / 0.12);
+  --glare-3: rgb(0 0 0 / 0.38);
+  --holo-a: #ff4d6d;
+  --holo-b: #ffd23f;
+  --holo-c: #3cf0a0;
+  --holo-d: #3cc8ff;
+  --holo-e: #a46bff;
+  --holo-etch: rgb(255 255 255 / 0.18);
+  --holo-spark: #fff;
+  --gold-a: #fff1b8;
+  --gold-b: #d4a12a;
+  --gold-c: #fff7d6;
+  --gold-d: #b9851a;
 
   /* Energietypes (DESIGN.md §4): alleen voor gloed, patroon en typestrepen, nooit voor tekst. */
   --energy-grass: #4fb84a;
@@ -407,6 +430,14 @@ label {
   font-weight: 600;
   font-size: var(--fs-label);
   color: var(--ink-soft);
+}
+
+/* Animaties uit via Settings (data-motion, zie lib/motion.ts) of "minder beweging" van het systeem. */
+[data-motion='off'] *,
+[data-motion='off'] *::before,
+[data-motion='off'] *::after {
+  transition: none !important;
+  animation: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

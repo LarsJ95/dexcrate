@@ -1,10 +1,12 @@
-import { useState, type JSX } from 'react'
+import { useEffect, useState, type JSX } from 'react'
 import { useCardInfo } from '../hooks/useCardInfo'
 import { useCardPrice } from '../hooks/useCardPrice'
 import { useSchemaV2 } from '../hooks/useSchemaV2'
 import { useLocations } from '../hooks/useLocations'
 import { useTransactionsEnabled } from '../hooks/useTransactionsEnabled'
 import { placeLabel } from '../lib/binder'
+import { foilStyleFor } from '../lib/cardTraits'
+import { applyPageType } from '../lib/energy'
 import { updateCard } from '../lib/db'
 import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
@@ -22,9 +24,10 @@ import { CardImage } from './CardImage'
 import { CardmarketLink } from './CardmarketLink'
 import { CardZoom } from './CardZoom'
 import { ChangeBadge } from './ChangeBadge'
-import { Foil } from './Foil'
+import { HoloCard } from './HoloCard'
 import { PhotoManager } from './PhotoManager'
 import { PriceChart } from './PriceChart'
+import { EnergyIcon, RaritySymbols } from './RaritySymbols'
 import { ValuePanel } from './ValuePanel'
 import { SaleDialog } from './SaleDialog'
 
@@ -54,6 +57,11 @@ export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props):
   const [error, setError] = useState<string | null>(null)
   const [zoomOpen, setZoomOpen] = useState(false)
   const [selling, setSelling] = useState(false)
+  const type = info?.types?.[0] ?? null
+  const foil = card.status === 'sold' ? 'none' : foilStyleFor(card.variant, info?.rarity)
+
+  // De app kleurt mee met het energietype van de kaart in beeld (DESIGN.md §4).
+  useEffect(() => (type ? applyPageType(type) : undefined), [type])
   // Verkopen als transactie (STAP5): met kosten, status en eventueel deel van de stuks.
   const salesTracked = useTransactionsEnabled() === true
   // Eigen foto's beheren kan pas als STAP4 gedraaid is.
@@ -111,14 +119,15 @@ export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props):
     <div className="card-detail">
       {zoomOpen && (
         <CardZoom label={card.name} onClose={() => setZoomOpen(false)}>
-          {image}
+          <HoloCard foil={foil} interactive>
+            {image}
+          </HoloCard>
         </CardZoom>
       )}
       <div className="detail-top">
         <div className="detail-image">
-          <button type="button" className="foil-wrap zoom-trigger" onClick={() => setZoomOpen(true)} aria-label={`Enlarge ${card.name}`}>
-            {image}
-            {card.status !== 'sold' && <Foil variant={card.variant} seed={card.id} />}
+          <button type="button" className="zoom-trigger" onClick={() => setZoomOpen(true)} aria-label={`Enlarge ${card.name}`}>
+            <HoloCard foil={foil}>{image}</HoloCard>
           </button>
         </div>
 
@@ -131,6 +140,18 @@ export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props):
 
           <div className="chips">
             <span className={`chip status-${card.status}`}>{statusBadge(card) ?? 'In collection'}</span>
+            {info?.rarity && (
+              <span className="chip">
+                <RaritySymbols rarity={info.rarity} />
+                {info.rarity}
+              </span>
+            )}
+            {type && (
+              <span className="chip chip-type">
+                <EnergyIcon type={type} />
+                {type}
+              </span>
+            )}
             {facts.map((f) => (
               <span key={f} className="chip">
                 {f}

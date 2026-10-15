@@ -5,6 +5,7 @@ import { useSchemaV2 } from '../hooks/useSchemaV2'
 import { CONDITION_LABELS, LANGUAGE_LABELS, type CardLanguage, type Condition } from '../lib/types'
 import type { NewCardDefaults, UserSettings } from '../lib/valuation'
 import { hasValuations, loadSettings, saveSettings } from '../lib/valuationDb'
+import { setMotionPreference, useMotion, useMotionPreference } from '../lib/motion'
 
 type Form = { pct: Record<Condition, string>; fee: string; cost: string; defaults: NewCardDefaults }
 
@@ -21,6 +22,24 @@ function parseNumber(raw: string, min: number, max: number): number | null | 'in
   if (!t) return null
   const n = Number(t)
   return Number.isFinite(n) && n >= min && n <= max ? n : 'invalid'
+}
+
+/** Animaties aan/uit, per apparaat (DESIGN.md §9). */
+function MotionSetting(): JSX.Element {
+  const preference = useMotionPreference()
+  const allowed = useMotion()
+  return (
+    <fieldset className="form-group panel">
+      <legend>Animations</legend>
+      <label className="check">
+        <input type="checkbox" checked={preference} onChange={(e) => setMotionPreference(e.target.checked)} />
+        Holo effects, celebrations and visiting Pokémon
+      </label>
+      <p className="muted small">
+        {preference && !allowed ? 'Your device is set to reduce motion, so animations stay off.' : 'Saved on this device only.'}
+      </p>
+    </fieldset>
+  )
 }
 
 /** Eigen instellingen voor schattingen: conditiecorrectie en verkoopkosten. Zonder invulling geen schatting. */
@@ -82,6 +101,7 @@ export function SettingsPage(): JSX.Element {
     return (
       <section className="page">
         <h1>Settings</h1>
+        <MotionSetting />
         <p className="notice">Settings are not set up yet (run STAP7 in Supabase).</p>
       </section>
     )
@@ -96,6 +116,7 @@ export function SettingsPage(): JSX.Element {
         </div>
       </div>
 
+      <MotionSetting />
       {!form && !message && <p aria-live="polite">Loading…</p>}
       {form && (
         <form className="card-form panel" onSubmit={onSubmit} noValidate>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseDexId, parseRarity, parseSuffix, parseTypes, rarityRule } from './cardTraits'
+import { foilStyleFor, parseDexId, parseRarity, parseSuffix, parseTypes, rarityRule } from './cardTraits'
 
 describe('parseTypes', () => {
   it('houdt alleen bekende energietypes', () => {
@@ -38,5 +38,15 @@ describe('rarityRule', () => {
     expect(rarityRule('Selten, besondere Illustration').rank).toBe(0)
     expect(rarityRule('toString').rank).toBe(0)
     expect(rarityRule(null).symbols).toEqual([])
+  })
+})
+
+describe('foilStyleFor', () => {
+  it('laat zeldzaamheid voorgaan en valt terug op de uitvoering', () => {
+    expect(foilStyleFor('holo', 'Hyper rare')).toBe('gold')
+    expect(foilStyleFor('reverse', 'Common')).toBe('illustration')
+    expect(foilStyleFor('holo', null)).toBe('holo')
+    expect(foilStyleFor('normal', 'Rare')).toBe('none')
+    expect(foilStyleFor(null, null)).toBe('none')
   })
 })
