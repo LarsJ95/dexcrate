@@ -157,7 +157,8 @@ export function Preview(): JSX.Element {
     )
   }
   if ((params.get('page') ?? '') === 'card') {
-    const demoCard = CARDS[0].card
+    const base = CARDS[Number(params.get('idx') ?? 0)]?.card ?? CARDS[0].card
+    const demoCard = params.get('name') ? { ...base, name: params.get('name') ?? base.name } : base
     const edit = params.get('edit') === '1'
     return (
       <Shell route="collection" email="demo@example.com" theme={theme} onToggleTheme={noop} onSignOut={noop}>

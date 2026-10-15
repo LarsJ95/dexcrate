@@ -2078,3 +2078,17 @@ button.small-btn {
     display: none;
   }
 }
+
+/* Lange titels: kolom nooit breder dan de popup; titel max. 2 regels. */
+.sheet-body {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.sheet-head h2 {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
