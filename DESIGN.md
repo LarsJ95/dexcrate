@@ -28,8 +28,8 @@ Voer deze stap uit vóórdat je iets aanpast:
 
 - Product: Dexcrate, persoonlijke web-app/PWA voor een Pokémon-kaartencollectie: collectie, aankoop en verkoop, marktwaarde (Cardmarket), set-voortgang en scannen met de camera.
 - Doelgroep: de eigenaar zelf, verzamelaar en verkoper; gebruikt de app vooral op de telefoon.
-- Gevoel in 3 woorden: modern, professioneel, overzichtelijk
-- Wat het níet moet zijn: kinderachtig of "te Pokémon" (Pokémon-sfeer alleen in accenten), druk, afleidend, opvulinformatie.
+- Gevoel in 3 woorden: Pokémon-TCG-beleving, verzamelwaardig, overzichtelijk (gewijzigd 15-10-2026: meer Pokémon-sfeer, holo en animaties gevraagd, zie het goedgekeurde prototype "Holo Lab")
+- Wat het níet moet zijn: kinderachtig, druk of in de weg; beleving mag nooit een handeling vertragen of blokkeren. Geen opvulinformatie.
 - Tone of voice copy: Engels, kort en direct, alleen informatie die iets toevoegt; geen uitleg- of opvulzinnen.
 
 
@@ -46,8 +46,8 @@ Per referentie: wat precies overnemen, niet de hele site kopiëren.
 
 ## 3. Typografie
 
-- Display/koppen: Archivo (zelf gehost in `src/assets/fonts`, variabel 400–800; gewichten 700, 800)
-- Body: Archivo (gewichten 400, 500, 600)
+- Display/koppen: Archivo (zelf gehost in `src/assets/fonts`, variabel: gewicht 400–900, breedte 62–125%; koppen 800–900 op breedte 112–125%, token `--stretch-display`)
+- Body: Archivo (gewichten 400, 500, 600; normale breedte)
 - Mono (optioneel): geen
 - Fonts self-hosten, `font-display: swap`
 
@@ -69,25 +69,29 @@ Regels:
 
 ## 4. Kleur
 
-Standaardthema is donker (huidige tokens in `src/index.css`):
-- Achtergrond: #0a1226
-- Oppervlak (kaarten, panelen): #111b36 (verhoogd: #17244a, #1e2d5a)
-- Tekst primair: #eaf0ff
-- Tekst secundair: #8f9dc4
-- Rand/lijn: #24335f (sterk: #34477d)
-- Accent: #ffcb05 (tekst erop: #1a1300)
-- Accent hover: #ffd83d
-- Succes: #3fd99a
+Gewijzigd 15-10-2026: het marineblauw is vervangen. Basis is een neutrale, licht violet-getinte ondergrond; de kleur komt van de kaarten zelf via het energietype.
+
+Standaardthema is donker (tokens in `src/index.css`):
+- Achtergrond: #0e0d12
+- Oppervlak (kaarten, panelen): #17161d (verhoogd: #1f1e26, #282730)
+- Tekst primair: #f6f3ee (zacht: #d3cfd8)
+- Tekst secundair: #a19ba9
+- Rand/lijn: #2f2e38 (sterk: #42404d)
+- Accent: #ffcb05 (tekst erop: #1a1300), hover #ffd83d
+- Succes: #5fd68f
 - Waarschuwing: #ffb547
-- Fout: #ff6257
-- Dark mode: ja, donker is de standaard. Licht thema als eigen palet:
-  achtergrond #f2f5fb, oppervlak #ffffff, tekst primair #0e1a3a, secundair #5a6789, rand #dbe2ef,
-  accent #ffcb05 (alleen als vlak met donkere tekst), accent als lijn/markering #9a7400 (token `--accent-line`), focusring #1f5fd6 (token `--focus`), succes #0a7a4c, waarschuwing #8a5000, fout #d63a2f.
-  In het donkere thema zijn `--focus` en `--accent-line` gelijk aan het accent #ffcb05.
+- Fout: #ff6b5e
+- Licht thema als eigen palet: achtergrond #f4f3f6, oppervlak #ffffff (verhoogd #efedf2, #e5e3ea), tekst primair #17161c (zacht #3a3842), secundair #625e6b, rand #dddae2 (sterk #c6c2cd), accent #ffcb05 alleen als vlak met donkere tekst, accent als lijn/markering #7d5b00 (`--accent-line`), focusring #17161c (`--focus`), succes #08703f, waarschuwing #8a5000, fout #b52f26.
+  In het donkere thema zijn `--focus` en `--accent-line` gelijk aan het accent.
+
+Typekleur (token `--type`): de kleur van het energietype van de kaart in beeld. Gebruikt voor de achtergrondgloed, het vage patroon van energiesymbolen en de typestreep op tegels. Nooit voor tekst. Standaard (geen kaart in beeld): Lightning.
+- Energietypes (`--energy-*`): Grass #4fb84a, Fire #f0612f, Water #3d8fe0, Lightning #f5c518, Psychic #b05cc8, Fighting #c5683a, Darkness #4a6b70, Metal #8e9aa4, Dragon #c9a227, Fairy #e47fb8, Colorless #cfcabf.
+- Zeldzaamheidssymbolen: gewone sterren/cirkel in tekstkleur, gouden sterren `--rarity-gold` #e8b931 (licht thema #7d5b00).
+- Pokébal: rood `--ball-red` #e3350d, lijn #1b1b1f, wit #f3f1ec (gelijk in beide thema's).
 
 Regels:
 - Accentkleur spaarzaam: alleen voor primaire actie en highlights
-- Contrast minimaal WCAG AA (4.5:1 voor body, 3:1 voor grote tekst)
+- Contrast minimaal WCAG AA (4.5:1 voor body, 3:1 voor grote tekst en grafische elementen)
 - Alle kleuren als token in het theme, nooit hardcoded in componenten
 
 
@@ -116,7 +120,7 @@ Regels:
 
 - Iconenset: ___ (één set, één stroke-dikte, één stijl)
 - Fotografie: ___ (eigen beeld, stijl, kleurbewerking)
-- Illustraties: ___ / geen
+- Illustraties: zelf getekende energiesymbolen (eenvoudige vlakvormen) en zeldzaamheidssymbolen (cirkel, ruit, ster); geanimeerde Pokémon-sprites (PokéAPI, Black/White) alleen voor de langsrenner, alleen Pokémon uit de eigen collectie. Auteursrecht op sprites ligt bij Nintendo/The Pokémon Company; geaccepteerd risico (15-10-2026), net als de kaartafbeeldingen.
 - Beeldformaten: AVIF/WebP, altijd width/height of aspect-ratio, lazy loading onder de fold
 
 
@@ -143,18 +147,27 @@ Elk component heeft verplicht deze states: default, hover, active, focus-visible
   - Pagina-overgangen: 0 ms (direct wisselen)
 - Kleurwissel bij hover: direct, zonder overgang
 
-Toegestane effecten (alleen deze):
-- Holo-glans op holo- en reverse-holokaarten (goedgekeurd 15-10-2026): één lichtstreep per ±7 s, per kaart verschoven, alleen transform; uit bij `prefers-reduced-motion`.
+Toegestane effecten (alleen deze; uitgebreid 15-10-2026 volgens prototype "Holo Lab"):
+- Holo-glans op tegels: één lichtstreep per ±7 s, per kaart verschoven; alleen op holo, reverse holo en zeldzaamheid vanaf Double rare.
+- Holo-kanteling in kaartweergave en vergrote kaart: kaart kantelt mee met vinger/muis (max. 16°), glans per zeldzaamheid (Double rare regenboogstrepen, Illustration rare zachte regenboog met lijntjes, Special illustration rare felle regenboog met glinsters, Hyper rare goud). Alleen op de kaart die bekeken wordt.
+- Achtergrondgloed volgt het energietype (`--type`), overgang 700 ms.
+- Momenten (elk ≤ 1,5 s, nooit blokkerend, bediening blijft werken):
+  - Kaart toegevoegd of gescand: kaart draait van achterkant naar voorkant, vonken; stralen vanaf Double rare.
+  - Wishlist-kaart gevonden: pokébal vangt de kaart, wiebelt, "Caught!".
+  - Set compleet: confetti in energiekleuren, stempel "Complete".
+  - Binder: kaart springt met glinster in zijn vak.
+  - Overview: collectiewaarde telt op bij openen (≤ 800 ms).
+- Laden: wiebelende pokébal; lege kaartplekken glanzen in de typekleur.
+- Langsrenner: een Pokémon uit de eigen collectie rent onderlangs, hooguit eens per 3 minuten, niet op Scan, niet terwijl een popup of formulier open is. Tikken: springt en roept. 1 op 50 kans op shiny. 's Avonds (20–6 u) vaker Ghost-/Darkness-Pokémon.
 - Kaart licht optillen bij hover: 4 px omhoog via transform, alleen op apparaten met hover.
 - Popup en vergrote kaart verschijnen: opacity met schaal 0,96 → 1; op mobiel schuift de popup omhoog (translateY).
-- Laadstatus getekende kaartvoorkant: rustig knipperen via opacity.
 
 Regels:
-- Animeer alleen `transform` en `opacity`
+- Animeer `transform` en `opacity`; uitzonderingen: `background-position` voor holo-glans, canvas voor vonken en confetti
 - Geen layout shift door animaties
-- Respecteer `prefers-reduced-motion`: dan geen beweging, alleen directe weergave
-- Animatie moet iets betekenen (hiërarchie, volgorde, feedback), nooit decoratie op elk element
-- Maximaal één opvallend effect per scherm
+- Instelling "Animations" in Settings (per apparaat). Uit, of `prefers-reduced-motion`: geen beweging, alleen directe weergave
+- Animatie moet iets betekenen (feedback, beloning, sfeer van het type), nooit decoratie op elk element
+- Maximaal één moment tegelijk; een nieuw moment breekt het vorige af
 
 
 ## 10. Content en copy
@@ -169,7 +182,7 @@ Regels:
 ## 11. Verboden
 
 - Inter, Roboto, Arial of system fonts als hoofdfont
-- Paars/blauw verloop, gradient-tekst. Uitzondering (goedgekeurd 15-10-2026): de bestaande verlopen in loginpaneel, achtergrondgloed, hero en getekende kaartvoorkant mogen blijven; gradient-tekst blijft verboden
+- Paars/blauw verloop, gradient-tekst. Uitzondering (goedgekeurd 15-10-2026): verlopen in loginpaneel, achtergrondgloed (typekleur), hero, getekende kaartvoorkant, holo-glans en de voortgangsbalk in energiekleuren; gradient-tekst blijft verboden
 - Glassmorphism (blur-panelen) tenzij hier expliciet toegestaan
 - Emoji als icoon
 - Generieke hero gecentreerd met drie feature cards eronder
