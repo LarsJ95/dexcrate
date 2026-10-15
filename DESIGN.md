@@ -82,7 +82,8 @@ Standaardthema is donker (huidige tokens in `src/index.css`):
 - Fout: #ff6257
 - Dark mode: ja, donker is de standaard. Licht thema als eigen palet:
   achtergrond #f2f5fb, oppervlak #ffffff, tekst primair #0e1a3a, secundair #5a6789, rand #dbe2ef,
-  accent #ffcb05 (alleen als vlak; als lijn/tekst op licht te weinig contrast), succes #0e8f5b, waarschuwing #a35f00, fout #d63a2f.
+  accent #ffcb05 (alleen als vlak met donkere tekst), accent als lijn/markering #9a7400 (token `--accent-line`), focusring #1f5fd6 (token `--focus`), succes #0a7a4c, waarschuwing #8a5000, fout #d63a2f.
+  In het donkere thema zijn `--focus` en `--accent-line` gelijk aan het accent #ffcb05.
 
 Regels:
 - Accentkleur spaarzaam: alleen voor primaire actie en highlights

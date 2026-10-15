@@ -41,7 +41,7 @@
   padding: 0.85rem 1rem;
   border-radius: var(--radius-m);
   border: 1px solid var(--line);
-  border-left: 3px solid var(--yellow);
+  border-left: 3px solid var(--accent-line);
   background: var(--surface);
   color: var(--ink-soft);
 }
@@ -147,11 +147,11 @@
   bottom: 0.5rem;
   width: 3px;
   border-radius: 0 3px 3px 0;
-  background: var(--yellow);
+  background: var(--accent-line);
 }
 
 .side-nav a[aria-current='page'] svg {
-  color: var(--yellow);
+  color: var(--accent-line);
 }
 
 .side-foot {
@@ -242,7 +242,7 @@
   }
 
   .tab-bar a[aria-current='page'] .tab-icon {
-    color: var(--yellow);
+    color: var(--accent-line);
   }
 
   /* Scannen als ronde hoofdknop in het midden. */
@@ -347,7 +347,7 @@
 .segmented button[aria-checked='true'] {
   background: var(--surface-3);
   color: var(--ink);
-  box-shadow: inset 0 -2px 0 var(--yellow);
+  box-shadow: inset 0 -2px 0 var(--accent-line);
 }
 
 @media (max-width: 560px) {
@@ -917,8 +917,8 @@ label.check {
 }
 
 .candidate.selected {
-  border-color: var(--yellow);
-  box-shadow: 0 0 0 1px var(--yellow);
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 1px var(--accent-line);
 }
 
 .cand-name {
@@ -1175,14 +1175,14 @@ a.stat:hover {
   height: 10px;
   border-radius: 999px;
   overflow: hidden;
-  background: color-mix(in oklab, var(--yellow) 16%, var(--surface-2));
+  background: color-mix(in oklab, var(--accent-line) 16%, var(--surface-2));
 }
 
 .meter-fill {
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: var(--yellow);
+  background: var(--accent-line);
 }
 
 .averages {

@@ -32,6 +32,9 @@
   --red-bg: rgb(255 98 87 / 0.14);
 
   --chart-line: #ffcb05;
+  /* Focusring en lijnen/markeringen in accentkleur (licht thema: donkerder voor contrast ≥ 3:1). */
+  --focus: #ffcb05;
+  --accent-line: #ffcb05;
 
   --logo-top: #ff6257;
   --logo-bottom: #eaf0ff;
@@ -59,14 +62,16 @@
 
   --blue: #2563eb;
   --red: #d63a2f;
-  --green: #0e8f5b;
-  --amber: #a35f00;
+  --green: #0a7a4c;
+  --amber: #8a5000;
 
   --green-bg: rgb(14 143 91 / 0.1);
   --amber-bg: rgb(255 181 71 / 0.22);
   --red-bg: rgb(214 58 47 / 0.1);
 
   --chart-line: #1f5fd6;
+  --focus: #1f5fd6;
+  --accent-line: #9a7400;
 
   --logo-top: #e3463b;
   --logo-bottom: #ffffff;
@@ -205,7 +210,7 @@ button:disabled {
 }
 
 :is(button, a, input, select, summary, [tabindex]):focus-visible {
-  outline: 2px solid var(--yellow);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 
