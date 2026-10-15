@@ -27,7 +27,7 @@ interface Cost {
   running: boolean
 }
 
-const PAGE_SIZE_KEY = 'kaartenmap:binder-page-size'
+const PAGE_SIZE_KEY = 'binderline:binder-page-size'
 
 function readPageSize(): PageSize {
   try {
@@ -57,7 +57,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
       .then(([set, cards]) => {
         if (cancelled) return
         if (!set) {
-          setError('Deze set is niet gevonden in de kaartdatabase.')
+          setError('This set was not found.')
           return
         }
         const owned = new Map<string, number>()
@@ -69,7 +69,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
         setData({ summary: set.summary, cards: set.cards, owned })
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Laden mislukt.')
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Loading failed.')
       })
     return () => {
       cancelled = true
@@ -141,8 +141,8 @@ export function SetBinderPage({ param }: Props): JSX.Element {
     return { amount: cents / 100, unknown }
   }, [cost])
 
-  if (!valid) return <p className="page error">Ongeldige set. <a href="#/sets">Terug naar sets</a></p>
-  if (error) return <p className="page error" role="alert">{error} <a href="#/sets">Terug naar sets</a></p>
+  if (!valid) return <p className="page error">Invalid set. <a href="#/sets">Back to sets</a></p>
+  if (error) return <p className="page error" role="alert">{error} <a href="#/sets">Back to sets</a></p>
   if (!data) return <p className="center" aria-live="polite">Laden…</p>
 
   const ownedCount = data.owned.size
@@ -152,14 +152,14 @@ export function SetBinderPage({ param }: Props): JSX.Element {
   return (
     <section className="page">
       <a href="#/sets" className="back">
-        ← Alle sets
+        ← All sets
       </a>
       <div className="page-head">
         <div>
           <h1>{data.summary.name}</h1>
           <p className="muted">
-            {ownedCount} van {total} kaarten in bezit
-            {data.summary.releaseDate && `, uitgebracht ${data.summary.releaseDate}`}
+            {ownedCount} of {total} cards
+            {data.summary.releaseDate && `, released ${data.summary.releaseDate.slice(0, 4)}`}
           </p>
         </div>
       </div>
@@ -167,7 +167,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
       {missingCount > 0 && data.cards.length > 0 && (
         <div className="panel cost-panel">
           <div>
-            <span className="stat-label">Kosten om af te maken</span>
+            <span className="stat-label">Cost to complete</span>
             {costSummary && cost ? (
               <>
                 <p className="meter-value">
@@ -175,31 +175,31 @@ export function SetBinderPage({ param }: Props): JSX.Element {
                 </p>
                 <p className="muted small">
                   {cost.running
-                    ? `Prijzen ophalen: ${cost.done} van ${cost.total}`
-                    : `${missingCount} ontbrekende kaarten tegen Cardmarket-trendprijs${costSummary.unknown > 0 ? `; ${costSummary.unknown} zonder prijs (niet meegeteld)` : ''}.`}
+                    ? `Fetching prices: ${cost.done} of ${cost.total}`
+                    : `${missingCount} missing cards${costSummary.unknown > 0 ? `, ${costSummary.unknown} without price` : ''}`}
                 </p>
               </>
             ) : (
               <p className="muted small">
-                Telt de marktprijzen van je {missingCount} ontbrekende kaarten op. Haalt veel prijzen op, dus duurt even.
+                Total market price of your {missingCount} missing cards.
               </p>
             )}
           </div>
           {!cost?.running && (
             <button type="button" className="primary" onClick={() => void calculateCost()}>
-              {cost ? 'Opnieuw berekenen' : 'Bereken'}
+              {cost ? 'Recalculate' : 'Calculate'}
             </button>
           )}
         </div>
       )}
 
       <div className="filters">
-        <div className="segmented" role="group" aria-label="Tonen">
+        <div className="segmented" role="group" aria-label="Show">
           {(
             [
-              ['all', 'Alle kaarten'],
-              ['owned', 'Heb ik'],
-              ['missing', 'Mis ik'],
+              ['all', 'All'],
+              ['owned', 'Owned'],
+              ['missing', 'Missing'],
             ] as const
           ).map(([key, label]) => (
             <button key={key} type="button" aria-pressed={show === key} onClick={() => setShow(key)}>
@@ -207,23 +207,23 @@ export function SetBinderPage({ param }: Props): JSX.Element {
             </button>
           ))}
         </div>
-        <div className="segmented" role="group" aria-label="Vakken per pagina">
+        <div className="segmented" role="group" aria-label="Pockets per page">
           {([9, 12] as const).map((size) => (
             <button key={size} type="button" aria-pressed={pageSize === size} onClick={() => changePageSize(size)}>
-              {size === 9 ? '9 per pagina' : '12 per pagina'}
+              {size === 9 ? '9 per page' : '12 per page'}
             </button>
           ))}
         </div>
       </div>
 
       {data.cards.length === 0 && (
-        <p className="notice">De kaartdatabase heeft geen kaartenlijst voor deze set, dus de binder kan niet getoond worden.</p>
+        <p className="notice">No card list is available for this set.</p>
       )}
 
       <div className="binder-pages">
         {pages.map((page, i) => (
-          <section key={i} className="binder-page" aria-label={`Pagina ${i + 1}`}>
-            <p className="binder-page-label">Pagina {i + 1}</p>
+          <section key={i} className="binder-page" aria-label={`Page ${i + 1}`}>
+            <p className="binder-page-label">Page {i + 1}</p>
             <ul className="binder set-binder" style={{ ['--binder-cols' as string]: pageSize === 9 ? 3 : 4 }}>
               {page.map((c) => {
                 const qty = data.owned.get(c.id)
@@ -235,7 +235,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
                       <img
                         className="card-img"
                         src={src}
-                        alt={`${c.name} ${c.localId}${qty ? '' : ' (ontbreekt)'}`}
+                        alt={`${c.name} ${c.localId}${qty ? '' : ' (missing)'}`}
                         loading="lazy"
                         decoding="async"
                       />

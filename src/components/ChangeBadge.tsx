@@ -1,9 +1,9 @@
 import type { JSX } from 'react'
 
-const pct = new Intl.NumberFormat('nl-NL', { style: 'percent', maximumFractionDigits: 0 })
+const pct = new Intl.NumberFormat('en-IE', { style: 'percent', maximumFractionDigits: 0 })
 
 /** Prijsbeweging met pijl én teken, zodat het niet alleen via kleur leesbaar is. Kleine bewegingen = neutraal. */
-export function ChangeBadge({ change, label = 't.o.v. 30 dagen' }: { change: number | null; label?: string }): JSX.Element | null {
+export function ChangeBadge({ change, label = 'vs 30-day average' }: { change: number | null; label?: string }): JSX.Element | null {
   if (change === null || !Number.isFinite(change)) return null
   const flat = Math.abs(change) < 0.02
   const dir = flat ? 'flat' : change > 0 ? 'up' : 'down'

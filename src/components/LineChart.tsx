@@ -11,15 +11,15 @@ const DEFAULT_W = 600
 const H = 170
 const PAD = { top: 12, right: 12, bottom: 24, left: 52 }
 
-const dateFmt = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'short' })
-const fullDateFmt = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })
+const dateFmt = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' })
+const fullDateFmt = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
 const parseDate = (d: string): Date => new Date(`${d}T00:00:00`)
 
 /** Lijngrafiek van één reeks met hover-tooltip en tabelweergave (toegankelijk alternatief). */
 export function LineChart({
   points,
   label,
-  valueLabel = 'Trendprijs',
+  valueLabel = 'Trend price',
 }: {
   points: Point[]
   label: string
@@ -69,7 +69,7 @@ export function LineChart({
     <figure className="chart">
       <figcaption className="stat-label">{label}</figcaption>
       <div className="chart-box" ref={boxRef}>
-        <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${label}: van ${formatEur(points[0].value)} naar ${formatEur(points[points.length - 1].value)}`}>
+        <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${label}: from ${formatEur(points[0].value)} to ${formatEur(points[points.length - 1].value)}`}>
           {ticks.map((t) => (
             <g key={t}>
               <line className="grid" x1={PAD.left} x2={W - PAD.right} y1={geo.y(t)} y2={geo.y(t)} />
@@ -111,11 +111,11 @@ export function LineChart({
         )}
       </div>
       <details>
-        <summary>Toon als tabel</summary>
+        <summary>Show as table</summary>
         <div className="table-scroll">
           <table>
             <thead>
-              <tr><th scope="col">Datum</th><th scope="col">{valueLabel}</th></tr>
+              <tr><th scope="col">Date</th><th scope="col">{valueLabel}</th></tr>
             </thead>
             <tbody>
               {[...points].reverse().map((p) => (

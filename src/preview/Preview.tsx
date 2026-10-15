@@ -87,25 +87,25 @@ function BinderPreview(): JSX.Element {
   const pages = [cards.slice(0, size), cards.slice(size, size * 2)]
   return (
     <section className="page">
-      <a href="#/sets" className="back">← Alle sets</a>
+      <a href="#/sets" className="back">← All sets</a>
       <div className="page-head">
         <div>
           <h1>151</h1>
-          <p className="muted">11 van 207 kaarten in bezit, uitgebracht 2023-09-22</p>
+          <p className="muted">11 of 207 cards, released 2023</p>
         </div>
       </div>
       <div className="panel cost-panel">
         <div>
-          <span className="stat-label">Kosten om af te maken</span>
-          <p className="meter-value">€ 1.284,55</p>
-          <p className="muted small">196 ontbrekende kaarten tegen Cardmarket-trendprijs; 3 zonder prijs (niet meegeteld).</p>
+          <span className="stat-label">Cost to complete</span>
+          <p className="meter-value">€1,284.55</p>
+          <p className="muted small">196 missing cards, 3 without price</p>
         </div>
-        <button type="button" className="primary">Opnieuw berekenen</button>
+        <button type="button" className="primary">Recalculate</button>
       </div>
       <div className="binder-pages">
         {pages.map((page, i) => (
           <section key={i} className="binder-page">
-            <p className="binder-page-label">Pagina {i + 1}</p>
+            <p className="binder-page-label">Page {i + 1}</p>
             <ul className="binder set-binder" style={{ ['--binder-cols' as string]: cols }}>
               {page.map((c, j) => {
                 const have = (i * size + j) % 3 === 0
@@ -113,7 +113,7 @@ function BinderPreview(): JSX.Element {
                   <li key={c.id} className={`slot${have ? ' have' : ' missing'}`}>
                     <img className="card-img" src={imageUrl(c.image, 'low') ?? ''} alt="" />
                     <span className="slot-num">{c.localId}</span>
-                    {!have && <span className="slot-price">€ {(j * 0.37 + 0.1).toFixed(2).replace('.', ',')}</span>}
+                    {!have && <span className="slot-price">€{(j * 0.37 + 0.1).toFixed(2)}</span>}
                   </li>
                 )
               })}
@@ -126,51 +126,51 @@ function BinderPreview(): JSX.Element {
 }
 
 export function Preview(): JSX.Element {
-  const page = (params.get('page') ?? 'collectie') as Route
+  const page = (params.get('page') ?? 'collection') as Route
   const noop = useMemo(() => () => undefined, [])
   if (page === 'scan') {
     return (
-      <Shell route={page} email="demo@voorbeeld.nl" theme={theme} onToggleTheme={noop} onSignOut={noop}>
+      <Shell route={page} email="demo@example.com" theme={theme} onToggleTheme={noop} onSignOut={noop}>
         <ScanPage />
       </Shell>
     )
   }
   if (page === 'sets') {
     return (
-      <Shell route={page} email="demo@voorbeeld.nl" theme={theme} onToggleTheme={noop} onSignOut={noop}>
+      <Shell route={page} email="demo@example.com" theme={theme} onToggleTheme={noop} onSignOut={noop}>
         <BinderPreview />
       </Shell>
     )
   }
-  if (page === 'overzicht') {
+  if (page === 'overview') {
     return (
-      <Shell route={page} email="demo@voorbeeld.nl" theme={theme} onToggleTheme={noop} onSignOut={noop}>
+      <Shell route={page} email="demo@example.com" theme={theme} onToggleTheme={noop} onSignOut={noop}>
         <DashboardView cards={CARDS.map((c) => c.card)} prices={PRICES} pricesLoading={false} series={SERIES} />
       </Shell>
     )
   }
   return (
-    <Shell route={page} email="demo@voorbeeld.nl" theme={theme} onToggleTheme={noop} onSignOut={noop}>
+    <Shell route={page} email="demo@example.com" theme={theme} onToggleTheme={noop} onSignOut={noop}>
       <section className="page">
         <div className="page-head">
           <div>
-            <h1>Collectie</h1>
-            <p className="muted">12 stuks, marktwaarde € 61,73</p>
+            <h1>Collection</h1>
+            <p className="muted">12 cards, market value €61.73</p>
           </div>
-          <button type="button" className="primary">Kaart toevoegen</button>
+          <button type="button" className="primary">Add card</button>
         </div>
         <div className="filters">
           <div className="search">
-            <input type="search" placeholder="Zoek op naam, set, nummer of kanaal" aria-label="Zoeken" />
+            <input type="search" placeholder="Search name, set or number" aria-label="Search" />
           </div>
           <div className="segmented" role="group" aria-label="Status">
-            <button type="button" aria-pressed="true">In bezit <span className="count">10</span></button>
-            <button type="button" aria-pressed="false">In collectie <span className="count">8</span></button>
-            <button type="button" aria-pressed="false">Te koop <span className="count">2</span></button>
-            <button type="button" aria-pressed="false">Verkocht <span className="count">1</span></button>
+            <button type="button" aria-pressed="true">Owned <span className="count">10</span></button>
+            <button type="button" aria-pressed="false">In collection <span className="count">8</span></button>
+            <button type="button" aria-pressed="false">For sale <span className="count">2</span></button>
+            <button type="button" aria-pressed="false">Sold <span className="count">1</span></button>
           </div>
-          <select aria-label="Sorteren">
-            <option>Volgorde van invoer</option>
+          <select aria-label="Sort">
+            <option>Date added</option>
           </select>
         </div>
         <ul className="binder">

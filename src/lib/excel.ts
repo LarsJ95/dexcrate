@@ -85,11 +85,11 @@ function readRows(ws: Worksheet, label: string, warnings: string[]): ExcelRow[] 
     const qty = parseQuantity(cellText(row.getCell(4).value))
     const price = parsePrice(cellText(row.getCell(5).value))
     if (qty === null) {
-      warnings.push(`${label} rij ${r} (${name}): ongeldig aantal, overgeslagen.`)
+      warnings.push(`${label} row ${r} (${name}): invalid quantity, skipped.`)
       continue
     }
     if (price === null) {
-      warnings.push(`${label} rij ${r} (${name}): ongeldige prijs, overgeslagen.`)
+      warnings.push(`${label} row ${r} (${name}): invalid price, skipped.`)
       continue
     }
     // Set "x" in de Excel = sealed product (booster box e.d.).
@@ -110,7 +110,7 @@ function readRows(ws: Worksheet, label: string, warnings: string[]): ExcelRow[] 
 
 function sheet(wb: Workbook, name: string): Worksheet {
   const ws = wb.getWorksheet(name)
-  if (!ws) throw new Error(`Tabblad "${name}" niet gevonden in het Excel-bestand.`)
+  if (!ws) throw new Error(`Sheet "${name}" not found in the Excel file.`)
   return ws
 }
 

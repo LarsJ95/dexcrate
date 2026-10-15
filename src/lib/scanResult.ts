@@ -45,7 +45,7 @@ function toRecognition(r: Record<string, unknown>, index: number): Recognition {
 /** Antwoord van de Edge Function → getypeerd resultaat, gesorteerd op positie. Onbekende vorm → fout. */
 export function toScanResult(body: unknown): ScanResult {
   const b = typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : null
-  if (!b || !Array.isArray(b.cards)) throw new Error('Onverwacht antwoord van de herkenning. Is de nieuwste functie geïnstalleerd?')
+  if (!b || !Array.isArray(b.cards)) throw new Error('Unexpected response from recognition. Is the latest function installed?')
   const cards = b.cards
     .filter((c): c is Record<string, unknown> => typeof c === 'object' && c !== null)
     .map(toRecognition)

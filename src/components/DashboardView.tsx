@@ -12,9 +12,11 @@ interface Props {
   pricesLoading: boolean
   /** Waardeverloop uit dagelijkse opnames; null = (nog) niet beschikbaar. */
   series: SeriesPoint[] | null
+  /** Kaart openen in de popup. */
+  onOpenCard?: (id: string) => void
 }
 
-const pct = new Intl.NumberFormat('nl-NL', { style: 'percent', maximumFractionDigits: 1 })
+const pct = new Intl.NumberFormat('en-IE', { style: 'percent', maximumFractionDigits: 1 })
 
 const countLabel = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`
 
@@ -24,9 +26,9 @@ function signedEur(n: number): string {
   return `${n > 0 ? '+' : '−'}${formatEur(Math.abs(n))}`
 }
 
-function Tile({ label, bucket, unit, href }: { label: string; bucket: Bucket; unit: string; href: string }): JSX.Element {
+function Tile({ label, bucket, unit }: { label: string; bucket: Bucket; unit: string }): JSX.Element {
   return (
-    <a className="stat" href={href}>
+    <a className="stat" href="#/collection">
       <span className="stat-label">{label}</span>
       <span className="stat-value">{formatEur(bucket.amount)}</span>
       <span className="stat-sub">{unit}</span>
@@ -34,7 +36,17 @@ function Tile({ label, bucket, unit, href }: { label: string; bucket: Bucket; un
   )
 }
 
-function MoverList({ title, items, empty }: { title: string; items: Mover<Card>[]; empty: string }): JSX.Element {
+function MoverList({
+  title,
+  items,
+  empty,
+  onOpenCard,
+}: {
+  title: string
+  items: Mover<Card>[]
+  empty: string
+  onOpenCard?: (id: string) => void
+}): JSX.Element {
   return (
     <div className="panel">
       <h2 className="panel-title">{title}</h2>
@@ -43,16 +55,18 @@ function MoverList({ title, items, empty }: { title: string; items: Mover<Card>[
       ) : (
         <ol className="mover-list">
           {items.map(({ card, market }) => (
-            <li key={card.id} className="mover">
-              <CardImage tcgdexId={card.tcgdex_id} kind={card.kind} name={card.name} />
-              <span className="mover-name" title={card.name}>
-                {card.name}
-                <span className="muted small"> #{card.card_number}</span>
-              </span>
-              <span className="mover-price">
-                {formatEur(market.value)}
-                <ChangeBadge change={market.change30} />
-              </span>
+            <li key={card.id}>
+              <button type="button" className="mover" onClick={() => onOpenCard?.(card.id)} aria-label={`Open ${card.name}`}>
+                <CardImage tcgdexId={card.tcgdex_id} kind={card.kind} name={card.name} />
+                <span className="mover-name">
+                  {card.name}
+                  {card.card_number && <span className="muted"> #{card.card_number}</span>}
+                </span>
+                <span className="mover-price">
+                  {formatEur(market.value)}
+                  <ChangeBadge change={market.change30} />
+                </span>
+              </button>
             </li>
           ))}
         </ol>
@@ -61,7 +75,7 @@ function MoverList({ title, items, empty }: { title: string; items: Mover<Card>[
   )
 }
 
-export function DashboardView({ cards, prices, pricesLoading, series }: Props): JSX.Element {
+export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard }: Props): JSX.Element {
   const stats = useMemo(() => computeStats(cards), [cards])
   const market = useMemo(() => summarizeMarket(cards, prices), [cards, prices])
   const movers = useMemo(() => topMovers(cards, prices), [cards, prices])
@@ -70,7 +84,7 @@ export function DashboardView({ cards, prices, pricesLoading, series }: Props): 
     return (
       <section className="page">
         <p className="empty">
-          Nog geen kaarten. <a href="#/import">Importeer je Excel</a> of <a href="#/scan">scan je eerste kaart</a>.
+          No cards yet. <a href="#/import">Import your Excel file</a> or <a href="#/scan">scan a card</a>.
         </p>
       </section>
     )
@@ -81,69 +95,52 @@ export function DashboardView({ cards, prices, pricesLoading, series }: Props): 
 
   return (
     <section className="page dashboard">
-      <div className="page-head">
-        <div>
-          <h1>Overzicht</h1>
-          <p className="muted">Marktwaarde op basis van Cardmarket-trendprijzen.</p>
-        </div>
-      </div>
+      <h1>Overview</h1>
 
       <div className="hero">
-        <span className="stat-label">Waarde van je collectie</span>
+        <span className="stat-label">Collection value</span>
         <p className="hero-value">{pricesLoading ? '…' : formatEur(market.owned.value)}</p>
         {!pricesLoading && (
           <div className="hero-sub">
-            {market.change30 !== null && <ChangeBadge change={market.change30} label="t.o.v. 30-daags gemiddelde" />}
-            <span>
-              {countLabel(market.owned.withPrice, 'kaart', 'kaarten')} met marktprijs
-              {market.owned.withoutPrice > 0 && `, ${market.owned.withoutPrice} zonder`}
-            </span>
+            {market.change30 !== null && <ChangeBadge change={market.change30} label="vs 30-day average" />}
+            <span>{countLabel(market.owned.withPrice + market.owned.withoutPrice, 'card', 'cards')}</span>
             {market.paper.count > 0 && (
               <span>
-                Betaald {formatEur(market.paper.cost)}, nu{' '}
+                Paid {formatEur(market.paper.cost)},{' '}
                 <strong className={market.paper.gain >= 0 ? 'up' : 'down'}>{signedEur(market.paper.gain)}</strong>
               </span>
             )}
           </div>
         )}
-        {series && series.length >= 2 && <LineChart points={series} label="Waardeverloop" valueLabel="Waarde" />}
-        {series && series.length < 2 && !pricesLoading && (
-          <p className="muted small">Het waardeverloop verschijnt zodra er een paar dagen prijzen zijn opgeslagen.</p>
-        )}
-        {market.graded > 0 && (
-          <p className="muted small">
-            {countLabel(market.graded, 'gegradeerde kaart telt', 'gegradeerde kaarten tellen')} mee tegen de ongegradeerde
-            prijs.
-          </p>
-        )}
+        {series && series.length >= 2 && <LineChart points={series} label="Value history" valueLabel="Value" />}
       </div>
 
       {!pricesLoading && (
         <div className="movers">
-          <MoverList title="Stijgers" items={movers.up} empty="Geen kaarten die duidelijk in prijs stijgen." />
-          <MoverList title="Dalers" items={movers.down} empty="Geen kaarten die duidelijk in prijs dalen." />
-          <MoverList title="Meest waardevol" items={movers.valuable} empty="Nog geen marktprijzen bekend." />
+          <MoverList title="Gainers" items={movers.up} empty="No clear risers." onOpenCard={onOpenCard} />
+          <MoverList title="Losers" items={movers.down} empty="No clear fallers." onOpenCard={onOpenCard} />
+          <MoverList title="Most valuable" items={movers.valuable} empty="No market prices yet." onOpenCard={onOpenCard} />
         </div>
       )}
 
-      <h2 className="section-title">Verkoop en aankoop</h2>
+      <h2 className="section-title">Sales</h2>
 
       <div className="stat-row">
-        <a className="stat stat-net" href="#/collectie">
-          <span className="stat-label">Netto (verkocht min gekocht)</span>
+        <a className="stat" href="#/collection">
+          <span className="stat-label">Net (sold − bought)</span>
           <span className={`stat-value ${stats.net >= 0 ? 'up' : 'down'}`}>{signedEur(stats.net)}</span>
-          <span className="stat-sub">{stats.net >= 0 ? 'Winst' : 'Nog terug te verdienen'}</span>
+          <span className="stat-sub">{stats.net >= 0 ? 'Profit' : 'To recoup'}</span>
         </a>
-        <Tile label="Verkocht" bucket={stats.sold} unit={countLabel(stats.sold.count, 'kaart', 'kaarten')} href="#/collectie" />
-        <Tile label="Te koop" bucket={stats.forSale} unit={countLabel(stats.forSale.count, 'kaart', 'kaarten')} href="#/collectie" />
-        <Tile label="Gekocht" bucket={stats.bought} unit={countLabel(stats.bought.count, 'stuk', 'stuks')} href="#/collectie" />
+        <Tile label="Sold" bucket={stats.sold} unit={countLabel(stats.sold.count, 'card', 'cards')} />
+        <Tile label="For sale" bucket={stats.forSale} unit={countLabel(stats.forSale.count, 'card', 'cards')} />
+        <Tile label="Bought" bucket={stats.bought} unit={countLabel(stats.bought.count, 'item', 'items')} />
       </div>
 
       <div className="split-panels">
         <div className="panel">
           <div className="meter-head">
             <span className="stat-label" id="ratio-label">
-              Verkoopratio
+              Sell-through
             </span>
             <span className="meter-value">{pct.format(stats.sellRatio)}</span>
           </div>
@@ -154,24 +151,23 @@ export function DashboardView({ cards, prices, pricesLoading, series }: Props): 
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={Math.round(stats.sellRatio * 1000) / 10}
-            aria-valuetext={`${stats.sold.count} van ${listed} kaarten verkocht`}
+            aria-valuetext={`${stats.sold.count} of ${listed} cards sold`}
           >
             <span className="meter-fill" style={{ width: `${stats.sellRatio * 100}%` }} />
           </span>
           <p className="muted small">
-            {stats.sold.count} van {countLabel(listed, 'kaart', 'kaarten')} op je verkooplijst verkocht
+            {stats.sold.count} of {countLabel(listed, 'card', 'cards')} sold
           </p>
         </div>
 
         {askingDiff !== null && (
           <div className="panel">
-            <span className="stat-label">Te koop: jouw prijs vs. markt</span>
+            <span className="stat-label">Asking vs market</span>
             <span className="meter-value">
-              {pct.format(Math.abs(askingDiff))} {askingDiff >= 0 ? 'boven' : 'onder'} markt
+              {pct.format(Math.abs(askingDiff))} {askingDiff >= 0 ? 'above' : 'below'}
             </span>
             <p className="muted small">
-              Vraagprijs {formatEur(market.forSale.asking)}, marktwaarde {formatEur(market.forSale.value)} (
-              {countLabel(market.forSale.count, 'kaart', 'kaarten')})
+              Asking {formatEur(market.forSale.asking)}, market {formatEur(market.forSale.value)}
             </p>
           </div>
         )}
@@ -179,15 +175,15 @@ export function DashboardView({ cards, prices, pricesLoading, series }: Props): 
 
       <dl className="averages">
         <div>
-          <dt>Gemiddelde verkoopprijs</dt>
+          <dt>Avg. sale price</dt>
           <dd>{formatEur(stats.avgSold)}</dd>
         </div>
         <div>
-          <dt>Gemiddelde aankoopprijs</dt>
+          <dt>Avg. purchase price</dt>
           <dd>{formatEur(stats.avgBought)}</dd>
         </div>
         <div>
-          <dt>Gemiddelde waarde te koop</dt>
+          <dt>Avg. asking price</dt>
           <dd>{formatEur(stats.avgForSale)}</dd>
         </div>
       </dl>

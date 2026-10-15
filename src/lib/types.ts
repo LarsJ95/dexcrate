@@ -6,9 +6,9 @@ export type GradingCompany = 'PSA' | 'CGC' | 'BGS' | 'SGC' | 'TAG' | 'other'
 export type CardLanguage = 'en' | 'ja' | 'zh-cn' | 'zh-tw' | 'ko' | 'nl' | 'de' | 'fr' | 'it' | 'es' | 'pt'
 
 export const STATUS_LABELS: Record<CardStatus, string> = {
-  collection: 'In collectie',
-  for_sale: 'Te koop',
-  sold: 'Verkocht',
+  collection: 'In collection',
+  for_sale: 'For sale',
+  sold: 'Sold',
 }
 
 /** Cardmarket-schaal. */
@@ -23,7 +23,7 @@ export const CONDITION_LABELS: Record<Condition, string> = {
 }
 
 export const VARIANT_LABELS: Record<Variant, string> = {
-  normal: 'Normaal',
+  normal: 'Normal',
   holo: 'Holo',
   reverse: 'Reverse holo',
   firstEdition: '1st edition',
@@ -35,21 +35,21 @@ export const GRADING_LABELS: Record<GradingCompany, string> = {
   BGS: 'BGS (Beckett)',
   SGC: 'SGC',
   TAG: 'TAG',
-  other: 'Anders',
+  other: 'Other',
 }
 
 export const LANGUAGE_LABELS: Record<CardLanguage, string> = {
-  en: 'Engels',
-  ja: 'Japans',
-  'zh-cn': 'Chinees (vereenvoudigd)',
-  'zh-tw': 'Chinees (traditioneel)',
-  ko: 'Koreaans',
-  nl: 'Nederlands',
-  de: 'Duits',
-  fr: 'Frans',
-  it: 'Italiaans',
-  es: 'Spaans',
-  pt: 'Portugees',
+  en: 'English',
+  ja: 'Japanese',
+  'zh-cn': 'Chinese (simplified)',
+  'zh-tw': 'Chinese (traditional)',
+  ko: 'Korean',
+  nl: 'Dutch',
+  de: 'German',
+  fr: 'French',
+  it: 'Italian',
+  es: 'Spanish',
+  pt: 'Portuguese',
 }
 
 /** Eén regel in je voorraad (zonder database-velden). */

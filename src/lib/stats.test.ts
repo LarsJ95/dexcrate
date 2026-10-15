@@ -53,8 +53,7 @@ describe('computeStats', () => {
 })
 
 describe('formatEur', () => {
-  it('formatteert in Nederlandse notatie', () => {
-    // Intl gebruikt een vaste spatie na het euroteken; normaliseren voor de vergelijking.
-    expect(formatEur(1234.5).replace(/\s/g, ' ')).toBe('€ 1.234,50')
+  it('formatteert in Engelse notatie met euro', () => {
+    expect(formatEur(1234.5)).toBe('€1,234.50')
   })
 })

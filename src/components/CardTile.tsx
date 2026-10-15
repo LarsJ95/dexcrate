@@ -19,9 +19,9 @@ interface Props {
 /** De prijs die bij de status hoort: vraag-/verkoopprijs, of wat je betaalde. */
 function ownPrice(card: Card): { label: string; value: number } | null {
   if (card.status !== 'collection' && card.sale_price !== null) {
-    return { label: card.status === 'sold' ? 'Verkocht' : 'Vraagprijs', value: card.sale_price }
+    return { label: card.status === 'sold' ? 'Sold for' : 'Asking', value: card.sale_price }
   }
-  if (card.purchase_price !== null) return { label: 'Betaald', value: card.purchase_price }
+  if (card.purchase_price !== null) return { label: 'Paid', value: card.purchase_price }
   return null
 }
 
@@ -37,7 +37,7 @@ function CardTileBase({ card, market, onOpen, onToggleSold, busy }: Props): JSX.
 
   return (
     <li className={`tile status-${card.status}`}>
-      <button type="button" className="tile-open" onClick={() => onOpen(card.id)} aria-label={`${card.name} openen`}>
+      <button type="button" className="tile-open" onClick={() => onOpen(card.id)} aria-label={`Open ${card.name}`}>
         <CardImage tcgdexId={card.tcgdex_id} kind={card.kind} name={card.name} />
         <span className="sheen" aria-hidden="true" />
         {card.status !== 'collection' && <span className={`status-badge ${card.status}`}>{STATUS_LABELS[card.status]}</span>}
@@ -58,12 +58,12 @@ function CardTileBase({ card, market, onOpen, onToggleSold, busy }: Props): JSX.
 
         <dl className="tile-prices">
           <div>
-            <dt>{own?.label ?? 'Prijs'}</dt>
+            <dt>{own?.label ?? 'Price'}</dt>
             <dd>{own ? formatEur(own.value) : '–'}</dd>
           </div>
           {showMarket && (
             <div className="tile-market">
-              <dt>Markt{card.grading_company ? ' (raw)' : ''}</dt>
+              <dt>Market{card.grading_company ? ' (raw)' : ''}</dt>
               <dd>
                 {market === undefined ? '…' : market ? formatEur(market.value) : '–'}
                 {market && <ChangeBadge change={market.change30} />}
@@ -77,11 +77,11 @@ function CardTileBase({ card, market, onOpen, onToggleSold, busy }: Props): JSX.
             type="button"
             className={`status-toggle${card.status === 'sold' ? ' on' : ''}`}
             aria-pressed={card.status === 'sold'}
-            title={card.status === 'sold' ? 'Terugzetten naar te koop' : undefined}
+            title={card.status === 'sold' ? 'Move back to for sale' : undefined}
             disabled={busy}
             onClick={() => onToggleSold(card.id)}
           >
-            {card.status === 'sold' ? 'Verkocht ✓' : 'Markeer als verkocht'}
+            {card.status === 'sold' ? 'Sold ✓' : 'Mark as sold'}
           </button>
         )}
       </div>

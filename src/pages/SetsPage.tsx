@@ -17,7 +17,7 @@ interface Row extends Group {
 type SortKey = 'progress' | 'name' | 'release' | 'owned'
 type Filter = 'all' | 'almost' | 'complete'
 
-const pct = new Intl.NumberFormat('nl-NL', { style: 'percent', maximumFractionDigits: 0 })
+const pct = new Intl.NumberFormat('en-IE', { style: 'percent', maximumFractionDigits: 0 })
 
 /** Kaarten in bezit (niet verkocht) gegroepeerd per set. */
 function groupOwnedBySet(cards: readonly Card[]): Group[] {
@@ -67,7 +67,7 @@ export function SetsPage(): JSX.Element {
         })
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Laden mislukt.')
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Loading failed.')
       })
     return () => {
       cancelled = true
@@ -85,7 +85,7 @@ export function SetsPage(): JSX.Element {
     const sorters: Record<SortKey, (a: Row, b: Row) => number> = {
       progress: (a, b) => ratioOf(b) - ratioOf(a) || b.owned.size - a.owned.size,
       owned: (a, b) => b.owned.size - a.owned.size,
-      name: (a, b) => name(a).localeCompare(name(b), 'nl'),
+      name: (a, b) => name(a).localeCompare(name(b), 'en'),
       release: (a, b) => (b.summary?.releaseDate ?? '').localeCompare(a.summary?.releaseDate ?? ''),
     }
     return [...list].sort(sorters[sort])
@@ -113,7 +113,6 @@ export function SetsPage(): JSX.Element {
       <div className="page-head">
         <div>
           <h1>Sets</h1>
-          <p className="muted">Hoeveel van elke set je in bezit hebt (in collectie of te koop).</p>
         </div>
       </div>
 
@@ -121,9 +120,9 @@ export function SetsPage(): JSX.Element {
         <div className="segmented" role="group" aria-label="Filter">
           {(
             [
-              ['all', 'Alle sets'],
-              ['almost', 'Bijna compleet'],
-              ['complete', 'Compleet'],
+              ['all', 'All sets'],
+              ['almost', 'Almost complete'],
+              ['complete', 'Complete'],
             ] as const
           ).map(([key, label]) => (
             <button key={key} type="button" aria-pressed={filter === key} onClick={() => setFilter(key)}>
@@ -131,21 +130,21 @@ export function SetsPage(): JSX.Element {
             </button>
           ))}
         </div>
-        <select aria-label="Sorteren" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
-          <option value="progress">Voortgang</option>
-          <option value="owned">Aantal in bezit</option>
-          <option value="release">Nieuwste eerst</option>
-          <option value="name">Naam A–Z</option>
+        <select aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
+          <option value="progress">Progress</option>
+          <option value="owned">Cards owned</option>
+          <option value="release">Newest first</option>
+          <option value="name">Name A–Z</option>
         </select>
       </div>
 
       {unlinked > 0 && (
         <p className="notice">
-          {unlinked} {unlinked === 1 ? 'kaart telt' : 'kaarten tellen'} niet mee omdat ze nog niet gekoppeld zijn.
+          {unlinked} unlinked {unlinked === 1 ? 'card is' : 'cards are'} not counted.
         </p>
       )}
-      {rows.length === 0 && <p className="empty">Nog geen gekoppelde kaarten in bezit.</p>}
-      {rows.length > 0 && visible.length === 0 && <p className="empty">Geen sets voor dit filter.</p>}
+      {rows.length === 0 && <p className="empty">No linked cards yet.</p>}
+      {rows.length > 0 && visible.length === 0 && <p className="empty">No sets match this filter.</p>}
 
       <ul className="set-list">
         {visible.map((r) => {
@@ -175,7 +174,7 @@ export function SetsPage(): JSX.Element {
                     aria-valuemin={0}
                     aria-valuemax={total || 1}
                     aria-valuenow={r.owned.size}
-                    aria-label={`${name}: ${r.owned.size} van ${total || '?'}`}
+                    aria-label={`${name}: ${r.owned.size} of ${total || '?'}`}
                   >
                     <span className="meter-fill" style={{ width: `${ratio * 100}%` }} />
                   </span>

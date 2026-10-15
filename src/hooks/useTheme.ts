@@ -2,11 +2,13 @@ import { useCallback, useEffect, useState } from 'react'
 
 export type Theme = 'dark' | 'light'
 
-const STORAGE_KEY = 'kaartenmap:theme'
+const STORAGE_KEY = 'binderline:theme'
 
 function readTheme(): Theme {
   try {
-    return localStorage.getItem(STORAGE_KEY) === 'light' ? 'light' : 'dark'
+    // Oude sleutel (van vóór de naamswijziging) blijft gelden tot er opnieuw gekozen wordt.
+    const saved = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem('kaartenmap:theme')
+    return saved === 'light' ? 'light' : 'dark'
   } catch {
     return 'dark' // geen opslag: standaard donker
   }

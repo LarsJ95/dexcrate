@@ -43,34 +43,34 @@ export function ImportPage(): JSX.Element {
     e.target.value = ''
     if (!file) return
     if (file.size > MAX_FILE_BYTES) {
-      setStatus({ kind: 'error', message: 'Bestand is groter dan 10 MB.' })
+      setStatus({ kind: 'error', message: 'File is larger than 10 MB.' })
       return
     }
     setPreview(null)
     try {
-      setStatus({ kind: 'busy', message: 'Excel inlezen…' })
+      setStatus({ kind: 'busy', message: 'Reading Excel file…' })
       const parsed = await parseWorkbook(await file.arrayBuffer())
-      setStatus({ kind: 'busy', message: 'Kaarten koppelen aan de kaartdatabase…' })
+      setStatus({ kind: 'busy', message: 'Linking cards…' })
       setPreview({ cards: await resolveTcgdexIds(parsed.cards), warnings: parsed.warnings })
       setStatus({ kind: 'idle' })
     } catch (err) {
       console.error(err)
-      setStatus({ kind: 'error', message: err instanceof Error ? err.message : 'Inlezen mislukt.' })
+      setStatus({ kind: 'error', message: err instanceof Error ? err.message : 'Reading failed.' })
     }
   }
 
   async function onImport(): Promise<void> {
     if (!preview || status.kind === 'busy') return
-    setStatus({ kind: 'busy', message: 'Opslaan in database…' })
+    setStatus({ kind: 'busy', message: 'Saving…' })
     try {
       await insertCards(preview.cards)
     } catch (err) {
-      setStatus({ kind: 'error', message: err instanceof Error ? err.message : 'Opslaan mislukt.' })
+      setStatus({ kind: 'error', message: err instanceof Error ? err.message : 'Saving failed.' })
       return
     }
     setPreview(null)
     setRefreshKey((k) => k + 1)
-    setStatus({ kind: 'done', message: `${preview.cards.length} regels geïmporteerd.` })
+    setStatus({ kind: 'done', message: `${preview.cards.length} rows imported.` })
   }
 
   const stats = preview ? computeStats(preview.cards) : null
@@ -80,18 +80,15 @@ export function ImportPage(): JSX.Element {
 
   return (
     <section className="page">
-      <h1>Excel importeren</h1>
-      <p className="muted">
-        Verkooplijst wordt "Te koop" of "Verkocht", aankooplijst wordt "In collectie".
-      </p>
+      <h1>Import</h1>
       {existing !== null && existing > 0 && (
         <p className="notice">
-          Je collectie bevat al {existing} regels. Importeren is uitgeschakeld om dubbele regels te voorkomen.
+          Your collection already has {existing} rows. Import is disabled to prevent duplicates.
         </p>
       )}
 
       <label className="file">
-        Kies je Excel-bestand (.xlsx)
+        Excel file (.xlsx)
         <input
           type="file"
           accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -106,18 +103,18 @@ export function ImportPage(): JSX.Element {
 
       {preview && stats && (
         <div className="preview">
-          <h2>Controle</h2>
+          <h2>Check</h2>
           <table>
             <tbody>
-              <tr><th scope="row">Verkocht</th><td>{formatEur(stats.sold.amount)}</td><td>{stats.sold.count} kaarten</td></tr>
-              <tr><th scope="row">Te koop</th><td>{formatEur(stats.forSale.amount)}</td><td>{stats.forSale.count} kaarten</td></tr>
-              <tr><th scope="row">Gekocht</th><td>{formatEur(stats.bought.amount)}</td><td>{stats.bought.count} stuks</td></tr>
-              <tr><th scope="row">Netto</th><td>{formatEur(stats.net)}</td><td /></tr>
+              <tr><th scope="row">Sold</th><td>{formatEur(stats.sold.amount)}</td><td>{stats.sold.count} cards</td></tr>
+              <tr><th scope="row">For sale</th><td>{formatEur(stats.forSale.amount)}</td><td>{stats.forSale.count} cards</td></tr>
+              <tr><th scope="row">Bought</th><td>{formatEur(stats.bought.amount)}</td><td>{stats.bought.count} items</td></tr>
+              <tr><th scope="row">Net</th><td>{formatEur(stats.net)}</td><td /></tr>
             </tbody>
           </table>
           <p>
-            {preview.cards.length} regels.{' '}
-            {missing.length === 0 ? 'Alle kaarten gekoppeld.' : `${missing.length} kaarten niet automatisch gekoppeld (kun je later koppelen):`}
+            {preview.cards.length} rows.{' '}
+            {missing.length === 0 ? 'All cards linked.' : `${missing.length} cards could not be linked automatically:`}
           </p>
           {missing.length > 0 && (
             <ul>
@@ -130,12 +127,12 @@ export function ImportPage(): JSX.Element {
           )}
           {preview.warnings.length > 0 && (
             <>
-              <h2>Waarschuwingen</h2>
+              <h2>Warnings</h2>
               <ul>{preview.warnings.map((w) => <li key={w}>{w}</li>)}</ul>
             </>
           )}
-          <button type="button" onClick={onImport} disabled={busy || blocked}>
-            Importeren
+          <button type="button" className="primary" onClick={onImport} disabled={busy || blocked}>
+            Import
           </button>
         </div>
       )}

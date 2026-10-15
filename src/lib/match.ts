@@ -103,7 +103,7 @@ export async function findCandidates(q: MatchQuery, lang: Lang): Promise<Candida
     if (exact) {
       // Buitenlandse namen zijn niet te vergelijken met de Engelse naam uit de Excel.
       const sim = lang === 'en' ? nameSimilarity(stripLangTag(q.name), exact.name) : 1
-      add(exact, exact.setId, 4 + sim * 4, sim >= MIN_NAME_SIMILARITY ? 'Set en nummer kloppen' : 'Set en nummer kloppen, naam niet')
+      add(exact, exact.setId, 4 + sim * 4, sim >= MIN_NAME_SIMILARITY ? 'Set and number match' : 'Set and number match, name differs')
     }
   }
 
@@ -117,7 +117,7 @@ export async function findCandidates(q: MatchQuery, lang: Lang): Promise<Candida
         const num = sameNumber(q.card_number, card.localId)
         const set = expectedSet !== null && setId === expectedSet
         const score = 3 + (num ? 3 : 0) + (set ? 2 : 0)
-        const reason = num && set ? 'Set en nummer kloppen' : num ? `Naam (${localName}) en nummer kloppen` : set ? 'Zelfde set' : `Naam: ${localName}`
+        const reason = num && set ? 'Set and number match' : num ? `Name (${localName}) and number match` : set ? 'Same set' : `Name: ${localName}`
         add(card, setId, score, reason)
       }
     }
@@ -134,7 +134,7 @@ export async function findCandidates(q: MatchQuery, lang: Lang): Promise<Candida
         const set = expectedSet !== null && setId === expectedSet
         if (sim < MIN_NAME_SIMILARITY && !num) continue
         const score = sim * 3 + (num ? 3 : 0) + (set ? 2 : 0)
-        const reason = num && set ? 'Set en nummer kloppen' : num ? 'Naam en nummer kloppen, andere set' : set ? 'Zelfde set, ander nummer' : 'Naam lijkt erop'
+        const reason = num && set ? 'Set and number match' : num ? 'Name and number match, other set' : set ? 'Same set, other number' : 'Similar name'
         add(card, setId, score, reason)
       }
       if (byKey.size >= MAX_CANDIDATES) break

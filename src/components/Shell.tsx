@@ -14,9 +14,9 @@ import {
 } from './Icons'
 
 const NAV: { route: Route; label: string; Icon: (p: { size?: number }) => JSX.Element }[] = [
-  { route: 'overzicht', label: 'Overzicht', Icon: IconHome },
-  { route: 'collectie', label: 'Collectie', Icon: IconCards },
-  { route: 'scan', label: 'Scannen', Icon: IconCamera },
+  { route: 'overview', label: 'Overview', Icon: IconHome },
+  { route: 'collection', label: 'Collection', Icon: IconCards },
+  { route: 'scan', label: 'Scan', Icon: IconCamera },
   { route: 'sets', label: 'Sets', Icon: IconLayers },
   { route: 'import', label: 'Import', Icon: IconUpload },
 ]
@@ -32,14 +32,14 @@ interface Props {
 
 /** App-schil: zijbalk op desktop; op mobiel een topbalk en een onderbalk met centrale scanknop. */
 export function Shell({ route, email, theme, onToggleTheme, onSignOut, children }: Props): JSX.Element {
-  const themeLabel = theme === 'dark' ? 'Licht thema' : 'Donker thema'
+  const themeLabel = theme === 'dark' ? 'Light theme' : 'Dark theme'
   const themeButton = (
     <button type="button" className="ghost icon-btn" onClick={onToggleTheme} aria-label={themeLabel} title={themeLabel}>
       {theme === 'dark' ? <IconSun /> : <IconMoon />}
     </button>
   )
   const logoutButton = (
-    <button type="button" className="ghost icon-btn" onClick={onSignOut} aria-label="Uitloggen" title="Uitloggen">
+    <button type="button" className="ghost icon-btn" onClick={onSignOut} aria-label="Sign out" title="Sign out">
       <IconLogout />
     </button>
   )
@@ -47,11 +47,11 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
   return (
     <div className="shell">
       <aside className="sidebar">
-        <a className="brand" href="#/overzicht">
+        <a className="brand" href="#/overview">
           <LogoMark />
-          <span>Kaartenmap</span>
+          <span>Binderline</span>
         </a>
-        <nav className="side-nav" aria-label="Hoofdmenu">
+        <nav className="side-nav" aria-label="Main menu">
           {NAV.map(({ route: r, label, Icon }) => (
             <a key={r} href={`#/${r}`} aria-current={route === r ? 'page' : undefined}>
               <Icon />
@@ -73,9 +73,9 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
       </aside>
 
       <header className="mobile-bar">
-        <a className="brand" href="#/overzicht">
+        <a className="brand" href="#/overview">
           <LogoMark size={24} />
-          <span>Kaartenmap</span>
+          <span>Binderline</span>
         </a>
         <div className="side-actions">
           {themeButton}
@@ -85,7 +85,7 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
 
       <main className="main">{children}</main>
 
-      <nav className="tab-bar" aria-label="Hoofdmenu">
+      <nav className="tab-bar" aria-label="Main menu">
         {NAV.map(({ route: r, label, Icon }) => (
           <a
             key={r}

@@ -53,5 +53,5 @@ export function computeStats(cards: readonly CardInput[]): Stats {
   }
 }
 
-const eur = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' })
+const eur = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' })
 export const formatEur = (n: number): string => eur.format(n)

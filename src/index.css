@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Kaartenmap: ontwerpsysteem
+   Binderline: ontwerpsysteem
    Donker marineblauw als basis, Pokémon-geel als enige felle accent.
    Kaartfoto's zijn de blikvanger; de interface eromheen blijft rustig.
    ========================================================================== */
@@ -76,8 +76,19 @@
 
 :root {
   --radius-s: 8px;
-  --radius-m: 12px;
-  --radius-l: 18px;
+  --radius-m: 14px;
+  --radius-l: 14px;
+
+  /* Eén ritme: ruimte tussen blokken en binnen vlakken. */
+  --gap-section: 1.25rem;
+  --gap-inner: 0.75rem;
+  --pad-panel: 1.1rem 1.25rem;
+
+  /* Typeschaal */
+  --fs-label: 0.8rem;
+  --fs-small: 0.875rem;
+  --fs-stat: 1.5rem;
+  --fs-h2: 1.2rem;
   --sidebar: 236px;
   --tabbar: 64px;
 
@@ -108,7 +119,6 @@ body {
 h1,
 h2,
 h3 {
-  font-stretch: 80%;
   font-weight: 800;
   line-height: 1.1;
   margin: 0;
@@ -238,7 +248,7 @@ label {
   display: grid;
   gap: 0.35rem;
   font-weight: 600;
-  font-size: 0.88rem;
+  font-size: var(--fs-label);
   color: var(--ink-soft);
 }
 

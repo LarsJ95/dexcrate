@@ -29,7 +29,7 @@ export function DashboardPage(): JSX.Element {
           })
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Laden mislukt.')
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Loading failed.')
       })
     return () => {
       cancelled = true
@@ -51,12 +51,12 @@ export function DashboardPage(): JSX.Element {
               setReloadKey((k) => k + 1)
             }}
           >
-            Opnieuw proberen
+            Try again
           </button>
         </div>
       </section>
     )
   }
-  if (!cards) return <p className="center" aria-live="polite">Laden…</p>
+  if (!cards) return <p className="center" aria-live="polite">Loading…</p>
   return <DashboardView cards={cards} prices={prices} pricesLoading={loading} series={series} />
 }

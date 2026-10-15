@@ -26,25 +26,25 @@ function blobToBase64(blob: Blob): Promise<string> {
       const url = typeof reader.result === 'string' ? reader.result : ''
       resolve(url.slice(url.indexOf(',') + 1))
     }
-    reader.onerror = () => reject(reader.error ?? new Error('Foto lezen mislukt.'))
+    reader.onerror = () => reject(reader.error ?? new Error('Could not read the photo.'))
     reader.readAsDataURL(blob)
   })
 }
 
 /** Verkleint en comprimeert de foto in de browser (respecteert EXIF-rotatie). */
 export async function prepareImage(file: File, mode: ScanMode): Promise<PreparedImage> {
-  if (!file.type.startsWith('image/')) throw new Error('Kies een foto.')
+  if (!file.type.startsWith('image/')) throw new Error('Choose a photo.')
   const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
   const scale = Math.min(1, MAX_EDGE[mode] / Math.max(bitmap.width, bitmap.height))
   const canvas = document.createElement('canvas')
   canvas.width = Math.round(bitmap.width * scale)
   canvas.height = Math.round(bitmap.height * scale)
   const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error('Foto verwerken wordt niet ondersteund in deze browser.')
+  if (!ctx) throw new Error('This browser cannot process photos.')
   ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
   bitmap.close()
   const blob = await new Promise<Blob>((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Foto comprimeren mislukt.'))), 'image/jpeg', 0.85),
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not compress the photo.'))), 'image/jpeg', 0.85),
   )
   return { data: await blobToBase64(blob), mediaType: 'image/jpeg', previewUrl: URL.createObjectURL(blob) }
 }
@@ -82,7 +82,7 @@ export async function recognizeCards(img: PreparedImage, mode: ScanMode): Promis
       const msg = typeof body === 'object' && body !== null ? (body as { error?: unknown }).error : null
       if (typeof msg === 'string') throw new Error(msg)
     }
-    throw new Error('Herkenning niet bereikbaar. Is de functie recognize-card geïnstalleerd?')
+    throw new Error('Recognition is unavailable. Is the recognize-card function installed?')
   }
   return toScanResult(data)
 }

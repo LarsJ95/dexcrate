@@ -191,10 +191,10 @@ function needsFallback(cards: CardFields[] | null, refused: boolean, mode: Mode)
 Deno.serve(async (req: Request): Promise<Response> => {
   const origin = req.headers.get('Origin')
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(origin) })
-  if (req.method !== 'POST') return json({ error: 'Alleen POST.' }, 405, origin)
+  if (req.method !== 'POST') return json({ error: 'POST only.' }, 405, origin)
 
   try {
-    if (!(await isSignedIn(req))) return json({ error: 'Niet ingelogd.' }, 401, origin)
+    if (!(await isSignedIn(req))) return json({ error: 'Not signed in.' }, 401, origin)
 
     const body: unknown = await req.json().catch(() => null)
     const image = typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : null
@@ -202,11 +202,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const mediaType = MEDIA_TYPES.find((m) => m === image?.media_type)
     const mode: Mode = image?.mode === 'multi' ? 'multi' : 'single'
     if (!mediaType || !data || data.length > MAX_BASE64_CHARS || !/^[A-Za-z0-9+/]+=*$/.test(data)) {
-      return json({ error: 'Ongeldige of te grote afbeelding.' }, 400, origin)
+      return json({ error: 'Invalid or too large image.' }, 400, origin)
     }
 
     const apiKey = Deno.env.get('ANTHROPIC_API_KEY')
-    if (!apiKey) return json({ error: 'ANTHROPIC_API_KEY ontbreekt in de Edge Function secrets.' }, 500, origin)
+    if (!apiKey) return json({ error: 'ANTHROPIC_API_KEY is missing from the Edge Function secrets.' }, 500, origin)
     const client = new Anthropic({ apiKey })
 
     let model: string = PRIMARY_MODEL
@@ -224,14 +224,14 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
 
     if (!cards) {
-      return json({ error: refused ? 'De foto kon niet worden verwerkt.' : 'Geen kaart herkend. Probeer een scherpere foto.' }, 422, origin)
+      return json({ error: refused ? 'This photo could not be processed.' : 'No card recognised. Try a sharper photo.' }, 422, origin)
     }
     return json({ cards, model }, 200, origin)
   } catch (err) {
     console.error('recognize-card', err)
-    if (err instanceof Anthropic.RateLimitError) return json({ error: 'Even te veel scans; probeer het zo opnieuw.' }, 429, origin)
-    if (err instanceof Anthropic.AuthenticationError) return json({ error: 'Anthropic API-key ongeldig.' }, 500, origin)
-    if (err instanceof Anthropic.APIError) return json({ error: `Herkenning mislukt (${err.status}).` }, 502, origin)
-    return json({ error: 'Herkenning mislukt.' }, 500, origin)
+    if (err instanceof Anthropic.RateLimitError) return json({ error: 'Too many scans right now; try again shortly.' }, 429, origin)
+    if (err instanceof Anthropic.AuthenticationError) return json({ error: 'Invalid Anthropic API key.' }, 500, origin)
+    if (err instanceof Anthropic.APIError) return json({ error: `Recognition failed (${err.status}).` }, 502, origin)
+    return json({ error: 'Recognition failed.' }, 500, origin)
   }
 })

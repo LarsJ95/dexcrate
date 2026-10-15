@@ -90,7 +90,7 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
           return {
             ...EMPTY_CARD,
             ...draft,
-            name: (draft.name ?? '').slice(0, 200) || 'Onbekende kaart',
+            name: (draft.name ?? '').slice(0, 200) || 'Unknown card',
             condition: condition || null,
             sort_order: nextSortOrder + i,
           }
@@ -99,7 +99,7 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
       onAdded(await insertCards(inputs))
       setAdded((s) => new Set([...s, ...selected.map((r) => r.rec.position)]))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Toevoegen mislukt.')
+      setError(err instanceof Error ? err.message : 'Adding failed.')
     } finally {
       setBusy(false)
     }
@@ -110,21 +110,20 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
   }
 
   if (recognitions.length === 0) {
-    return <p className="notice">Geen kaarten herkend op deze foto. Probeer het opnieuw met meer licht en minder schuine hoek.</p>
+    return <p className="notice">No cards found in this photo. Try again with more light and less angle.</p>
   }
 
   return (
     <div className="scan-result">
       <h2>
-        {recognitions.length} {recognitions.length === 1 ? 'kaart' : 'kaarten'} herkend
+        {recognitions.length} {recognitions.length === 1 ? 'card' : 'cards'} found
       </h2>
-      <p className="muted small">Controleer per kaart de match. Vink uit wat je niet wilt toevoegen.</p>
 
       <ul className="binder-scan">
         {open.map((r) => {
           const c = candidateOf(r)
           const owned = c ? ownedByKey.get(c.key) : undefined
-          const label = r.rec.nameEnglish || r.rec.namePrinted || `Kaart ${r.rec.position}`
+          const label = r.rec.nameEnglish || r.rec.namePrinted || `Card ${r.rec.position}`
           return (
             <li key={r.rec.position} className={`scan-row${r.include ? ' on' : ''}`}>
               <label className="scan-check">
@@ -132,14 +131,14 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
                   type="checkbox"
                   checked={r.include}
                   onChange={(e) => update(r.rec.position, { include: e.target.checked })}
-                  aria-label={`${label} toevoegen`}
+                  aria-label={`Add ${label}`}
                 />
               </label>
               <span className="scan-thumb">
                 {c?.image ? (
                   <img src={imageUrl(c.image, 'low') ?? ''} alt="" loading="lazy" />
                 ) : (
-                  <span className="card-img placeholder"><span>{r.candidates === undefined ? '…' : 'Geen match'}</span></span>
+                  <span className="card-img placeholder"><span>{r.candidates === undefined ? '…' : 'No match'}</span></span>
                 )}
               </span>
               <div className="scan-info">
@@ -147,15 +146,15 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
                   {r.rec.position}. {label}
                 </p>
                 <p className="muted small">
-                  Gelezen:{' '}
+                  Read:{' '}
                   {[r.rec.setCode, r.rec.cardNumber, r.rec.language ? LANGUAGE_LABELS[r.rec.language] : null]
                     .filter(Boolean)
-                    .join(', ') || 'onleesbaar'}
-                  {r.rec.confidence !== 'high' && ' (twijfel)'}
+                    .join(', ') || 'unreadable'}
+                  {r.rec.confidence !== 'high' && ' (uncertain)'}
                 </p>
                 {r.candidates && r.candidates.length > 0 && (
                   <select
-                    aria-label={`Match voor ${label}`}
+                    aria-label={`Match for ${label}`}
                     value={r.chosen}
                     onChange={(e) => update(r.rec.position, { chosen: e.target.value })}
                   >
@@ -164,13 +163,13 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
                         {cand.name}, {cand.setName} {cand.localId}
                       </option>
                     ))}
-                    <option value="">Zonder koppeling toevoegen</option>
+                    <option value="">Add without link</option>
                   </select>
                 )}
-                {owned && <p className="small">Al {owned}× in bezit</p>}
+                {owned && <p className="small">Owned {owned}×</p>}
               </div>
               <button type="button" className="ghost" onClick={() => void edit(r)} disabled={r.candidates === undefined}>
-                Bewerken
+                Edit
               </button>
             </li>
           )
@@ -178,23 +177,23 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
       </ul>
 
       {open.length === 0 ? (
-        <p className="success" role="status">Alle kaarten van deze foto zijn verwerkt.</p>
+        <p className="success" role="status">All cards from this photo are done.</p>
       ) : (
         <div className="scan-bulk">
           <label>
-            Conditie voor de selectie
+            Condition
             <select value={condition} onChange={(e) => setCondition(e.target.value as Condition | '')}>
-              <option value="">Onbekend</option>
+              <option value="">Unknown</option>
               {(Object.keys(CONDITION_LABELS) as Condition[]).map((k) => (
                 <option key={k} value={k}>{CONDITION_LABELS[k]}</option>
               ))}
             </select>
           </label>
           <button type="button" onClick={() => void addSelected()} disabled={busy || searching || selected.length === 0}>
-            {busy ? 'Toevoegen…' : searching ? 'Kaarten opzoeken…' : `${selected.length} toevoegen aan collectie`}
+            {busy ? 'Adding…' : searching ? 'Looking up…' : `Add ${selected.length} to collection`}
           </button>
           <button type="button" className="ghost" onClick={onCancel} disabled={busy}>
-            Niet toevoegen
+            Discard
           </button>
         </div>
       )}

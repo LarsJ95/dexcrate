@@ -24,8 +24,8 @@ type Phase =
 const DEFAULT_CHANNELS = ['Cardmarket', 'WhatsApp', 'Bol.com', 'CatchYourCards']
 
 const MODE_HINT: Record<ScanMode, string> = {
-  single: 'Maak een foto van één kaart, recht van voren, met de onderrand goed leesbaar.',
-  multi: 'Maak een foto van een hele binderpagina of kaarten naast elkaar. Recht van boven, zonder schittering op de hoesjes.',
+  single: 'Photograph one card straight on, with the bottom edge readable.',
+  multi: 'Photograph a full binder page from straight above, without glare on the sleeves.',
 }
 
 export function ScanPage(): JSX.Element {
@@ -61,7 +61,7 @@ export function ScanPage(): JSX.Element {
       if (c.purchase_channel) set.add(c.purchase_channel)
       if (c.sale_channel) set.add(c.sale_channel)
     }
-    return [...set].sort((a, b) => a.localeCompare(b, 'nl'))
+    return [...set].sort((a, b) => a.localeCompare(b, 'en'))
   }, [cards])
 
   const ownedByKey = useMemo(() => {
@@ -77,11 +77,11 @@ export function ScanPage(): JSX.Element {
     e.target.value = ''
     if (!file || phase.kind === 'working') return
     try {
-      setPhase({ kind: 'working', message: 'Foto voorbereiden…' })
+      setPhase({ kind: 'working', message: 'Preparing photo…' })
       const prepared = await prepareImage(file, mode)
       setImage(prepared)
       setDonePositions(new Set())
-      setPhase({ kind: 'working', message: mode === 'multi' ? 'Kaarten herkennen…' : 'Kaart herkennen…' })
+      setPhase({ kind: 'working', message: mode === 'multi' ? 'Recognising cards…' : 'Recognising card…' })
       const result = await recognizeCards(prepared, mode)
 
       if (mode === 'multi') {
@@ -90,10 +90,10 @@ export function ScanPage(): JSX.Element {
       }
       const recognition = result.cards[0]
       if (!recognition) {
-        setPhase({ kind: 'error', message: 'Op deze foto is geen Pokémon-kaart herkend. Probeer het opnieuw met de kaart groot in beeld.' })
+        setPhase({ kind: 'error', message: 'No Pokémon card found in this photo. Try again with the card filling the frame.' })
         return
       }
-      setPhase({ kind: 'working', message: 'Kaart opzoeken…' })
+      setPhase({ kind: 'working', message: 'Looking up card…' })
       const lang = lookupLang(recognition.language)
       const candidates = await findCandidates(
         { name: recognition.nameEnglish, set_code: recognition.setCode || null, card_number: recognition.cardNumber || null },
@@ -102,7 +102,7 @@ export function ScanPage(): JSX.Element {
       setPhase({ kind: 'single', recognition, candidates, lang })
     } catch (err) {
       console.error(err)
-      setPhase({ kind: 'error', message: err instanceof Error ? err.message : 'Scannen mislukt.' })
+      setPhase({ kind: 'error', message: err instanceof Error ? err.message : 'Scan failed.' })
     }
   }
 
@@ -126,16 +126,16 @@ export function ScanPage(): JSX.Element {
     <section className="page scan">
       <div className="page-head">
         <div>
-          <h1>Scannen</h1>
+          <h1>Scan</h1>
           <p className="muted">{MODE_HINT[mode]}</p>
         </div>
       </div>
 
-      <div className="segmented" role="group" aria-label="Wat scan je?">
+      <div className="segmented" role="group" aria-label="Scan mode">
         {(
           [
-            ['single', 'Eén kaart'],
-            ['multi', 'Binderpagina'],
+            ['single', 'Single card'],
+            ['multi', 'Binder page'],
           ] as const
         ).map(([key, label]) => (
           <button
@@ -166,19 +166,19 @@ export function ScanPage(): JSX.Element {
 
       {added.length > 0 && (
         <p className="success" role="status">
-          Toegevoegd: {added.join(', ')}
+          Added: {added.join(', ')}
         </p>
       )}
 
       <div className="scan-stage">
         {image ? (
-          <img className={`scan-photo${mode === 'multi' ? ' wide' : ''}`} src={image.previewUrl} alt="Jouw foto" />
+          <img className={`scan-photo${mode === 'multi' ? ' wide' : ''}`} src={image.previewUrl} alt="Your photo" />
         ) : (
           <div className={`scan-photo empty${mode === 'multi' ? ' wide' : ''}`} aria-hidden="true" />
         )}
         <div className="scan-actions">
           <button type="button" className="scan-button" onClick={() => inputRef.current?.click()} disabled={busy}>
-            {phase.kind === 'idle' ? 'Foto maken' : 'Nieuwe foto'}
+            {phase.kind === 'idle' ? 'Take photo' : 'New photo'}
           </button>
           {busy && <p aria-live="polite">{phase.message}</p>}
           {phase.kind === 'error' && <p className="error" role="alert">{phase.message}</p>}
@@ -212,14 +212,14 @@ export function ScanPage(): JSX.Element {
               ]
                 .filter(Boolean)
                 .join(', ')}
-              {phase.recognition.confidence !== 'high' && ' (niet helemaal zeker, controleer de keuze)'}
+              {phase.recognition.confidence !== 'high' && ' (uncertain, please check)'}
             </p>
             {phase.recognition.notes && <p className="muted small">{phase.recognition.notes}</p>}
           </div>
 
-          <h2>Kies de juiste kaart</h2>
+          <h2>Pick the right card</h2>
           {phase.candidates.length === 0 && (
-            <p className="muted">Geen kaart gevonden in de kaartdatabase. Je kunt hem zonder koppeling toevoegen.</p>
+            <p className="muted">No match found. You can add it without a link.</p>
           )}
           <ul className="candidates">
             {phase.candidates.map((c, i) => {
@@ -234,12 +234,12 @@ export function ScanPage(): JSX.Element {
                     {c.image ? (
                       <img src={imageUrl(c.image, 'low') ?? ''} alt="" loading="lazy" />
                     ) : (
-                      <span className="card-img placeholder"><span>Geen foto</span></span>
+                      <span className="card-img placeholder"><span>No image</span></span>
                     )}
                     <span className="cand-name">{c.name}</span>
                     <span className="muted small">{c.setName} {c.localId}</span>
                     <span className="cand-reason small">{i === 0 ? 'Beste match' : c.reason}</span>
-                    {owned && <span className="small">Al {owned}× in bezit</span>}
+                    {owned && <span className="small">Owned {owned}×</span>}
                   </button>
                 </li>
               )
@@ -247,10 +247,10 @@ export function ScanPage(): JSX.Element {
           </ul>
           <div className="scan-foot">
             <button type="button" className="ghost" onClick={() => void chooseSingle(null, phase.recognition, phase.lang)}>
-              Toevoegen zonder koppeling
+              Add without link
             </button>
             <button type="button" className="ghost" onClick={reset}>
-              Niet toevoegen
+              Discard
             </button>
           </div>
         </div>

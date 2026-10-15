@@ -27,7 +27,7 @@ describe('toScanResult', () => {
   })
 
   it('oud of kapot antwoord geeft een duidelijke fout', () => {
-    expect(() => toScanResult({ result: { is_card: true } })).toThrow(/nieuwste functie/)
+    expect(() => toScanResult({ result: { is_card: true } })).toThrow(/latest function/)
     expect(() => toScanResult(null)).toThrow()
   })
 })

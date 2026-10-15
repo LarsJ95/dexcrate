@@ -63,7 +63,7 @@ function toCard(r: unknown): Card | null {
 
 function single(data: unknown): Card {
   const row = toCard(data)
-  if (!row) throw new Error('Opslaan mislukt: onverwacht antwoord van de database.')
+  if (!row) throw new Error('Saving failed: unexpected response from the database.')
   return row
 }
 
@@ -73,7 +73,7 @@ export async function listCards(): Promise<Card[]> {
     .select('*')
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true })
-  if (error) throw new Error(`Laden mislukt: ${error.message}`)
+  if (error) throw new Error(`Loading failed: ${error.message}`)
   return (data as unknown[]).flatMap((r) => {
     const row = toCard(r)
     return row ? [row] : []
@@ -82,32 +82,32 @@ export async function listCards(): Promise<Card[]> {
 
 export async function countCards(): Promise<number> {
   const { count, error } = await supabase.from(TABLE).select('id', { count: 'exact', head: true })
-  if (error) throw new Error(`Tellen mislukt: ${error.message}`)
+  if (error) throw new Error(`Counting failed: ${error.message}`)
   return count ?? 0
 }
 
 export async function insertCards(input: readonly CardInput[]): Promise<Card[]> {
   // Eén insert-statement: alles of niets.
   const { data, error } = await supabase.from(TABLE).insert(input).select('*')
-  if (error) throw new Error(`Opslaan mislukt: ${error.message}`)
+  if (error) throw new Error(`Saving failed: ${error.message}`)
   return (data as unknown[]).map(single)
 }
 
 export async function insertCard(input: CardInput): Promise<Card> {
   const { data, error } = await supabase.from(TABLE).insert(input).select('*').single()
-  if (error) throw new Error(`Opslaan mislukt: ${error.message}`)
+  if (error) throw new Error(`Saving failed: ${error.message}`)
   return single(data)
 }
 
 export async function updateCard(id: string, patch: Partial<CardInput>): Promise<Card> {
   const { data, error } = await supabase.from(TABLE).update(patch).eq('id', id).select('*').single()
-  if (error) throw new Error(`Opslaan mislukt: ${error.message}`)
+  if (error) throw new Error(`Saving failed: ${error.message}`)
   return single(data)
 }
 
 export async function deleteCard(id: string): Promise<void> {
   const { error } = await supabase.from(TABLE).delete().eq('id', id)
-  if (error) throw new Error(`Verwijderen mislukt: ${error.message}`)
+  if (error) throw new Error(`Deleting failed: ${error.message}`)
 }
 
 export interface PriceSnapshot {
@@ -124,7 +124,7 @@ export async function listSnapshots(tcgdexId: string): Promise<PriceSnapshot[]> 
     .eq('tcgdex_id', tcgdexId)
     .order('taken_on', { ascending: true })
     .limit(400)
-  if (error) throw new Error(`Prijsverloop laden mislukt: ${error.message}`)
+  if (error) throw new Error(`Loading price history failed: ${error.message}`)
   return (data as unknown[]).flatMap((r) =>
     isRecord(r) && typeof r.taken_on === 'string'
       ? [{ takenOn: r.taken_on, trend: numOrNull(r.trend), trendHolo: numOrNull(r.trend_holo) }]
@@ -144,7 +144,7 @@ export async function listSnapshotsFor(tcgdexIds: readonly string[]): Promise<Sn
       .in('tcgdex_id', chunk)
       .order('taken_on', { ascending: true })
       .limit(10000)
-    if (error) throw new Error(`Waardeverloop laden mislukt: ${error.message}`)
+    if (error) throw new Error(`Loading value history failed: ${error.message}`)
     for (const r of data as unknown[]) {
       if (isRecord(r) && typeof r.tcgdex_id === 'string' && typeof r.taken_on === 'string') {
         out.push({ tcgdexId: r.tcgdex_id, takenOn: r.taken_on, trend: numOrNull(r.trend), trendHolo: numOrNull(r.trend_holo) })
@@ -163,7 +163,7 @@ export async function splitCard(
   moved: number,
   changes: CardInput,
 ): Promise<{ original: Card; created: Card }> {
-  if (moved < 1 || moved >= original.quantity) throw new Error('Ongeldig aantal om te splitsen.')
+  if (moved < 1 || moved >= original.quantity) throw new Error('Invalid quantity to split.')
   const created = await insertCard({ ...changes, quantity: moved })
   try {
     const updated = await updateCard(original.id, { quantity: original.quantity - moved })

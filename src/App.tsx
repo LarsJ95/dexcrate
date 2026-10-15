@@ -17,7 +17,7 @@ import './App.css'
 function App(): JSX.Element {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
-  const { route, param } = useHashRoute(ROUTES, 'overzicht')
+  const { route, param } = useHashRoute(ROUTES, 'overview')
   const { theme, toggle } = useTheme()
 
   useEffect(() => {
@@ -42,13 +42,13 @@ function App(): JSX.Element {
     if (error) console.error('Uitloggen mislukt', error)
   }
 
-  if (loading) return <p className="center">Laden…</p>
+  if (loading) return <p className="center">Loading…</p>
   if (!session) return <Login />
 
   return (
     <Shell route={route} email={session.user.email ?? null} theme={theme} onToggleTheme={toggle} onSignOut={() => void signOut()}>
-      {route === 'overzicht' && <DashboardPage />}
-      {route === 'collectie' && <CollectionPage />}
+      {route === 'overview' && <DashboardPage />}
+      {route === 'collection' && <CollectionPage />}
       {route === 'scan' && <ScanPage />}
       {route === 'sets' && (param ? <SetBinderPage key={param} param={param} /> : <SetsPage />)}
       {route === 'import' && <ImportPage />}

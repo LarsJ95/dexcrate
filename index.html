@@ -1,17 +1,18 @@
 <!doctype html>
-<html lang="nl">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="Kaartenmap" />
+    <meta name="apple-mobile-web-app-title" content="Binderline" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0a1226" />
     <script>
       // Thema vóór de eerste render zetten, zodat er geen lichte flits is.
       try {
-        document.documentElement.dataset.theme = localStorage.getItem('kaartenmap:theme') === 'light' ? 'light' : 'dark'
+        var t = localStorage.getItem('binderline:theme') || localStorage.getItem('kaartenmap:theme')
+        document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark'
       } catch (e) {
         document.documentElement.dataset.theme = 'dark'
       }
@@ -20,9 +21,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,400..800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@400..800&display=swap"
     />
-    <title>Kaartenmap</title>
+    <title>Binderline</title>
   </head>
   <body>
     <div id="root"></div>

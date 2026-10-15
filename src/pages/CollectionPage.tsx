@@ -12,11 +12,11 @@ type StatusFilter = 'all' | 'owned' | CardStatus
 type SortKey = 'list' | 'priceDesc' | 'priceAsc' | 'marketDesc' | 'name' | 'set'
 
 const FILTERS: [StatusFilter, string][] = [
-  ['owned', 'In bezit'],
+  ['owned', 'Owned'],
   ['collection', STATUS_LABELS.collection],
   ['for_sale', STATUS_LABELS.for_sale],
   ['sold', STATUS_LABELS.sold],
-  ['all', 'Alles'],
+  ['all', 'All'],
 ]
 
 const DEFAULT_CHANNELS = ['Cardmarket', 'WhatsApp', 'Bol.com', 'CatchYourCards']
@@ -61,7 +61,7 @@ export function CollectionPage(): JSX.Element {
         if (!cancelled) setCards(rows)
       })
       .catch((err: unknown) => {
-        if (!cancelled) setLoadError(err instanceof Error ? err.message : 'Laden mislukt.')
+        if (!cancelled) setLoadError(err instanceof Error ? err.message : 'Loading failed.')
       })
     return () => {
       cancelled = true
@@ -82,11 +82,11 @@ export function CollectionPage(): JSX.Element {
     if (sort === 'marketDesc') {
       sorted.sort((a, b) => (marketById.get(b.id)?.value ?? -1) - (marketById.get(a.id)?.value ?? -1))
     }
-    if (sort === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name, 'nl'))
+    if (sort === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name, 'en'))
     if (sort === 'set') {
       sorted.sort(
         (a, b) =>
-          (a.set_code ?? '').localeCompare(b.set_code ?? '', 'nl') ||
+          (a.set_code ?? '').localeCompare(b.set_code ?? '', 'en') ||
           (Number.parseInt(a.card_number ?? '', 10) || 0) - (Number.parseInt(b.card_number ?? '', 10) || 0),
       )
     }
@@ -109,7 +109,7 @@ export function CollectionPage(): JSX.Element {
       if (c.purchase_channel) set.add(c.purchase_channel)
       if (c.sale_channel) set.add(c.sale_channel)
     }
-    return [...set].sort((a, b) => a.localeCompare(b, 'nl'))
+    return [...set].sort((a, b) => a.localeCompare(b, 'en'))
   }, [cards])
 
   const unlinked = useMemo(() => (cards ?? []).filter((c) => c.kind === 'card' && !c.tcgdex_id).length, [cards])
@@ -132,7 +132,7 @@ export function CollectionPage(): JSX.Element {
         await updateCard(id, patch)
       } catch (err) {
         setCards((list) => list?.map((c) => (c.id === id ? current : c)) ?? null)
-        setActionError(err instanceof Error ? err.message : 'Bijwerken mislukt.')
+        setActionError(err instanceof Error ? err.message : 'Update failed.')
       } finally {
         setPending((p) => {
           const n = new Set(p)
@@ -165,24 +165,21 @@ export function CollectionPage(): JSX.Element {
     <section className="page">
       <div className="page-head">
         <div>
-          <h1>Collectie</h1>
+          <h1>Collection</h1>
           {cards && (
             <p className="muted">
-              {visibleCount} {visibleCount === 1 ? 'stuk' : 'stuks'}
-              {filter !== 'collection' && filter !== 'owned' && <>, samen {formatEur(visibleValue)}</>}
-            </p>
-          )}
-          {cards && filter !== 'sold' && (
-            <p className="muted small">
-              {pricesLoading
-                ? 'Marktprijzen laden…'
-                : `Marktwaarde ${formatEur(visibleMarket.value)}${visibleMarket.missing > 0 ? ` (${visibleMarket.missing} zonder marktprijs)` : ''}`}
+              {visibleCount} {visibleCount === 1 ? 'card' : 'cards'}
+              {filter === 'sold'
+                ? `, sold for ${formatEur(visibleValue)}`
+                : pricesLoading
+                  ? ''
+                  : `, market value ${formatEur(visibleMarket.value)}`}
             </p>
           )}
         </div>
         <button type="button" className="primary" onClick={() => setEditing({ id: null })}>
           <IconPlus size={18} />
-          Kaart toevoegen
+          Add card
         </button>
       </div>
 
@@ -191,8 +188,8 @@ export function CollectionPage(): JSX.Element {
           <IconSearch size={18} />
           <input
             type="search"
-            placeholder="Zoek op naam, set, nummer of kanaal"
-            aria-label="Zoeken"
+            placeholder="Search name, set or number"
+            aria-label="Search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -204,20 +201,19 @@ export function CollectionPage(): JSX.Element {
             </button>
           ))}
         </div>
-        <select aria-label="Sorteren" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
-          <option value="list">Volgorde van invoer</option>
-          <option value="set">Set en nummer</option>
-          <option value="priceDesc">Prijs hoog–laag</option>
-          <option value="priceAsc">Prijs laag–hoog</option>
-          <option value="marketDesc">Marktwaarde hoog–laag</option>
-          <option value="name">Naam A–Z</option>
+        <select aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
+          <option value="list">Date added</option>
+          <option value="set">Set and number</option>
+          <option value="marketDesc">Market value</option>
+          <option value="priceDesc">Price: high to low</option>
+          <option value="priceAsc">Price: low to high</option>
+          <option value="name">Name A–Z</option>
         </select>
       </div>
 
       {unlinked > 0 && (
         <p className="notice">
-          {unlinked} {unlinked === 1 ? 'kaart is' : 'kaarten zijn'} nog niet gekoppeld. Open een kaart en kies de juiste
-          versie voor foto en marktprijs.
+          {unlinked} {unlinked === 1 ? 'card is' : 'cards are'} not linked yet. Open a card to link it.
         </p>
       )}
       {actionError && <p className="error" role="alert">{actionError}</p>}
@@ -231,17 +227,17 @@ export function CollectionPage(): JSX.Element {
               setReloadKey((k) => k + 1)
             }}
           >
-            Opnieuw proberen
+            Try again
           </button>
         </div>
       )}
-      {!cards && !loadError && <p aria-live="polite">Laden…</p>}
+      {!cards && !loadError && <p aria-live="polite">Loading…</p>}
       {cards && cards.length === 0 && (
         <p className="empty">
-          Je collectie is nog leeg. Voeg een kaart toe of <a href="#/import">importeer je Excel</a>.
+          Your collection is empty. Add a card or <a href="#/import">import your Excel file</a>.
         </p>
       )}
-      {cards && cards.length > 0 && visible.length === 0 && <p className="empty">Geen kaarten voor deze filters.</p>}
+      {cards && cards.length > 0 && visible.length === 0 && <p className="empty">No cards match these filters.</p>}
 
       <ul className="binder">
         {visible.map((c) => (

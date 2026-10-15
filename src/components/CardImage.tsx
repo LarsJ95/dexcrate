@@ -19,7 +19,7 @@ export function CardImage({ tcgdexId, kind, name, quality = 'low' }: Props): JSX
   if (src && failed !== src) {
     return <img className="card-img" src={src} alt={name} loading="lazy" decoding="async" onError={() => setFailed(src)} />
   }
-  const label = kind === 'sealed' ? 'Sealed' : info === undefined && tcgdexId ? 'Laden…' : tcgdexId ? 'Geen foto' : 'Niet gekoppeld'
+  const label = kind === 'sealed' ? 'Sealed' : info === undefined && tcgdexId ? 'Loading…' : tcgdexId ? 'No image' : 'Not linked'
   return (
     <div className={`card-img placeholder ${kind}`} role="img" aria-label={`${name}: ${label}`}>
       <span>{label}</span>
