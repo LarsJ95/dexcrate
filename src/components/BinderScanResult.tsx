@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState, type JSX } from 'react'
 import { insertCards } from '../lib/db'
 import { findCandidates, type Candidate } from '../lib/match'
 import { draftFromScan, type Recognition } from '../lib/scan'
-import { imageUrl, lookupLang } from '../lib/tcgdex'
+import { imageCandidatesForKey, lookupLang } from '../lib/tcgdex'
+import { CardPicture } from './CardPicture'
 import { CONDITION_LABELS, EMPTY_CARD, LANGUAGE_LABELS, type Card, type CardInput, type Condition } from '../lib/types'
 
 interface Props {
@@ -135,11 +136,15 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
                 />
               </label>
               <span className="scan-thumb">
-                {c?.image ? (
-                  <img src={imageUrl(c.image, 'low') ?? ''} alt="" loading="lazy" />
-                ) : (
-                  <span className="card-img placeholder"><span>{r.candidates === undefined ? '…' : 'No match'}</span></span>
-                )}
+                <CardPicture
+                  sources={c ? imageCandidatesForKey(c.key, c.image, 'low') : []}
+                  alt=""
+                  fallback={
+                    <span className="card-img placeholder">
+                      <span>{r.candidates === undefined ? '…' : c ? 'No image' : 'No match'}</span>
+                    </span>
+                  }
+                />
               </span>
               <div className="scan-info">
                 <p className="tile-name">

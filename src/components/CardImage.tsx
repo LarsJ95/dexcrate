@@ -1,7 +1,8 @@
-import { useState, type JSX } from 'react'
+import { useMemo, type JSX } from 'react'
 import { useCardInfo } from '../hooks/useCardInfo'
-import { imageUrl } from '../lib/tcgdex'
+import { imageCandidates } from '../lib/tcgdex'
 import type { ItemKind } from '../lib/types'
+import { CardPicture } from './CardPicture'
 
 interface Props {
   tcgdexId: string | null
@@ -10,19 +11,19 @@ interface Props {
   quality?: 'low' | 'high'
 }
 
-/** Kaartfoto met nette vervanging voor sealed, niet-gekoppeld en ontbrekende plaatjes. */
+/** Kaartfoto met terugvalbronnen en nette vervanging voor sealed, niet-gekoppeld en ontbrekende plaatjes. */
 export function CardImage({ tcgdexId, kind, name, quality = 'low' }: Props): JSX.Element {
   const info = useCardInfo(tcgdexId)
-  const [failed, setFailed] = useState<string | null>(null)
-  const src = imageUrl(info?.image ?? null, quality)
+  const sources = useMemo(
+    () => (info ? imageCandidates(info.lang, info.set.id, info.localId, info.image, quality) : []),
+    [info, quality],
+  )
 
-  if (src && failed !== src) {
-    return <img className="card-img" src={src} alt={name} loading="lazy" decoding="async" onError={() => setFailed(src)} />
-  }
   const label = kind === 'sealed' ? 'Sealed' : info === undefined && tcgdexId ? 'Loading…' : tcgdexId ? 'No image' : 'Not linked'
-  return (
+  const placeholder = (
     <div className={`card-img placeholder ${kind}`} role="img" aria-label={`${name}: ${label}`}>
       <span>{label}</span>
     </div>
   )
+  return <CardPicture sources={sources} alt={name} fallback={placeholder} />
 }

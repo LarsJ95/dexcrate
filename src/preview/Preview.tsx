@@ -8,6 +8,8 @@ import { Shell } from '../components/Shell'
 import { CardDialog } from '../components/CardDialog'
 import { DashboardView } from '../components/DashboardView'
 import { ScanPage } from '../pages/ScanPage'
+import { SetBinderPage } from '../pages/SetBinderPage'
+import { SetsPage } from '../pages/SetsPage'
 import type { MarketValue, PriceMap } from '../lib/prices'
 import { getSet, imageUrl, type CardmarketPrice, type SetCard } from '../lib/tcgdex'
 import type { Route } from '../lib/routes'
@@ -129,6 +131,20 @@ function BinderPreview(): JSX.Element {
 export function Preview(): JSX.Element {
   const page = (params.get('page') ?? 'collection') as Route
   const noop = useMemo(() => () => undefined, [])
+  if ((params.get('page') ?? '') === 'setlist') {
+    return (
+      <Shell route="sets" email="demo@example.com" theme={theme} onToggleTheme={noop} onSignOut={noop}>
+        <SetsPage />
+      </Shell>
+    )
+  }
+  if ((params.get('page') ?? '') === 'binder') {
+    return (
+      <Shell route="sets" email="demo@example.com" theme={theme} onToggleTheme={noop} onSignOut={noop}>
+        <SetBinderPage param={params.get('set') ?? 'en/sv03.5'} />
+      </Shell>
+    )
+  }
   if ((params.get('page') ?? '') === 'card') {
     const demoCard = CARDS[0].card
     const edit = params.get('edit') === '1'

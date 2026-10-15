@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState, type JSX } from 'react'
 import { listCards } from '../lib/db'
 import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
-import { getCardPrice, getSet, imageUrl, isLang, setOfKey, type SetCard, type SetSummary } from '../lib/tcgdex'
+import { CardPicture } from '../components/CardPicture'
+import { getCardPrice, getSet, imageCandidates, isLang, setOfKey, type SetCard, type SetSummary } from '../lib/tcgdex'
 
 interface Props {
   /** "<taal>/<set-id>" uit de URL. */
@@ -53,7 +54,12 @@ export function SetBinderPage({ param }: Props): JSX.Element {
   useEffect(() => {
     if (!valid || !isLang(lang)) return
     let cancelled = false
-    Promise.all([getSet(lang, setId), listCards()])
+    // Binder blijft bekijkbaar als je collectie (even) niet laadt; dan staat alles als "missing".
+    const myCards = listCards().catch((err: unknown) => {
+      console.warn('Collectie laden mislukt', err)
+      return []
+    })
+    Promise.all([getSet(lang, setId), myCards])
       .then(([set, cards]) => {
         if (cancelled) return
         if (!set) {
@@ -227,26 +233,21 @@ export function SetBinderPage({ param }: Props): JSX.Element {
             <ul className="binder set-binder" style={{ ['--binder-cols' as string]: pageSize === 9 ? 3 : 4 }}>
               {page.map((c) => {
                 const qty = data.owned.get(c.id)
-                const src = imageUrl(c.image, 'low')
                 const price = cost?.prices.get(c.id)
                 return (
                   <li key={c.id} className={`slot${qty ? ' have' : ' missing'}`}>
-                    {src ? (
-                      <img
-                        className="card-img"
-                        src={src}
-                        alt={`${c.name} ${c.localId}${qty ? '' : ' (missing)'}`}
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : (
-                      <div className="card-img placeholder" role="img" aria-label={`${c.name} ${c.localId}`}>
-                        <span>{c.name}</span>
-                      </div>
-                    )}
+                    <CardPicture
+                      sources={isLang(lang) ? imageCandidates(lang, data.summary.id, c.localId, c.image, 'low') : []}
+                      alt={`${c.name} ${c.localId}${qty ? '' : ' (missing)'}`}
+                      fallback={
+                        <div className="card-img placeholder" role="img" aria-label={`${c.name} ${c.localId}`}>
+                          <span>{c.name}</span>
+                        </div>
+                      }
+                    />
                     <span className="slot-num">{c.localId}</span>
                     {!qty && price !== undefined && (
-                      <span className="slot-price">{price === null ? 'geen prijs' : formatEur(price)}</span>
+                      <span className="slot-price">{price === null ? 'no price' : formatEur(price)}</span>
                     )}
                     {qty && qty > 1 && <span className="qty-badge">{qty}×</span>}
                   </li>

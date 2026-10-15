@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type JSX } from 'react'
 import { BinderScanResult } from '../components/BinderScanResult'
 import { CardDialog } from '../components/CardDialog'
+import { CardPicture } from '../components/CardPicture'
 import { listCards } from '../lib/db'
 import { findCandidates, type Candidate } from '../lib/match'
 import {
@@ -11,7 +12,7 @@ import {
   type Recognition,
   type ScanMode,
 } from '../lib/scan'
-import { imageUrl, lookupLang, type Lang } from '../lib/tcgdex'
+import { imageCandidatesForKey, lookupLang, type Lang } from '../lib/tcgdex'
 import { LANGUAGE_LABELS, type Card, type CardInput } from '../lib/types'
 
 type Phase =
@@ -231,11 +232,11 @@ export function ScanPage(): JSX.Element {
                     className={`candidate${i === 0 ? ' selected' : ''}`}
                     onClick={() => void chooseSingle(c, phase.recognition, phase.lang)}
                   >
-                    {c.image ? (
-                      <img src={imageUrl(c.image, 'low') ?? ''} alt="" loading="lazy" />
-                    ) : (
-                      <span className="card-img placeholder"><span>No image</span></span>
-                    )}
+                    <CardPicture
+                      sources={imageCandidatesForKey(c.key, c.image, 'low')}
+                      alt=""
+                      fallback={<span className="card-img placeholder"><span>No image</span></span>}
+                    />
                     <span className="cand-name">{c.name}</span>
                     <span className="muted small">{c.setName} {c.localId}</span>
                     <span className="cand-reason small">{i === 0 ? 'Beste match' : c.reason}</span>

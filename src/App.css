@@ -1753,3 +1753,34 @@ a.stat:hover {
   padding: 0.35rem 1.5rem 0.35rem 0;
   font-variant-numeric: tabular-nums;
 }
+
+/* ---------- Sets: taal en lege sets ---------- */
+.lang-switch {
+  justify-self: start;
+  max-width: 100%;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.lang-switch button {
+  flex: 0 0 auto;
+}
+
+.set-code {
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  padding: 0.3rem 0.5rem;
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+}
+
+.set-row.set-empty {
+  padding-block: 0.6rem;
+}
+
+.set-row.set-empty .set-name {
+  font-weight: 600;
+  color: var(--ink-soft);
+}

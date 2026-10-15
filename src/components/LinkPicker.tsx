@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type JSX } from 'react'
 import { useCardInfo } from '../hooks/useCardInfo'
 import { findCandidates, type Candidate } from '../lib/match'
-import { imageUrl, lookupLang, splitKey, stripLangTag, type Lang } from '../lib/tcgdex'
+import { imageCandidates, imageCandidatesForKey, lookupLang, splitKey, stripLangTag, type Lang } from '../lib/tcgdex'
 import type { CardLanguage } from '../lib/types'
+import { CardPicture } from './CardPicture'
 
 interface Props {
   name: string
@@ -63,7 +64,14 @@ export function LinkPicker({ name, language, setCode, cardNumber, value, onSelec
       <div className="link-current">
         {value ? (
           <>
-            {linked?.image && <img src={imageUrl(linked.image, 'low') ?? ''} alt="" className="link-thumb" />}
+            {linked && (
+              <CardPicture
+                className="link-thumb"
+                sources={imageCandidates(linked.lang, linked.set.id, linked.localId, linked.image, 'low')}
+                alt=""
+                fallback={null}
+              />
+            )}
             <div>
               <p className="link-title">{linked ? linked.name : 'Loading…'}</p>
               <p className="muted small">{linked ? `${linked.set.name} #${linked.localId}` : value}</p>
@@ -125,11 +133,11 @@ export function LinkPicker({ name, language, setCode, cardNumber, value, onSelec
                       setOpen(false)
                     }}
                   >
-                    {c.image ? (
-                      <img src={imageUrl(c.image, 'low') ?? ''} alt="" loading="lazy" />
-                    ) : (
-                      <span className="card-img placeholder"><span>No image</span></span>
-                    )}
+                    <CardPicture
+                      sources={imageCandidatesForKey(c.key, c.image, 'low')}
+                      alt=""
+                      fallback={<span className="card-img placeholder"><span>No image</span></span>}
+                    />
                     <span className="cand-name">{c.name}</span>
                     <span className="muted small">{c.setName} #{c.localId}</span>
                     <span className="cand-reason small">{c.reason}</span>

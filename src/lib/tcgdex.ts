@@ -93,6 +93,36 @@ export function imageUrl(base: string | null, quality: 'low' | 'high'): string |
   return base ? `${base}/${quality}.webp` : null
 }
 
+/**
+ * Japanse kaartfoto van Limitless TCG ("SV8_107_R_JP_SM.png", nummer zonder voorloopnullen).
+ * Koreaanse en Traditioneel Chinese sets delen meestal setcode + nummer met de Japanse uitgave.
+ */
+export function limitlessJpUrl(setId: string, localId: string, quality: 'low' | 'high'): string | null {
+  if (!/^\d+$/.test(localId) || !/^[A-Za-z0-9-]+$/.test(setId)) return null
+  const n = String(Number.parseInt(localId, 10))
+  return `https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpc/${setId}/${setId}_${n}_R_JP_${quality === 'high' ? 'LG' : 'SM'}.png`
+}
+
+/** Mogelijke plaatjes-URL's in volgorde van voorkeur; de weergave probeert de volgende als er een faalt. */
+export function imageCandidates(lang: Lang, setId: string, localId: string, base: string | null, quality: 'low' | 'high'): string[] {
+  const out: string[] = []
+  const tcgdex = imageUrl(base, quality)
+  if (tcgdex) out.push(tcgdex)
+  if (lang === 'ja' || lang === 'zh-tw' || lang === 'ko') {
+    const jp = limitlessJpUrl(setId, localId, quality)
+    if (jp) out.push(jp)
+  }
+  return out
+}
+
+/** Plaatjes voor een kaart-sleutel ("ja/SV8-107") zonder eerst de kaartdetails op te halen. */
+export function imageCandidatesForKey(key: string, base: string | null, quality: 'low' | 'high'): string[] {
+  const s = setOfKey(key)
+  if (!s) return base ? [imageUrl(base, quality) as string] : []
+  const localId = s.cardId.slice(s.setId.length + 1)
+  return imageCandidates(s.lang, s.setId, localId, base, quality)
+}
+
 export function isLang(v: string): v is Lang {
   return (LANGS as readonly string[]).includes(v)
 }
@@ -174,7 +204,8 @@ const fetchSetList = memo(async (lang: string): Promise<Map<string, SetSummary>>
   if (Array.isArray(data)) {
     for (const s of data) {
       if (isRecord(s) && typeof s.id === 'string') {
-        map.set(s.id, { id: s.id, name: typeof s.name === 'string' ? s.name : s.id, logo: optStr(s.logo) })
+        const total = isRecord(s.cardCount) && typeof s.cardCount.total === 'number' ? s.cardCount.total : undefined
+        map.set(s.id, { id: s.id, name: typeof s.name === 'string' ? s.name : s.id, logo: optStr(s.logo), total })
       }
     }
   }
@@ -185,11 +216,34 @@ export function getSetList(lang: Lang): Promise<Map<string, SetSummary>> {
   return fetchSetList(lang)
 }
 
-/** Kaarten waarvan de naam de zoekterm bevat (hoofdletterongevoelig). */
+const fetchSeriesSetIds = memo(async (k: string): Promise<Set<string>> => {
+  const [lang, serie] = k.split('|')
+  const data = await getJson(`${API}/${lang}/series/${encodeURIComponent(serie)}`)
+  const ids = new Set<string>()
+  if (isRecord(data) && Array.isArray(data.sets)) {
+    for (const s of data.sets) if (isRecord(s) && typeof s.id === 'string') ids.add(s.id)
+  }
+  return ids
+})
+
+/** Sets van het digitale TCG Pocket (geen fysieke kaarten); alleen in de Engelse data. */
+export async function digitalSetIds(lang: Lang): Promise<Set<string>> {
+  if (lang !== 'en') return new Set()
+  return fetchSeriesSetIds('en|tcgp').catch((err: unknown) => {
+    console.warn('TCG Pocket-sets ophalen mislukt', err)
+    return new Set<string>()
+  })
+}
+
+/** Kaarten waarvan de naam de zoekterm bevat (hoofdletterongevoelig); zonder digitale Pocket-kaarten. */
 export async function searchCards(lang: Lang, name: string): Promise<SetCard[]> {
   const q = name.trim()
   if (q.length < 2) return []
-  return parseCards(await getJson(`${API}/${lang}/cards?name=${encodeURIComponent(q)}`))
+  const [cards, digital] = await Promise.all([
+    getJson(`${API}/${lang}/cards?name=${encodeURIComponent(q)}`).then(parseCards),
+    digitalSetIds(lang),
+  ])
+  return cards.filter((c) => !digital.has(setIdOf(c)))
 }
 
 export function matchNumber(cards: readonly SetCard[], number: string): SetCard | undefined {

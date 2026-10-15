@@ -34,7 +34,8 @@ export default defineConfig({
         runtimeCaching: [
           {
             // Kaartplaatjes veranderen niet: lang bewaren, snel en offline beschikbaar.
-            urlPattern: ({ url }) => url.origin === 'https://assets.tcgdex.net',
+            urlPattern: ({ url }) =>
+              url.origin === 'https://assets.tcgdex.net' || url.origin === 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com',
             handler: 'CacheFirst',
             options: {
               cacheName: 'tcgdex-images',

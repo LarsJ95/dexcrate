@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import { normalizeChannel, parsePrice, parseQuantity, splitLanguage } from './excel'
-import { cardmarketUrl, langFromName, lookupLang, parseCardmarket, setOfKey, splitKey, stripLangTag } from './tcgdex'
+import {
+  cardmarketUrl,
+  imageCandidates,
+  imageCandidatesForKey,
+  langFromName,
+  limitlessJpUrl,
+  lookupLang,
+  parseCardmarket,
+  setOfKey,
+  splitKey,
+  stripLangTag,
+} from './tcgdex'
 
 describe('Excel-velden', () => {
   it('parseQuantity: "3x", "3", spaties; ongeldig → null', () => {
@@ -82,5 +93,26 @@ describe('parseCardmarket', () => {
   it('geen of andere valuta → null', () => {
     expect(parseCardmarket({})).toBeNull()
     expect(parseCardmarket({ pricing: { cardmarket: { unit: 'USD', trend: 1 } } })).toBeNull()
+  })
+})
+
+describe('plaatjesbronnen', () => {
+  it('Limitless-URL voor Japanse kaarten: nummer zonder voorloopnullen', () => {
+    expect(limitlessJpUrl('M5', '046', 'low')).toBe('https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpc/M5/M5_46_R_JP_SM.png')
+    expect(limitlessJpUrl('SV8', '107', 'high')).toBe('https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpc/SV8/SV8_107_R_JP_LG.png')
+    expect(limitlessJpUrl('SV-P', 'SV13', 'low')).toBeNull()
+    expect(limitlessJpUrl('../x', '1', 'low')).toBeNull()
+  })
+
+  it('volgorde: TCGdex eerst, Japanse terugval alleen voor Aziatische talen', () => {
+    expect(imageCandidates('en', 'sv03.5', '151', 'https://assets.tcgdex.net/en/sv/sv03.5/151', 'low')).toEqual([
+      'https://assets.tcgdex.net/en/sv/sv03.5/151/low.webp',
+    ])
+    expect(imageCandidates('ko', 'SV4K', '051', null, 'low')).toEqual([
+      'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpc/SV4K/SV4K_51_R_JP_SM.png',
+    ])
+    expect(imageCandidatesForKey('ja/SV8-107', null, 'low')).toEqual([
+      'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpc/SV8/SV8_107_R_JP_SM.png',
+    ])
   })
 })
