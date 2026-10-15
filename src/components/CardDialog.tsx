@@ -16,6 +16,8 @@ interface Props {
   onDeleted: (id: string) => void
   /** Kaart bijgewerkt terwijl de popup open blijft (bv. foto toegevoegd). */
   onChanged?: (row: Card) => void
+  /** Verkoop vastgelegd (regels kunnen gesplitst zijn): collectie opnieuw laden. Zonder: popup sluit. */
+  onSold?: () => void
 }
 
 type Mode = { kind: 'view' } | { kind: 'edit'; status: CardStatus }
@@ -33,6 +35,7 @@ export function CardDialog({
   onSaved,
   onDeleted,
   onChanged,
+  onSold,
 }: Props): JSX.Element {
   const ref = useRef<HTMLDialogElement>(null)
   const [mode, setMode] = useState<Mode>(() => (card ? { kind: 'view' } : { kind: 'edit', status: initial?.status ?? defaultStatus }))
@@ -71,6 +74,7 @@ export function CardDialog({
             onEdit={(status) => setMode({ kind: 'edit', status: status ?? card.status })}
             onSaved={onSaved}
             onChanged={(row) => (onChanged ? onChanged(row) : onSaved([row]))}
+            onSold={onSold ?? close}
           />
         ) : (
           <CardForm

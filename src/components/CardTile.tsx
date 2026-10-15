@@ -16,6 +16,10 @@ interface Props {
   /** Snelle actie: te koop ↔ verkocht. */
   onToggleSold: (id: string) => void
   busy?: boolean
+  /** Selectiemodus: true/false = (niet) geselecteerd; undefined = geen selectiemodus. */
+  selected?: boolean
+  /** Verkopen gaan via transacties (STAP5): geen snelle terugzet-knop bij verkochte kaarten. */
+  salesTracked?: boolean
 }
 
 /** De prijs die bij de status hoort: vraag-/verkoopprijs, of wat je betaalde. */
@@ -27,7 +31,7 @@ function ownPrice(card: Card): { label: string; value: number } | null {
   return null
 }
 
-function CardTileBase({ card, market, onOpen, onToggleSold, busy }: Props): JSX.Element {
+function CardTileBase({ card, market, onOpen, onToggleSold, busy, selected, salesTracked }: Props): JSX.Element {
   const info = useCardInfo(card.tcgdex_id)
   const setLabel = info?.set.name ?? card.set_code
   const own = ownPrice(card)
@@ -36,16 +40,24 @@ function CardTileBase({ card, market, onOpen, onToggleSold, busy }: Props): JSX.
     card.condition ? CONDITION_LABELS[card.condition] : null,
   ].filter(Boolean)
   const showMarket = card.kind === 'card' && card.tcgdex_id !== null
+  const selecting = selected !== undefined
+  const showToggle = !selecting && canToggleSold(card) && !(salesTracked && card.ownership === 'sold')
 
   return (
-    <li className={`tile status-${card.status}`}>
+    <li className={`tile status-${card.status}${selected ? ' is-selected' : ''}`}>
       {/* Naam uit de inhoud (foto-alt of getekende voorkant + badges), zodat die overeenkomt met wat je ziet. */}
-      <button type="button" className="tile-open" onClick={() => onOpen(card.id)}>
+      <button type="button" className="tile-open" onClick={() => onOpen(card.id)} aria-pressed={selecting ? selected : undefined}>
         <CardImage tcgdexId={card.tcgdex_id} kind={card.kind} name={card.name} photoPath={thumbPath(card)}
           detail={[card.set_code, card.card_number && `#${card.card_number}`].filter(Boolean).join(' ')} />
         {card.status !== 'sold' && <Foil variant={card.variant} seed={card.id} />}
         {statusBadge(card) && <span className={`status-badge ${card.status}`}>{statusBadge(card)}</span>}
         {card.quantity > 1 && <span className="qty-badge">{card.quantity}×</span>}
+        {selected && (
+          <span className="select-badge">
+            <IconCheck size={18} />
+            <span className="visually-hidden">Selected</span>
+          </span>
+        )}
         {card.grading_company && (
           <span className="grade-badge">
             {card.grading_company} {card.grade}
@@ -76,7 +88,7 @@ function CardTileBase({ card, market, onOpen, onToggleSold, busy }: Props): JSX.
           )}
         </dl>
 
-        {canToggleSold(card) && (
+        {showToggle && (
           <button
             type="button"
             className={`status-toggle${card.status === 'sold' ? ' on' : ''}`}

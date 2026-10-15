@@ -1,6 +1,6 @@
 import type { JSX } from 'react'
 import type { Route } from '../lib/routes'
-import { IconCamera, IconCards, IconHome, IconImage, IconLayers, IconMore, IconUpload } from './Icons'
+import { IconCamera, IconCards, IconHome, IconImage, IconLayers, IconMore, IconReceipt, IconUpload } from './Icons'
 
 export interface NavItem {
   route: Route
@@ -15,6 +15,7 @@ const SETS: NavItem = { route: 'sets', label: 'Sets', Icon: IconLayers }
 
 /** Pagina's die op mobiel onder "More" vallen; op desktop staan ze gewoon in de zijbalk. */
 export const MORE_ITEMS: NavItem[] = [
+  { route: 'transactions', label: 'Transactions', Icon: IconReceipt },
   { route: 'photos', label: 'Photos', Icon: IconImage },
   { route: 'import', label: 'Import', Icon: IconUpload },
 ]

@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useState, type JSX } from 'react'
 import { CardDialog } from '../components/CardDialog'
 import { CardTile } from '../components/CardTile'
+import { PurchaseDialog } from '../components/PurchaseDialog'
+import { SaleDialog } from '../components/SaleDialog'
+import { useTransactionsEnabled } from '../hooks/useTransactionsEnabled'
 import { IconPlus, IconSearch } from '../components/Icons'
 import { useMarketPrices } from '../hooks/useMarketPrices'
 import { listCards, updateCard } from '../lib/db'
@@ -39,6 +42,11 @@ export function CollectionPage(): JSX.Element {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<StatusFilter>('owned')
   const [sort, setSort] = useState<SortKey>('list')
+  // Verkopen en aankopen als transactie (STAP5): kaarten selecteren en in één keer vastleggen.
+  const salesTracked = useTransactionsEnabled() === true
+  const [selected, setSelected] = useState<ReadonlySet<string> | null>(null)
+  const [saleFor, setSaleFor] = useState<Card[] | null>(null)
+  const [purchaseFor, setPurchaseFor] = useState<Card[] | null>(null)
   const [editing, setEditing] = useState<{ id: string | null } | null>(null)
   const [pending, setPending] = useState<ReadonlySet<string>>(new Set())
   const { prices, loading: pricesLoading } = useMarketPrices(cards)
@@ -103,6 +111,11 @@ export function CollectionPage(): JSX.Element {
     async (id: string): Promise<void> => {
       const current = cards?.find((c) => c.id === id)
       if (!current || !canToggleSold(current) || pending.has(id)) return
+      // Met transacties: verkopen via de verkoopdialoog (kosten, lot, status), niet als los vinkje.
+      if (salesTracked) {
+        if (current.ownership === 'owned') setSaleFor([current])
+        return
+      }
       // Meerdere stuks: via het bewerkscherm, zodat je kunt kiezen hoeveel.
       if (current.quantity > 1) {
         setEditing({ id })
@@ -126,10 +139,34 @@ export function CollectionPage(): JSX.Element {
         })
       }
     },
-    [cards, pending],
+    [cards, pending, salesTracked],
   )
 
-  const open = useCallback((id: string) => setEditing({ id }), [])
+  const open = useCallback(
+    (id: string) => {
+      if (selected === null) {
+        setEditing({ id })
+        return
+      }
+      setSelected((s) => {
+        const next = new Set(s)
+        if (next.has(id)) next.delete(id)
+        else next.add(id)
+        return next
+      })
+    },
+    [selected],
+  )
+
+  const selectedCards = selected ? (cards ?? []).filter((c) => selected.has(c.id)) : []
+  const canSell = selectedCards.length > 0 && selectedCards.every((c) => c.ownership === 'owned')
+  const canBuy = selectedCards.length > 0 && selectedCards.every((c) => c.ownership === 'owned' || c.ownership === 'incoming')
+  const afterTransaction = (): void => {
+    setSaleFor(null)
+    setPurchaseFor(null)
+    setSelected(null)
+    setReloadKey((k) => k + 1)
+  }
   const onToggle = useCallback((id: string) => void toggleSold(id), [toggleSold])
 
   const editingCard = editing?.id ? (cards?.find((c) => c.id === editing.id) ?? null) : null
@@ -162,10 +199,17 @@ export function CollectionPage(): JSX.Element {
             </p>
           )}
         </div>
-        <button type="button" className="primary" onClick={() => setEditing({ id: null })}>
-          <IconPlus size={18} />
-          Add card
-        </button>
+        <div className="head-actions">
+          {salesTracked && (
+            <button type="button" onClick={() => setSelected((s) => (s === null ? new Set() : null))} aria-pressed={selected !== null}>
+              {selected === null ? 'Select' : 'Done'}
+            </button>
+          )}
+          <button type="button" className="primary" onClick={() => setEditing({ id: null })}>
+            <IconPlus size={18} />
+            Add card
+          </button>
+        </div>
       </div>
 
       <div className="filters">
@@ -233,9 +277,29 @@ export function CollectionPage(): JSX.Element {
             onOpen={open}
             onToggleSold={onToggle}
             busy={pending.has(c.id)}
+            selected={selected === null ? undefined : selected.has(c.id)}
+            salesTracked={salesTracked}
           />
         ))}
       </ul>
+
+      {selected !== null && (
+        <div className="select-bar" role="region" aria-label="Selection">
+          <span>
+            {selectedCards.length === 0 ? 'Tap cards to select them' : `${selectedCards.length} selected`}
+          </span>
+          <span className="spacer" />
+          <button type="button" disabled={!canBuy} onClick={() => setPurchaseFor(selectedCards)}>
+            Record purchase
+          </button>
+          <button type="button" className="primary" disabled={!canSell} onClick={() => setSaleFor(selectedCards)}>
+            Sell
+          </button>
+        </div>
+      )}
+
+      {saleFor && <SaleDialog cards={saleFor} onClose={() => setSaleFor(null)} onSaved={afterTransaction} />}
+      {purchaseFor && <PurchaseDialog cards={purchaseFor} onClose={() => setPurchaseFor(null)} onSaved={afterTransaction} />}
 
       {editing && (
         <CardDialog
@@ -257,6 +321,10 @@ export function CollectionPage(): JSX.Element {
             setEditing(null)
           }}
           onChanged={(row) => setCards((list) => list?.map((c) => (c.id === row.id ? row : c)) ?? null)}
+          onSold={() => {
+            setEditing(null)
+            setReloadKey((k) => k + 1)
+          }}
           onDeleted={(id) => {
             setCards((list) => list?.filter((c) => c.id !== id) ?? null)
             setEditing(null)

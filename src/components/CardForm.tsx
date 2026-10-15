@@ -30,6 +30,7 @@ import {
 } from '../lib/types'
 import { useCardInfo } from '../hooks/useCardInfo'
 import { useSchemaV2 } from '../hooks/useSchemaV2'
+import { useTransactionsEnabled } from '../hooks/useTransactionsEnabled'
 import { LinkPicker } from './LinkPicker'
 
 interface Props {
@@ -266,6 +267,12 @@ export function CardForm({
   const info = useCardInfo(isCard ? form.tcgdex_id : null)
   // Nieuwe velden pas tonen als de database ze kan opslaan (STAP4).
   const v2 = useSchemaV2() === true
+  // Met transacties (STAP5) verkoop je via "Sell", zodat opbrengst en kosten worden vastgelegd.
+  const salesTracked = useTransactionsEnabled() === true
+  const wasSold = card?.ownership === 'sold'
+  const sellViaDialog = salesTracked && !wasSold
+  const statusOptions = (Object.keys(STATUS_LABELS) as CardStatus[]).filter((s) => !(sellViaDialog && s === 'sold'))
+  const ownershipOptions: Ownership[] | null = sellViaDialog ? ['incoming', 'owned', 'traded', 'given_away'] : null
   const allowedVariants = info?.variants ?? null
   const variantMismatch = form.variant !== '' && allowedVariants !== null && !allowedVariants.includes(form.variant)
   const onlyVariant = allowedVariants?.length === 1 ? allowedVariants[0] : null
@@ -356,7 +363,7 @@ export function CardForm({
   return (
     <form className="card-form" onSubmit={onSubmit} noValidate>
       <div className="segmented status-switch" role="radiogroup" aria-label="Status">
-        {(Object.keys(STATUS_LABELS) as CardStatus[]).map((s) => (
+        {statusOptions.map((s) => (
           <button key={s} type="button" role="radio" aria-checked={plain && formStatus === s} onClick={() => changeStatus(s)}>
             {STATUS_LABELS[s]}
           </button>
@@ -373,7 +380,14 @@ export function CardForm({
 
       {v2 && (
         <div className="form-grid">
-          <Select label="Ownership" value={form.ownership} options={OWNERSHIP_LABELS} required onChange={(v) => v && changeOwnership(v)} />
+          <Select
+            label="Ownership"
+            value={form.ownership}
+            options={OWNERSHIP_LABELS}
+            allowed={ownershipOptions}
+            required
+            onChange={(v) => v && changeOwnership(v)}
+          />
           {isHeld(form.ownership) && (
             <Select
               label="Availability"
@@ -384,6 +398,9 @@ export function CardForm({
             />
           )}
         </div>
+      )}
+      {sellViaDialog && (
+        <p className="muted small">To record a sale, use "Mark as sold" in the card view or select cards in Collection.</p>
       )}
 
       <Group title="Card">

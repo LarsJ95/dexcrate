@@ -18,6 +18,11 @@ import { ScanPage } from '../pages/ScanPage'
 import { SetBinderPage } from '../pages/SetBinderPage'
 import { SetsPage } from '../pages/SetsPage'
 import { overrideSchemaV2ForPreview } from '../lib/db'
+import { overrideTransactionsForPreview } from '../lib/transactions'
+import type { Transaction } from '../lib/transactionTypes'
+import { PurchaseDialog } from '../components/PurchaseDialog'
+import { SaleDialog } from '../components/SaleDialog'
+import { TransactionDialog } from '../components/TransactionDialog'
 import type { MarketValue, PriceMap } from '../lib/prices'
 import { getSet, imageUrl, type CardmarketPrice, type SetCard } from '../lib/tcgdex'
 import type { Route } from '../lib/routes'
@@ -30,6 +35,8 @@ document.documentElement.dataset.theme = theme
 // ?v2=1: doen alsof STAP4 gedraaid is (nieuwe velden en foto's zichtbaar).
 const previewV2 = params.get('v2') === '1'
 if (previewV2) overrideSchemaV2ForPreview(true)
+// ?v3=1: doen alsof STAP5 (transacties) gedraaid is.
+if (params.get('v3') === '1') overrideTransactionsForPreview(true)
 
 // ?freeze=1: holo-glans midden in de beweging stilzetten, voor screenshots.
 if (params.get('freeze') === '1') {
@@ -219,6 +226,35 @@ export function Preview(): JSX.Element {
           onSaved={noop}
           onDeleted={noop}
         />
+      </Shell>
+    )
+  }
+  const extra = params.get('page') ?? ''
+  if (extra === 'sale' || extra === 'purchase' || extra === 'tx') {
+    const picked = [CARDS[0].card, CARDS[4].card, CARDS[5].card]
+    const demoTx: Transaction = {
+      id: 'tx1',
+      kind: 'sale',
+      occurred_on: '2026-10-14',
+      channel: 'Cardmarket',
+      counterparty: 'pikafan92',
+      amount: 18,
+      shipping_amount: 1.5,
+      fees_amount: null,
+      shipping_cost: 2.1,
+      refund_amount: null,
+      status: 'shipped',
+      notes: null,
+      created_at: '',
+      lines: picked.map((c, i) => ({ id: `l${i}`, card_id: c.id, quantity: 1, unit_amount: null })),
+    }
+    return (
+      <Shell route="collection" email="demo@example.com" theme={theme} onToggleTheme={noop} onSignOut={noop}>
+        {extra === 'sale' && <SaleDialog cards={picked} onClose={noop} onSaved={noop} />}
+        {extra === 'purchase' && <PurchaseDialog cards={picked} onClose={noop} onSaved={noop} />}
+        {extra === 'tx' && (
+          <TransactionDialog tx={demoTx} cards={new Map(picked.map((c) => [c.id, c]))} purchases={[]} onClose={noop} onChanged={noop} />
+        )}
       </Shell>
     )
   }

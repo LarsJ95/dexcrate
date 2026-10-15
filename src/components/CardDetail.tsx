@@ -2,6 +2,7 @@ import { useState, type JSX } from 'react'
 import { useCardInfo } from '../hooks/useCardInfo'
 import { useCardPrice } from '../hooks/useCardPrice'
 import { useSchemaV2 } from '../hooks/useSchemaV2'
+import { useTransactionsEnabled } from '../hooks/useTransactionsEnabled'
 import { updateCard } from '../lib/db'
 import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
@@ -23,6 +24,7 @@ import { ChangeBadge } from './ChangeBadge'
 import { Foil } from './Foil'
 import { PhotoManager } from './PhotoManager'
 import { PriceChart } from './PriceChart'
+import { SaleDialog } from './SaleDialog'
 
 interface Props {
   card: Card
@@ -30,6 +32,8 @@ interface Props {
   onSaved: (rows: Card[]) => void
   /** Kaart bijgewerkt zonder de popup te sluiten (bv. foto). */
   onChanged: (row: Card) => void
+  /** Verkoop vastgelegd via de verkoopdialoog. */
+  onSold: () => void
 }
 
 function signedEur(n: number): string {
@@ -40,13 +44,16 @@ function signedEur(n: number): string {
 const cents = (n: number): number => Math.round(n * 100)
 
 /** Overzicht van één kaart: foto, kenmerken, prijzen en snelle statusacties. */
-export function CardDetail({ card, onEdit, onSaved, onChanged }: Props): JSX.Element {
+export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props): JSX.Element {
   const info = useCardInfo(card.tcgdex_id)
   const price = useCardPrice(card.kind === 'card' ? card.tcgdex_id : null)
   const market = marketValue(price, card.variant)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [zoomOpen, setZoomOpen] = useState(false)
+  const [selling, setSelling] = useState(false)
+  // Verkopen als transactie (STAP5): met kosten, status en eventueel deel van de stuks.
+  const salesTracked = useTransactionsEnabled() === true
   // Eigen foto's beheren kan pas als STAP4 gedraaid is.
   const v2 = useSchemaV2() === true
   const main = primaryPhoto(card)
@@ -66,6 +73,10 @@ export function CardDetail({ card, onEdit, onSaved, onChanged }: Props): JSX.Ele
 
   async function markSold(): Promise<void> {
     if (busy) return
+    if (salesTracked) {
+      setSelling(true)
+      return
+    }
     // Meerdere stuks: via het formulier, zodat je kunt kiezen hoeveel.
     if (card.quantity > 1) {
       onEdit('sold')
@@ -185,6 +196,17 @@ export function CardDetail({ card, onEdit, onSaved, onChanged }: Props): JSX.Ele
       {card.kind === 'card' && card.tcgdex_id && <PriceChart tcgdexId={card.tcgdex_id} reverse={card.variant === 'reverse'} />}
 
       {v2 && <PhotoManager card={card} onChange={onChanged} />}
+
+      {selling && (
+        <SaleDialog
+          cards={[card]}
+          onClose={() => setSelling(false)}
+          onSaved={() => {
+            setSelling(false)
+            onSold()
+          }}
+        />
+      )}
 
       {error && (
         <p className="error" role="alert">
