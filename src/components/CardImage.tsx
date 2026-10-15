@@ -19,7 +19,7 @@ export function CardImage({ tcgdexId, kind, name, photoPath, quality = 'low' }: 
   const info = useCardInfo(tcgdexId)
   const photo = usePhotoUrl(photoPath)
   const sources = useMemo(() => {
-    const official = info ? imageCandidates(info.lang, info.set.id, info.localId, info.image, quality) : []
+    const official = info ? imageCandidates(info.lang, info.set.id, info.localId, info.image, quality, info.tcgplayerId) : []
     return photo ? [photo, ...official] : official
   }, [info, photo, quality])
 

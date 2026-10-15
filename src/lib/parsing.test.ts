@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { normalizeChannel, parsePrice, parseQuantity, splitLanguage } from './excel'
 import {
   cardmarketUrl,
+  findTcgplayerId,
   imageCandidates,
   imageCandidatesForKey,
   langFromName,
@@ -11,6 +12,7 @@ import {
   setOfKey,
   splitKey,
   stripLangTag,
+  tcgplayerImageUrl,
 } from './tcgdex'
 
 describe('Excel-velden', () => {
@@ -114,5 +116,21 @@ describe('plaatjesbronnen', () => {
     expect(imageCandidatesForKey('ja/SV8-107', null, 'low')).toEqual([
       'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpc/SV8/SV8_107_R_JP_SM.png',
     ])
+  })
+})
+
+describe('TCGplayer als terugvalbron', () => {
+  it('leest het productnummer uit variants_detailed', () => {
+    expect(findTcgplayerId({ variants_detailed: [{ thirdParty: { cardmarket: 1 } }, { thirdParty: { tcgplayer: 587687 } }] })).toBe(587687)
+    expect(findTcgplayerId({ variants_detailed: [{ thirdParty: { tcgplayer: 'x' } }] })).toBeNull()
+    expect(findTcgplayerId({})).toBeNull()
+  })
+
+  it('komt als laatste in de keten', () => {
+    expect(imageCandidates('ja', 'SV8', '107', null, 'high', 587687)).toEqual([
+      'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpc/SV8/SV8_107_R_JP_LG.png',
+      'https://tcgplayer-cdn.tcgplayer.com/product/587687_400w.jpg',
+    ])
+    expect(tcgplayerImageUrl(null, 'low')).toBeNull()
   })
 })

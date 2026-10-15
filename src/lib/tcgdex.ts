@@ -38,6 +38,8 @@ export interface CardInfo {
   name: string
   localId: string
   image: string | null
+  /** TCGplayer-productnummer (als TCGdex het kent), voor een extra plaatjesbron. */
+  tcgplayerId?: number | null
   set: SetSummary
 }
 
@@ -104,7 +106,21 @@ export function limitlessJpUrl(setId: string, localId: string, quality: 'low' | 
 }
 
 /** Mogelijke plaatjes-URL's in volgorde van voorkeur; de weergave probeert de volgende als er een faalt. */
-export function imageCandidates(lang: Lang, setId: string, localId: string, base: string | null, quality: 'low' | 'high'): string[] {
+/** Productfoto van TCGplayer op basis van het productnummer. */
+export function tcgplayerImageUrl(productId: number | null | undefined, quality: 'low' | 'high'): string | null {
+  if (!productId || !Number.isInteger(productId) || productId <= 0) return null
+  return `https://tcgplayer-cdn.tcgplayer.com/product/${productId}_${quality === 'high' ? '400w' : '200w'}.jpg`
+}
+
+/** Volgorde: TCGdex → Limitless (Aziatische talen) → TCGplayer. */
+export function imageCandidates(
+  lang: Lang,
+  setId: string,
+  localId: string,
+  base: string | null,
+  quality: 'low' | 'high',
+  tcgplayerId?: number | null,
+): string[] {
   const out: string[] = []
   const tcgdex = imageUrl(base, quality)
   if (tcgdex) out.push(tcgdex)
@@ -112,6 +128,8 @@ export function imageCandidates(lang: Lang, setId: string, localId: string, base
     const jp = limitlessJpUrl(setId, localId, quality)
     if (jp) out.push(jp)
   }
+  const tcgplayer = tcgplayerImageUrl(tcgplayerId, quality)
+  if (tcgplayer) out.push(tcgplayer)
   return out
 }
 
@@ -257,7 +275,7 @@ export function matchNumber(cards: readonly SetCard[], number: string): SetCard 
 
 // --- Kaartinfo en prijzen, met cache in localStorage ---
 
-const INFO_PREFIX = 'tcgdex:card:v2:' // v2: afgeleide plaatjes-URL's
+const INFO_PREFIX = 'tcgdex:card:v3:' // v3: met TCGplayer-productnummer
 const INFO_TTL_MS = 7 * 24 * 60 * 60 * 1000 // namen/plaatjes veranderen zelden
 const PRICE_PREFIX = 'tcgdex:price:v2:' // v2: met idProduct
 const PRICE_TTL_MS = 6 * 60 * 60 * 1000 // TCGdex ververst prijzen dagelijks
@@ -351,6 +369,16 @@ export function getCardPrice(key: string): Promise<CardmarketPrice | null> {
   return fetchCardPrice(key)
 }
 
+/** TCGplayer-productnummer uit variants_detailed[].thirdParty.tcgplayer. */
+export function findTcgplayerId(data: Record<string, unknown>): number | null {
+  if (!Array.isArray(data.variants_detailed)) return null
+  for (const v of data.variants_detailed) {
+    const id = isRecord(v) && isRecord(v.thirdParty) ? v.thirdParty.tcgplayer : null
+    if (typeof id === 'number' && Number.isInteger(id) && id > 0) return id
+  }
+  return null
+}
+
 const fetchCardInfo = memo(async (key: string): Promise<CardInfo | null> => {
   const cached = readCache<CardInfo>(INFO_PREFIX, INFO_TTL_MS, key)
   if (cached) return cached
@@ -379,6 +407,7 @@ const fetchCardInfo = memo(async (key: string): Promise<CardInfo | null> => {
     name: typeof data.name === 'string' ? data.name : '',
     localId,
     image,
+    tcgplayerId: findTcgplayerId(data),
     set: { id: data.set.id, name: typeof data.set.name === 'string' ? data.set.name : data.set.id, logo },
   }
   writeCache(INFO_PREFIX, key, info)

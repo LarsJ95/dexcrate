@@ -35,7 +35,9 @@ export default defineConfig({
           {
             // Kaartplaatjes veranderen niet: lang bewaren, snel en offline beschikbaar.
             urlPattern: ({ url }) =>
-              url.origin === 'https://assets.tcgdex.net' || url.origin === 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com',
+              url.origin === 'https://assets.tcgdex.net' ||
+              url.origin === 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com' ||
+              url.origin === 'https://tcgplayer-cdn.tcgplayer.com',
             handler: 'CacheFirst',
             options: {
               cacheName: 'tcgdex-images',
