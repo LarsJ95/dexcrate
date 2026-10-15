@@ -405,7 +405,7 @@
   background: none;
   overflow: hidden;
   isolation: isolate;
-  transition: transform 180ms ease;
+  transition: transform 150ms ease-out;
 }
 
 .tile-open:hover:not(:disabled) {
@@ -413,37 +413,11 @@
   border: 0;
 }
 
-/* Het ene bewegingsmoment: kaart komt omhoog met een holo-glans. */
-.tile-open .sheen {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0;
-  background: linear-gradient(
-    115deg,
-    transparent 30%,
-    rgb(255 255 255 / 0.35) 45%,
-    rgb(120 200 255 / 0.25) 52%,
-    rgb(255 120 220 / 0.2) 58%,
-    transparent 70%
-  );
-  background-size: 250% 250%;
-  background-position: 100% 100%;
-  mix-blend-mode: overlay;
-  transition: opacity 200ms ease, background-position 600ms ease;
-}
-
+/* Kaart licht optillen bij hover: laat zien dat hij aantikbaar is (DESIGN.md §9). */
 @media (hover: hover) {
   .tile-open:hover,
   .tile-open:focus-visible {
     transform: translateY(-4px);
-  }
-
-  .tile-open:hover .sheen,
-  .tile-open:focus-visible .sheen {
-    opacity: 1;
-    background-position: 0% 0%;
   }
 }
 
@@ -641,6 +615,28 @@
   background: var(--surface);
   color: var(--ink);
   box-shadow: var(--shadow-float);
+  animation: sheet-in 200ms ease-out;
+}
+
+/* Popup verschijnt: opacity met lichte schaal; op de telefoon schuift hij omhoog. */
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 
 .card-sheet::backdrop {
@@ -662,6 +658,7 @@
     margin: auto 0 0;
     border-radius: var(--radius-l) var(--radius-l) 0 0;
     border-bottom: 0;
+    animation-name: sheet-up;
   }
 
   .sheet-body {
@@ -1141,12 +1138,10 @@ label.check {
   border-radius: var(--radius-l);
   color: inherit;
   text-decoration: none;
-  transition: border-color 120ms, transform 120ms;
 }
 
 a.stat:hover {
   border-color: var(--line-strong);
-  transform: translateY(-1px);
 }
 
 .stat-value {
@@ -1531,12 +1526,10 @@ a.stat:hover {
   border-radius: var(--radius-l);
   color: inherit;
   text-decoration: none;
-  transition: border-color 120ms, transform 120ms;
 }
 
 .set-row:hover {
   border-color: var(--line-strong);
-  transform: translateY(-1px);
 }
 
 .set-logo {
@@ -1990,18 +1983,18 @@ button.small-btn {
   color: var(--muted);
 }
 
+/* Laadstatus: rustig knipperen, alleen opacity. */
 .card-face.loading {
-  background: linear-gradient(100deg, var(--surface-2) 30%, var(--surface-3) 50%, var(--surface-2) 70%);
-  background-size: 300% 100%;
-  animation: face-shimmer 1.4s ease-in-out infinite;
+  background: var(--surface-2);
+  animation: face-pulse 1.4s ease-in-out infinite alternate;
 }
 
-@keyframes face-shimmer {
+@keyframes face-pulse {
   from {
-    background-position: 100% 0;
+    opacity: 1;
   }
   to {
-    background-position: 0 0;
+    opacity: 0.55;
   }
 }
 
@@ -2185,7 +2178,7 @@ button.slot-open:hover:not(:disabled) {
 }
 
 button.slot-open:hover .card-img {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
 }
 
 .slot .card-img {

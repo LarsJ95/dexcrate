@@ -43,7 +43,6 @@ function CardTileBase({ card, market, onOpen, onToggleSold, busy }: Props): JSX.
         <CardImage tcgdexId={card.tcgdex_id} kind={card.kind} name={card.name} photoPath={card.image_path}
           detail={[card.set_code, card.card_number && `#${card.card_number}`].filter(Boolean).join(' ')} />
         {card.status !== 'sold' && <Foil variant={card.variant} seed={card.id} />}
-        <span className="sheen" aria-hidden="true" />
         {card.status !== 'collection' && <span className={`status-badge ${card.status}`}>{STATUS_LABELS[card.status]}</span>}
         {card.quantity > 1 && <span className="qty-badge">{card.quantity}×</span>}
         {card.grading_company && (

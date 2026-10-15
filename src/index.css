@@ -234,7 +234,6 @@ button {
   padding: var(--space-2) var(--space-4);
   background: var(--surface-2);
   color: var(--ink);
-  transition: background-color 120ms, border-color 120ms, transform 120ms;
 }
 
 button:hover:not(:disabled) {
@@ -302,7 +301,6 @@ select {
   background: var(--surface-2);
   color: var(--ink);
   min-width: 0;
-  transition: border-color 120ms, background-color 120ms;
 }
 
 input:hover,
