@@ -32,7 +32,7 @@ export function Login(): JSX.Element {
         <form onSubmit={onSubmit}>
           <div className="brand brand-lg">
             <LogoMark size={36} />
-            <span>Binderline</span>
+            <span>Dexcrate</span>
           </div>
           <h1>Sign in</h1>
           <label>

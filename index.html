@@ -5,19 +5,22 @@
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="Binderline" />
+    <meta name="apple-mobile-web-app-title" content="Dexcrate" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0a1226" />
     <script>
       // Thema vóór de eerste render zetten, zodat er geen lichte flits is.
       try {
-        var t = localStorage.getItem('binderline:theme') || localStorage.getItem('kaartenmap:theme')
+        var t =
+          localStorage.getItem('dexcrate:theme') ||
+          localStorage.getItem('binderline:theme') ||
+          localStorage.getItem('kaartenmap:theme')
         document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark'
       } catch (e) {
         document.documentElement.dataset.theme = 'dark'
       }
     </script>
-    <title>Binderline</title>
+    <title>Dexcrate</title>
   </head>
   <body>
     <div id="root"></div>

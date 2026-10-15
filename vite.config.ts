@@ -12,8 +12,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Binderline',
-        short_name: 'Binderline',
+        name: 'Dexcrate',
+        short_name: 'Dexcrate',
         description: 'Pokémon card collection, sales and market value',
         lang: 'en',
         theme_color: '#0a1226',

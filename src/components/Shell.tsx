@@ -49,7 +49,7 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
       <aside className="sidebar">
         <a className="brand" href="#/overview">
           <LogoMark />
-          <span>Binderline</span>
+          <span>Dexcrate</span>
         </a>
         <nav className="side-nav" aria-label="Main menu">
           {NAV.map(({ route: r, label, Icon }) => (
@@ -75,7 +75,7 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
       <header className="mobile-bar">
         <a className="brand" href="#/overview">
           <LogoMark size={24} />
-          <span>Binderline</span>
+          <span>Dexcrate</span>
         </a>
         <div className="side-actions">
           {themeButton}

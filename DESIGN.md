@@ -26,7 +26,7 @@ Voer deze stap uit vóórdat je iets aanpast:
 
 ## 1. Merk en toon
 
-- Product: Binderline, persoonlijke web-app/PWA voor een Pokémon-kaartencollectie: collectie, aankoop en verkoop, marktwaarde (Cardmarket), set-voortgang en scannen met de camera.
+- Product: Dexcrate, persoonlijke web-app/PWA voor een Pokémon-kaartencollectie: collectie, aankoop en verkoop, marktwaarde (Cardmarket), set-voortgang en scannen met de camera.
 - Doelgroep: de eigenaar zelf, verzamelaar en verkoper; gebruikt de app vooral op de telefoon.
 - Gevoel in 3 woorden: modern, professioneel, overzichtelijk
 - Wat het níet moet zijn: kinderachtig of "te Pokémon" (Pokémon-sfeer alleen in accenten), druk, afleidend, opvulinformatie.

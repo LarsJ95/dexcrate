@@ -31,11 +31,12 @@ interface Cost {
   running: boolean
 }
 
-const PAGE_SIZE_KEY = 'binderline:binder-page-size'
+const PAGE_SIZE_KEY = 'dexcrate:binder-page-size'
+const OLD_PAGE_SIZE_KEY = 'binderline:binder-page-size'
 
 function readPageSize(): PageSize {
   try {
-    return localStorage.getItem(PAGE_SIZE_KEY) === '12' ? 12 : 9
+    return (localStorage.getItem(PAGE_SIZE_KEY) ?? localStorage.getItem(OLD_PAGE_SIZE_KEY)) === '12' ? 12 : 9
   } catch {
     return 9 // geen opslag: standaard 9-pocket
   }
