@@ -109,7 +109,10 @@ export function LinkPicker({ name, language, setCode, cardNumber, value, onSelec
             </button>
           </div>
           {lang !== 'en' && (
-            <p className="muted small">Aziatische kaarten vind je alleen via set + nummer; zoeken op Engelse naam werkt niet.</p>
+            <p className="muted small">
+              Typ gewoon de Engelse naam: die wordt automatisch vertaald (werkt voor Pokémon, niet voor trainer- en
+              itemkaarten).
+            </p>
           )}
           {busy && <p aria-live="polite">Zoeken…</p>}
           {error && <p className="error" role="alert">{error}</p>}

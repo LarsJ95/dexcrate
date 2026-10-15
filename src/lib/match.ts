@@ -1,3 +1,4 @@
+import { isNonLatin, translateName } from './names'
 import type { CardInput } from './types'
 import {
   findExact,
@@ -103,6 +104,22 @@ export async function findCandidates(q: MatchQuery, lang: Lang): Promise<Candida
       // Buitenlandse namen zijn niet te vergelijken met de Engelse naam uit de Excel.
       const sim = lang === 'en' ? nameSimilarity(stripLangTag(q.name), exact.name) : 1
       add(exact, exact.setId, 4 + sim * 4, sim >= MIN_NAME_SIMILARITY ? 'Set en nummer kloppen' : 'Set en nummer kloppen, naam niet')
+    }
+  }
+
+  // Aziatische kaarten: Engelse naam vertalen (Morpeko → 莫鲁贝可), of zelf getypte naam direct gebruiken.
+  if (lang !== 'en') {
+    const typed = q.name.trim()
+    const localName = isNonLatin(typed) ? typed : await translateName(typed, lang)
+    if (localName) {
+      for (const card of await searchCards(lang, localName)) {
+        const setId = setIdOf(card)
+        const num = sameNumber(q.card_number, card.localId)
+        const set = expectedSet !== null && setId === expectedSet
+        const score = 3 + (num ? 3 : 0) + (set ? 2 : 0)
+        const reason = num && set ? 'Set en nummer kloppen' : num ? `Naam (${localName}) en nummer kloppen` : set ? 'Zelfde set' : `Naam: ${localName}`
+        add(card, setId, score, reason)
+      }
     }
   }
 
