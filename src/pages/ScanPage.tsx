@@ -1,28 +1,41 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type JSX } from 'react'
+import { BinderScanResult } from '../components/BinderScanResult'
 import { CardDialog } from '../components/CardDialog'
 import { listCards } from '../lib/db'
 import { findCandidates, type Candidate } from '../lib/match'
-import { prepareImage, recognizeCard, type PreparedImage, type Recognition } from '../lib/scan'
-import { getSet, imageUrl, lookupLang, type Lang } from '../lib/tcgdex'
+import {
+  draftFromScan,
+  prepareImage,
+  recognizeCards,
+  type PreparedImage,
+  type Recognition,
+  type ScanMode,
+} from '../lib/scan'
+import { imageUrl, lookupLang, type Lang } from '../lib/tcgdex'
 import { LANGUAGE_LABELS, type Card, type CardInput } from '../lib/types'
 
 type Phase =
   | { kind: 'idle' }
   | { kind: 'working'; message: string }
-  | { kind: 'result'; recognition: Recognition; candidates: Candidate[]; lang: Lang }
+  | { kind: 'single'; recognition: Recognition; candidates: Candidate[]; lang: Lang }
+  | { kind: 'multi'; recognitions: Recognition[]; scanId: number }
   | { kind: 'error'; message: string }
 
 const DEFAULT_CHANNELS = ['Cardmarket', 'WhatsApp', 'Bol.com', 'CatchYourCards']
 
-/** "001" → "1", zoals de rest van de collectie. */
-const plainNumber = (n: string): string => (/^\d+$/.test(n) ? String(Number.parseInt(n, 10)) : n)
+const MODE_HINT: Record<ScanMode, string> = {
+  single: 'Maak een foto van één kaart, recht van voren, met de onderrand goed leesbaar.',
+  multi: 'Maak een foto van een hele binderpagina of kaarten naast elkaar. Recht van boven, zonder schittering op de hoesjes.',
+}
 
 export function ScanPage(): JSX.Element {
   const inputRef = useRef<HTMLInputElement>(null)
+  const [mode, setMode] = useState<ScanMode>('single')
   const [cards, setCards] = useState<Card[]>([])
   const [image, setImage] = useState<PreparedImage | null>(null)
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' })
-  const [draft, setDraft] = useState<Partial<CardInput> | null>(null)
+  const [draft, setDraft] = useState<{ values: Partial<CardInput>; position: number | null } | null>(null)
+  const [donePositions, setDonePositions] = useState<ReadonlySet<number>>(new Set())
   const [added, setAdded] = useState<string[]>([])
 
   useEffect(() => {
@@ -57,17 +70,26 @@ export function ScanPage(): JSX.Element {
     return map
   }, [cards])
 
+  const nextSortOrder = cards.reduce((m, c) => Math.max(m, c.sort_order), -1) + 1
+
   async function onFile(e: ChangeEvent<HTMLInputElement>): Promise<void> {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file || phase.kind === 'working') return
     try {
       setPhase({ kind: 'working', message: 'Foto voorbereiden…' })
-      const prepared = await prepareImage(file)
+      const prepared = await prepareImage(file, mode)
       setImage(prepared)
-      setPhase({ kind: 'working', message: 'Kaart herkennen…' })
-      const recognition = await recognizeCard(prepared)
-      if (!recognition.isCard) {
+      setDonePositions(new Set())
+      setPhase({ kind: 'working', message: mode === 'multi' ? 'Kaarten herkennen…' : 'Kaart herkennen…' })
+      const result = await recognizeCards(prepared, mode)
+
+      if (mode === 'multi') {
+        setPhase({ kind: 'multi', recognitions: result.cards, scanId: Date.now() })
+        return
+      }
+      const recognition = result.cards[0]
+      if (!recognition) {
         setPhase({ kind: 'error', message: 'Op deze foto is geen Pokémon-kaart herkend. Probeer het opnieuw met de kaart groot in beeld.' })
         return
       }
@@ -77,34 +99,20 @@ export function ScanPage(): JSX.Element {
         { name: recognition.nameEnglish, set_code: recognition.setCode || null, card_number: recognition.cardNumber || null },
         lang,
       )
-      setPhase({ kind: 'result', recognition, candidates, lang })
+      setPhase({ kind: 'single', recognition, candidates, lang })
     } catch (err) {
       console.error(err)
       setPhase({ kind: 'error', message: err instanceof Error ? err.message : 'Scannen mislukt.' })
     }
   }
 
-  async function choose(c: Candidate | null, r: Recognition, lang: Lang): Promise<void> {
-    const base: Partial<CardInput> = {
-      name: r.nameEnglish || r.namePrinted,
-      language: r.language,
-      variant: r.variant,
-      status: 'collection',
-      set_code: r.setCode || null,
-      card_number: r.cardNumber ? plainNumber(r.cardNumber) : null,
-      tcgdex_id: null,
-    }
-    if (!c) {
-      setDraft(base)
-      return
-    }
-    let setCode = c.setId
-    try {
-      setCode = (await getSet(lang, c.setId))?.summary.abbr ?? c.setId
-    } catch (err) {
-      console.error('Setinfo ophalen mislukt', err)
-    }
-    setDraft({ ...base, tcgdex_id: c.key, set_code: setCode, card_number: plainNumber(c.localId) })
+  async function chooseSingle(c: Candidate | null, r: Recognition, lang: Lang): Promise<void> {
+    setDraft({ values: await draftFromScan(r, c, lang), position: null })
+  }
+
+  function rememberAdded(rows: Card[]): void {
+    setCards((list) => [...list, ...rows])
+    setAdded((a) => [...a, ...rows.map((r) => r.name)].slice(-8))
   }
 
   function reset(): void {
@@ -119,8 +127,30 @@ export function ScanPage(): JSX.Element {
       <div className="page-head">
         <div>
           <h1>Scannen</h1>
-          <p className="muted">Maak een foto van één kaart, recht van voren, met de onderrand goed leesbaar.</p>
+          <p className="muted">{MODE_HINT[mode]}</p>
         </div>
+      </div>
+
+      <div className="segmented" role="group" aria-label="Wat scan je?">
+        {(
+          [
+            ['single', 'Eén kaart'],
+            ['multi', 'Binderpagina'],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            aria-pressed={mode === key}
+            disabled={busy}
+            onClick={() => {
+              setMode(key)
+              reset()
+            }}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       <input
@@ -142,9 +172,9 @@ export function ScanPage(): JSX.Element {
 
       <div className="scan-stage">
         {image ? (
-          <img className="scan-photo" src={image.previewUrl} alt="Jouw foto" />
+          <img className={`scan-photo${mode === 'multi' ? ' wide' : ''}`} src={image.previewUrl} alt="Jouw foto" />
         ) : (
-          <div className="scan-photo empty" aria-hidden="true" />
+          <div className={`scan-photo empty${mode === 'multi' ? ' wide' : ''}`} aria-hidden="true" />
         )}
         <div className="scan-actions">
           <button type="button" className="scan-button" onClick={() => inputRef.current?.click()} disabled={busy}>
@@ -155,7 +185,20 @@ export function ScanPage(): JSX.Element {
         </div>
       </div>
 
-      {phase.kind === 'result' && (
+      {phase.kind === 'multi' && (
+        <BinderScanResult
+          key={phase.scanId}
+          recognitions={phase.recognitions}
+          ownedByKey={ownedByKey}
+          nextSortOrder={nextSortOrder}
+          done={donePositions}
+          onAdded={rememberAdded}
+          onEdit={(values, position) => setDraft({ values, position })}
+          onCancel={reset}
+        />
+      )}
+
+      {phase.kind === 'single' && (
         <div className="scan-result">
           <div className="panel">
             <span className="stat-label">Herkend</span>
@@ -186,7 +229,7 @@ export function ScanPage(): JSX.Element {
                   <button
                     type="button"
                     className={`candidate${i === 0 ? ' selected' : ''}`}
-                    onClick={() => void choose(c, phase.recognition, phase.lang)}
+                    onClick={() => void chooseSingle(c, phase.recognition, phase.lang)}
                   >
                     {c.image ? (
                       <img src={imageUrl(c.image, 'low') ?? ''} alt="" loading="lazy" />
@@ -203,7 +246,7 @@ export function ScanPage(): JSX.Element {
             })}
           </ul>
           <div className="scan-foot">
-            <button type="button" className="ghost" onClick={() => void choose(null, phase.recognition, phase.lang)}>
+            <button type="button" className="ghost" onClick={() => void chooseSingle(null, phase.recognition, phase.lang)}>
               Toevoegen zonder koppeling
             </button>
             <button type="button" className="ghost" onClick={reset}>
@@ -216,16 +259,18 @@ export function ScanPage(): JSX.Element {
       {draft && (
         <CardDialog
           card={null}
-          initial={draft}
+          initial={draft.values}
           defaultStatus="collection"
           channels={channels}
-          nextSortOrder={cards.reduce((m, c) => Math.max(m, c.sort_order), -1) + 1}
+          nextSortOrder={nextSortOrder}
           onClose={() => setDraft(null)}
           onSaved={(rows) => {
-            setCards((list) => [...list, ...rows])
-            setAdded((a) => [...a, ...rows.map((r) => r.name)].slice(-5))
+            rememberAdded(rows)
+            const position = draft.position
             setDraft(null)
-            reset()
+            // Losse scan: klaar voor de volgende. Binderpagina: alleen deze kaart afvinken.
+            if (position === null) reset()
+            else setDonePositions((s) => new Set([...s, position]))
           }}
           onDeleted={() => setDraft(null)}
         />
