@@ -29,6 +29,7 @@ import {
   type Variant,
 } from '../lib/types'
 import { useCardInfo } from '../hooks/useCardInfo'
+import { useSchemaV2 } from '../hooks/useSchemaV2'
 import { LinkPicker } from './LinkPicker'
 
 interface Props {
@@ -263,6 +264,8 @@ export function CardForm({
 
   // Uitvoeringen die volgens TCGdex bestaan voor de gekoppelde kaart (bv. een ex-kaart: alleen holo).
   const info = useCardInfo(isCard ? form.tcgdex_id : null)
+  // Nieuwe velden pas tonen als de database ze kan opslaan (STAP4).
+  const v2 = useSchemaV2() === true
   const allowedVariants = info?.variants ?? null
   const variantMismatch = form.variant !== '' && allowedVariants !== null && !allowedVariants.includes(form.variant)
   const onlyVariant = allowedVariants?.length === 1 ? allowedVariants[0] : null
@@ -368,18 +371,20 @@ export function CardForm({
         </label>
       )}
 
-      <div className="form-grid">
-        <Select label="Ownership" value={form.ownership} options={OWNERSHIP_LABELS} required onChange={(v) => v && changeOwnership(v)} />
-        {isHeld(form.ownership) && (
-          <Select
-            label="Availability"
-            value={form.availability}
-            options={AVAILABILITY_LABELS}
-            required
-            onChange={(v) => v && set('availability', v)}
-          />
-        )}
-      </div>
+      {v2 && (
+        <div className="form-grid">
+          <Select label="Ownership" value={form.ownership} options={OWNERSHIP_LABELS} required onChange={(v) => v && changeOwnership(v)} />
+          {isHeld(form.ownership) && (
+            <Select
+              label="Availability"
+              value={form.availability}
+              options={AVAILABILITY_LABELS}
+              required
+              onChange={(v) => v && set('availability', v)}
+            />
+          )}
+        </div>
+      )}
 
       <Group title="Card">
         <label>
@@ -439,13 +444,15 @@ export function CardForm({
                 Grade
                 <input inputMode="decimal" value={form.grade} onChange={(e) => set('grade', e.target.value)} placeholder="10" />
               </label>
-              <label>
-                Certificate no.
-                <input value={form.cert_number} onChange={(e) => set('cert_number', e.target.value)} maxLength={40} />
-              </label>
+              {v2 && (
+                <label>
+                  Certificate no.
+                  <input value={form.cert_number} onChange={(e) => set('cert_number', e.target.value)} maxLength={40} />
+                </label>
+              )}
             </>
           )}
-          {isCard && (
+          {isCard && v2 && (
             <label>
               Edition or stamp
               <input value={form.edition} onChange={(e) => set('edition', e.target.value)} maxLength={60} placeholder="e.g. Staff stamp" />
@@ -516,10 +523,12 @@ export function CardForm({
         </Group>
       )}
 
-      <label>
-        Notes
-        <textarea value={form.notes} onChange={(e) => set('notes', e.target.value)} maxLength={2000} rows={2} />
-      </label>
+      {v2 && (
+        <label>
+          Notes
+          <textarea value={form.notes} onChange={(e) => set('notes', e.target.value)} maxLength={2000} rows={2} />
+        </label>
+      )}
 
       {error && (
         <p className="error" role="alert">
