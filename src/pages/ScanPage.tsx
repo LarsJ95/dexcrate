@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type JSX } from 'react'
 import { BinderScanResult } from '../components/BinderScanResult'
+import { CameraCapture } from '../components/CameraCapture'
 import { CardDialog } from '../components/CardDialog'
 import { CardPicture } from '../components/CardPicture'
 import { listCards } from '../lib/db'
@@ -29,6 +30,7 @@ const MODE_HINT: Record<ScanMode, string> = {
 
 export function ScanPage(): JSX.Element {
   const inputRef = useRef<HTMLInputElement>(null)
+  const [cameraOpen, setCameraOpen] = useState(false)
   const [mode, setMode] = useState<ScanMode>('single')
   const [cards, setCards] = useState<Card[]>([])
   const [image, setImage] = useState<PreparedImage | null>(null)
@@ -62,10 +64,15 @@ export function ScanPage(): JSX.Element {
 
   const nextSortOrder = cards.reduce((m, c) => Math.max(m, c.sort_order), -1) + 1
 
-  async function onFile(e: ChangeEvent<HTMLInputElement>): Promise<void> {
+  function onFile(e: ChangeEvent<HTMLInputElement>): void {
     const file = e.target.files?.[0]
     e.target.value = ''
-    if (!file || phase.kind === 'working') return
+    if (file) void processPhoto(file)
+  }
+
+  async function processPhoto(file: File): Promise<void> {
+    setCameraOpen(false)
+    if (phase.kind === 'working') return
     try {
       setPhase({ kind: 'working', message: 'Preparing photo…' })
       const prepared = await prepareImage(file, mode)
@@ -147,7 +154,6 @@ export function ScanPage(): JSX.Element {
         ref={inputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         className="visually-hidden"
         tabIndex={-1}
         onChange={onFile}
@@ -167,13 +173,28 @@ export function ScanPage(): JSX.Element {
           <div className={`scan-photo empty${mode === 'multi' ? ' wide' : ''}`} aria-hidden="true" />
         )}
         <div className="scan-actions">
-          <button type="button" className="scan-button" onClick={() => inputRef.current?.click()} disabled={busy}>
+          <button type="button" className="scan-button" onClick={() => setCameraOpen(true)} disabled={busy}>
             {phase.kind === 'idle' ? 'Take photo' : 'New photo'}
+          </button>
+          <button type="button" className="ghost" onClick={() => inputRef.current?.click()} disabled={busy}>
+            Choose from files
           </button>
           {busy && <p aria-live="polite">{phase.message}</p>}
           {phase.kind === 'error' && <p className="error" role="alert">{phase.message}</p>}
         </div>
       </div>
+
+      {cameraOpen && (
+        <CameraCapture
+          wide={mode === 'multi'}
+          onCapture={(file) => void processPhoto(file)}
+          onPickFile={() => {
+            setCameraOpen(false)
+            inputRef.current?.click()
+          }}
+          onClose={() => setCameraOpen(false)}
+        />
+      )}
 
       {phase.kind === 'multi' && (
         <BinderScanResult

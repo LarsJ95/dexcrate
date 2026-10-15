@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useState, type JSX } from 'react'
 import { CardTile } from '../components/CardTile'
 import { Shell } from '../components/Shell'
+import { CameraCapture } from '../components/CameraCapture'
 import { CardDialog } from '../components/CardDialog'
 import { DashboardView } from '../components/DashboardView'
 import { ScanPage } from '../pages/ScanPage'
@@ -131,6 +132,9 @@ function BinderPreview(): JSX.Element {
 export function Preview(): JSX.Element {
   const page = (params.get('page') ?? 'collection') as Route
   const noop = useMemo(() => () => undefined, [])
+  if ((params.get('page') ?? '') === 'camera') {
+    return <CameraCapture wide={params.get('wide') === '1'} onCapture={noop} onPickFile={noop} onClose={noop} />
+  }
   if ((params.get('page') ?? '') === 'setlist') {
     return (
       <Shell route="sets" email="demo@example.com" theme={theme} onToggleTheme={noop} onSignOut={noop}>
