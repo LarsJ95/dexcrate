@@ -6,8 +6,8 @@ interface Props {
   foil: FoilStyle
   children: ReactNode
   /**
-   * Volledige bediening (vergrote kaart): kantelen met de vinger blokkeert scrollen en
-   * op Android ook met de stand van de telefoon. Anders alleen met de muis en een rustige beweging.
+   * Volledige bediening (vergrote kaart): kantelen met de vinger (blokkeert scrollen).
+   * Anders alleen met de muis en een rustige beweging. Nooit via de stand van de telefoon.
    */
   interactive?: boolean
   className?: string
@@ -17,7 +17,7 @@ const MAX_TILT = 16 // graden (DESIGN.md §9)
 const DRAG_PX = 8 // meer beweging dan dit is slepen, geen tik
 
 /**
- * Kaart die meekantelt met vinger, muis of telefoon, met een glans per zeldzaamheid (DESIGN.md §9).
+ * Kaart die meekantelt met vinger of muis, met een glans per zeldzaamheid (DESIGN.md §9).
  * Werkt via CSS-variabelen op één element; zonder animaties staat de kaart stil met een vaste glans.
  */
 export function HoloCard({ foil, children, interactive = false, className }: Props): JSX.Element {
@@ -31,7 +31,6 @@ export function HoloCard({ foil, children, interactive = false, className }: Pro
     let active = false
     let moved = 0
     let start: [number, number] | null = null
-    let tilt: [number, number] | null = null // van de telefoonstand
     const cur = { rx: 0, ry: 0, mx: 50, my: 50 }
     const target = { ...cur }
 
@@ -47,10 +46,7 @@ export function HoloCard({ foil, children, interactive = false, className }: Pro
     }
 
     const tick = (t: number): void => {
-      if (!active) {
-        if (tilt) aim(tilt[0], tilt[1])
-        else aim(0.5 + Math.sin(t / 1500) * 0.22, 0.5 + Math.sin(t / 2300) * 0.18) // rustige beweging in rust
-      }
+      if (!active) aim(0.5 + Math.sin(t / 1500) * 0.22, 0.5 + Math.sin(t / 2300) * 0.18) // rustige beweging in rust
       const k = active ? 0.22 : 0.06
       cur.rx += (target.rx - cur.rx) * k
       cur.ry += (target.ry - cur.ry) * k
@@ -91,13 +87,6 @@ export function HoloCard({ foil, children, interactive = false, className }: Pro
       }
       moved = 0
     }
-    // Android geeft de stand zonder toestemming; iOS vraagt toestemming en valt hier buiten.
-    const onOrient = (e: DeviceOrientationEvent): void => {
-      if (e.beta === null || e.gamma === null) return
-      const px = 0.5 + Math.max(-1, Math.min(1, e.gamma / 30)) * 0.5
-      const py = 0.5 + Math.max(-1, Math.min(1, (e.beta - 45) / 30)) * 0.5
-      tilt = [px, py]
-    }
 
     el.addEventListener('pointerdown', onDown)
     el.addEventListener('pointermove', onMove)
@@ -105,7 +94,6 @@ export function HoloCard({ foil, children, interactive = false, className }: Pro
     el.addEventListener('pointercancel', onUp)
     el.addEventListener('pointerleave', onUp)
     el.addEventListener('click', onClick, true)
-    if (interactive) window.addEventListener('deviceorientation', onOrient)
     return () => {
       cancelAnimationFrame(frame)
       el.removeEventListener('pointerdown', onDown)
@@ -114,7 +102,6 @@ export function HoloCard({ foil, children, interactive = false, className }: Pro
       el.removeEventListener('pointercancel', onUp)
       el.removeEventListener('pointerleave', onUp)
       el.removeEventListener('click', onClick, true)
-      window.removeEventListener('deviceorientation', onOrient)
       for (const v of ['--rx', '--ry', '--mx', '--my', '--hyp']) el.style.removeProperty(v)
     }
   }, [motion, interactive])
