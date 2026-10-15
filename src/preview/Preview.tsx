@@ -11,7 +11,7 @@ import { CardImage } from '../components/CardImage'
 import { CardZoom } from '../components/CardZoom'
 import { SetCardSheet } from '../components/SetCardSheet'
 import { DashboardView } from '../components/DashboardView'
-import { IconArrowLeft } from '../components/Icons'
+import { IconArrowLeft, IconSearch } from '../components/Icons'
 import { ScanPage } from '../pages/ScanPage'
 import { SetBinderPage } from '../pages/SetBinderPage'
 import { SetsPage } from '../pages/SetsPage'
@@ -236,6 +236,7 @@ export function Preview(): JSX.Element {
         </div>
         <div className="filters">
           <div className="search">
+            <IconSearch size={18} />
             <input type="search" placeholder="Search name, set or number" aria-label="Search" />
           </div>
           <div className="segmented" role="group" aria-label="Status">

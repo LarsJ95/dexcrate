@@ -153,7 +153,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
 
   if (!valid) return <p className="page error">Invalid set. <a href="#/sets">Back to sets</a></p>
   if (error) return <p className="page error" role="alert">{error} <a href="#/sets">Back to sets</a></p>
-  if (!data) return <p className="center" aria-live="polite">Laden…</p>
+  if (!data) return <p className="center" aria-live="polite">Loading…</p>
 
   const ownedCount = data.owned.size
   const total = data.summary.total ?? data.cards.length

@@ -11,7 +11,7 @@ export function ChangeBadge({ change, label = 'vs 30-day average' }: { change: n
   const text = flat ? '±0%' : `${change > 0 ? '+' : '−'}${pct.format(Math.abs(change))}`
   return (
     <span className={`change ${dir}`} title={`${text} ${label}`}>
-      {dir === 'up' ? <IconArrowUp size={12} /> : dir === 'down' ? <IconArrowDown size={12} /> : <IconMinus size={12} />}
+      {dir === 'up' ? <IconArrowUp size={14} /> : dir === 'down' ? <IconArrowDown size={14} /> : <IconMinus size={14} />}
       {text}
       <span className="visually-hidden"> {label}</span>
     </span>
