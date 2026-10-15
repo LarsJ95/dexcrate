@@ -142,9 +142,9 @@ Elk component heeft verplicht deze states: default, hover, active, focus-visible
   - Pagina-overgangen: ___ ms
 
 Toegestane effecten (alleen deze):
-- ___ (bijv. tekst per regel onthullen in de hero)
-- ___ (bijv. afbeeldingen schalen licht mee bij scroll)
-- ___ (bijv. magnetische hover op primaire knop)
+- Holo-glans op holo- en reverse-holokaarten (goedgekeurd 15-10-2026): één lichtstreep per ±7 s, per kaart verschoven, alleen transform; uit bij `prefers-reduced-motion`.
+- ___
+- ___
 
 Regels:
 - Animeer alleen `transform` en `opacity`
@@ -166,7 +166,7 @@ Regels:
 ## 11. Verboden
 
 - Inter, Roboto, Arial of system fonts als hoofdfont
-- Paars/blauw verloop, gradient-tekst
+- Paars/blauw verloop, gradient-tekst. Uitzondering (goedgekeurd 15-10-2026): de bestaande verlopen in loginpaneel, achtergrondgloed, hero en getekende kaartvoorkant mogen blijven; gradient-tekst blijft verboden
 - Glassmorphism (blur-panelen) tenzij hier expliciet toegestaan
 - Emoji als icoon
 - Generieke hero gecentreerd met drie feature cards eronder
