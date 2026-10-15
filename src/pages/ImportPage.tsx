@@ -109,7 +109,7 @@ export function ImportPage(): JSX.Element {
               <tr><th scope="row">Sold</th><td>{formatEur(stats.sold.amount)}</td><td>{stats.sold.count} cards</td></tr>
               <tr><th scope="row">For sale</th><td>{formatEur(stats.forSale.amount)}</td><td>{stats.forSale.count} cards</td></tr>
               <tr><th scope="row">Bought</th><td>{formatEur(stats.bought.amount)}</td><td>{stats.bought.count} items</td></tr>
-              <tr><th scope="row">Net</th><td>{formatEur(stats.net)}</td><td /></tr>
+              <tr><th scope="row">Net</th><td>{formatEur(stats.net)}</td><td>{stats.netComplete ? '' : 'incomplete: costs unknown'}</td></tr>
             </tbody>
           </table>
           <p>

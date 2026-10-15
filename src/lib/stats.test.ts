@@ -11,8 +11,8 @@ describe('computeStats', () => {
       card({ status: 'sold', quantity: 1, sale_price: 0.05 }),
       card({ status: 'for_sale', quantity: 2, sale_price: 1.1 }),
     ])
-    expect(s.sold).toEqual({ amount: 29.9, count: 4 })
-    expect(s.forSale).toEqual({ amount: 2.2, count: 2 })
+    expect(s.sold).toEqual({ amount: 29.9, count: 4, unknown: 0 })
+    expect(s.forSale).toEqual({ amount: 2.2, count: 2, unknown: 0 })
   })
 
   it('voorkomt float-afrondingsfouten (0,1 + 0,2)', () => {
@@ -26,9 +26,29 @@ describe('computeStats', () => {
       card({ status: 'sold', purchase_price: 4, sale_price: 7 }),
       card({ status: 'collection', purchase_price: null }), // uit eigen pack
     ])
-    expect(s.bought).toEqual({ amount: 14, count: 2 })
+    expect(s.bought).toEqual({ amount: 14, count: 2, unknown: 0 })
     expect(s.net).toBe(-7)
     expect(s.collection.count).toBe(2)
+  })
+
+  it('onbekende prijzen en kosten tellen niet als 0', () => {
+    const s = computeStats([
+      card({ status: 'sold', quantity: 2, sale_price: 5 }),
+      card({ status: 'sold', quantity: 1, sale_price: null }),
+      card({ status: 'collection', quantity: 3, purchase_price: null }),
+    ])
+    expect(s.sold).toEqual({ amount: 10, count: 3, unknown: 1 })
+    // Gemiddelde alleen over de 2 stuks met bekende prijs, niet 10 / 3.
+    expect(s.avgSold).toBe(5)
+    // Niemand heeft een aankoopprijs: netto is niet definitief.
+    expect(s.costUnknown).toBe(6)
+    expect(s.netComplete).toBe(false)
+  })
+
+  it('netto is definitief als alle bedragen bekend zijn', () => {
+    const s = computeStats([card({ status: 'sold', purchase_price: 4, sale_price: 7 })])
+    expect(s.net).toBe(3)
+    expect(s.netComplete).toBe(true)
   })
 
   it('verkoopratio en gemiddelden zoals het Excel-dashboard', () => {

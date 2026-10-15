@@ -31,7 +31,7 @@ function Tile({ label, bucket, unit }: { label: string; bucket: Bucket; unit: st
     <a className="stat" href="#/collection">
       <span className="stat-label">{label}</span>
       <span className="stat-value">{formatEur(bucket.amount)}</span>
-      <span className="stat-sub">{unit}</span>
+      <span className="stat-sub">{bucket.unknown > 0 ? `${unit}, ${bucket.unknown} without price` : unit}</span>
     </a>
   )
 }
@@ -108,9 +108,11 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
           <div className="hero-sub">
             {market.change30 !== null && <ChangeBadge change={market.change30} label="vs 30-day average" />}
             <span>{countLabel(market.owned.withPrice + market.owned.withoutPrice, 'card', 'cards')}</span>
+            {/* Waarde telt alleen kaarten met marktprijs; de rest is onbekend, niet € 0. */}
+            {market.owned.withoutPrice > 0 && <span>{market.owned.withoutPrice} without market price</span>}
             {market.paper.count > 0 && (
               <span>
-                Paid {formatEur(market.paper.cost)},{' '}
+                Paid {formatEur(market.paper.cost)} for the {countLabel(market.paper.count, 'card', 'cards')} with known cost,{' '}
                 <strong className={market.paper.gain >= 0 ? 'up' : 'down'}>{signedEur(market.paper.gain)}</strong>
               </span>
             )}
@@ -132,8 +134,15 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
       <div className="stat-row">
         <a className="stat" href="#/collection">
           <span className="stat-label">Net (sold − bought)</span>
-          <span className={`stat-value ${stats.net >= 0 ? 'up' : 'down'}`}>{signedEur(stats.net)}</span>
-          <span className="stat-sub">{stats.net >= 0 ? 'Profit' : 'To recoup'}</span>
+          <span className={`stat-value${stats.netComplete ? (stats.net >= 0 ? ' up' : ' down') : ''}`}>{signedEur(stats.net)}</span>
+          <span className="stat-sub">
+            {/* Onbekende kosten/opbrengsten: geen definitief resultaat tonen. */}
+            {stats.netComplete
+              ? stats.net >= 0
+                ? 'Profit'
+                : 'To recoup'
+              : `Incomplete: ${countLabel(stats.costUnknown, 'card', 'cards')} without purchase price${stats.sold.unknown > 0 ? `, ${stats.sold.unknown} sold without price` : ''}`}
+          </span>
         </a>
         <Tile label="Sold" bucket={stats.sold} unit={countLabel(stats.sold.count, 'card', 'cards')} />
         <Tile label="For sale" bucket={stats.forSale} unit={countLabel(stats.forSale.count, 'card', 'cards')} />

@@ -1117,6 +1117,11 @@ label.check {
   color: var(--ink-soft);
 }
 
+/* Bedrag met teken nooit over twee regels. */
+.hero-sub strong {
+  white-space: nowrap;
+}
+
 .stat-label {
   font-size: var(--fs-label);
   font-weight: 600;
