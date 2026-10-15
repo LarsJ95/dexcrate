@@ -3,6 +3,7 @@ import { useCardInfo } from '../hooks/useCardInfo'
 import { usePhotoUrl } from '../hooks/usePhotoUrl'
 import { imageCandidates } from '../lib/tcgdex'
 import type { ItemKind } from '../lib/types'
+import { CardFace } from './CardFace'
 import { CardPicture } from './CardPicture'
 
 interface Props {
@@ -11,11 +12,13 @@ interface Props {
   name: string
   /** Eigen foto (heeft voorrang op de officiële afbeelding). */
   photoPath?: string | null
+  /** Set en nummer voor de getekende voorkant als er geen foto is. */
+  detail?: string | null
   quality?: 'low' | 'high'
 }
 
 /** Kaartfoto: eigen foto, anders officiële bronnen met terugval; nette vervanging als er niets is. */
-export function CardImage({ tcgdexId, kind, name, photoPath, quality = 'low' }: Props): JSX.Element {
+export function CardImage({ tcgdexId, kind, name, photoPath, detail, quality = 'low' }: Props): JSX.Element {
   const info = useCardInfo(tcgdexId)
   const photo = usePhotoUrl(photoPath)
   const sources = useMemo(() => {
@@ -23,12 +26,8 @@ export function CardImage({ tcgdexId, kind, name, photoPath, quality = 'low' }: 
     return photo ? [photo, ...official] : official
   }, [info, photo, quality])
 
-  const waiting = (photoPath && photo === undefined) || (info === undefined && tcgdexId)
-  const label = kind === 'sealed' ? 'Sealed' : waiting ? 'Loading…' : tcgdexId ? 'No image' : 'No photo'
-  const placeholder = (
-    <div className={`card-img placeholder ${kind}`} role="img" aria-label={`${name}: ${label}`}>
-      <span>{label}</span>
-    </div>
+  const waiting = Boolean((photoPath && photo === undefined) || (info === undefined && tcgdexId))
+  return (
+    <CardPicture sources={sources} alt={name} fallback={<CardFace name={name} detail={detail} kind={kind} loading={waiting} />} />
   )
-  return <CardPicture sources={sources} alt={name} fallback={placeholder} />
 }

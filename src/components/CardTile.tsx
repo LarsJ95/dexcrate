@@ -38,7 +38,8 @@ function CardTileBase({ card, market, onOpen, onToggleSold, busy }: Props): JSX.
   return (
     <li className={`tile status-${card.status}`}>
       <button type="button" className="tile-open" onClick={() => onOpen(card.id)} aria-label={`Open ${card.name}`}>
-        <CardImage tcgdexId={card.tcgdex_id} kind={card.kind} name={card.name} photoPath={card.image_path} />
+        <CardImage tcgdexId={card.tcgdex_id} kind={card.kind} name={card.name} photoPath={card.image_path}
+          detail={[card.set_code, card.card_number && `#${card.card_number}`].filter(Boolean).join(' ')} />
         <span className="sheen" aria-hidden="true" />
         {card.status !== 'collection' && <span className={`status-badge ${card.status}`}>{STATUS_LABELS[card.status]}</span>}
         {card.quantity > 1 && <span className="qty-badge">{card.quantity}×</span>}

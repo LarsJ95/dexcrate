@@ -3,6 +3,7 @@ import { insertCards } from '../lib/db'
 import { findCandidates, type Candidate } from '../lib/match'
 import { draftFromScan, type Recognition } from '../lib/scan'
 import { imageCandidatesForKey, lookupLang } from '../lib/tcgdex'
+import { CardFace } from './CardFace'
 import { CardPicture } from './CardPicture'
 import { CONDITION_LABELS, EMPTY_CARD, LANGUAGE_LABELS, type Card, type CardInput, type Condition } from '../lib/types'
 
@@ -140,9 +141,11 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
                   sources={c ? imageCandidatesForKey(c.key, c.image, 'low') : []}
                   alt=""
                   fallback={
-                    <span className="card-img placeholder">
-                      <span>{r.candidates === undefined ? '…' : c ? 'No image' : 'No match'}</span>
-                    </span>
+                    <CardFace
+                      name={c?.name ?? label}
+                      detail={c ? `${c.setName} #${c.localId}` : [r.rec.setCode, r.rec.cardNumber].filter(Boolean).join(' ')}
+                      loading={r.candidates === undefined}
+                    />
                   }
                 />
               </span>

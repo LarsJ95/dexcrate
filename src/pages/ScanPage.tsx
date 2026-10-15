@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent, type JSX } from
 import { BinderScanResult } from '../components/BinderScanResult'
 import { CameraCapture } from '../components/CameraCapture'
 import { CardDialog } from '../components/CardDialog'
+import { CardFace } from '../components/CardFace'
 import { CardPicture } from '../components/CardPicture'
 import { listCards } from '../lib/db'
 import { findCandidates, type Candidate } from '../lib/match'
@@ -246,7 +247,7 @@ export function ScanPage(): JSX.Element {
                     <CardPicture
                       sources={imageCandidatesForKey(c.key, c.image, 'low')}
                       alt=""
-                      fallback={<span className="card-img placeholder"><span>No image</span></span>}
+                      fallback={<CardFace name={c.name} detail={`${c.setName} #${c.localId}`} />}
                     />
                     <span className="cand-name">{c.name}</span>
                     <span className="muted small">{c.setName} {c.localId}</span>

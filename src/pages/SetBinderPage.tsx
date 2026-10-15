@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type JSX } from 'react'
 import { listCards } from '../lib/db'
 import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
+import { CardFace } from '../components/CardFace'
 import { CardPicture } from '../components/CardPicture'
 import { getCardPrice, getSet, imageCandidates, isLang, setOfKey, type SetCard, type SetSummary } from '../lib/tcgdex'
 
@@ -239,11 +240,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
                     <CardPicture
                       sources={isLang(lang) ? imageCandidates(lang, data.summary.id, c.localId, c.image, 'low') : []}
                       alt={`${c.name} ${c.localId}${qty ? '' : ' (missing)'}`}
-                      fallback={
-                        <div className="card-img placeholder" role="img" aria-label={`${c.name} ${c.localId}`}>
-                          <span>{c.name}</span>
-                        </div>
-                      }
+                      fallback={<CardFace name={c.name} detail={`#${c.localId}`} />}
                     />
                     <span className="slot-num">{c.localId}</span>
                     {!qty && price !== undefined && (

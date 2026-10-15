@@ -102,7 +102,8 @@ export function CardDetail({ card, onEdit, onSaved, onChanged }: Props): JSX.Ele
     <div className="card-detail">
       <div className="detail-top">
         <div className="detail-image">
-          <CardImage tcgdexId={card.tcgdex_id} kind={card.kind} name={card.name} photoPath={card.image_path} quality="high" />
+          <CardImage tcgdexId={card.tcgdex_id} kind={card.kind} name={card.name} photoPath={card.image_path}
+          detail={[card.set_code, card.card_number && `#${card.card_number}`].filter(Boolean).join(' ')} quality="high" />
           <div className="photo-actions">
             <button type="button" className="ghost small-btn" onClick={() => setCameraOpen(true)} disabled={photoBusy}>
               {photoBusy ? 'Saving…' : card.image_path ? 'Change photo' : 'Add photo'}

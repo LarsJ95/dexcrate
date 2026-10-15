@@ -1942,3 +1942,68 @@ button.small-btn {
   font-size: var(--fs-small);
   padding: 0.3rem 0.55rem;
 }
+
+/* ---------- Getekende kaartvoorkant (geen foto beschikbaar) ---------- */
+.card-face {
+  position: relative;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.4rem;
+  padding: 12% 10%;
+  text-align: center;
+  border-radius: 4.5% / 3.2%;
+  overflow: hidden;
+  color: var(--ink);
+  background:
+    radial-gradient(120% 80% at 20% 0%, rgb(255 203 5 / 0.22), transparent 55%),
+    radial-gradient(120% 80% at 100% 100%, rgb(91 155 255 / 0.22), transparent 55%),
+    linear-gradient(160deg, var(--surface-3), var(--surface-2));
+  box-shadow: inset 0 0 0 5px var(--surface), inset 0 0 0 6px var(--line-strong);
+}
+
+.card-face.sealed {
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgb(255 203 5 / 0.3), transparent 60%),
+    linear-gradient(160deg, var(--surface-3), var(--surface));
+}
+
+.card-face-name {
+  font-weight: 800;
+  font-size: clamp(0.8rem, 2.4vw, 1rem);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.card-face-detail {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.card-face.loading {
+  background: linear-gradient(100deg, var(--surface-2) 30%, var(--surface-3) 50%, var(--surface-2) 70%);
+  background-size: 300% 100%;
+  animation: face-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes face-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+/* Kleine weergaven (zoekresultaten, binder, lijstjes): alleen het logo en de naam. */
+.mover .card-face,
+.scan-thumb .card-face {
+  padding: 8%;
+}
+
+.mover .card-face-name,
+.mover .card-face-detail,
+.scan-thumb .card-face-detail {
+  display: none;
+}

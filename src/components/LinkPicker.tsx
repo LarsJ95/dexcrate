@@ -3,6 +3,7 @@ import { useCardInfo } from '../hooks/useCardInfo'
 import { findCandidates, type Candidate } from '../lib/match'
 import { imageCandidates, imageCandidatesForKey, lookupLang, splitKey, stripLangTag, type Lang } from '../lib/tcgdex'
 import type { CardLanguage } from '../lib/types'
+import { CardFace } from './CardFace'
 import { CardPicture } from './CardPicture'
 
 interface Props {
@@ -136,7 +137,7 @@ export function LinkPicker({ name, language, setCode, cardNumber, value, onSelec
                     <CardPicture
                       sources={imageCandidatesForKey(c.key, c.image, 'low')}
                       alt=""
-                      fallback={<span className="card-img placeholder"><span>No image</span></span>}
+                      fallback={<CardFace name={c.name} detail={`${c.setName} #${c.localId}`} />}
                     />
                     <span className="cand-name">{c.name}</span>
                     <span className="muted small">{c.setName} #{c.localId}</span>
