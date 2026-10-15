@@ -9,6 +9,7 @@ import { CONDITION_LABELS, LANGUAGE_LABELS, STATUS_LABELS, VARIANT_LABELS, type 
 import { CameraCapture } from './CameraCapture'
 import { CardImage } from './CardImage'
 import { CardmarketLink } from './CardmarketLink'
+import { CardZoom } from './CardZoom'
 import { ChangeBadge } from './ChangeBadge'
 import { Foil } from './Foil'
 import { PriceChart } from './PriceChart'
@@ -37,6 +38,7 @@ export function CardDetail({ card, onEdit, onSaved, onChanged }: Props): JSX.Ele
   const [error, setError] = useState<string | null>(null)
   const [cameraOpen, setCameraOpen] = useState(false)
   const [photoBusy, setPhotoBusy] = useState(false)
+  const [zoomOpen, setZoomOpen] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const facts = [
@@ -99,21 +101,30 @@ export function CardDetail({ card, onEdit, onSaved, onChanged }: Props): JSX.Ele
     }
   }
 
+  const image = (
+    <CardImage
+      tcgdexId={card.tcgdex_id}
+      kind={card.kind}
+      name={card.name}
+      photoPath={card.image_path}
+      detail={[card.set_code, card.card_number && `#${card.card_number}`].filter(Boolean).join(' ')}
+      quality="high"
+    />
+  )
+
   return (
     <div className="card-detail">
+      {zoomOpen && (
+        <CardZoom label={card.name} onClose={() => setZoomOpen(false)}>
+          {image}
+        </CardZoom>
+      )}
       <div className="detail-top">
         <div className="detail-image">
-          <div className="foil-wrap">
-            <CardImage
-              tcgdexId={card.tcgdex_id}
-              kind={card.kind}
-              name={card.name}
-              photoPath={card.image_path}
-              detail={[card.set_code, card.card_number && `#${card.card_number}`].filter(Boolean).join(' ')}
-              quality="high"
-            />
+          <button type="button" className="foil-wrap zoom-trigger" onClick={() => setZoomOpen(true)} aria-label={`Enlarge ${card.name}`}>
+            {image}
             {card.status !== 'sold' && <Foil variant={card.variant} seed={card.id} />}
-          </div>
+          </button>
           <div className="photo-actions">
             <button type="button" className="ghost small-btn" onClick={() => setCameraOpen(true)} disabled={photoBusy}>
               {photoBusy ? 'Saving…' : card.image_path ? 'Change photo' : 'Add photo'}

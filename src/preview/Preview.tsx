@@ -7,6 +7,8 @@ import { CardTile } from '../components/CardTile'
 import { Shell } from '../components/Shell'
 import { CameraCapture } from '../components/CameraCapture'
 import { CardDialog } from '../components/CardDialog'
+import { CardImage } from '../components/CardImage'
+import { CardZoom } from '../components/CardZoom'
 import { DashboardView } from '../components/DashboardView'
 import { ScanPage } from '../pages/ScanPage'
 import { SetBinderPage } from '../pages/SetBinderPage'
@@ -139,6 +141,15 @@ function BinderPreview(): JSX.Element {
 export function Preview(): JSX.Element {
   const page = (params.get('page') ?? 'collection') as Route
   const noop = useMemo(() => () => undefined, [])
+  if ((params.get('page') ?? '') === 'zoom') {
+    return (
+      <Shell route="collection" email="demo@example.com" theme={theme} onToggleTheme={noop} onSignOut={noop}>
+        <CardZoom label="Mew ex" onClose={noop}>
+          <CardImage tcgdexId="en/sv03.5-151" kind="card" name="Mew ex" quality="high" />
+        </CardZoom>
+      </Shell>
+    )
+  }
   if ((params.get('page') ?? '') === 'camera') {
     return <CameraCapture wide={params.get('wide') === '1'} onCapture={noop} onPickFile={noop} onClose={noop} />
   }

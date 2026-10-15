@@ -37,6 +37,8 @@
   --logo-bottom: #eaf0ff;
   --logo-band: #0a1226;
 
+  --scrim: rgb(4 8 20 / 0.86);
+
   --shadow-card: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 8px 24px rgb(0 0 0 / 0.25);
   --shadow-pop: 0 18px 48px rgb(0 0 0 / 0.45);
 }
@@ -69,6 +71,8 @@
   --logo-top: #e3463b;
   --logo-bottom: #ffffff;
   --logo-band: #0e1a3a;
+
+  --scrim: rgb(4 8 20 / 0.86);
 
   --shadow-card: 0 1px 2px rgb(14 26 58 / 0.06), 0 6px 18px rgb(14 26 58 / 0.06);
   --shadow-pop: 0 18px 48px rgb(14 26 58 / 0.18);
