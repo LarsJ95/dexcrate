@@ -162,7 +162,7 @@
 }
 
 .side-user {
-  font-size: 0.8rem;
+  font-size: var(--fs-small);
   color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -184,7 +184,8 @@
   display: none;
 }
 
-@media (max-width: 860px) {
+/* Zijbalk vanaf 1024 px; daaronder topbalk + onderbalk (DESIGN.md §5). */
+@media (max-width: 1023px) {
   .sidebar {
     display: none;
   }
@@ -228,7 +229,7 @@
     justify-items: center;
     gap: var(--space-1);
     padding: var(--space-2) var(--space-1) var(--space-2);
-    font-size: 0.7rem;
+    font-size: var(--fs-small);
     font-weight: 600;
     color: var(--muted);
     text-decoration: none;
@@ -1473,7 +1474,7 @@ a.stat:hover {
   bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
 }
 
-@media (max-width: 860px) {
+@media (max-width: 1023px) {
   .scan-bulk {
     bottom: calc(var(--tabbar) + var(--space-3) + env(safe-area-inset-bottom, 0px));
   }
