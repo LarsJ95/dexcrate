@@ -15,11 +15,11 @@ interface Props {
 }
 
 const LANG_LABELS: Record<Lang, string> = {
-  en: 'Engels / Europees',
-  ja: 'Japans',
-  'zh-cn': 'Chinees (vereenv.)',
-  'zh-tw': 'Chinees (trad.)',
-  ko: 'Koreaans',
+  en: 'English / European',
+  ja: 'Japanese',
+  'zh-cn': 'Chinese (simpl.)',
+  'zh-tw': 'Chinese (trad.)',
+  ko: 'Korean',
 }
 
 export function LinkPicker({ name, language, setCode, cardNumber, value, onSelect, onClear }: Props): JSX.Element {
@@ -42,7 +42,7 @@ export function LinkPicker({ name, language, setCode, cardNumber, value, onSelec
         )
       } catch (err) {
         console.error(err)
-        setError('Zoeken mislukt. Controleer je internetverbinding en probeer opnieuw.')
+        setError('Search failed. Check your connection and try again.')
       } finally {
         setBusy(false)
       }
@@ -59,26 +59,26 @@ export function LinkPicker({ name, language, setCode, cardNumber, value, onSelec
   }, [value, open, name, language, search])
 
   return (
-    <section className="link-picker" aria-label="Koppeling met kaartdatabase">
+    <section className="link-picker" aria-label="Linked card">
       <div className="link-current">
         {value ? (
           <>
             {linked?.image && <img src={imageUrl(linked.image, 'low') ?? ''} alt="" className="link-thumb" />}
             <div>
-              <p className="link-title">{linked ? linked.name : 'Laden…'}</p>
-              <p className="muted">{linked ? `${linked.set.name} ${linked.localId}` : value}</p>
+              <p className="link-title">{linked ? linked.name : 'Loading…'}</p>
+              <p className="muted small">{linked ? `${linked.set.name} #${linked.localId}` : value}</p>
             </div>
           </>
         ) : (
-          <p className="muted">Nog niet gekoppeld: er is geen foto of marktprijs.</p>
+          <p className="muted">Not linked</p>
         )}
         <div className="link-actions">
           <button type="button" className="ghost" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-            {open ? 'Sluiten' : value ? 'Andere kaart kiezen' : 'Kaart zoeken'}
+            {open ? 'Close search' : value ? 'Change' : 'Find card'}
           </button>
           {value && (
             <button type="button" className="ghost" onClick={onClear}>
-              Ontkoppelen
+              Unlink
             </button>
           )}
         </div>
@@ -89,7 +89,7 @@ export function LinkPicker({ name, language, setCode, cardNumber, value, onSelec
           {/* Geen <form>: dit staat binnen het bewerkformulier en geneste forms zijn ongeldig. */}
           <div className="link-search-row" role="search">
             <input
-              aria-label="Kaartnaam"
+              aria-label="Card name"
               value={term}
               onChange={(e) => setTerm(e.target.value)}
               onKeyDown={(e) => {
@@ -99,25 +99,19 @@ export function LinkPicker({ name, language, setCode, cardNumber, value, onSelec
                 }
               }}
             />
-            <select aria-label="Taal" value={lang} onChange={(e) => setLang(e.target.value as Lang)}>
+            <select aria-label="Language" value={lang} onChange={(e) => setLang(e.target.value as Lang)}>
               {(Object.keys(LANG_LABELS) as Lang[]).map((l) => (
                 <option key={l} value={l}>{LANG_LABELS[l]}</option>
               ))}
             </select>
             <button type="button" onClick={() => void search(term, lang)} disabled={busy}>
-              Zoeken
+              Search
             </button>
           </div>
-          {lang !== 'en' && (
-            <p className="muted small">
-              Typ gewoon de Engelse naam: die wordt automatisch vertaald (werkt voor Pokémon, niet voor trainer- en
-              itemkaarten).
-            </p>
-          )}
-          {busy && <p aria-live="polite">Zoeken…</p>}
+          {busy && <p aria-live="polite">Searching…</p>}
           {error && <p className="error" role="alert">{error}</p>}
           {results && !busy && results.length === 0 && (
-            <p className="muted">Geen kaarten gevonden. Probeer een kortere naam of een andere taal.</p>
+            <p className="muted">No cards found. Try a shorter name or another language.</p>
           )}
           {results && results.length > 0 && (
             <ul className="candidates">
@@ -134,10 +128,10 @@ export function LinkPicker({ name, language, setCode, cardNumber, value, onSelec
                     {c.image ? (
                       <img src={imageUrl(c.image, 'low') ?? ''} alt="" loading="lazy" />
                     ) : (
-                      <span className="card-img placeholder"><span>Geen foto</span></span>
+                      <span className="card-img placeholder"><span>No image</span></span>
                     )}
                     <span className="cand-name">{c.name}</span>
-                    <span className="muted small">{c.setName} {c.localId}</span>
+                    <span className="muted small">{c.setName} #{c.localId}</span>
                     <span className="cand-reason small">{c.reason}</span>
                   </button>
                 </li>

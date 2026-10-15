@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useState, type JSX } from 'react'
 import { CardTile } from '../components/CardTile'
 import { Shell } from '../components/Shell'
+import { CardDialog } from '../components/CardDialog'
 import { DashboardView } from '../components/DashboardView'
 import { ScanPage } from '../pages/ScanPage'
 import type { MarketValue, PriceMap } from '../lib/prices'
@@ -128,6 +129,24 @@ function BinderPreview(): JSX.Element {
 export function Preview(): JSX.Element {
   const page = (params.get('page') ?? 'collection') as Route
   const noop = useMemo(() => () => undefined, [])
+  if ((params.get('page') ?? '') === 'card') {
+    const demoCard = CARDS[0].card
+    const edit = params.get('edit') === '1'
+    return (
+      <Shell route="collection" email="demo@example.com" theme={theme} onToggleTheme={noop} onSignOut={noop}>
+        <CardDialog
+          card={edit ? null : demoCard}
+          initial={edit ? demoCard : undefined}
+          defaultStatus="collection"
+          channels={['Cardmarket', 'WhatsApp']}
+          nextSortOrder={0}
+          onClose={noop}
+          onSaved={noop}
+          onDeleted={noop}
+        />
+      </Shell>
+    )
+  }
   if (page === 'scan') {
     return (
       <Shell route={page} email="demo@example.com" theme={theme} onToggleTheme={noop} onSignOut={noop}>

@@ -1,15 +1,19 @@
 import { useEffect, useMemo, useState, type JSX } from 'react'
+import { CardDialog } from '../components/CardDialog'
 import { DashboardView } from '../components/DashboardView'
 import { useMarketPrices } from '../hooks/useMarketPrices'
 import { listCards, listSnapshotsFor } from '../lib/db'
 import { portfolioSeries, type SnapshotRow } from '../lib/prices'
 import type { Card } from '../lib/types'
 
+const DEFAULT_CHANNELS = ['Cardmarket', 'WhatsApp', 'Bol.com', 'CatchYourCards']
+
 export function DashboardPage(): JSX.Element {
   const [cards, setCards] = useState<Card[] | null>(null)
   const [snapshots, setSnapshots] = useState<SnapshotRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
+  const [openId, setOpenId] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -39,6 +43,15 @@ export function DashboardPage(): JSX.Element {
   const { prices, loading } = useMarketPrices(cards)
   const series = useMemo(() => (cards && snapshots ? portfolioSeries(cards, snapshots) : null), [cards, snapshots])
 
+  const channels = useMemo(() => {
+    const set = new Set(DEFAULT_CHANNELS)
+    for (const c of cards ?? []) {
+      if (c.purchase_channel) set.add(c.purchase_channel)
+      if (c.sale_channel) set.add(c.sale_channel)
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, 'en'))
+  }, [cards])
+
   if (error) {
     return (
       <section className="page">
@@ -58,5 +71,38 @@ export function DashboardPage(): JSX.Element {
     )
   }
   if (!cards) return <p className="center" aria-live="polite">Loading…</p>
-  return <DashboardView cards={cards} prices={prices} pricesLoading={loading} series={series} />
+
+  const openCard = openId ? (cards.find((c) => c.id === openId) ?? null) : null
+
+  return (
+    <>
+      <DashboardView cards={cards} prices={prices} pricesLoading={loading} series={series} onOpenCard={setOpenId} />
+      {openCard && (
+        <CardDialog
+          key={openCard.id}
+          card={openCard}
+          defaultStatus={openCard.status}
+          channels={channels}
+          nextSortOrder={cards.reduce((m, c) => Math.max(m, c.sort_order), -1) + 1}
+          onClose={() => setOpenId(null)}
+          onSaved={(rows) => {
+            setCards((list) => {
+              const next = [...(list ?? [])]
+              for (const row of rows) {
+                const i = next.findIndex((c) => c.id === row.id)
+                if (i >= 0) next[i] = row
+                else next.push(row)
+              }
+              return next
+            })
+            setOpenId(null)
+          }}
+          onDeleted={(id) => {
+            setCards((list) => list?.filter((c) => c.id !== id) ?? null)
+            setOpenId(null)
+          }}
+        />
+      )}
+    </>
+  )
 }
