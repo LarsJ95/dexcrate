@@ -1,23 +1,17 @@
 import { useEffect, useRef, useState, type ChangeEvent, type JSX } from 'react'
-import { usePhotoUrl } from '../hooks/usePhotoUrl'
+import { useUploadQueue } from '../hooks/useUploadQueue'
 import { deletePhoto, setPrimaryPhoto, updatePhoto, uploadPhoto } from '../lib/photos'
 import { PHOTO_LABELS, primaryPhoto, type Card, type CardPhoto, type PhotoLabel } from '../lib/types'
 import { CameraCapture } from './CameraCapture'
 import { CardZoom } from './CardZoom'
-import { IconCamera, IconClose, IconUpload } from './Icons'
+import { IconCamera, IconUpload } from './Icons'
+import { PhotoLarge, PhotoThumb } from './PhotoThumb'
+import { UploadQueueList } from './UploadQueueList'
 
 interface Props {
   card: Card
   /** Kaart met bijgewerkte fotolijst. */
   onChange: (card: Card) => void
-}
-
-interface QueueItem {
-  key: string
-  file: Blob
-  name: string | null
-  state: 'uploading' | 'error'
-  error?: string
 }
 
 /** Standaardlabel: eerste foto voorkant, tweede achterkant, daarna detail. */
@@ -26,19 +20,8 @@ function nextLabel(count: number): PhotoLabel {
   return count === 1 ? 'back' : 'detail'
 }
 
-function Thumb({ photo }: { photo: CardPhoto }): JSX.Element {
-  const url = usePhotoUrl(photo.thumb_path ?? photo.path)
-  return url ? <img src={url} alt="" loading="lazy" /> : <span className="photo-thumb-empty" />
-}
-
-function ZoomedPhoto({ photo }: { photo: CardPhoto }): JSX.Element {
-  const url = usePhotoUrl(photo.path)
-  return url ? <img className="photo-zoom" src={url} alt={PHOTO_LABELS[photo.label]} /> : <span className="photo-thumb-empty" />
-}
-
 /** Eigen foto's van een kaartregel: toevoegen (ook meerdere tegelijk), label, hoofdfoto, verwijderen. */
 export function PhotoManager({ card, onChange }: Props): JSX.Element {
-  const [queue, setQueue] = useState<QueueItem[]>([])
   const [cameraOpen, setCameraOpen] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [confirmId, setConfirmId] = useState<string | null>(null)
@@ -53,34 +36,21 @@ export function PhotoManager({ card, onChange }: Props): JSX.Element {
 
   const main = primaryPhoto(card)
 
-  async function upload(item: QueueItem): Promise<void> {
-    setQueue((q) => [...q.filter((i) => i.key !== item.key), { ...item, state: 'uploading', error: undefined }])
-    try {
-      const current = latest.current
-      const photo = await uploadPhoto(item.file, item.name, {
-        cardId: current.id,
-        label: nextLabel(current.photos.length),
-        makePrimary: current.photos.length === 0,
-      })
-      latest.current = { ...latest.current, photos: [...latest.current.photos, photo] }
-      onChange(latest.current)
-      setQueue((q) => q.filter((i) => i.key !== item.key))
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Uploading the photo failed.'
-      setQueue((q) => q.map((i) => (i.key === item.key ? { ...i, state: 'error', error: message } : i)))
-    }
-  }
-
-  async function addFiles(files: readonly Blob[], names: readonly (string | null)[]): Promise<void> {
-    const items = files.map((file, i) => ({ key: crypto.randomUUID(), file, name: names[i] ?? null, state: 'uploading' as const }))
-    setQueue((q) => [...q, ...items])
-    for (const item of items) await upload(item)
-  }
+  const { queue, add, retry, dismiss } = useUploadQueue(async (file, name) => {
+    const current = latest.current
+    const photo = await uploadPhoto(file, name, {
+      cardId: current.id,
+      label: nextLabel(current.photos.length),
+      makePrimary: current.photos.length === 0,
+    })
+    latest.current = { ...latest.current, photos: [...latest.current.photos, photo] }
+    onChange(latest.current)
+  })
 
   function onFiles(e: ChangeEvent<HTMLInputElement>): void {
     const files = [...(e.target.files ?? [])]
     e.target.value = ''
-    if (files.length > 0) void addFiles(files, files.map((f) => f.name))
+    if (files.length > 0) void add(files, files.map((f) => f.name))
   }
 
   async function run(photo: CardPhoto, action: () => Promise<CardPhoto[]>): Promise<void> {
@@ -146,7 +116,7 @@ export function PhotoManager({ card, onChange }: Props): JSX.Element {
           {card.photos.map((p) => (
             <li key={p.id} className={p.id === main?.id ? 'photo-item is-main' : 'photo-item'}>
               <button type="button" className="photo-thumb" onClick={() => setZoom(p)} aria-label={`View ${PHOTO_LABELS[p.label]} photo`}>
-                <Thumb photo={p} />
+                <PhotoThumb photo={p} />
               </button>
               <select
                 aria-label="Photo label"
@@ -182,33 +152,7 @@ export function PhotoManager({ card, onChange }: Props): JSX.Element {
         </ul>
       )}
 
-      {queue.length > 0 && (
-        <ul className="upload-queue" aria-live="polite">
-          {queue.map((q) => (
-            <li key={q.key} className={q.state === 'error' ? 'error' : undefined}>
-              <span className="upload-name">{q.name ?? 'Camera photo'}</span>
-              {q.state === 'uploading' ? (
-                <span className="muted">Uploading…</span>
-              ) : (
-                <>
-                  <span>{q.error}</span>
-                  <button type="button" className="ghost small-btn" onClick={() => void upload(q)}>
-                    Try again
-                  </button>
-                  <button
-                    type="button"
-                    className="ghost icon-btn"
-                    aria-label="Dismiss"
-                    onClick={() => setQueue((list) => list.filter((i) => i.key !== q.key))}
-                  >
-                    <IconClose size={16} />
-                  </button>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+      <UploadQueueList queue={queue} retry={retry} dismiss={dismiss} />
 
       {error && (
         <p className="error" role="alert">
@@ -221,7 +165,7 @@ export function PhotoManager({ card, onChange }: Props): JSX.Element {
           wide={false}
           onCapture={(file) => {
             setCameraOpen(false)
-            void addFiles([file], [null])
+            void add([file], [null])
           }}
           onPickFile={() => {
             setCameraOpen(false)
@@ -233,7 +177,7 @@ export function PhotoManager({ card, onChange }: Props): JSX.Element {
 
       {zoom && (
         <CardZoom label={PHOTO_LABELS[zoom.label]} onClose={() => setZoom(null)}>
-          <ZoomedPhoto photo={zoom} />
+          <PhotoLarge photo={zoom} />
         </CardZoom>
       )}
     </section>

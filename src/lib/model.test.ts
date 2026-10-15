@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 vi.mock('./supabase', () => ({ supabase: {} }))
 
 const { toCard, toRow, V2_FIELDS } = await import('./db')
+const { matchesSearch } = await import('./search')
 const { EMPTY_CARD, deriveStatus, fromStatus, primaryPhoto, statusBadge, statusFields } = await import('./types')
 
 describe('bezit, beschikbaarheid en status', () => {
@@ -95,5 +96,17 @@ describe('toRow (app → database)', () => {
     const row = toRow({ ...input, image_path: 'u/oud.jpg' }, true)
     expect('image_path' in row).toBe(false)
     expect(row.ownership).toBe('owned')
+  })
+})
+
+describe('matchesSearch', () => {
+  const mew = { ...EMPTY_CARD, name: 'Mew ex', set_code: 'MEW', card_number: '151', notes: 'Utrecht fair' }
+
+  it('elk woord moet ergens voorkomen', () => {
+    expect(matchesSearch(mew, 'mew 151')).toBe(true)
+    expect(matchesSearch(mew, '#151')).toBe(true)
+    expect(matchesSearch(mew, 'utrecht')).toBe(true)
+    expect(matchesSearch(mew, 'mew 152')).toBe(false)
+    expect(matchesSearch(mew, '   ')).toBe(true)
   })
 })

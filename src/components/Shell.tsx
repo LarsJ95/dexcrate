@@ -1,25 +1,8 @@
 import type { JSX, ReactNode } from 'react'
 import type { Theme } from '../hooks/useTheme'
 import type { Route } from '../lib/routes'
-import {
-  IconCamera,
-  IconCards,
-  IconHome,
-  IconLayers,
-  IconLogout,
-  IconMoon,
-  IconSun,
-  IconUpload,
-  LogoMark,
-} from './Icons'
-
-const NAV: { route: Route; label: string; Icon: (p: { size?: number }) => JSX.Element }[] = [
-  { route: 'overview', label: 'Overview', Icon: IconHome },
-  { route: 'collection', label: 'Collection', Icon: IconCards },
-  { route: 'scan', label: 'Scan', Icon: IconCamera },
-  { route: 'sets', label: 'Sets', Icon: IconLayers },
-  { route: 'import', label: 'Import', Icon: IconUpload },
-]
+import { IconLogout, IconMoon, IconSun, LogoMark } from './Icons'
+import { SIDE_NAV, TAB_NAV, isActiveTab } from './nav'
 
 interface Props {
   route: Route
@@ -52,7 +35,7 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
           <span>Dexcrate</span>
         </a>
         <nav className="side-nav" aria-label="Main menu">
-          {NAV.map(({ route: r, label, Icon }) => (
+          {SIDE_NAV.map(({ route: r, label, Icon }) => (
             <a key={r} href={`#/${r}`} aria-current={route === r ? 'page' : undefined}>
               <Icon />
               <span>{label}</span>
@@ -86,11 +69,11 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
       <main className="main">{children}</main>
 
       <nav className="tab-bar" aria-label="Main menu">
-        {NAV.map(({ route: r, label, Icon }) => (
+        {TAB_NAV.map(({ route: r, label, Icon }) => (
           <a
             key={r}
             href={`#/${r}`}
-            aria-current={route === r ? 'page' : undefined}
+            aria-current={isActiveTab(r, route) ? 'page' : undefined}
             className={r === 'scan' ? 'tab-scan' : undefined}
           >
             <span className="tab-icon">

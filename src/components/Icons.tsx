@@ -128,6 +128,27 @@ export const IconArrowLeft = (p: IconProps): JSX.Element => (
   </Svg>
 )
 
+export const IconImage = (p: IconProps): JSX.Element => (
+  <Svg {...p}>
+    <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+    <circle cx="9" cy="10" r="1.8" />
+    <path d="m20.5 16-5-5-8 8.5" />
+  </Svg>
+)
+
+export const IconReceipt = (p: IconProps): JSX.Element => (
+  <Svg {...p}>
+    <path d="M6 3h12v18l-3-2-3 2-3-2-3 2z" />
+    <path d="M9 8h6M9 12h6M9 16h3" />
+  </Svg>
+)
+
+export const IconMore = (p: IconProps): JSX.Element => (
+  <Svg {...p}>
+    <path d="M4 7h16M4 12h16M4 17h16" />
+  </Svg>
+)
+
 /** Logo: gestileerde vangbal, bewust geen kopie van het officiële logo. */
 export function LogoMark({ size = 28 }: { size?: number }): JSX.Element {
   return (

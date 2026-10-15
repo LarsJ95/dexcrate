@@ -5,6 +5,7 @@ import { IconPlus, IconSearch } from '../components/Icons'
 import { useMarketPrices } from '../hooks/useMarketPrices'
 import { listCards, updateCard } from '../lib/db'
 import { marketValueOf, type MarketValue } from '../lib/prices'
+import { matchesSearch } from '../lib/search'
 import { formatEur } from '../lib/stats'
 import { STATUS_LABELS, canToggleSold, statusFields, type Card, type CardStatus } from '../lib/types'
 
@@ -68,12 +69,7 @@ export function CollectionPage(): JSX.Element {
 
   const visible = useMemo(() => {
     if (!cards) return []
-    const q = query.trim().toLowerCase()
-    const filtered = cards.filter(
-      (c) =>
-        matchesFilter(c, filter) &&
-        (!q || [c.name, c.set_code, c.card_number, c.purchase_channel, c.sale_channel].some((v) => v?.toLowerCase().includes(q))),
-    )
+    const filtered = cards.filter((c) => matchesFilter(c, filter) && matchesSearch(c, query))
     const sorted = [...filtered]
     if (sort === 'priceDesc') sorted.sort((a, b) => relevantPrice(b) - relevantPrice(a))
     if (sort === 'priceAsc') sorted.sort((a, b) => relevantPrice(a) - relevantPrice(b))

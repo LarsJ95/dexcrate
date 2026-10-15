@@ -12,6 +12,8 @@ import { CardZoom } from '../components/CardZoom'
 import { SetCardSheet } from '../components/SetCardSheet'
 import { DashboardView } from '../components/DashboardView'
 import { IconArrowLeft, IconSearch } from '../components/Icons'
+import { MorePage } from '../pages/MorePage'
+import { PhotosPage } from '../pages/PhotosPage'
 import { ScanPage } from '../pages/ScanPage'
 import { SetBinderPage } from '../pages/SetBinderPage'
 import { SetsPage } from '../pages/SetsPage'
@@ -216,6 +218,13 @@ export function Preview(): JSX.Element {
           onSaved={noop}
           onDeleted={noop}
         />
+      </Shell>
+    )
+  }
+  if (page === 'more' || page === 'photos') {
+    return (
+      <Shell route={page} email="demo@example.com" theme={theme} onToggleTheme={noop} onSignOut={noop}>
+        {page === 'more' ? <MorePage /> : <PhotosPage />}
       </Shell>
     )
   }
