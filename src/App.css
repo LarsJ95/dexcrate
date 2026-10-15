@@ -1512,7 +1512,7 @@ a.stat:hover {
   gap: var(--space-3);
 }
 
-@media (max-width: 420px) {
+@media (max-width: 480px) {
   .set-list {
     grid-template-columns: 1fr;
   }
@@ -1601,7 +1601,7 @@ a.stat:hover {
 }
 
 .binder-page-label {
-  font-size: 0.78rem;
+  font-size: var(--fs-small);
   font-weight: 600;
   color: var(--muted);
 }
@@ -1638,7 +1638,7 @@ a.stat:hover {
 .slot-num {
   display: block;
   text-align: center;
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
   color: var(--muted);
   padding-top: var(--space-1);
 }
@@ -1651,7 +1651,7 @@ a.stat:hover {
 .slot-price {
   display: block;
   text-align: center;
-  font-size: 0.72rem;
+  font-size: var(--fs-small);
   color: var(--muted);
 }
 
