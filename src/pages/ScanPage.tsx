@@ -1,0 +1,235 @@
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type JSX } from 'react'
+import { CardDialog } from '../components/CardDialog'
+import { listCards } from '../lib/db'
+import { findCandidates, type Candidate } from '../lib/match'
+import { prepareImage, recognizeCard, type PreparedImage, type Recognition } from '../lib/scan'
+import { getSet, imageUrl, lookupLang, type Lang } from '../lib/tcgdex'
+import { LANGUAGE_LABELS, type Card, type CardInput } from '../lib/types'
+
+type Phase =
+  | { kind: 'idle' }
+  | { kind: 'working'; message: string }
+  | { kind: 'result'; recognition: Recognition; candidates: Candidate[]; lang: Lang }
+  | { kind: 'error'; message: string }
+
+const DEFAULT_CHANNELS = ['Cardmarket', 'WhatsApp', 'Bol.com', 'CatchYourCards']
+
+/** "001" → "1", zoals de rest van de collectie. */
+const plainNumber = (n: string): string => (/^\d+$/.test(n) ? String(Number.parseInt(n, 10)) : n)
+
+export function ScanPage(): JSX.Element {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [cards, setCards] = useState<Card[]>([])
+  const [image, setImage] = useState<PreparedImage | null>(null)
+  const [phase, setPhase] = useState<Phase>({ kind: 'idle' })
+  const [draft, setDraft] = useState<Partial<CardInput> | null>(null)
+  const [added, setAdded] = useState<string[]>([])
+
+  useEffect(() => {
+    let cancelled = false
+    listCards()
+      .then((rows) => {
+        if (!cancelled) setCards(rows)
+      })
+      .catch((err: unknown) => console.error('Collectie laden mislukt', err))
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Voorbeeldfoto opruimen als er een nieuwe komt.
+  useEffect(() => () => {
+    if (image) URL.revokeObjectURL(image.previewUrl)
+  }, [image])
+
+  const channels = useMemo(() => {
+    const set = new Set(DEFAULT_CHANNELS)
+    for (const c of cards) {
+      if (c.purchase_channel) set.add(c.purchase_channel)
+      if (c.sale_channel) set.add(c.sale_channel)
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, 'nl'))
+  }, [cards])
+
+  const ownedByKey = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const c of cards) if (c.tcgdex_id && c.status !== 'sold') map.set(c.tcgdex_id, (map.get(c.tcgdex_id) ?? 0) + c.quantity)
+    return map
+  }, [cards])
+
+  async function onFile(e: ChangeEvent<HTMLInputElement>): Promise<void> {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || phase.kind === 'working') return
+    try {
+      setPhase({ kind: 'working', message: 'Foto voorbereiden…' })
+      const prepared = await prepareImage(file)
+      setImage(prepared)
+      setPhase({ kind: 'working', message: 'Kaart herkennen…' })
+      const recognition = await recognizeCard(prepared)
+      if (!recognition.isCard) {
+        setPhase({ kind: 'error', message: 'Op deze foto is geen Pokémon-kaart herkend. Probeer het opnieuw met de kaart groot in beeld.' })
+        return
+      }
+      setPhase({ kind: 'working', message: 'Kaart opzoeken…' })
+      const lang = lookupLang(recognition.language)
+      const candidates = await findCandidates(
+        { name: recognition.nameEnglish, set_code: recognition.setCode || null, card_number: recognition.cardNumber || null },
+        lang,
+      )
+      setPhase({ kind: 'result', recognition, candidates, lang })
+    } catch (err) {
+      console.error(err)
+      setPhase({ kind: 'error', message: err instanceof Error ? err.message : 'Scannen mislukt.' })
+    }
+  }
+
+  async function choose(c: Candidate | null, r: Recognition, lang: Lang): Promise<void> {
+    const base: Partial<CardInput> = {
+      name: r.nameEnglish || r.namePrinted,
+      language: r.language,
+      variant: r.variant,
+      status: 'collection',
+      set_code: r.setCode || null,
+      card_number: r.cardNumber ? plainNumber(r.cardNumber) : null,
+      tcgdex_id: null,
+    }
+    if (!c) {
+      setDraft(base)
+      return
+    }
+    let setCode = c.setId
+    try {
+      setCode = (await getSet(lang, c.setId))?.summary.abbr ?? c.setId
+    } catch (err) {
+      console.error('Setinfo ophalen mislukt', err)
+    }
+    setDraft({ ...base, tcgdex_id: c.key, set_code: setCode, card_number: plainNumber(c.localId) })
+  }
+
+  function reset(): void {
+    setPhase({ kind: 'idle' })
+    setImage(null)
+  }
+
+  const busy = phase.kind === 'working'
+
+  return (
+    <section className="page scan">
+      <div className="page-head">
+        <div>
+          <h1>Scannen</h1>
+          <p className="muted">Maak een foto van één kaart, recht van voren, met de onderrand goed leesbaar.</p>
+        </div>
+      </div>
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="visually-hidden"
+        tabIndex={-1}
+        onChange={onFile}
+        aria-hidden="true"
+      />
+
+      {added.length > 0 && (
+        <p className="success" role="status">
+          Toegevoegd: {added.join(', ')}
+        </p>
+      )}
+
+      <div className="scan-stage">
+        {image ? (
+          <img className="scan-photo" src={image.previewUrl} alt="Jouw foto" />
+        ) : (
+          <div className="scan-photo empty" aria-hidden="true" />
+        )}
+        <div className="scan-actions">
+          <button type="button" className="scan-button" onClick={() => inputRef.current?.click()} disabled={busy}>
+            {phase.kind === 'idle' ? 'Foto maken' : 'Nieuwe foto'}
+          </button>
+          {busy && <p aria-live="polite">{phase.message}</p>}
+          {phase.kind === 'error' && <p className="error" role="alert">{phase.message}</p>}
+        </div>
+      </div>
+
+      {phase.kind === 'result' && (
+        <div className="scan-result">
+          <div className="panel">
+            <span className="stat-label">Herkend</span>
+            <p className="scan-name">{phase.recognition.nameEnglish || phase.recognition.namePrinted}</p>
+            <p className="muted small">
+              {[
+                phase.recognition.setCode,
+                phase.recognition.cardNumber &&
+                  `${phase.recognition.cardNumber}${phase.recognition.setTotal ? `/${phase.recognition.setTotal}` : ''}`,
+                phase.recognition.language ? LANGUAGE_LABELS[phase.recognition.language] : null,
+              ]
+                .filter(Boolean)
+                .join(', ')}
+              {phase.recognition.confidence !== 'high' && ' (niet helemaal zeker, controleer de keuze)'}
+            </p>
+            {phase.recognition.notes && <p className="muted small">{phase.recognition.notes}</p>}
+          </div>
+
+          <h2>Kies de juiste kaart</h2>
+          {phase.candidates.length === 0 && (
+            <p className="muted">Geen kaart gevonden in de kaartdatabase. Je kunt hem zonder koppeling toevoegen.</p>
+          )}
+          <ul className="candidates">
+            {phase.candidates.map((c, i) => {
+              const owned = ownedByKey.get(c.key)
+              return (
+                <li key={c.key}>
+                  <button
+                    type="button"
+                    className={`candidate${i === 0 ? ' selected' : ''}`}
+                    onClick={() => void choose(c, phase.recognition, phase.lang)}
+                  >
+                    {c.image ? (
+                      <img src={imageUrl(c.image, 'low') ?? ''} alt="" loading="lazy" />
+                    ) : (
+                      <span className="card-img placeholder"><span>Geen foto</span></span>
+                    )}
+                    <span className="cand-name">{c.name}</span>
+                    <span className="muted small">{c.setName} {c.localId}</span>
+                    <span className="cand-reason small">{i === 0 ? 'Beste match' : c.reason}</span>
+                    {owned && <span className="small">Al {owned}× in bezit</span>}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+          <div className="scan-foot">
+            <button type="button" className="ghost" onClick={() => void choose(null, phase.recognition, phase.lang)}>
+              Toevoegen zonder koppeling
+            </button>
+            <button type="button" className="ghost" onClick={reset}>
+              Niet toevoegen
+            </button>
+          </div>
+        </div>
+      )}
+
+      {draft && (
+        <CardDialog
+          card={null}
+          initial={draft}
+          defaultStatus="collection"
+          channels={channels}
+          nextSortOrder={cards.reduce((m, c) => Math.max(m, c.sort_order), -1) + 1}
+          onClose={() => setDraft(null)}
+          onSaved={(rows) => {
+            setCards((list) => [...list, ...rows])
+            setAdded((a) => [...a, ...rows.map((r) => r.name)].slice(-5))
+            setDraft(null)
+            reset()
+          }}
+          onDeleted={() => setDraft(null)}
+        />
+      )}
+    </section>
+  )
+}

@@ -5,6 +5,7 @@ import type { Candidate } from '../lib/match'
 import { getSet, lookupLang, type Lang } from '../lib/tcgdex'
 import {
   CONDITION_LABELS,
+  EMPTY_CARD,
   GRADING_LABELS,
   LANGUAGE_LABELS,
   STATUS_LABELS,
@@ -24,6 +25,8 @@ import { PriceHistory } from './PriceHistory'
 
 interface Props {
   card: Card | null
+  /** Vooraf ingevulde velden voor een nieuwe kaart (bv. uit een scan). */
+  initial?: Partial<CardInput>
   defaultStatus: CardStatus
   channels: readonly string[]
   nextSortOrder: number
@@ -61,7 +64,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 const priceText = (n: number | null): string => (n === null ? '' : n.toFixed(2).replace('.', ','))
 const today = (): string => new Date().toLocaleDateString('sv-SE') // yyyy-mm-dd in lokale tijd
 
-function initialState(card: Card | null, defaultStatus: CardStatus): FormState {
+function initialState(card: CardInput | null, defaultStatus: CardStatus): FormState {
   return {
     name: card?.name ?? '',
     set_code: card?.set_code ?? '',
@@ -189,9 +192,20 @@ function Section({ title, children }: { title: string; children: ReactNode }): J
   )
 }
 
-export function CardDialog({ card, defaultStatus, channels, nextSortOrder, onClose, onSaved, onDeleted }: Props): JSX.Element {
+export function CardDialog({
+  card,
+  initial,
+  defaultStatus,
+  channels,
+  nextSortOrder,
+  onClose,
+  onSaved,
+  onDeleted,
+}: Props): JSX.Element {
   const ref = useRef<HTMLDialogElement>(null)
-  const [form, setForm] = useState<FormState>(() => initialState(card, defaultStatus))
+  const [form, setForm] = useState<FormState>(() =>
+    initialState(card ?? (initial ? { ...EMPTY_CARD, status: defaultStatus, ...initial } : null), defaultStatus),
+  )
   const [splitQty, setSplitQty] = useState(String(card?.quantity ?? 1))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)

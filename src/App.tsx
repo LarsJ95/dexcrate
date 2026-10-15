@@ -5,17 +5,19 @@ import { useHashRoute } from './hooks/useHashRoute'
 import { DashboardPage } from './pages/DashboardPage'
 import { CollectionPage } from './pages/CollectionPage'
 import { ImportPage } from './pages/ImportPage'
+import { ScanPage } from './pages/ScanPage'
 import { SetBinderPage } from './pages/SetBinderPage'
 import { SetsPage } from './pages/SetsPage'
 import { supabase } from './lib/supabase'
 import './App.css'
 
-const ROUTES = ['overzicht', 'collectie', 'sets', 'import'] as const
+const ROUTES = ['overzicht', 'collectie', 'scan', 'sets', 'import'] as const
 type Route = (typeof ROUTES)[number]
 
 const NAV: { route: Route; label: string }[] = [
   { route: 'overzicht', label: 'Overzicht' },
   { route: 'collectie', label: 'Collectie' },
+  { route: 'scan', label: 'Scannen' },
   { route: 'sets', label: 'Sets' },
   { route: 'import', label: 'Import' },
 ]
@@ -63,6 +65,7 @@ function App(): JSX.Element {
       <main>
         {route === 'overzicht' && <DashboardPage />}
         {route === 'collectie' && <CollectionPage />}
+        {route === 'scan' && <ScanPage />}
         {route === 'sets' && (param ? <SetBinderPage key={param} param={param} /> : <SetsPage />)}
         {route === 'import' && <ImportPage />}
       </main>
