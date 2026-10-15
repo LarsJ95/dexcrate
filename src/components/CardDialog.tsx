@@ -14,6 +14,8 @@ interface Props {
   /** Gewijzigde en/of nieuwe regels (meer dan één bij splitsen). */
   onSaved: (rows: Card[]) => void
   onDeleted: (id: string) => void
+  /** Kaart bijgewerkt terwijl de popup open blijft (bv. foto toegevoegd). */
+  onChanged?: (row: Card) => void
 }
 
 type Mode = { kind: 'view' } | { kind: 'edit'; status: CardStatus }
@@ -22,7 +24,16 @@ type Mode = { kind: 'view' } | { kind: 'edit'; status: CardStatus }
  * Popup voor één kaart: bestaande kaarten openen in de weergave, nieuwe direct in het formulier.
  * Sluiten via ✕, Escape of tikken naast de popup.
  */
-export function CardDialog({ card, initial, defaultStatus, nextSortOrder, onClose, onSaved, onDeleted }: Props): JSX.Element {
+export function CardDialog({
+  card,
+  initial,
+  defaultStatus,
+  nextSortOrder,
+  onClose,
+  onSaved,
+  onDeleted,
+  onChanged,
+}: Props): JSX.Element {
   const ref = useRef<HTMLDialogElement>(null)
   const [mode, setMode] = useState<Mode>(() => (card ? { kind: 'view' } : { kind: 'edit', status: initial?.status ?? defaultStatus }))
 
@@ -55,7 +66,12 @@ export function CardDialog({ card, initial, defaultStatus, nextSortOrder, onClos
         </header>
 
         {mode.kind === 'view' && card ? (
-          <CardDetail card={card} onEdit={(status) => setMode({ kind: 'edit', status: status ?? card.status })} onSaved={onSaved} />
+          <CardDetail
+            card={card}
+            onEdit={(status) => setMode({ kind: 'edit', status: status ?? card.status })}
+            onSaved={onSaved}
+            onChanged={(row) => (onChanged ? onChanged(row) : onSaved([row]))}
+          />
         ) : (
           <CardForm
             card={card}

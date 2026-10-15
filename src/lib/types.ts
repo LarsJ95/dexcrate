@@ -72,6 +72,8 @@ export interface CardInput {
   sale_price: number | null
   sale_channel: string | null
   sale_date: string | null
+  /** Eigen foto in Supabase Storage (bucket card-photos); null = geen. */
+  image_path: string | null
   sort_order: number
 }
 
@@ -94,6 +96,7 @@ export const EMPTY_CARD: CardInput = {
   sale_price: null,
   sale_channel: null,
   sale_date: null,
+  image_path: null,
   sort_order: 0,
 }
 

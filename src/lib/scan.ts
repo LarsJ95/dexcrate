@@ -8,6 +8,8 @@ import type { CardInput } from './types'
 export { plainNumber, type Recognition, type ScanMode, type ScanResult } from './scanResult'
 
 export interface PreparedImage {
+  /** De (verkleinde) foto zelf, om eventueel als eigen kaartfoto te bewaren. */
+  blob: Blob
   data: string
   mediaType: 'image/jpeg'
   previewUrl: string
@@ -46,7 +48,7 @@ export async function prepareImage(file: File, mode: ScanMode): Promise<Prepared
   const blob = await new Promise<Blob>((resolve, reject) =>
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not compress the photo.'))), 'image/jpeg', 0.85),
   )
-  return { data: await blobToBase64(blob), mediaType: 'image/jpeg', previewUrl: URL.createObjectURL(blob) }
+  return { blob, data: await blobToBase64(blob), mediaType: 'image/jpeg', previewUrl: URL.createObjectURL(blob) }
 }
 
 /** Formuliervelden voor een gescande kaart; met gekozen kandidaat incl. koppeling en officiële setcode. */

@@ -84,7 +84,8 @@ function initialState(src: CardInput | null, status: CardStatus): FormState {
   }
 }
 
-type Validated = { error: string } | { value: Omit<CardInput, 'sort_order'> }
+// Foto wordt niet in het formulier bewerkt; bij bijwerken blijft image_path ongemoeid.
+type Validated = { error: string } | { value: Omit<CardInput, 'sort_order' | 'image_path'> }
 
 function optionalPrice(raw: string, label: string): { error: string } | { value: number | null } {
   if (!raw.trim()) return { value: null }
@@ -254,12 +255,12 @@ export function CardForm({
     setError(null)
     try {
       if (card && canSplit && moved < card.quantity) {
-        const { original, created } = await splitCard(card, moved, { ...result.value, sort_order: card.sort_order })
+        const { original, created } = await splitCard(card, moved, { ...result.value, image_path: card.image_path, sort_order: card.sort_order })
         onSaved([original, created])
       } else if (card) {
         onSaved([await updateCard(card.id, result.value)])
       } else {
-        onSaved([await insertCard({ ...result.value, sort_order: nextSortOrder })])
+        onSaved([await insertCard({ ...result.value, image_path: source?.image_path ?? null, sort_order: nextSortOrder })])
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Saving failed.')

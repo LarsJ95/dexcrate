@@ -57,7 +57,7 @@ function MoverList({
           {items.map(({ card, market }) => (
             <li key={card.id}>
               <button type="button" className="mover" onClick={() => onOpenCard?.(card.id)} aria-label={`Open ${card.name}`}>
-                <CardImage tcgdexId={card.tcgdex_id} kind={card.kind} name={card.name} />
+                <CardImage tcgdexId={card.tcgdex_id} kind={card.kind} name={card.name} photoPath={card.image_path} />
                 <span className="mover-name">
                   {card.name}
                   {card.card_number && <span className="muted"> #{card.card_number}</span>}

@@ -85,6 +85,7 @@ export function DashboardPage(): JSX.Element {
             })
             setOpenId(null)
           }}
+          onChanged={(row) => setCards((list) => list?.map((c) => (c.id === row.id ? row : c)) ?? null)}
           onDeleted={(id) => {
             setCards((list) => list?.filter((c) => c.id !== id) ?? null)
             setOpenId(null)

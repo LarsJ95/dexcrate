@@ -5,6 +5,7 @@ import { CardDialog } from '../components/CardDialog'
 import { CardPicture } from '../components/CardPicture'
 import { listCards } from '../lib/db'
 import { findCandidates, type Candidate } from '../lib/match'
+import { setCardPhoto } from '../lib/photos'
 import {
   draftFromScan,
   prepareImage,
@@ -277,6 +278,17 @@ export function ScanPage(): JSX.Element {
           onSaved={(rows) => {
             rememberAdded(rows)
             const position = draft.position
+            // Losse scan zonder officiële afbeelding: de scanfoto wordt de kaartfoto.
+            const photo = image?.blob
+            if (position === null && photo) {
+              for (const row of rows) {
+                if (!row.tcgdex_id && !row.image_path) {
+                  setCardPhoto(row, photo)
+                    .then((updated) => setCards((list) => list.map((c) => (c.id === updated.id ? updated : c))))
+                    .catch((err: unknown) => console.warn('Scanfoto bewaren mislukt', err))
+                }
+              }
+            }
             setDraft(null)
             // Losse scan: klaar voor de volgende. Binderpagina: alleen deze kaart afvinken.
             if (position === null) reset()

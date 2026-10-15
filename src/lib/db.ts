@@ -57,6 +57,7 @@ function toCard(r: unknown): Card | null {
     sale_price: numOrNull(r.sale_price),
     sale_channel: strOrNull(r.sale_channel),
     sale_date: strOrNull(r.sale_date),
+    image_path: strOrNull(r.image_path),
     sort_order: Math.trunc(numOrNull(r.sort_order) ?? 0),
   }
 }
@@ -86,21 +87,33 @@ export async function countCards(): Promise<number> {
   return count ?? 0
 }
 
+/**
+ * Zonder eigen foto het veld weglaten, zodat opslaan ook werkt zolang STAP3 (kolom image_path) nog niet gedraaid is.
+ */
+function payload<T extends Partial<CardInput>>(input: T): T | Omit<T, 'image_path'> {
+  if (input.image_path) return input
+  const { image_path: _skip, ...rest } = input
+  void _skip
+  return rest
+}
+
 export async function insertCards(input: readonly CardInput[]): Promise<Card[]> {
   // Eén insert-statement: alles of niets.
-  const { data, error } = await supabase.from(TABLE).insert(input).select('*')
+  const { data, error } = await supabase.from(TABLE).insert(input.map(payload)).select('*')
   if (error) throw new Error(`Saving failed: ${error.message}`)
   return (data as unknown[]).map(single)
 }
 
 export async function insertCard(input: CardInput): Promise<Card> {
-  const { data, error } = await supabase.from(TABLE).insert(input).select('*').single()
+  const { data, error } = await supabase.from(TABLE).insert(payload(input)).select('*').single()
   if (error) throw new Error(`Saving failed: ${error.message}`)
   return single(data)
 }
 
 export async function updateCard(id: string, patch: Partial<CardInput>): Promise<Card> {
-  const { data, error } = await supabase.from(TABLE).update(patch).eq('id', id).select('*').single()
+  // Een expliciet `image_path: null` (foto verwijderen) moet wél mee.
+  const body = 'image_path' in patch && patch.image_path === null ? patch : payload(patch)
+  const { data, error } = await supabase.from(TABLE).update(body).eq('id', id).select('*').single()
   if (error) throw new Error(`Saving failed: ${error.message}`)
   return single(data)
 }

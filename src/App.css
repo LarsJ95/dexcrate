@@ -1929,3 +1929,16 @@ a.stat:hover {
   background: rgb(0 0 0 / 0.6);
   border-radius: var(--radius-m);
 }
+
+/* ---------- Eigen foto ---------- */
+.photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.4rem;
+}
+
+button.small-btn {
+  font-size: var(--fs-small);
+  padding: 0.3rem 0.55rem;
+}
