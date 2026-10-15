@@ -3557,3 +3557,67 @@ button.slot-open:hover .card-img {
   box-shadow: var(--shadow-float);
   animation: caption-in 200ms ease-out;
 }
+
+/* ---------- Wishlist: kaarten uit de kaartendatabase ---------- */
+.catalog-results {
+  display: grid;
+  gap: var(--gap-inner);
+}
+
+.catalog-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 480px) {
+  .catalog-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+}
+
+button.catalog-hit {
+  display: grid;
+  justify-items: start;
+  align-content: start;
+  gap: var(--space-1);
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  font-weight: 400;
+}
+
+button.catalog-hit:hover:not(:disabled) {
+  background: none;
+  border: 0;
+}
+
+.catalog-hit .card-img {
+  border-radius: var(--radius-card);
+  transition: transform 150ms ease-out;
+}
+
+@media (hover: hover) {
+  .catalog-hit:hover .card-img {
+    transform: translateY(-4px);
+  }
+}
+
+.catalog-name {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}

@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useState, type JSX } from 'react'
 import { CardImage } from '../components/CardImage'
+import { CatalogResults } from '../components/CatalogResults'
 import { IconPlus, IconSearch } from '../components/Icons'
 import { WishlistDialog } from '../components/WishlistDialog'
 import { useCardPrice } from '../hooks/useCardPrice'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
+import type { CatalogHit } from '../lib/catalogSearch'
 import { listCards } from '../lib/db'
+import { getSet, lookupLang, type Lang } from '../lib/tcgdex'
 import { marketValue } from '../lib/prices'
 import { matchesWords } from '../lib/search'
 import { formatEur } from '../lib/stats'
 import { CONDITION_LABELS, LANGUAGE_LABELS, VARIANT_LABELS, type Card, type CardLanguage, type Variant } from '../lib/types'
-import { listWishlist, ownedForWish, type WishlistItem } from '../lib/wishlist'
+import { listWishlist, ownedForWish, type WishlistInput, type WishlistItem } from '../lib/wishlist'
 import { Loading } from '../components/Loading'
 
 const PRIORITY: Record<1 | 2 | 3, string> = { 1: 'High priority', 2: '', 3: 'Low priority' }
@@ -39,6 +42,8 @@ export function WishlistPage(): JSX.Element {
   const [language, setLanguage] = useState<CardLanguage | ''>('')
   const [showFound, setShowFound] = useState(false)
   const [editing, setEditing] = useState<WishlistItem | 'new' | null>(null)
+  // Startwaarden als je een kaart uit de kaartendatabase kiest.
+  const [initial, setInitial] = useState<Partial<WishlistInput> | undefined>(undefined)
 
   useEffect(() => {
     if (enabled !== true) return
@@ -73,6 +78,30 @@ export function WishlistPage(): JSX.Element {
       matches(r.item, query),
   )
   const foundCount = rows.filter((r) => r.found).length
+  const wishedKeys = useMemo(() => new Set((items ?? []).flatMap((i) => (i.tcgdex_id ? [i.tcgdex_id] : []))), [items])
+  const ownedKeys = useMemo(() => new Set(cards.flatMap((c) => (c.tcgdex_id && c.ownership === 'owned' ? [c.tcgdex_id] : []))), [cards])
+  const searching = query.trim().length >= 2
+
+  function openNew(start?: Partial<WishlistInput>): void {
+    setInitial(start)
+    setEditing('new')
+  }
+
+  async function pickFromCatalog(hit: CatalogHit, lang: Lang): Promise<void> {
+    let setCode = hit.setId
+    try {
+      setCode = (await getSet(lang, hit.setId))?.summary.abbr ?? hit.setId
+    } catch (err) {
+      console.error('Setinfo ophalen mislukt', err)
+    }
+    openNew({
+      tcgdex_id: `${lang}/${hit.card.id}`,
+      name: hit.card.name,
+      set_code: setCode.slice(0, 20),
+      card_number: /^\d+$/.test(hit.card.localId) ? String(Number.parseInt(hit.card.localId, 10)) : hit.card.localId,
+      language: language || null,
+    })
+  }
 
   if (enabled === false) {
     return (
@@ -94,7 +123,7 @@ export function WishlistPage(): JSX.Element {
             </p>
           )}
         </div>
-        <button type="button" className="primary" onClick={() => setEditing('new')}>
+        <button type="button" className="primary" onClick={() => openNew()}>
           <IconPlus size={18} />
           Add card
         </button>
@@ -103,7 +132,13 @@ export function WishlistPage(): JSX.Element {
       <div className="filters">
         <div className="search">
           <IconSearch size={18} />
-          <input type="search" placeholder="Search name, set or number" aria-label="Search" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <input
+            type="search"
+            placeholder="Search a Pokémon or card"
+            aria-label="Search your wishlist and the card database"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
         </div>
         <select aria-label="Variant" value={variant} onChange={(e) => setVariant(e.target.value as Variant | '')}>
           <option value="">All variants</option>
@@ -133,8 +168,12 @@ export function WishlistPage(): JSX.Element {
         </p>
       )}
       {items === null && !error && <Loading />}
-      {items?.length === 0 && <p className="empty">Your wishlist is empty. Add cards here, or from a set's missing cards.</p>}
-      {items && items.length > 0 && visible.length === 0 && <p className="empty">No wishes match these filters.</p>}
+      {items?.length === 0 && !searching && (
+        <p className="empty">Your wishlist is empty. Search for a Pokémon above, or add cards from a set's missing cards.</p>
+      )}
+      {items && items.length > 0 && visible.length === 0 && (
+        <p className="empty">{searching ? 'None of your wishes match. Cards from the database are below.' : 'No wishes match these filters.'}</p>
+      )}
 
       {visible.length > 0 && (
         <ul className="tx-list">
@@ -174,9 +213,20 @@ export function WishlistPage(): JSX.Element {
         </ul>
       )}
 
+      {searching && (
+        <CatalogResults
+          query={query}
+          lang={lookupLang(language || null)}
+          wished={wishedKeys}
+          owned={ownedKeys}
+          onPick={(hit, lang) => void pickFromCatalog(hit, lang)}
+        />
+      )}
+
       {editing && (
         <WishlistDialog
           item={editing === 'new' ? null : editing}
+          initial={editing === 'new' ? initial : undefined}
           onClose={() => setEditing(null)}
           onSaved={(saved) => {
             setItems((list) => {
