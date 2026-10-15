@@ -44,6 +44,88 @@ export interface MarketSummary {
   forSale: { asking: number; value: number; count: number }
   /** Gegradeerde kaarten: marktwaarde geldt voor ongegradeerd, dus apart gemeld. */
   graded: number
+  /** Gewogen beweging van alles in bezit t.o.v. het 30-daags gemiddelde; null als onbekend. */
+  change30: number | null
+}
+
+export interface Mover<T extends CardInput = CardInput> {
+  card: T
+  market: MarketValue
+}
+
+/** Minimale waarde om mee te tellen bij stijgers/dalers: bij centenkaarten is ±50% ruis. */
+const MOVER_MIN_VALUE = 0.5
+
+/** Stijgers, dalers en meest waardevolle kaarten in bezit (één regel per kaart+variant). */
+export function topMovers<T extends CardInput>(
+  cards: readonly T[],
+  prices: PriceMap,
+  n = 5,
+): { up: Mover<T>[]; down: Mover<T>[]; valuable: Mover<T>[] } {
+  const seen = new Set<string>()
+  const list: Mover<T>[] = []
+  for (const c of cards) {
+    if (c.status === 'sold' || c.kind !== 'card' || !c.tcgdex_id) continue
+    const key = `${c.tcgdex_id}|${c.variant ?? ''}`
+    if (seen.has(key)) continue
+    const market = marketValueOf(c, prices)
+    if (!market) continue
+    seen.add(key)
+    list.push({ card: c, market })
+  }
+  const moving = list.filter((m) => m.market.change30 !== null && m.market.value >= MOVER_MIN_VALUE)
+  const byChange = (a: Mover<T>, b: Mover<T>): number => (b.market.change30 ?? 0) - (a.market.change30 ?? 0)
+  return {
+    up: moving.filter((m) => (m.market.change30 ?? 0) > 0.02).sort(byChange).slice(0, n),
+    down: moving.filter((m) => (m.market.change30 ?? 0) < -0.02).sort(byChange).reverse().slice(0, n),
+    valuable: [...list].sort((a, b) => b.market.value - a.market.value).slice(0, n),
+  }
+}
+
+export interface SnapshotRow {
+  tcgdexId: string
+  takenOn: string
+  trend: number | null
+  trendHolo: number | null
+}
+
+export interface SeriesPoint {
+  date: string
+  value: number
+}
+
+/**
+ * Waardeverloop van je huidige bezit uit dagelijkse opnames.
+ * Ontbreekt een kaart op een dag, dan telt de laatst bekende prijs (geen kunstmatige dips).
+ */
+export function portfolioSeries(cards: readonly CardInput[], snapshots: readonly SnapshotRow[]): SeriesPoint[] {
+  const holdings = new Map<string, { qty: number; reverse: boolean }[]>()
+  for (const c of cards) {
+    if (c.status === 'sold' || c.kind !== 'card' || !c.tcgdex_id) continue
+    const list = holdings.get(c.tcgdex_id) ?? []
+    list.push({ qty: c.quantity, reverse: c.variant === 'reverse' })
+    holdings.set(c.tcgdex_id, list)
+  }
+  const byDate = new Map<string, SnapshotRow[]>()
+  for (const s of snapshots) {
+    if (!holdings.has(s.tcgdexId)) continue
+    const rows = byDate.get(s.takenOn) ?? []
+    rows.push(s)
+    byDate.set(s.takenOn, rows)
+  }
+  const last = new Map<string, SnapshotRow>()
+  const points: SeriesPoint[] = []
+  for (const date of [...byDate.keys()].sort()) {
+    for (const s of byDate.get(date) ?? []) last.set(s.tcgdexId, s)
+    let total = 0
+    for (const [key, held] of holdings) {
+      const s = last.get(key)
+      if (!s) continue
+      for (const h of held) total += h.qty * cents((h.reverse ? s.trendHolo : s.trend) ?? 0)
+    }
+    points.push({ date, value: total / 100 })
+  }
+  return points
 }
 
 const cents = (n: number): number => Math.round(n * 100)
@@ -60,6 +142,8 @@ export function summarizeMarket(cards: readonly CardInput[], prices: PriceMap): 
   let askingValue = 0
   let askingCount = 0
   let graded = 0
+  let changeNow = 0
+  let changeBase = 0
 
   for (const c of cards) {
     if (c.status === 'sold' || c.kind !== 'card') continue
@@ -68,6 +152,10 @@ export function summarizeMarket(cards: readonly CardInput[], prices: PriceMap): 
     if (!mv) {
       withoutPrice += c.quantity
       continue
+    }
+    if (mv.change30 !== null) {
+      changeNow += c.quantity * mv.value
+      changeBase += c.quantity * (mv.value / (1 + mv.change30))
     }
     const mvc = c.quantity * cents(mv.value)
     ownedValue += mvc
@@ -89,5 +177,6 @@ export function summarizeMarket(cards: readonly CardInput[], prices: PriceMap): 
     paper: { cost: paperCost / 100, value: paperValue / 100, gain: (paperValue - paperCost) / 100, count: paperCount },
     forSale: { asking: asking / 100, value: askingValue / 100, count: askingCount },
     graded,
+    change30: changeBase > 0 ? changeNow / changeBase - 1 : null,
   }
 }

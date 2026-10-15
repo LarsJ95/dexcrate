@@ -5,7 +5,9 @@
 import { useMemo, type JSX } from 'react'
 import { CardTile } from '../components/CardTile'
 import { Shell } from '../components/Shell'
-import type { MarketValue } from '../lib/prices'
+import { DashboardView } from '../components/DashboardView'
+import type { MarketValue, PriceMap } from '../lib/prices'
+import type { CardmarketPrice } from '../lib/tcgdex'
 import type { Route } from '../lib/routes'
 import { EMPTY_CARD, type Card, type CardInput } from '../lib/types'
 
@@ -38,9 +40,49 @@ const CARDS: { card: Card; market: MarketValue | null }[] = [
   { card: demo({ name: 'Morpeko', set_code: 'CBB3C', card_number: '14', language: 'zh-cn', purchase_price: 3.5 }), market: null },
 ]
 
+/** Nep-Cardmarketprijzen afgeleid uit de voorbeeldwaarden. */
+const PRICES: PriceMap = new Map(
+  CARDS.flatMap(({ card, market }): [string, CardmarketPrice][] =>
+    card.tcgdex_id && market
+      ? [
+          [
+            card.tcgdex_id,
+            {
+              idProduct: null,
+              updated: null,
+              trend: market.value,
+              low: null,
+              avg1: null,
+              avg7: null,
+              avg30: market.change30 === null ? null : market.value / (1 + market.change30),
+              trendHolo: null,
+              lowHolo: null,
+              avg1Holo: null,
+              avg7Holo: null,
+              avg30Holo: null,
+            },
+          ],
+        ]
+      : [],
+  ),
+)
+
+/** 30 dagen fictief waardeverloop. */
+const SERIES = Array.from({ length: 30 }, (_, i) => ({
+  date: `2026-09-${String(i + 1).padStart(2, '0')}`,
+  value: 160 + Math.round((Math.sin(i / 4) * 8 + i * 0.6) * 100) / 100,
+}))
+
 export function Preview(): JSX.Element {
   const page = (params.get('page') ?? 'collectie') as Route
   const noop = useMemo(() => () => undefined, [])
+  if (page === 'overzicht') {
+    return (
+      <Shell route={page} email="demo@voorbeeld.nl" theme={theme} onToggleTheme={noop} onSignOut={noop}>
+        <DashboardView cards={CARDS.map((c) => c.card)} prices={PRICES} pricesLoading={false} series={SERIES} />
+      </Shell>
+    )
+  }
   return (
     <Shell route={page} email="demo@voorbeeld.nl" theme={theme} onToggleTheme={noop} onSignOut={noop}>
       <section className="page">

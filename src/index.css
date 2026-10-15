@@ -31,6 +31,8 @@
   --amber-bg: rgb(255 181 71 / 0.15);
   --red-bg: rgb(255 98 87 / 0.14);
 
+  --chart-line: #ffcb05;
+
   --logo-top: #ff6257;
   --logo-bottom: #eaf0ff;
   --logo-band: #0a1226;
@@ -61,6 +63,8 @@
   --green-bg: rgb(14 143 91 / 0.1);
   --amber-bg: rgb(255 181 71 / 0.22);
   --red-bg: rgb(214 58 47 / 0.1);
+
+  --chart-line: #1f5fd6;
 
   --logo-top: #e3463b;
   --logo-bottom: #ffffff;

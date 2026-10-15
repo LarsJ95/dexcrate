@@ -1,3 +1,4 @@
+import type { SnapshotRow } from './prices'
 import { supabase } from './supabase'
 import {
   CONDITION_LABELS,
@@ -129,6 +130,28 @@ export async function listSnapshots(tcgdexId: string): Promise<PriceSnapshot[]> 
       ? [{ takenOn: r.taken_on, trend: numOrNull(r.trend), trendHolo: numOrNull(r.trend_holo) }]
       : [],
   )
+}
+
+/** Prijsopnames voor meerdere kaarten tegelijk (voor het waardeverloop van de collectie). */
+export async function listSnapshotsFor(tcgdexIds: readonly string[]): Promise<SnapshotRow[]> {
+  const out: SnapshotRow[] = []
+  // In blokken, zodat de URL niet te lang wordt.
+  for (let i = 0; i < tcgdexIds.length; i += 80) {
+    const chunk = tcgdexIds.slice(i, i + 80)
+    const { data, error } = await supabase
+      .from('price_snapshots')
+      .select('tcgdex_id, taken_on, trend, trend_holo')
+      .in('tcgdex_id', chunk)
+      .order('taken_on', { ascending: true })
+      .limit(10000)
+    if (error) throw new Error(`Waardeverloop laden mislukt: ${error.message}`)
+    for (const r of data as unknown[]) {
+      if (isRecord(r) && typeof r.tcgdex_id === 'string' && typeof r.taken_on === 'string') {
+        out.push({ tcgdexId: r.tcgdex_id, takenOn: r.taken_on, trend: numOrNull(r.trend), trendHolo: numOrNull(r.trend_holo) })
+      }
+    }
+  }
+  return out
 }
 
 /**
