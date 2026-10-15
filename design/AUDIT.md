@@ -63,7 +63,7 @@ Datum: 15-10-2026. Bron: `src/index.css`, `src/App.css`, componenten in `src/`. 
 
 ## 4. Migratieplan (kleine stappen, elk apart te keuren)
 
-0. **Fundament** (geen zichtbare pagina-wijziging): tokens voor spacing (4px-schaal), typeschaal (min. 14px), radius, schaduw/diepte en alle losse kleuren; `App.css` alleen nog via tokens. Vereist dat jij secties 5, 6 en 9 invult.
+0. **Fundament** (geen zichtbare pagina-wijziging): tokens voor spacing (4px-schaal), typeschaal (min. 14px), radius, schaduw/diepte en alle losse kleuren; `App.css` alleen nog via tokens. Secties 5, 6 en 9 ingevuld 15-10-2026.
 1. **Contrast**: focusring en groene tekst in licht thema op AA. ✔ Gedaan 15-10-2026: tokens `--focus` en `--accent-line`; licht groen #0a7a4c, oranje #8a5000 (alle gemeten paren ≥ 4,5:1 voor tekst, ≥ 3:1 voor lijnen).
 2. **Fonts self-hosten**: Archivo als woff2 in `public/fonts` met `@font-face`, `font-display: swap` (bestand toevoegen, geen npm-pakket).
 3. **Verboden-lijst**: blur vervangen door effen vlakken; verlopen weg of expliciet toestaan; tekstglyphs vervangen door SVG-iconen uit de bestaande iconenset.

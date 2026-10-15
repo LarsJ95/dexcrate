@@ -38,7 +38,7 @@ Voer deze stap uit vóórdat je iets aanpast:
 Screenshots staan in `/design/referenties/`.
 Per referentie: wat precies overnemen, niet de hele site kopiëren.
 
-- Collectr ([URL NODIG], app): portfolio-overzicht: totale collectiewaarde als hoofdcijfer, stijgers/dalers, waardegrafiek.
+- Collectr (app, geen URL; screenshots in `/design/referenties/collectr/`): portfolio-overzicht (totale collectiewaarde als hoofdcijfer met beweging), waardegrafiek, stijgers/dalers-lijst. Niet de kaartweergave.
 - TCG Collector (https://www.tcgcollector.com/): set-voortgang, sets sorteren en filteren, kosten om een set af te maken.
 - Dex (https://dextcg.com/): binder-weergave met instelbaar paginaformaat (9/12 vakken), kaartfoto's centraal.
 - [BEELD NODIG: screenshots van bovenstaande in `/design/referenties/`]
@@ -93,23 +93,23 @@ Regels:
 
 ## 5. Layout en spacing
 
-- Max contentbreedte: ___ px
-- Grid: ___ kolommen, gutter ___ px
-- Spacing-schaal (alleen deze waarden): 4, 8, 12, 16, 24, 32, 48, 64, 96, 128
-- Verticale ruimte tussen secties: desktop ___ / mobiel ___
-- Breakpoints: ___ (bijv. 640, 768, 1024, 1280)
-- Zijmarge mobiel: ___ px
+- Max contentbreedte: 1280 px voor pagina's; 760 px voor popups en formulieren
+- Grid: kaartraster auto-fill met minimaal 176 px per kaart, mobiel 2 kolommen; gutter 16 px desktop, 12 px mobiel
+- Spacing-schaal (alleen deze waarden): 4, 8, 12, 16, 24, 32, 48, 64 (tokens `--space-1` t/m `--space-8`; 96 en 128 niet nodig in deze app)
+- Verticale ruimte tussen secties: desktop 24 px / mobiel 16 px; binnen een paneel 12 px
+- Breakpoints: 480 (telefoon: 2-koloms raster, popup van onderaf), 768 (tablet: gesplitste login, formulier 3 kolommen), 1024 (zijbalk i.p.v. onderbalk)
+- Zijmarge mobiel: 16 px
 
 Regels:
-- Asymmetrie en variatie in layout per sectie, niet elke sectie gecentreerd
+- Asymmetrie en variatie in layout per sectie, niet elke sectie gecentreerd. Alleen op Overview (hoofdcijfer groot, lijsten eronder); Collection en Sets blijven herhaalbare rasters en lijsten
 - Witruimte is een ontwerpkeuze: liever te veel dan te weinig
 
 
 ## 6. Vorm en diepte
 
-- Radius: ___ (kies één systeem, bijv. 0 / 4 / 8, of volledig recht)
-- Diepte via: randen / schaduwen / kleurvlakken (kies één als hoofdmiddel)
-- Schaduw (indien gebruikt): ___
+- Radius: 4 (kleine badges: grade, aantal) / 8 (knoppen, invoer, chips) / 16 (panelen, popups, tegels) / 999 (statuspillen). Kaartfoto's houden de echte kaartvorm (4,5% / 3,2%)
+- Diepte via: randen (1 px `--line`) als hoofdmiddel. Kleurvlakken (oppervlak 1–3) alleen voor nesting. Schaduw alleen voor zwevende lagen: popup, vergrote kaart, tooltip
+- Schaduw (indien gebruikt): één token `--shadow-float`: donker `0 16px 48px rgb(0 0 0 / 0.45)`, licht `0 16px 48px rgb(14 26 58 / 0.18)`
 
 
 ## 7. Iconen en beeld
@@ -135,17 +135,19 @@ Elk component heeft verplicht deze states: default, hover, active, focus-visible
 
 ## 9. Animatie en interactie
 
-- Libraries: ___ (kies uit: GSAP met ScrollTrigger/SplitText, Motion, Lenis voor smooth scroll)
-- Easing standaard: ___ (bijv. ease-out voor binnenkomst, ease-in-out voor verplaatsing)
+- Libraries: geen, alleen CSS
+- Easing standaard: ease-out voor binnenkomst en micro-interacties, ease-in-out voor verplaatsing (holo-glans)
 - Duur:
-  - Micro-interacties (hover, toggle): 150 tot 250 ms
-  - Elementen in beeld: 400 tot 800 ms
-  - Pagina-overgangen: ___ ms
+  - Micro-interacties (hover, toggle): 150 ms
+  - Elementen in beeld: 200 ms voor popup en vergrote kaart (afwijking van 400–800 ms, goedgekeurd 15-10-2026: werk-app, elke tik moet direct voelen)
+  - Pagina-overgangen: 0 ms (direct wisselen)
+- Kleurwissel bij hover: direct, zonder overgang
 
 Toegestane effecten (alleen deze):
 - Holo-glans op holo- en reverse-holokaarten (goedgekeurd 15-10-2026): één lichtstreep per ±7 s, per kaart verschoven, alleen transform; uit bij `prefers-reduced-motion`.
-- ___
-- ___
+- Kaart licht optillen bij hover: 4 px omhoog via transform, alleen op apparaten met hover.
+- Popup en vergrote kaart verschijnen: opacity met schaal 0,96 → 1; op mobiel schuift de popup omhoog (translateY).
+- Laadstatus getekende kaartvoorkant: rustig knipperen via opacity.
 
 Regels:
 - Animeer alleen `transform` en `opacity`
