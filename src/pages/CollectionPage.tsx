@@ -19,8 +19,6 @@ const FILTERS: [StatusFilter, string][] = [
   ['all', 'All'],
 ]
 
-const DEFAULT_CHANNELS = ['Cardmarket', 'WhatsApp', 'Bol.com', 'CatchYourCards']
-
 /** Prijs die bij de status hoort, voor sorteren en totalen. */
 function relevantPrice(c: Card): number {
   return (c.status === 'collection' ? c.purchase_price : c.sale_price) ?? 0
@@ -101,15 +99,6 @@ export function CollectionPage(): JSX.Element {
       if (c.status !== 'sold') out.owned += c.quantity
     }
     return out
-  }, [cards])
-
-  const channels = useMemo(() => {
-    const set = new Set(DEFAULT_CHANNELS)
-    for (const c of cards ?? []) {
-      if (c.purchase_channel) set.add(c.purchase_channel)
-      if (c.sale_channel) set.add(c.sale_channel)
-    }
-    return [...set].sort((a, b) => a.localeCompare(b, 'en'))
   }, [cards])
 
   const unlinked = useMemo(() => (cards ?? []).filter((c) => c.kind === 'card' && !c.tcgdex_id).length, [cards])
@@ -257,7 +246,6 @@ export function CollectionPage(): JSX.Element {
           key={editing.id ?? 'new'}
           card={editingCard}
           defaultStatus={filter === 'for_sale' || filter === 'sold' ? filter : 'collection'}
-          channels={channels}
           nextSortOrder={nextSortOrder}
           onClose={() => setEditing(null)}
           onSaved={(rows) => {

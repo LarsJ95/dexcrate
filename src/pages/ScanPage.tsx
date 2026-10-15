@@ -22,8 +22,6 @@ type Phase =
   | { kind: 'multi'; recognitions: Recognition[]; scanId: number }
   | { kind: 'error'; message: string }
 
-const DEFAULT_CHANNELS = ['Cardmarket', 'WhatsApp', 'Bol.com', 'CatchYourCards']
-
 const MODE_HINT: Record<ScanMode, string> = {
   single: 'Photograph one card straight on, with the bottom edge readable.',
   multi: 'Photograph a full binder page from straight above, without glare on the sleeves.',
@@ -55,15 +53,6 @@ export function ScanPage(): JSX.Element {
   useEffect(() => () => {
     if (image) URL.revokeObjectURL(image.previewUrl)
   }, [image])
-
-  const channels = useMemo(() => {
-    const set = new Set(DEFAULT_CHANNELS)
-    for (const c of cards) {
-      if (c.purchase_channel) set.add(c.purchase_channel)
-      if (c.sale_channel) set.add(c.sale_channel)
-    }
-    return [...set].sort((a, b) => a.localeCompare(b, 'en'))
-  }, [cards])
 
   const ownedByKey = useMemo(() => {
     const map = new Map<string, number>()
@@ -262,7 +251,6 @@ export function ScanPage(): JSX.Element {
           card={null}
           initial={draft.values}
           defaultStatus="collection"
-          channels={channels}
           nextSortOrder={nextSortOrder}
           onClose={() => setDraft(null)}
           onSaved={(rows) => {

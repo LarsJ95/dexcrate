@@ -9,7 +9,6 @@ interface Props {
   /** Vooraf ingevulde velden voor een nieuwe kaart (bv. uit een scan). */
   initial?: Partial<CardInput>
   defaultStatus: CardStatus
-  channels: readonly string[]
   nextSortOrder: number
   onClose: () => void
   /** Gewijzigde en/of nieuwe regels (meer dan één bij splitsen). */
@@ -23,7 +22,7 @@ type Mode = { kind: 'view' } | { kind: 'edit'; status: CardStatus }
  * Popup voor één kaart: bestaande kaarten openen in de weergave, nieuwe direct in het formulier.
  * Sluiten via ✕, Escape of tikken naast de popup.
  */
-export function CardDialog({ card, initial, defaultStatus, channels, nextSortOrder, onClose, onSaved, onDeleted }: Props): JSX.Element {
+export function CardDialog({ card, initial, defaultStatus, nextSortOrder, onClose, onSaved, onDeleted }: Props): JSX.Element {
   const ref = useRef<HTMLDialogElement>(null)
   const [mode, setMode] = useState<Mode>(() => (card ? { kind: 'view' } : { kind: 'edit', status: initial?.status ?? defaultStatus }))
 
@@ -62,7 +61,6 @@ export function CardDialog({ card, initial, defaultStatus, channels, nextSortOrd
             card={card}
             source={source}
             startStatus={mode.kind === 'edit' ? mode.status : defaultStatus}
-            channels={channels}
             nextSortOrder={nextSortOrder}
             onCancel={() => (card ? setMode({ kind: 'view' }) : close())}
             onSaved={onSaved}

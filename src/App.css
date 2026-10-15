@@ -1784,3 +1784,54 @@ a.stat:hover {
   font-weight: 600;
   color: var(--ink-soft);
 }
+
+/* ---------- Compacte popup en formulier ---------- */
+.sheet-body {
+  gap: 0.9rem;
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.sheet-head h2 {
+  font-size: 1.3rem;
+}
+
+.card-form,
+.card-detail {
+  gap: 0.9rem;
+}
+
+.form-group {
+  gap: 0.55rem;
+  padding-top: 0.7rem;
+}
+
+.form-group legend {
+  font-size: 0.95rem;
+}
+
+.form-grid {
+  gap: 0.55rem 0.65rem;
+}
+
+.card-form label {
+  gap: 0.2rem;
+}
+
+.card-form input,
+.card-form select {
+  padding: 0.45rem 0.6rem;
+}
+
+.card-form .split {
+  padding: 0.6rem 0.8rem;
+}
+
+@media (max-width: 560px) {
+  .sheet-body {
+    padding: 0.85rem 0.9rem calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

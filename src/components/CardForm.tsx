@@ -27,7 +27,6 @@ interface Props {
   source: CardInput | null
   /** Status bij openen (bv. "List for sale" vanuit de weergave). */
   startStatus: CardStatus
-  channels: readonly string[]
   nextSortOrder: number
   onCancel: () => void
   onSaved: (rows: Card[]) => void
@@ -196,7 +195,6 @@ export function CardForm({
   card,
   source,
   startStatus,
-  channels,
   nextSortOrder,
   onCancel,
   onSaved,
@@ -362,21 +360,11 @@ export function CardForm({
         </label>
       </Group>
 
-      <datalist id="channel-options">
-        {channels.map((c) => (
-          <option key={c} value={c} />
-        ))}
-      </datalist>
-
       <Group title="Purchase">
         <div className="form-grid">
           <label>
             Price (€)
             <input inputMode="decimal" value={form.purchase_price} onChange={(e) => set('purchase_price', e.target.value)} placeholder="0.00" />
-          </label>
-          <label>
-            Channel
-            <input list="channel-options" value={form.purchase_channel} onChange={(e) => set('purchase_channel', e.target.value)} maxLength={50} />
           </label>
           <label>
             Date
@@ -391,10 +379,6 @@ export function CardForm({
             <label>
               {form.status === 'sold' ? 'Sold for (€)' : 'Asking (€)'}
               <input inputMode="decimal" value={form.sale_price} onChange={(e) => set('sale_price', e.target.value)} placeholder="0.00" />
-            </label>
-            <label>
-              Channel
-              <input list="channel-options" value={form.sale_channel} onChange={(e) => set('sale_channel', e.target.value)} maxLength={50} />
             </label>
             {form.status === 'sold' && (
               <label>

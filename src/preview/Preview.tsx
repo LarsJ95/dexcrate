@@ -154,7 +154,6 @@ export function Preview(): JSX.Element {
           card={edit ? null : demoCard}
           initial={edit ? demoCard : undefined}
           defaultStatus="collection"
-          channels={['Cardmarket', 'WhatsApp']}
           nextSortOrder={0}
           onClose={noop}
           onSaved={noop}
