@@ -109,6 +109,28 @@ export async function deleteCard(id: string): Promise<void> {
   if (error) throw new Error(`Verwijderen mislukt: ${error.message}`)
 }
 
+export interface PriceSnapshot {
+  takenOn: string
+  trend: number | null
+  trendHolo: number | null
+}
+
+/** Dagelijkse prijsopnames van één kaart, oud → nieuw (gevuld door de cron-job uit 004_price_snapshots.sql). */
+export async function listSnapshots(tcgdexId: string): Promise<PriceSnapshot[]> {
+  const { data, error } = await supabase
+    .from('price_snapshots')
+    .select('*')
+    .eq('tcgdex_id', tcgdexId)
+    .order('taken_on', { ascending: true })
+    .limit(400)
+  if (error) throw new Error(`Prijsverloop laden mislukt: ${error.message}`)
+  return (data as unknown[]).flatMap((r) =>
+    isRecord(r) && typeof r.taken_on === 'string'
+      ? [{ takenOn: r.taken_on, trend: numOrNull(r.trend), trendHolo: numOrNull(r.trend_holo) }]
+      : [],
+  )
+}
+
 /**
  * Deel van een regel een andere status geven (bv. 1 van 3 verkopen):
  * nieuwe regel met `moved` stuks, origineel houdt de rest. Bij een fout wordt teruggedraaid.

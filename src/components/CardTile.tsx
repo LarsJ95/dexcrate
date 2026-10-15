@@ -1,11 +1,14 @@
 import { memo, type JSX } from 'react'
 import { useCardInfo } from '../hooks/useCardInfo'
+import type { MarketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
 import { CONDITION_LABELS, STATUS_LABELS, VARIANT_LABELS, type Card } from '../lib/types'
 import { CardImage } from './CardImage'
 
 interface Props {
   card: Card
+  /** undefined = prijzen worden nog geladen. */
+  market?: MarketValue | null
   onOpen: (id: string) => void
   /** Snelle actie: te koop ↔ verkocht. */
   onToggleSold: (id: string) => void
@@ -21,7 +24,7 @@ function shownPrice(card: Card): { label: string; value: number } | null {
   return null
 }
 
-function CardTileBase({ card, onOpen, onToggleSold, busy }: Props): JSX.Element {
+function CardTileBase({ card, market, onOpen, onToggleSold, busy }: Props): JSX.Element {
   const info = useCardInfo(card.tcgdex_id)
   const setLabel = info?.set.name ?? card.set_code
   const price = shownPrice(card)
@@ -54,6 +57,18 @@ function CardTileBase({ card, onOpen, onToggleSold, busy }: Props): JSX.Element 
             <span className="muted small">Geen prijs</span>
           )}
         </p>
+        {card.kind === 'card' && card.tcgdex_id && market !== undefined && (
+          <p className="tile-market small">
+            {market ? (
+              <>
+                Markt <strong>{formatEur(market.value)}</strong>
+                {card.grading_company && <span className="muted"> (ongegradeerd)</span>}
+              </>
+            ) : (
+              <span className="muted">Geen marktprijs</span>
+            )}
+          </p>
+        )}
         <div className="tile-foot">
           {card.status === 'collection' ? (
             <span className="status-pill">{STATUS_LABELS.collection}</span>

@@ -198,38 +198,97 @@ export function matchNumber(cards: readonly SetCard[], number: string): SetCard 
   return numeric.length === 1 ? numeric[0] : undefined
 }
 
-// --- Kaartinfo met cache in localStorage (namen/plaatjes veranderen zelden) ---
+// --- Kaartinfo en prijzen, met cache in localStorage ---
 
-const CACHE_PREFIX = 'tcgdex:card:v1:'
-const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000
+const INFO_PREFIX = 'tcgdex:card:v1:'
+const INFO_TTL_MS = 7 * 24 * 60 * 60 * 1000 // namen/plaatjes veranderen zelden
+const PRICE_PREFIX = 'tcgdex:price:v1:'
+const PRICE_TTL_MS = 6 * 60 * 60 * 1000 // TCGdex ververst prijzen dagelijks
 
-function readCache(key: string): CardInfo | null {
+function readCache<T>(prefix: string, ttl: number, key: string): T | null {
   try {
-    const raw = localStorage.getItem(CACHE_PREFIX + key)
+    const raw = localStorage.getItem(prefix + key)
     if (!raw) return null
     const parsed: unknown = JSON.parse(raw)
-    if (!isRecord(parsed) || typeof parsed.t !== 'number' || Date.now() - parsed.t > CACHE_TTL_MS) return null
-    return parsed.v as CardInfo
+    if (!isRecord(parsed) || typeof parsed.t !== 'number' || Date.now() - parsed.t > ttl) return null
+    return parsed.v as T
   } catch {
     return null // Geen opslag beschikbaar of corrupte cache: gewoon opnieuw ophalen.
   }
 }
 
-function writeCache(key: string, v: CardInfo): void {
+function writeCache(prefix: string, key: string, v: unknown): void {
   try {
-    localStorage.setItem(CACHE_PREFIX + key, JSON.stringify({ t: Date.now(), v }))
+    localStorage.setItem(prefix + key, JSON.stringify({ t: Date.now(), v }))
   } catch (err) {
-    console.warn('Kaartcache opslaan mislukt', err)
+    console.warn('Cache opslaan mislukt', err)
   }
 }
 
-const fetchCardInfo = memo(async (key: string): Promise<CardInfo | null> => {
-  const cached = readCache(key)
-  if (cached) return cached
+/** Kaartdetails uit de API; één request per kaart per sessie, gedeeld door info en prijs. */
+const fetchCardRaw = memo(async (key: string): Promise<Record<string, unknown> | null> => {
   const parts = splitKey(key)
   if (!parts) return null
   const data = await getJson(`${API}/${parts.lang}/cards/${encodeURIComponent(parts.cardId)}`)
-  if (!isRecord(data) || typeof data.id !== 'string' || !isRecord(data.set) || typeof data.set.id !== 'string') return null
+  return isRecord(data) ? data : null
+})
+
+/** Cardmarket-prijzen in EUR. `null` = geen data. "Holo"-velden zijn de reverse-holoprijzen. */
+export interface CardmarketPrice {
+  updated: string | null
+  trend: number | null
+  low: number | null
+  avg1: number | null
+  avg7: number | null
+  avg30: number | null
+  trendHolo: number | null
+  lowHolo: number | null
+  avg1Holo: number | null
+  avg7Holo: number | null
+  avg30Holo: number | null
+}
+
+/** Positief getal of null (TCGdex gebruikt 0 voor "geen data"). */
+const priceNum = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : null)
+
+export function parseCardmarket(data: Record<string, unknown>): CardmarketPrice | null {
+  const cm = isRecord(data.pricing) && isRecord(data.pricing.cardmarket) ? data.pricing.cardmarket : null
+  if (!cm || (typeof cm.unit === 'string' && cm.unit !== 'EUR')) return null
+  return {
+    updated: optStr(cm.updated),
+    trend: priceNum(cm.trend),
+    low: priceNum(cm.low),
+    avg1: priceNum(cm.avg1),
+    avg7: priceNum(cm.avg7),
+    avg30: priceNum(cm.avg30),
+    trendHolo: priceNum(cm['trend-holo']),
+    lowHolo: priceNum(cm['low-holo']),
+    avg1Holo: priceNum(cm['avg1-holo']),
+    avg7Holo: priceNum(cm['avg7-holo']),
+    avg30Holo: priceNum(cm['avg30-holo']),
+  }
+}
+
+const fetchCardPrice = memo(async (key: string): Promise<CardmarketPrice | null> => {
+  const cached = readCache<CardmarketPrice | 'none'>(PRICE_PREFIX, PRICE_TTL_MS, key)
+  if (cached) return cached === 'none' ? null : cached
+  const data = await fetchCardRaw(key)
+  const price = data ? parseCardmarket(data) : null
+  writeCache(PRICE_PREFIX, key, price ?? 'none')
+  return price
+})
+
+export function getCardPrice(key: string): Promise<CardmarketPrice | null> {
+  return fetchCardPrice(key)
+}
+
+const fetchCardInfo = memo(async (key: string): Promise<CardInfo | null> => {
+  const cached = readCache<CardInfo>(INFO_PREFIX, INFO_TTL_MS, key)
+  if (cached) return cached
+  const parts = splitKey(key)
+  if (!parts) return null
+  const data = await fetchCardRaw(key)
+  if (!data || typeof data.id !== 'string' || !isRecord(data.set) || typeof data.set.id !== 'string') return null
 
   const localId = typeof data.localId === 'string' ? data.localId : ''
   let image = optStr(data.image)
@@ -248,7 +307,7 @@ const fetchCardInfo = memo(async (key: string): Promise<CardInfo | null> => {
     image,
     set: { id: data.set.id, name: typeof data.set.name === 'string' ? data.set.name : data.set.id, logo },
   }
-  writeCache(key, info)
+  writeCache(INFO_PREFIX, key, info)
   return info
 })
 

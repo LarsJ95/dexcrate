@@ -20,6 +20,7 @@ import {
 } from '../lib/types'
 import { CardImage } from './CardImage'
 import { LinkPicker } from './LinkPicker'
+import { PriceHistory } from './PriceHistory'
 
 interface Props {
   card: Card | null
@@ -444,6 +445,12 @@ export function CardDialog({ card, defaultStatus, channels, nextSortOrder, onClo
             onSelect={(c, lang) => void onPick(c, lang)}
             onClear={() => set('tcgdex_id', null)}
           />
+        )}
+
+        {isCard && form.tcgdex_id && (
+          <Section title="Marktprijs">
+            <PriceHistory tcgdexId={form.tcgdex_id} variant={form.variant || null} />
+          </Section>
         )}
 
         {error && <p className="error" role="alert">{error}</p>}

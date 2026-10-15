@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState, type JSX } from 'react'
+import { useMarketPrices } from '../hooks/useMarketPrices'
 import { listCards } from '../lib/db'
+import { summarizeMarket, type MarketSummary } from '../lib/prices'
 import { computeStats, formatEur, type Bucket } from '../lib/stats'
 import type { Card } from '../lib/types'
 
@@ -26,6 +28,69 @@ function Tile({ label, bucket, unit, href }: { label: string; bucket: Bucket; un
   )
 }
 
+/** Bedrag met expliciet teken, zodat winst/verlies niet alleen via kleur leesbaar is. */
+function signedEur(n: number): string {
+  if (n === 0) return formatEur(0)
+  return `${n > 0 ? '+' : '−'}${formatEur(Math.abs(n))}`
+}
+
+function MarketPanel({ market, loading }: { market: MarketSummary; loading: boolean }): JSX.Element {
+  if (loading) {
+    return (
+      <div className="panel" aria-live="polite">
+        <span className="stat-label">Marktwaarde</span>
+        <p className="muted">Actuele Cardmarket-prijzen laden…</p>
+      </div>
+    )
+  }
+  const { owned, paper, forSale } = market
+  const askingDiff = forSale.value > 0 ? forSale.asking / forSale.value - 1 : 0
+  return (
+    <div className="panel market">
+      <div className="market-main">
+        <span className="stat-label">Marktwaarde van wat je hebt</span>
+        <span className="stat-value">{formatEur(owned.value)}</span>
+        <span className="stat-sub">
+          {countLabel(owned.withPrice, 'kaart', 'kaarten')} met Cardmarket-prijs
+          {owned.withoutPrice > 0 && `, ${owned.withoutPrice} zonder (niet gekoppeld of geen data)`}
+        </span>
+      </div>
+      <dl className="market-facts">
+        {paper.count > 0 && (
+          <div>
+            <dt>Gekocht vs. nu waard</dt>
+            <dd>
+              <strong className={paper.gain >= 0 ? 'up' : 'down'}>{signedEur(paper.gain)}</strong>
+              <span className="muted small">
+                {' '}
+                betaald {formatEur(paper.cost)}, nu {formatEur(paper.value)} ({countLabel(paper.count, 'kaart', 'kaarten')})
+              </span>
+            </dd>
+          </div>
+        )}
+        {forSale.count > 0 && (
+          <div>
+            <dt>Te koop: jouw prijs vs. markt</dt>
+            <dd>
+              <strong>{pct.format(Math.abs(askingDiff))} {askingDiff >= 0 ? 'boven' : 'onder'} markt</strong>
+              <span className="muted small">
+                {' '}
+                vraagprijs {formatEur(forSale.asking)}, markt {formatEur(forSale.value)}
+              </span>
+            </dd>
+          </div>
+        )}
+      </dl>
+      {market.graded > 0 && (
+        <p className="muted small">
+          {countLabel(market.graded, 'gegradeerde kaart telt', 'gegradeerde kaarten tellen')} mee tegen de
+          ongegradeerde prijs.
+        </p>
+      )}
+    </div>
+  )
+}
+
 export function DashboardPage(): JSX.Element {
   const [data, setData] = useState<Card[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -46,6 +111,8 @@ export function DashboardPage(): JSX.Element {
   }, [reloadKey])
 
   const stats = useMemo(() => (data ? computeStats(data) : null), [data])
+  const { prices, loading: pricesLoading } = useMarketPrices(data)
+  const market = useMemo(() => (data ? summarizeMarket(data, prices) : null), [data, prices])
 
   if (error) {
     return (
@@ -120,6 +187,8 @@ export function DashboardPage(): JSX.Element {
           {stats.sold.count} van {countLabel(listed, 'kaart', 'kaarten')} op je verkooplijst verkocht
         </p>
       </div>
+
+      {market && <MarketPanel market={market} loading={pricesLoading} />}
 
       <dl className="averages">
         <div>

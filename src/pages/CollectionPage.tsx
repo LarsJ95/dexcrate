@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useState, type JSX } from 'react'
 import { CardDialog } from '../components/CardDialog'
 import { CardTile } from '../components/CardTile'
+import { useMarketPrices } from '../hooks/useMarketPrices'
 import { listCards, updateCard } from '../lib/db'
+import { marketValueOf, type MarketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
 import { STATUS_LABELS, type Card, type CardStatus } from '../lib/types'
 
 type StatusFilter = 'all' | 'owned' | CardStatus
-type SortKey = 'list' | 'priceDesc' | 'priceAsc' | 'name' | 'set'
+type SortKey = 'list' | 'priceDesc' | 'priceAsc' | 'marketDesc' | 'name' | 'set'
 
 const FILTERS: [StatusFilter, string][] = [
   ['owned', 'In bezit'],
@@ -39,6 +41,17 @@ export function CollectionPage(): JSX.Element {
   const [sort, setSort] = useState<SortKey>('list')
   const [editing, setEditing] = useState<{ id: string | null } | null>(null)
   const [pending, setPending] = useState<ReadonlySet<string>>(new Set())
+  const { prices, loading: pricesLoading } = useMarketPrices(cards)
+
+  // Per regel de marktwaarde; undefined zolang de prijs nog geladen wordt.
+  const marketById = useMemo(() => {
+    const map = new Map<string, MarketValue | null | undefined>()
+    for (const c of cards ?? []) {
+      const known = c.tcgdex_id ? prices.has(c.tcgdex_id) : true
+      map.set(c.id, !known && pricesLoading ? undefined : marketValueOf(c, prices))
+    }
+    return map
+  }, [cards, prices, pricesLoading])
 
   useEffect(() => {
     let cancelled = false
@@ -65,6 +78,9 @@ export function CollectionPage(): JSX.Element {
     const sorted = [...filtered]
     if (sort === 'priceDesc') sorted.sort((a, b) => relevantPrice(b) - relevantPrice(a))
     if (sort === 'priceAsc') sorted.sort((a, b) => relevantPrice(a) - relevantPrice(b))
+    if (sort === 'marketDesc') {
+      sorted.sort((a, b) => (marketById.get(b.id)?.value ?? -1) - (marketById.get(a.id)?.value ?? -1))
+    }
     if (sort === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name, 'nl'))
     if (sort === 'set') {
       sorted.sort(
@@ -74,7 +90,7 @@ export function CollectionPage(): JSX.Element {
       )
     }
     return sorted
-  }, [cards, query, filter, sort])
+  }, [cards, query, filter, sort, marketById])
 
   const counts = useMemo(() => {
     const out: Record<StatusFilter, number> = { all: 0, owned: 0, collection: 0, for_sale: 0, sold: 0 }
@@ -134,6 +150,15 @@ export function CollectionPage(): JSX.Element {
   const nextSortOrder = (cards ?? []).reduce((m, c) => Math.max(m, c.sort_order), -1) + 1
   const visibleCount = visible.reduce((n, c) => n + c.quantity, 0)
   const visibleValue = visible.reduce((cents, c) => cents + c.quantity * Math.round(relevantPrice(c) * 100), 0) / 100
+  let marketCents = 0
+  let marketMissing = 0
+  for (const c of visible) {
+    if (c.status === 'sold') continue
+    const mv = marketById.get(c.id)
+    if (mv) marketCents += c.quantity * Math.round(mv.value * 100)
+    else marketMissing += c.quantity
+  }
+  const visibleMarket = { value: marketCents / 100, missing: marketMissing }
 
   return (
     <section className="page">
@@ -144,6 +169,13 @@ export function CollectionPage(): JSX.Element {
             <p className="muted">
               {visibleCount} {visibleCount === 1 ? 'stuk' : 'stuks'}
               {filter !== 'collection' && filter !== 'owned' && <>, samen {formatEur(visibleValue)}</>}
+            </p>
+          )}
+          {cards && filter !== 'sold' && (
+            <p className="muted small">
+              {pricesLoading
+                ? 'Marktprijzen laden…'
+                : `Marktwaarde ${formatEur(visibleMarket.value)}${visibleMarket.missing > 0 ? ` (${visibleMarket.missing} zonder marktprijs)` : ''}`}
             </p>
           )}
         </div>
@@ -172,6 +204,7 @@ export function CollectionPage(): JSX.Element {
           <option value="set">Set en nummer</option>
           <option value="priceDesc">Prijs hoog–laag</option>
           <option value="priceAsc">Prijs laag–hoog</option>
+          <option value="marketDesc">Marktwaarde hoog–laag</option>
           <option value="name">Naam A–Z</option>
         </select>
       </div>
@@ -207,7 +240,14 @@ export function CollectionPage(): JSX.Element {
 
       <ul className="binder">
         {visible.map((c) => (
-          <CardTile key={c.id} card={c} onOpen={open} onToggleSold={onToggle} busy={pending.has(c.id)} />
+          <CardTile
+            key={c.id}
+            card={c}
+            market={marketById.get(c.id)}
+            onOpen={open}
+            onToggleSold={onToggle}
+            busy={pending.has(c.id)}
+          />
         ))}
       </ul>
 
