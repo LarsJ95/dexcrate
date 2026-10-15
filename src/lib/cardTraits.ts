@@ -114,3 +114,32 @@ export function foilStyleFor(variant: Variant | null, rarity: string | null | un
   if (variant === 'reverse') return 'illustration'
   return 'none'
 }
+
+/** Zeldzaamheden om op te filteren (TCGdex-namen; vergelijken zonder hoofdletters). */
+export const RARITY_FILTERS = [
+  'Common',
+  'Uncommon',
+  'Rare',
+  'Rare Holo',
+  'Double rare',
+  'Ultra Rare',
+  'Illustration rare',
+  'Special illustration rare',
+  'Hyper rare',
+  'Secret Rare',
+  'Shiny rare',
+  'ACE SPEC Rare',
+  'Radiant Rare',
+  'Amazing Rare',
+  'Promo',
+] as const
+
+/** Kaarttypes om op te filteren; "ex" (Scarlet & Violet) en "EX" (XY-tijdperk) zijn verschillende kaarten. */
+export const SUFFIX_FILTERS = ['ex', 'EX', 'GX', 'V', 'VMAX', 'VSTAR'] as const
+
+/** Zeldzaamheid gelijk aan het filter; "Rare Holo" en "Holo Rare" zijn hetzelfde. */
+export function rarityMatches(rarity: string | null | undefined, wanted: string): boolean {
+  if (!rarity) return false
+  const norm = (s: string): string => (s.toLowerCase() === 'holo rare' ? 'rare holo' : s.toLowerCase())
+  return norm(rarity) === norm(wanted)
+}

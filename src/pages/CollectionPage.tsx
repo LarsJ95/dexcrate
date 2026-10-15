@@ -4,8 +4,10 @@ import { BulkEditDialog, type BulkChange } from '../components/BulkEditDialog'
 import { CardTile } from '../components/CardTile'
 import { useLocations } from '../hooks/useLocations'
 import { useSchemaV2 } from '../hooks/useSchemaV2'
-import { NO_EXTRA_FILTERS, activeFilterCount, matchesExtra, parseView, type ExtraFilters, type SavedView } from '../lib/collectionFilters'
-import { getCardInfo } from '../lib/tcgdex'
+import { NO_EXTRA_FILTERS, activeFilterCount, matchesExtra, needsCatalog, parseView, type ExtraFilters, type SavedView } from '../lib/collectionFilters'
+import { CatalogFilterFields } from '../components/CatalogFilterFields'
+import { useCatalogInfos } from '../hooks/useCatalogInfos'
+import type { CardInfo } from '../lib/tcgdex'
 import { PurchaseDialog } from '../components/PurchaseDialog'
 import { SaleDialog } from '../components/SaleDialog'
 import { useNewCardDefaults } from '../hooks/useNewCardDefaults'
@@ -76,10 +78,11 @@ export function CollectionPage(): JSX.Element {
   const [sort, setSort] = useState<SortKey>(initialView.sort)
   const [extra, setExtra] = useState<ExtraFilters>(initialView.extra)
   const [showFilters, setShowFilters] = useState(activeFilterCount(initialView.extra) > 0)
+  // Kaartinfo (illustrator, zeldzaamheid, types) alleen laden als je op de catalogus filtert.
+  const catalogKeys = useMemo(() => (cards ?? []).flatMap((c) => (c.tcgdex_id ? [c.tcgdex_id] : [])), [cards])
+  const infos = useCatalogInfos(catalogKeys, needsCatalog(extra))
   const v2 = useSchemaV2() === true
   const locations = useLocations(v2)
-  // Illustrator per cataloguskaart; alleen geladen als je op illustrator filtert.
-  const [illustrators, setIllustrators] = useState<ReadonlyMap<string, string | null>>(new Map())
   const [bulkFor, setBulkFor] = useState<Card[] | null>(null)
   const [lastBulk, setLastBulk] = useState<BulkChange[] | null>(null)
 
@@ -126,8 +129,8 @@ export function CollectionPage(): JSX.Element {
 
   const visible = useMemo(() => {
     if (!cards) return []
-    const illustratorOf = (c: CardInput): string | null | undefined => (c.tcgdex_id ? illustrators.get(c.tcgdex_id) : null)
-    const filtered = cards.filter((c) => matchesFilter(c, filter) && matchesSearch(c, query) && matchesExtra(c, extra, illustratorOf))
+    const infoOf = (c: CardInput): CardInfo | null | undefined => (c.tcgdex_id ? (infos.has(c.tcgdex_id) ? infos.get(c.tcgdex_id) : undefined) : null)
+    const filtered = cards.filter((c) => matchesFilter(c, filter) && matchesSearch(c, query) && matchesExtra(c, extra, infoOf))
     const sorted = [...filtered]
     if (sort === 'priceDesc') sorted.sort((a, b) => relevantPrice(b) - relevantPrice(a))
     if (sort === 'priceAsc') sorted.sort((a, b) => relevantPrice(a) - relevantPrice(b))
@@ -143,31 +146,7 @@ export function CollectionPage(): JSX.Element {
       )
     }
     return sorted
-  }, [cards, query, filter, sort, marketById, extra, illustrators])
-
-  const wantIllustrators = extra.illustrator.trim() !== ''
-  useEffect(() => {
-    if (!wantIllustrators || !cards) return
-    let cancelled = false
-    const keys = [...new Set(cards.flatMap((c) => (c.tcgdex_id ? [c.tcgdex_id] : [])))]
-    const found = new Map<string, string | null>()
-    let done = 0
-    for (const key of keys) {
-      getCardInfo(key)
-        .then((info) => found.set(key, info?.illustrator ?? null))
-        .catch((err: unknown) => {
-          console.warn(`Illustrator ophalen mislukt voor ${key}`, err)
-          found.set(key, null)
-        })
-        .finally(() => {
-          done += 1
-          if (!cancelled && (done % 10 === 0 || done === keys.length)) setIllustrators(new Map(found))
-        })
-    }
-    return () => {
-      cancelled = true
-    }
-  }, [wantIllustrators, cards])
+  }, [cards, query, filter, sort, marketById, extra, infos])
 
   const counts = useMemo(() => {
     const out: Record<StatusFilter, number> = { all: 0, owned: 0, collection: 0, for_sale: 0, sold: 0 }
@@ -385,6 +364,7 @@ export function CollectionPage(): JSX.Element {
                 </select>
               </label>
             )}
+            <CatalogFilterFields value={extra} onChange={(next) => setExtra((f) => ({ ...f, ...next }))} />
             <label>
               Illustrator
               <input value={extra.illustrator} maxLength={60} placeholder="e.g. Arita" onChange={(e) => setExtra((f) => ({ ...f, illustrator: e.target.value }))} />

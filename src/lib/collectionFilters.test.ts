@@ -18,11 +18,31 @@ describe('extra filters', () => {
 
   it('illustrator: deelnaam; tijdens laden niet wegfilteren', () => {
     const f = { ...NO_EXTRA_FILTERS, illustrator: 'aky' }
-    expect(matchesExtra(mew, f, () => 'aky CG Works')).toBe(true)
-    expect(matchesExtra(mew, f, () => 'Mitsuhiro Arita')).toBe(false)
+    const by = (illustrator: string) => () => ({ illustrator, rarity: null, types: [], suffix: null })
+    expect(matchesExtra(mew, f, by('aky CG Works'))).toBe(true)
+    expect(matchesExtra(mew, f, by('Mitsuhiro Arita'))).toBe(false)
     expect(matchesExtra(mew, f, () => undefined)).toBe(true)
     expect(matchesExtra(mew, f, () => null)).toBe(false)
     expect(activeFilterCount(f)).toBe(1)
+  })
+})
+
+describe('catalogusfilters', () => {
+  const info = { illustrator: null, rarity: 'Holo Rare', types: ['Psychic' as const], suffix: 'ex' }
+  it('zeldzaamheid (Holo Rare = Rare Holo), type en kaarttype', () => {
+    expect(matchesExtra(mew, { ...NO_EXTRA_FILTERS, rarity: 'Rare Holo' }, () => info)).toBe(true)
+    expect(matchesExtra(mew, { ...NO_EXTRA_FILTERS, type: 'Psychic', suffix: 'ex' }, () => info)).toBe(true)
+    expect(matchesExtra(mew, { ...NO_EXTRA_FILTERS, suffix: 'EX' }, () => info)).toBe(false)
+    expect(matchesExtra(mew, { ...NO_EXTRA_FILTERS, type: 'Fire' }, () => info)).toBe(false)
+  })
+  it('tijdens laden niet wegfilteren; zonder catalogus wel', () => {
+    expect(matchesExtra(mew, { ...NO_EXTRA_FILTERS, type: 'Fire' }, () => undefined)).toBe(true)
+    expect(matchesExtra(loose, { ...NO_EXTRA_FILTERS, type: 'Fire' }, none)).toBe(false)
+  })
+  it('onthoudt alleen bekende waarden', () => {
+    const fallback = { query: '', filter: 'owned' as const, sort: 'list' as const, extra: NO_EXTRA_FILTERS }
+    const v = parseView(JSON.stringify({ extra: { rarity: 'Hyper rare', type: 'Plasma', suffix: 'ex' } }), ['list'], ['owned'], fallback)
+    expect(v.extra).toMatchObject({ rarity: 'Hyper rare', type: '', suffix: 'ex' })
   })
 })
 

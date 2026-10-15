@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState, type JSX } from 'react'
 import { CardImage } from '../components/CardImage'
+import { CatalogFilterFields } from '../components/CatalogFilterFields'
 import { CatalogResults } from '../components/CatalogResults'
+import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { IconPlus, IconSearch } from '../components/Icons'
 import { WishlistDialog } from '../components/WishlistDialog'
 import { useCardPrice } from '../hooks/useCardPrice'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import type { CatalogHit } from '../lib/catalogSearch'
+import { matchesCatalog, needsCatalog, type CatalogFilters } from '../lib/collectionFilters'
 import { listCards } from '../lib/db'
 import { getSet, lookupLang, type Lang } from '../lib/tcgdex'
 import { marketValue } from '../lib/prices'
@@ -41,6 +44,9 @@ export function WishlistPage(): JSX.Element {
   const [variant, setVariant] = useState<Variant | ''>('')
   const [language, setLanguage] = useState<CardLanguage | ''>('')
   const [showFound, setShowFound] = useState(false)
+  const [catalogFilter, setCatalogFilter] = useState<CatalogFilters>({ rarity: '', type: '', suffix: '' })
+  const wishKeys = useMemo(() => (items ?? []).flatMap((i) => (i.tcgdex_id ? [i.tcgdex_id] : [])), [items])
+  const infos = useCatalogInfos(wishKeys, needsCatalog(catalogFilter))
   const [editing, setEditing] = useState<WishlistItem | 'new' | null>(null)
   // Startwaarden als je een kaart uit de kaartendatabase kiest.
   const [initial, setInitial] = useState<Partial<WishlistInput> | undefined>(undefined)
@@ -75,7 +81,10 @@ export function WishlistPage(): JSX.Element {
       (showFound || !r.found) &&
       (!variant || r.item.variant === variant) &&
       (!language || r.item.language === language) &&
-      matches(r.item, query),
+      matches(r.item, query) &&
+      // Catalogusfilters: tijdens laden niet wegfilteren; zonder koppeling past een wens niet.
+      (!needsCatalog(catalogFilter) ||
+        (r.item.tcgdex_id !== null && (!infos.has(r.item.tcgdex_id) || matchesCatalog(infos.get(r.item.tcgdex_id) ?? null, catalogFilter)))),
   )
   const foundCount = rows.filter((r) => r.found).length
   const wishedKeys = useMemo(() => new Set((items ?? []).flatMap((i) => (i.tcgdex_id ? [i.tcgdex_id] : []))), [items])
@@ -156,6 +165,7 @@ export function WishlistPage(): JSX.Element {
             </option>
           ))}
         </select>
+        <CatalogFilterFields value={catalogFilter} onChange={setCatalogFilter} compact />
         <label className="check">
           <input type="checkbox" checked={showFound} onChange={(e) => setShowFound(e.target.checked)} />
           Show found
