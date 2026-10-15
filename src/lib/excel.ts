@@ -81,7 +81,7 @@ function readRows(ws: Worksheet, label: string, warnings: string[]): { item: Ite
       row: r,
       item: {
         name,
-        set_code: sealed || !setRaw ? null : setRaw.toUpperCase(),
+        set_code: sealed || !setRaw ? null : setRaw,
         card_number: sealed || !numberRaw || numberRaw.toLowerCase() === 'x' ? null : numberRaw,
         quantity: qty,
         unit_price: price,

@@ -2,7 +2,7 @@ import { useEffect, useState, type ChangeEvent, type JSX } from 'react'
 import { parseWorkbook } from '../lib/excel'
 import { computeStats, formatEur } from '../lib/stats'
 import { supabase } from '../lib/supabase'
-import { resolveTcgdexIds } from '../lib/tcgdex'
+import { resolveTcgdexIds } from '../lib/match'
 import type { ItemInput, PurchaseInput, SaleInput } from '../lib/types'
 
 interface Preview {

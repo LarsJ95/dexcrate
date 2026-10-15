@@ -1,31 +1,45 @@
 :root {
-  --bg: #f6f6f4;
+  --page: #e9eef5;
   --surface: #ffffff;
-  --text: #1b1b1f;
-  --muted: #5f6068;
-  --border: #dedde2;
-  --accent: #d13b2f;
-  --accent-text: #ffffff;
-  --success: #1d7a46;
-  --error: #b42318;
-  --radius: 10px;
+  --sleeve: #f7f9fc;
+  --ink: #14213d;
+  --muted: #56617a;
+  --line: #cfd7e3;
+  --yellow: #ffcb05;
+  --navy: #14213d;
+  --on-navy: #ffffff;
+  --sold: #12805a;
+  --sold-bg: #dff3ea;
+  --forsale: #8a5a00;
+  --forsale-bg: #fff3c4;
+  --danger: #c4320a;
+  --radius-s: 6px;
+  --radius-m: 10px;
 
-  font: 16px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Archivo', system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
   color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
+  color: var(--ink);
+  background: var(--page);
+  -webkit-font-smoothing: antialiased;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #131417;
-    --surface: #1c1d22;
-    --text: #ececf0;
-    --muted: #a0a1aa;
-    --border: #30313a;
-    --accent: #ef5a4c;
-    --success: #4cc283;
-    --error: #ff7a6e;
+    --page: #0d1424;
+    --surface: #162038;
+    --sleeve: #1b2744;
+    --ink: #e7ecf6;
+    --muted: #9aa6bf;
+    --line: #2a3756;
+    --navy: #ffcb05;
+    --on-navy: #14213d;
+    --sold: #5fd3a1;
+    --sold-bg: #123a2d;
+    --forsale: #ffd75e;
+    --forsale-bg: #3a3112;
+    --danger: #ff8a65;
   }
 }
 
@@ -38,16 +52,31 @@
 body {
   margin: 0;
   min-height: 100vh;
+  background: var(--page);
+}
+
+h1,
+h2,
+h3 {
+  font-stretch: 80%;
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 0;
+}
+
+p {
+  margin: 0;
 }
 
 button {
   font: inherit;
+  font-weight: 600;
   cursor: pointer;
   border: 0;
-  border-radius: var(--radius);
-  padding: 0.6rem 1.1rem;
-  background: var(--accent);
-  color: var(--accent-text);
+  border-radius: var(--radius-s);
+  padding: 0.6rem 1rem;
+  background: var(--navy);
+  color: var(--on-navy);
 }
 
 button:disabled {
@@ -55,17 +84,32 @@ button:disabled {
   cursor: not-allowed;
 }
 
-button:focus-visible,
-input:focus-visible {
-  outline: 2px solid var(--accent);
+:is(button, a, input, select, summary):focus-visible {
+  outline: 3px solid var(--yellow);
   outline-offset: 2px;
 }
 
-input {
+input,
+select {
   font: inherit;
   padding: 0.55rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
   background: var(--surface);
-  color: var(--text);
+  color: var(--ink);
+  min-width: 0;
+}
+
+input[type='radio'],
+input[type='checkbox'] {
+  accent-color: var(--navy);
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
 }
