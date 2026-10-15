@@ -1,9 +1,9 @@
 import type { CellValue, Workbook, Worksheet } from 'exceljs'
-import type { ItemInput, PurchaseInput, SaleInput } from './types'
+import { langFromName, stripLangTag } from './tcgdex'
+import { EMPTY_CARD, type CardInput, type CardLanguage, type ItemKind } from './types'
 
 export interface ParseResult {
-  sales: SaleInput[]
-  purchases: PurchaseInput[]
+  cards: CardInput[]
   warnings: string[]
 }
 
@@ -56,8 +56,25 @@ function parseBool(value: CellValue): boolean {
   return t === 'true' || t === '1' || t === 'waar' || t === 'ja'
 }
 
-function readRows(ws: Worksheet, label: string, warnings: string[]): { item: ItemInput; row: number }[] {
-  const out: { item: ItemInput; row: number }[] = []
+interface ExcelRow {
+  row: number
+  name: string
+  set_code: string | null
+  card_number: string | null
+  quantity: number
+  price: number
+  channel: string | null
+  kind: ItemKind
+}
+
+/** "Mew EX JAPAN" → naam "Mew EX" + taal "ja". Losse kaarten zonder markering zijn Engels. */
+export function splitLanguage(rawName: string, kind: ItemKind): { name: string; language: CardLanguage | null } {
+  if (kind === 'sealed') return { name: rawName, language: null }
+  return { name: stripLangTag(rawName), language: langFromName(rawName) }
+}
+
+function readRows(ws: Worksheet, label: string, warnings: string[]): ExcelRow[] {
+  const out: ExcelRow[] = []
   for (let r = FIRST_DATA_ROW; r <= ws.rowCount; r++) {
     const row = ws.getRow(r)
     const name = cellText(row.getCell(1).value)
@@ -79,17 +96,13 @@ function readRows(ws: Worksheet, label: string, warnings: string[]): { item: Ite
     const sealed = setRaw.toLowerCase() === 'x'
     out.push({
       row: r,
-      item: {
-        name,
-        set_code: sealed || !setRaw ? null : setRaw,
-        card_number: sealed || !numberRaw || numberRaw.toLowerCase() === 'x' ? null : numberRaw,
-        quantity: qty,
-        unit_price: price,
-        channel: normalizeChannel(cellText(row.getCell(6).value)),
-        kind: sealed ? 'sealed' : 'card',
-        tcgdex_id: null,
-        sort_order: out.length,
-      },
+      name,
+      set_code: sealed || !setRaw ? null : setRaw,
+      card_number: sealed || !numberRaw || numberRaw.toLowerCase() === 'x' ? null : numberRaw,
+      quantity: qty,
+      price,
+      channel: normalizeChannel(cellText(row.getCell(6).value)),
+      kind: sealed ? 'sealed' : 'card',
     })
   }
   return out
@@ -109,10 +122,27 @@ export async function parseWorkbook(data: ArrayBuffer): Promise<ParseResult> {
 
   const warnings: string[] = []
   const soldSheet = sheet(wb, 'Sold')
-  const sales: SaleInput[] = readRows(soldSheet, 'Sold', warnings).map(({ item, row }) => ({
-    ...item,
-    sold: parseBool(soldSheet.getRow(row).getCell(7).value),
+  const base = (r: ExcelRow, sortOrder: number): CardInput => ({
+    ...EMPTY_CARD,
+    ...splitLanguage(r.name, r.kind),
+    set_code: r.set_code,
+    card_number: r.card_number,
+    quantity: r.quantity,
+    kind: r.kind,
+    sort_order: sortOrder,
+  })
+  // Verkooplijst → te koop / verkocht; aankooplijst → in collectie (zelfde mapping als 003_migrate_to_cards.sql).
+  const sales: CardInput[] = readRows(soldSheet, 'Sold', warnings).map((r, i) => ({
+    ...base(r, i),
+    status: parseBool(soldSheet.getRow(r.row).getCell(7).value) ? 'sold' : 'for_sale',
+    sale_price: r.price,
+    sale_channel: r.channel,
   }))
-  const purchases: PurchaseInput[] = readRows(sheet(wb, 'Bought'), 'Bought', warnings).map(({ item }) => item)
-  return { sales, purchases, warnings }
+  const purchases: CardInput[] = readRows(sheet(wb, 'Bought'), 'Bought', warnings).map((r, i) => ({
+    ...base(r, 1000 + i),
+    status: 'collection',
+    purchase_price: r.price,
+    purchase_channel: r.channel,
+  }))
+  return { cards: [...sales, ...purchases], warnings }
 }

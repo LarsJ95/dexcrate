@@ -3,25 +3,27 @@ import type { Session } from '@supabase/supabase-js'
 import { Login } from './components/Login'
 import { useHashRoute } from './hooks/useHashRoute'
 import { DashboardPage } from './pages/DashboardPage'
+import { CollectionPage } from './pages/CollectionPage'
 import { ImportPage } from './pages/ImportPage'
-import { ItemsPage } from './pages/ItemsPage'
+import { SetBinderPage } from './pages/SetBinderPage'
+import { SetsPage } from './pages/SetsPage'
 import { supabase } from './lib/supabase'
 import './App.css'
 
-const ROUTES = ['overzicht', 'verkoop', 'aankopen', 'import'] as const
+const ROUTES = ['overzicht', 'collectie', 'sets', 'import'] as const
 type Route = (typeof ROUTES)[number]
 
 const NAV: { route: Route; label: string }[] = [
   { route: 'overzicht', label: 'Overzicht' },
-  { route: 'verkoop', label: 'Verkoop' },
-  { route: 'aankopen', label: 'Aankopen' },
+  { route: 'collectie', label: 'Collectie' },
+  { route: 'sets', label: 'Sets' },
   { route: 'import', label: 'Import' },
 ]
 
 function App(): JSX.Element {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
-  const route = useHashRoute(ROUTES, 'overzicht')
+  const { route, param } = useHashRoute(ROUTES, 'overzicht')
 
   useEffect(() => {
     supabase.auth
@@ -60,8 +62,8 @@ function App(): JSX.Element {
       </header>
       <main>
         {route === 'overzicht' && <DashboardPage />}
-        {route === 'verkoop' && <ItemsPage key="sales" table="sales" />}
-        {route === 'aankopen' && <ItemsPage key="purchases" table="purchases" />}
+        {route === 'collectie' && <CollectionPage />}
+        {route === 'sets' && (param ? <SetBinderPage key={param} param={param} /> : <SetsPage />)}
         {route === 'import' && <ImportPage />}
       </main>
     </>

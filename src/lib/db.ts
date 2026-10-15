@@ -1,9 +1,15 @@
 import { supabase } from './supabase'
-import type { ItemKind, Purchase, PurchaseInput, Sale, SaleInput } from './types'
+import {
+  CONDITION_LABELS,
+  GRADING_LABELS,
+  LANGUAGE_LABELS,
+  VARIANT_LABELS,
+  type Card,
+  type CardInput,
+  type CardStatus,
+} from './types'
 
-export type Table = 'sales' | 'purchases'
-export type Row<T extends Table> = T extends 'sales' ? Sale : Purchase
-export type Input<T extends Table> = T extends 'sales' ? SaleInput : PurchaseInput
+const TABLE = 'cards'
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null
@@ -11,14 +17,21 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 const str = (v: unknown): string => (typeof v === 'string' ? v : '')
 const strOrNull = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? v : null)
-const num = (v: unknown): number => {
+const numOrNull = (v: unknown): number | null => {
+  if (v === null || v === undefined || v === '') return null
   const n = typeof v === 'number' ? v : Number(v)
-  return Number.isFinite(n) ? n : 0
+  return Number.isFinite(n) ? n : null
 }
-const kind = (v: unknown): ItemKind => (v === 'sealed' ? 'sealed' : 'card')
+
+/** Waarde alleen accepteren als die in de lijst met toegestane sleutels staat. */
+function oneOf<K extends string>(v: unknown, allowed: Record<K, unknown>): K | null {
+  return typeof v === 'string' && v in allowed ? (v as K) : null
+}
+
+const STATUSES: Record<CardStatus, true> = { collection: true, for_sale: true, sold: true }
 
 /** Database-rij → getypeerd object; onverwachte vorm wordt overgeslagen. */
-function toItem(r: unknown): Purchase | null {
+function toCard(r: unknown): Card | null {
   if (!isRecord(r) || typeof r.id !== 'string') return null
   return {
     id: r.id,
@@ -28,58 +41,92 @@ function toItem(r: unknown): Purchase | null {
     name: str(r.name),
     set_code: strOrNull(r.set_code),
     card_number: strOrNull(r.card_number),
-    quantity: Math.max(1, Math.trunc(num(r.quantity))),
-    unit_price: num(r.unit_price),
-    channel: strOrNull(r.channel),
-    kind: kind(r.kind),
+    quantity: Math.max(1, Math.trunc(numOrNull(r.quantity) ?? 1)),
+    kind: r.kind === 'sealed' ? 'sealed' : 'card',
     tcgdex_id: strOrNull(r.tcgdex_id),
-    sort_order: Math.trunc(num(r.sort_order)),
+    status: oneOf(r.status, STATUSES) ?? 'collection',
+    language: oneOf(r.language, LANGUAGE_LABELS),
+    condition: oneOf(r.condition, CONDITION_LABELS),
+    variant: oneOf(r.variant, VARIANT_LABELS),
+    grading_company: oneOf(r.grading_company, GRADING_LABELS),
+    grade: numOrNull(r.grade),
+    purchase_price: numOrNull(r.purchase_price),
+    purchase_channel: strOrNull(r.purchase_channel),
+    purchase_date: strOrNull(r.purchase_date),
+    sale_price: numOrNull(r.sale_price),
+    sale_channel: strOrNull(r.sale_channel),
+    sale_date: strOrNull(r.sale_date),
+    sort_order: Math.trunc(numOrNull(r.sort_order) ?? 0),
   }
 }
 
-function toRow<T extends Table>(table: T, r: unknown): Row<T> | null {
-  const item = toItem(r)
-  if (!item) return null
-  if (table === 'purchases') return item as Row<T>
-  return { ...item, sold: isRecord(r) && r.sold === true } as Row<T>
+function single(data: unknown): Card {
+  const row = toCard(data)
+  if (!row) throw new Error('Opslaan mislukt: onverwacht antwoord van de database.')
+  return row
 }
 
-export async function listItems<T extends Table>(table: T): Promise<Row<T>[]> {
+export async function listCards(): Promise<Card[]> {
   const { data, error } = await supabase
-    .from(table)
+    .from(TABLE)
     .select('*')
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true })
   if (error) throw new Error(`Laden mislukt: ${error.message}`)
   return (data as unknown[]).flatMap((r) => {
-    const row = toRow(table, r)
+    const row = toCard(r)
     return row ? [row] : []
   })
 }
 
-export async function insertItem<T extends Table>(table: T, input: Input<T>): Promise<Row<T>> {
-  const { data, error } = await supabase.from(table).insert(input).select('*').single()
-  if (error) throw new Error(`Opslaan mislukt: ${error.message}`)
-  const row = toRow(table, data)
-  if (!row) throw new Error('Opslaan mislukt: onverwacht antwoord van de database.')
-  return row
+export async function countCards(): Promise<number> {
+  const { count, error } = await supabase.from(TABLE).select('id', { count: 'exact', head: true })
+  if (error) throw new Error(`Tellen mislukt: ${error.message}`)
+  return count ?? 0
 }
 
-export async function updateItem<T extends Table>(table: T, id: string, patch: Partial<Input<T>>): Promise<Row<T>> {
-  // Zonder gegenereerde DB-types kan supabase-js het generieke Input<T> niet narrowen.
-  const { data, error } = await supabase
-    .from(table)
-    .update(patch as Partial<SaleInput>)
-    .eq('id', id)
-    .select('*')
-    .single()
+export async function insertCards(input: readonly CardInput[]): Promise<Card[]> {
+  // Eén insert-statement: alles of niets.
+  const { data, error } = await supabase.from(TABLE).insert(input).select('*')
   if (error) throw new Error(`Opslaan mislukt: ${error.message}`)
-  const row = toRow(table, data)
-  if (!row) throw new Error('Opslaan mislukt: onverwacht antwoord van de database.')
-  return row
+  return (data as unknown[]).map(single)
 }
 
-export async function deleteItem(table: Table, id: string): Promise<void> {
-  const { error } = await supabase.from(table).delete().eq('id', id)
+export async function insertCard(input: CardInput): Promise<Card> {
+  const { data, error } = await supabase.from(TABLE).insert(input).select('*').single()
+  if (error) throw new Error(`Opslaan mislukt: ${error.message}`)
+  return single(data)
+}
+
+export async function updateCard(id: string, patch: Partial<CardInput>): Promise<Card> {
+  const { data, error } = await supabase.from(TABLE).update(patch).eq('id', id).select('*').single()
+  if (error) throw new Error(`Opslaan mislukt: ${error.message}`)
+  return single(data)
+}
+
+export async function deleteCard(id: string): Promise<void> {
+  const { error } = await supabase.from(TABLE).delete().eq('id', id)
   if (error) throw new Error(`Verwijderen mislukt: ${error.message}`)
+}
+
+/**
+ * Deel van een regel een andere status geven (bv. 1 van 3 verkopen):
+ * nieuwe regel met `moved` stuks, origineel houdt de rest. Bij een fout wordt teruggedraaid.
+ */
+export async function splitCard(
+  original: Card,
+  moved: number,
+  changes: CardInput,
+): Promise<{ original: Card; created: Card }> {
+  if (moved < 1 || moved >= original.quantity) throw new Error('Ongeldig aantal om te splitsen.')
+  const created = await insertCard({ ...changes, quantity: moved })
+  try {
+    const updated = await updateCard(original.id, { quantity: original.quantity - moved })
+    return { original: updated, created }
+  } catch (err) {
+    await deleteCard(created.id).catch((rollbackErr: unknown) => {
+      console.error('Terugdraaien van splitsing mislukt', rollbackErr)
+    })
+    throw err
+  }
 }

@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type JSX } from 'react'
 import { useCardInfo } from '../hooks/useCardInfo'
 import { findCandidates, type Candidate } from '../lib/match'
-import { imageUrl, langFromName, splitKey, stripLangTag, type Lang } from '../lib/tcgdex'
+import { imageUrl, lookupLang, splitKey, stripLangTag, type Lang } from '../lib/tcgdex'
+import type { CardLanguage } from '../lib/types'
 
 interface Props {
   name: string
+  language: CardLanguage | null
   setCode: string
   cardNumber: string
   value: string | null
@@ -12,13 +14,19 @@ interface Props {
   onClear: () => void
 }
 
-const LANG_LABELS: Record<Lang, string> = { en: 'Engels', ja: 'Japans', 'zh-cn': 'Chinees' }
+const LANG_LABELS: Record<Lang, string> = {
+  en: 'Engels / Europees',
+  ja: 'Japans',
+  'zh-cn': 'Chinees (vereenv.)',
+  'zh-tw': 'Chinees (trad.)',
+  ko: 'Koreaans',
+}
 
-export function LinkPicker({ name, setCode, cardNumber, value, onSelect, onClear }: Props): JSX.Element {
+export function LinkPicker({ name, language, setCode, cardNumber, value, onSelect, onClear }: Props): JSX.Element {
   const linked = useCardInfo(value)
   const [open, setOpen] = useState(!value)
   const [term, setTerm] = useState(stripLangTag(name))
-  const [lang, setLang] = useState<Lang>(value ? (splitKey(value)?.lang ?? 'en') : langFromName(name))
+  const [lang, setLang] = useState<Lang>(value ? (splitKey(value)?.lang ?? 'en') : lookupLang(language))
   const [results, setResults] = useState<Candidate[] | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -47,8 +55,8 @@ export function LinkPicker({ name, setCode, cardNumber, value, onSelect, onClear
   useEffect(() => {
     if (value || !open || autoSearched.current) return
     autoSearched.current = true
-    void search(stripLangTag(name), langFromName(name))
-  }, [value, open, name, search])
+    void search(stripLangTag(name), lookupLang(language))
+  }, [value, open, name, language, search])
 
   return (
     <section className="link-picker" aria-label="Koppeling met kaartdatabase">
@@ -101,7 +109,7 @@ export function LinkPicker({ name, setCode, cardNumber, value, onSelect, onClear
             </button>
           </div>
           {lang !== 'en' && (
-            <p className="muted small">Japanse en Chinese kaarten vind je alleen via set + nummer; zoeken op Engelse naam werkt niet.</p>
+            <p className="muted small">Aziatische kaarten vind je alleen via set + nummer; zoeken op Engelse naam werkt niet.</p>
           )}
           {busy && <p aria-live="polite">Zoeken…</p>}
           {error && <p className="error" role="alert">{error}</p>}

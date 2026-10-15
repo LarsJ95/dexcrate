@@ -1,13 +1,12 @@
 import { useEffect, useState, type ChangeEvent, type JSX } from 'react'
+import { countCards, insertCards } from '../lib/db'
 import { parseWorkbook } from '../lib/excel'
-import { computeStats, formatEur } from '../lib/stats'
-import { supabase } from '../lib/supabase'
 import { resolveTcgdexIds } from '../lib/match'
-import type { ItemInput, PurchaseInput, SaleInput } from '../lib/types'
+import { computeStats, formatEur } from '../lib/stats'
+import type { CardInput } from '../lib/types'
 
 interface Preview {
-  sales: SaleInput[]
-  purchases: PurchaseInput[]
+  cards: CardInput[]
   warnings: string[]
 }
 
@@ -19,16 +18,6 @@ type Status =
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024
 
-async function countRows(table: 'sales' | 'purchases'): Promise<number> {
-  const { count, error } = await supabase.from(table).select('id', { count: 'exact', head: true })
-  if (error) throw new Error(`${table} tellen mislukt: ${error.message}`)
-  return count ?? 0
-}
-
-function unmatched(items: readonly ItemInput[]): ItemInput[] {
-  return items.filter((i) => i.kind === 'card' && !i.tcgdex_id)
-}
-
 export function ImportPage(): JSX.Element {
   const [existing, setExisting] = useState<number | null>(null)
   const [preview, setPreview] = useState<Preview | null>(null)
@@ -37,9 +26,9 @@ export function ImportPage(): JSX.Element {
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([countRows('sales'), countRows('purchases')])
-      .then(([s, p]) => {
-        if (!cancelled) setExisting(s + p)
+    countCards()
+      .then((n) => {
+        if (!cancelled) setExisting(n)
       })
       .catch((err: unknown) => {
         if (!cancelled) setStatus({ kind: 'error', message: err instanceof Error ? err.message : String(err) })
@@ -61,12 +50,8 @@ export function ImportPage(): JSX.Element {
     try {
       setStatus({ kind: 'busy', message: 'Excel inlezen…' })
       const parsed = await parseWorkbook(await file.arrayBuffer())
-      setStatus({ kind: 'busy', message: 'Kaarten koppelen aan TCGdex…' })
-      const [sales, purchases] = await Promise.all([
-        resolveTcgdexIds(parsed.sales),
-        resolveTcgdexIds(parsed.purchases),
-      ])
-      setPreview({ sales, purchases, warnings: parsed.warnings })
+      setStatus({ kind: 'busy', message: 'Kaarten koppelen aan de kaartdatabase…' })
+      setPreview({ cards: await resolveTcgdexIds(parsed.cards), warnings: parsed.warnings })
       setStatus({ kind: 'idle' })
     } catch (err) {
       console.error(err)
@@ -77,39 +62,31 @@ export function ImportPage(): JSX.Element {
   async function onImport(): Promise<void> {
     if (!preview || status.kind === 'busy') return
     setStatus({ kind: 'busy', message: 'Opslaan in database…' })
-    const { data: inserted, error: salesErr } = await supabase.from('sales').insert(preview.sales).select('id')
-    if (salesErr) {
-      setStatus({ kind: 'error', message: `Verkooplijst opslaan mislukt: ${salesErr.message}` })
-      return
-    }
-    const { error: purchErr } = await supabase.from('purchases').insert(preview.purchases)
-    if (purchErr) {
-      // Geen half-geïmporteerde staat achterlaten.
-      const ids = inserted.map((r) => r.id as string)
-      const { error: rollbackErr } = await supabase.from('sales').delete().in('id', ids)
-      if (rollbackErr) console.error('Terugdraaien verkooplijst mislukt', rollbackErr)
-      setStatus({ kind: 'error', message: `Aankooplijst opslaan mislukt: ${purchErr.message}` })
+    try {
+      await insertCards(preview.cards)
+    } catch (err) {
+      setStatus({ kind: 'error', message: err instanceof Error ? err.message : 'Opslaan mislukt.' })
       return
     }
     setPreview(null)
     setRefreshKey((k) => k + 1)
-    setStatus({
-      kind: 'done',
-      message: `${preview.sales.length} verkoopregels en ${preview.purchases.length} aankoopregels geïmporteerd.`,
-    })
+    setStatus({ kind: 'done', message: `${preview.cards.length} regels geïmporteerd.` })
   }
 
-  const stats = preview ? computeStats(preview.sales, preview.purchases) : null
-  const missing = preview ? [...unmatched(preview.sales), ...unmatched(preview.purchases)] : []
+  const stats = preview ? computeStats(preview.cards) : null
+  const missing = preview ? preview.cards.filter((c) => c.kind === 'card' && !c.tcgdex_id) : []
   const busy = status.kind === 'busy'
   const blocked = existing === null || existing > 0
 
   return (
     <section className="page">
-      <h2>Excel importeren</h2>
+      <h1>Excel importeren</h1>
+      <p className="muted">
+        Verkooplijst wordt "Te koop" of "Verkocht", aankooplijst wordt "In collectie".
+      </p>
       {existing !== null && existing > 0 && (
         <p className="notice">
-          De database bevat al {existing} regels. Importeren is uitgeschakeld om dubbele regels te voorkomen.
+          Je collectie bevat al {existing} regels. Importeren is uitgeschakeld om dubbele regels te voorkomen.
         </p>
       )}
 
@@ -129,7 +106,7 @@ export function ImportPage(): JSX.Element {
 
       {preview && stats && (
         <div className="preview">
-          <h3>Controle</h3>
+          <h2>Controle</h2>
           <table>
             <tbody>
               <tr><th scope="row">Verkocht</th><td>{formatEur(stats.sold.amount)}</td><td>{stats.sold.count} kaarten</td></tr>
@@ -139,21 +116,21 @@ export function ImportPage(): JSX.Element {
             </tbody>
           </table>
           <p>
-            {preview.sales.length} verkoopregels, {preview.purchases.length} aankoopregels.{' '}
+            {preview.cards.length} regels.{' '}
             {missing.length === 0 ? 'Alle kaarten gekoppeld.' : `${missing.length} kaarten niet automatisch gekoppeld (kun je later koppelen):`}
           </p>
           {missing.length > 0 && (
             <ul>
               {missing.map((m, i) => (
                 <li key={`${m.name}-${i}`}>
-                  {m.name} — {m.set_code ?? '?'} {m.card_number ?? ''}
+                  {m.name}: {m.set_code ?? '?'} {m.card_number ?? ''}
                 </li>
               ))}
             </ul>
           )}
           {preview.warnings.length > 0 && (
             <>
-              <h3>Waarschuwingen</h3>
+              <h2>Waarschuwingen</h2>
               <ul>{preview.warnings.map((w) => <li key={w}>{w}</li>)}</ul>
             </>
           )}

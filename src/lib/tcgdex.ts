@@ -1,7 +1,15 @@
 const API = 'https://api.tcgdex.net/v2'
 
-export const LANGS = ['en', 'ja', 'zh-cn'] as const
+import type { CardLanguage } from './types'
+
+/** Talen met eigen sets/nummering in TCGdex. */
+export const LANGS = ['en', 'ja', 'zh-cn', 'zh-tw', 'ko'] as const
 export type Lang = (typeof LANGS)[number]
+
+/** Kaarttaal → TCGdex-dataset. Europese talen delen set en nummer met de Engelse versie. */
+export function lookupLang(language: CardLanguage | null): Lang {
+  return language && isLang(language) ? language : 'en'
+}
 
 export interface SetCard {
   id: string
@@ -16,6 +24,9 @@ export interface SetSummary {
   logo: string | null
   /** Officiële afkorting (MEW, OBF); alleen bekend na ophalen van de setdetails. */
   abbr?: string | null
+  /** Totaal aantal kaarten incl. secret rares; alleen bekend na ophalen van de setdetails. */
+  total?: number
+  releaseDate?: string | null
 }
 
 /** Weergave-info van één kaart. `key` = "<taal>/<kaart-id>", zoals opgeslagen in tcgdex_id. */
@@ -92,6 +103,14 @@ export function splitKey(key: string): { lang: Lang; cardId: string } | null {
   return isLang(lang) && cardId ? { lang, cardId } : null
 }
 
+/** Set-id uit een opgeslagen sleutel ("en/sv03.5-151" → { lang: "en", setId: "sv03.5", cardId }). */
+export function setOfKey(key: string): { lang: Lang; setId: string; cardId: string } | null {
+  const parts = splitKey(key)
+  if (!parts) return null
+  const dash = parts.cardId.lastIndexOf('-')
+  return dash > 0 ? { ...parts, setId: parts.cardId.slice(0, dash) } : null
+}
+
 /** Set-id uit kaart-id ("sv03.5-151" → "sv03.5"). */
 export function setIdOf(card: Pick<SetCard, 'id' | 'localId'>): string {
   return card.id.slice(0, card.id.length - card.localId.length - 1)
@@ -112,14 +131,19 @@ const fetchSet = memo(async (k: string): Promise<{ summary: SetSummary; cards: S
   const [lang, setId] = k.split('|')
   const data = await getJson(`${API}/${lang}/sets/${encodeURIComponent(setId)}`)
   if (!isRecord(data) || typeof data.id !== 'string') return null
+  const cards = parseCards(data.cards)
+  const countTotal = isRecord(data.cardCount) && typeof data.cardCount.total === 'number' ? data.cardCount.total : 0
   return {
     summary: {
       id: data.id,
       name: typeof data.name === 'string' ? data.name : data.id,
       logo: optStr(data.logo),
       abbr: isRecord(data.abbreviation) ? optStr(data.abbreviation.official) : null,
+      // Sommige sets (bv. Chinese) hebben een telling maar geen kaartenlijst.
+      total: Math.max(countTotal, cards.length),
+      releaseDate: optStr(data.releaseDate),
     },
-    cards: parseCards(data.cards),
+    cards,
   }
 })
 

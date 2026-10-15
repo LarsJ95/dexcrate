@@ -1,8 +1,8 @@
-import type { ItemInput } from './types'
+import type { CardInput } from './types'
 import {
   findExact,
   getSetList,
-  langFromName,
+  lookupLang,
   resolveSetId,
   searchCards,
   setIdOf,
@@ -85,8 +85,7 @@ export function searchTerms(name: string): string[] {
  * Zoekt de meest aannemelijke TCGdex-kaarten voor een regel, ook bij typo's in naam, set of nummer.
  * Volgorde: exacte set+nummer, daarna naam+nummer elders, daarna gelijkende namen.
  */
-export async function findCandidates(q: MatchQuery, langOverride?: Lang): Promise<Candidate[]> {
-  const lang = langOverride ?? langFromName(q.name)
+export async function findCandidates(q: MatchQuery, lang: Lang): Promise<Candidate[]> {
   const byKey = new Map<string, Omit<Candidate, 'setName'>>()
 
   const add = (card: SetCard, setId: string, score: number, reason: string): void => {
@@ -139,12 +138,12 @@ export async function findCandidates(q: MatchQuery, langOverride?: Lang): Promis
  * Koppelt automatisch alleen bij zekerheid: set + nummer kloppen én (voor Engels) de naam lijkt erop.
  * Geeft nieuwe objecten terug; twijfelgevallen houden tcgdex_id null.
  */
-export async function resolveTcgdexIds<T extends ItemInput>(items: readonly T[]): Promise<T[]> {
+export async function resolveTcgdexIds<T extends CardInput>(items: readonly T[]): Promise<T[]> {
   return Promise.all(
     items.map(async (it) => {
       if (it.kind !== 'card' || !it.set_code || !it.card_number) return it
       try {
-        const lang = langFromName(it.name)
+        const lang = lookupLang(it.language)
         const card = await findExact(lang, it.set_code, it.card_number)
         if (!card) return it
         if (lang === 'en' && nameSimilarity(stripLangTag(it.name), card.name) < MIN_NAME_SIMILARITY) return it

@@ -1,4 +1,4 @@
-import type { ItemInput, SaleInput } from './types'
+import type { CardInput } from './types'
 
 export interface Bucket {
   amount: number
@@ -9,20 +9,22 @@ export interface Stats {
   sold: Bucket
   forSale: Bucket
   bought: Bucket
+  /** In bezit en niet te koop. */
+  collection: Bucket
   net: number
-  /** Verkocht als fractie (0–1) van alle kaarten op de verkooplijst. */
+  /** Verkocht als fractie (0–1) van alles wat te koop staat of verkocht is. */
   sellRatio: number
   avgSold: number
   avgBought: number
   avgForSale: number
 }
 
-/** Rekent in centen om afrondingsfouten van floats te voorkomen. */
-function bucket(items: readonly ItemInput[]): Bucket {
+/** Rekent in centen om afrondingsfouten van floats te voorkomen. Ontbrekende prijs telt als 0. */
+function bucket(items: readonly CardInput[], price: (c: CardInput) => number | null): Bucket {
   let cents = 0
   let count = 0
   for (const it of items) {
-    cents += it.quantity * Math.round(it.unit_price * 100)
+    cents += it.quantity * Math.round((price(it) ?? 0) * 100)
     count += it.quantity
   }
   return { amount: cents / 100, count }
@@ -31,14 +33,18 @@ function bucket(items: readonly ItemInput[]): Bucket {
 const safeDiv = (a: number, b: number): number => (b === 0 ? 0 : a / b)
 
 /** Zelfde formules als het Excel-tabblad "Totaal"; aantallen tellen per stuk. */
-export function computeStats(sales: readonly SaleInput[], purchases: readonly ItemInput[]): Stats {
-  const sold = bucket(sales.filter((s) => s.sold))
-  const forSale = bucket(sales.filter((s) => !s.sold))
-  const bought = bucket(purchases)
+export function computeStats(cards: readonly CardInput[]): Stats {
+  const salePrice = (c: CardInput): number | null => c.sale_price
+  const sold = bucket(cards.filter((c) => c.status === 'sold'), salePrice)
+  const forSale = bucket(cards.filter((c) => c.status === 'for_sale'), salePrice)
+  // "Gekocht" = alles met een aankoopprijs, ongeacht de huidige status.
+  const bought = bucket(cards.filter((c) => c.purchase_price !== null), (c) => c.purchase_price)
+  const collection = bucket(cards.filter((c) => c.status === 'collection'), (c) => c.purchase_price)
   return {
     sold,
     forSale,
     bought,
+    collection,
     net: Math.round((sold.amount - bought.amount) * 100) / 100,
     sellRatio: safeDiv(sold.count, sold.count + forSale.count),
     avgSold: safeDiv(sold.amount, sold.count),

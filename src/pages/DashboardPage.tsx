@@ -1,12 +1,7 @@
 import { useEffect, useMemo, useState, type JSX } from 'react'
-import { listItems } from '../lib/db'
+import { listCards } from '../lib/db'
 import { computeStats, formatEur, type Bucket } from '../lib/stats'
-import type { Purchase, Sale } from '../lib/types'
-
-interface Data {
-  sales: Sale[]
-  purchases: Purchase[]
-}
+import type { Card } from '../lib/types'
 
 const pct = new Intl.NumberFormat('nl-NL', { style: 'percent', maximumFractionDigits: 1 })
 
@@ -32,15 +27,15 @@ function Tile({ label, bucket, unit, href }: { label: string; bucket: Bucket; un
 }
 
 export function DashboardPage(): JSX.Element {
-  const [data, setData] = useState<Data | null>(null)
+  const [data, setData] = useState<Card[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([listItems('sales'), listItems('purchases')])
-      .then(([sales, purchases]) => {
-        if (!cancelled) setData({ sales, purchases })
+    listCards()
+      .then((cards) => {
+        if (!cancelled) setData(cards)
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Laden mislukt.')
@@ -50,7 +45,7 @@ export function DashboardPage(): JSX.Element {
     }
   }, [reloadKey])
 
-  const stats = useMemo(() => (data ? computeStats(data.sales, data.purchases) : null), [data])
+  const stats = useMemo(() => (data ? computeStats(data) : null), [data])
 
   if (error) {
     return (
@@ -72,11 +67,11 @@ export function DashboardPage(): JSX.Element {
   }
   if (!stats || !data) return <p className="center" aria-live="polite">Laden…</p>
 
-  if (data.sales.length === 0 && data.purchases.length === 0) {
+  if (data.length === 0) {
     return (
       <section className="page">
         <p className="empty">
-          Nog geen kaarten. <a href="#/import">Importeer je Excel</a> of voeg een kaart toe via Verkoop.
+          Nog geen kaarten. <a href="#/import">Importeer je Excel</a> of voeg een kaart toe via Collectie.
         </p>
       </section>
     )
@@ -94,9 +89,15 @@ export function DashboardPage(): JSX.Element {
       </div>
 
       <div className="stat-row">
-        <Tile label="Verkocht" bucket={stats.sold} unit={countLabel(stats.sold.count, 'kaart', 'kaarten')} href="#/verkoop" />
-        <Tile label="Te koop" bucket={stats.forSale} unit={countLabel(stats.forSale.count, 'kaart', 'kaarten')} href="#/verkoop" />
-        <Tile label="Gekocht" bucket={stats.bought} unit={countLabel(stats.bought.count, 'stuk', 'stuks')} href="#/aankopen" />
+        <Tile label="Verkocht" bucket={stats.sold} unit={countLabel(stats.sold.count, 'kaart', 'kaarten')} href="#/collectie" />
+        <Tile label="Te koop" bucket={stats.forSale} unit={countLabel(stats.forSale.count, 'kaart', 'kaarten')} href="#/collectie" />
+        <Tile label="Gekocht" bucket={stats.bought} unit={countLabel(stats.bought.count, 'stuk', 'stuks')} href="#/collectie" />
+        <Tile
+          label="In collectie (aankoopwaarde)"
+          bucket={stats.collection}
+          unit={countLabel(stats.collection.count, 'stuk', 'stuks')}
+          href="#/collectie"
+        />
       </div>
 
       <div className="panel">
