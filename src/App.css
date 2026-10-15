@@ -1326,7 +1326,7 @@ a.stat:hover {
   border-radius: var(--radius-l);
 }
 
-@media (max-width: 520px) {
+@media (max-width: 480px) {
   .scan-stage {
     grid-template-columns: 1fr;
     justify-items: center;
@@ -1365,7 +1365,7 @@ a.stat:hover {
   justify-items: start;
 }
 
-@media (max-width: 520px) {
+@media (max-width: 480px) {
   .scan-actions {
     justify-items: center;
   }
@@ -1452,7 +1452,7 @@ a.stat:hover {
   max-width: 100%;
 }
 
-@media (max-width: 520px) {
+@media (max-width: 480px) {
   .scan-row {
     grid-template-columns: auto 52px 1fr;
   }
