@@ -98,6 +98,36 @@ export const IconClose = (p: IconProps): JSX.Element => (
   </Svg>
 )
 
+export const IconCheck = (p: IconProps): JSX.Element => (
+  <Svg {...p}>
+    <path d="m5 12.5 4.5 4.5L19 7.5" />
+  </Svg>
+)
+
+export const IconArrowUp = (p: IconProps): JSX.Element => (
+  <Svg {...p}>
+    <path d="M12 19V5M6 11l6-6 6 6" />
+  </Svg>
+)
+
+export const IconArrowDown = (p: IconProps): JSX.Element => (
+  <Svg {...p}>
+    <path d="M12 5v14M6 13l6 6 6-6" />
+  </Svg>
+)
+
+export const IconMinus = (p: IconProps): JSX.Element => (
+  <Svg {...p}>
+    <path d="M5 12h14" />
+  </Svg>
+)
+
+export const IconArrowLeft = (p: IconProps): JSX.Element => (
+  <Svg {...p}>
+    <path d="M19 12H5M11 6l-6 6 6 6" />
+  </Svg>
+)
+
 /** Logo: gestileerde vangbal, bewust geen kopie van het officiële logo. */
 export function LogoMark({ size = 28 }: { size?: number }): JSX.Element {
   return (

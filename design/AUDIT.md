@@ -66,7 +66,7 @@ Datum: 15-10-2026. Bron: `src/index.css`, `src/App.css`, componenten in `src/`. 
 0. **Fundament** (geen zichtbare pagina-wijziging): tokens voor spacing (4px-schaal), typeschaal (min. 14px), radius, schaduw/diepte en alle losse kleuren; `App.css` alleen nog via tokens. Secties 5, 6 en 9 ingevuld 15-10-2026. ✔ Gedaan 15-10-2026 (spacing, radius, schaduw, kleuren; typeschaal volgt in stap 4, hover-glans vervalt in stap 5).
 1. **Contrast**: focusring en groene tekst in licht thema op AA. ✔ Gedaan 15-10-2026: tokens `--focus` en `--accent-line`; licht groen #0a7a4c, oranje #8a5000 (alle gemeten paren ≥ 4,5:1 voor tekst, ≥ 3:1 voor lijnen).
 2. **Fonts self-hosten**: Archivo als woff2 in `public/fonts` met `@font-face`, `font-display: swap` (bestand toevoegen, geen npm-pakket). ✔ Gedaan 15-10-2026: in `src/assets/fonts` (Vite geeft hash en juiste base-pad), latin + latin-ext, OFL-licentie erbij, in de offline-precache.
-3. **Verboden-lijst**: blur vervangen door effen vlakken; verlopen weg of expliciet toestaan; tekstglyphs vervangen door SVG-iconen uit de bestaande iconenset.
+3. **Verboden-lijst**: blur vervangen door effen vlakken; verlopen weg of expliciet toestaan; tekstglyphs vervangen door SVG-iconen uit de bestaande iconenset. ✔ Gedaan 15-10-2026: geen `backdrop-filter` meer; nieuwe iconen vinkje, pijl omhoog/omlaag/links, streepje; verlopen toegestaan (§11).
 4. **Per pagina** (telkens screenshots 1440 en 390 px + alle states): app-schil/navigatie → Collection (tegels) → kaart-popup → Overview → Sets/binder → Scan → Import → Login.
 5. **Animaties**: alleen transform/opacity; holo-glans en hover-glans vastleggen in §9 of verwijderen.
 6. **Kwaliteitscheck** per pagina volgens §12 (Lighthouse, toetsenbord, reduced motion, CLS).

@@ -11,6 +11,7 @@ import { CardImage } from '../components/CardImage'
 import { CardZoom } from '../components/CardZoom'
 import { SetCardSheet } from '../components/SetCardSheet'
 import { DashboardView } from '../components/DashboardView'
+import { IconArrowLeft } from '../components/Icons'
 import { ScanPage } from '../pages/ScanPage'
 import { SetBinderPage } from '../pages/SetBinderPage'
 import { SetsPage } from '../pages/SetsPage'
@@ -101,7 +102,10 @@ function BinderPreview(): JSX.Element {
   const pages = [cards.slice(0, size), cards.slice(size, size * 2)]
   return (
     <section className="page">
-      <a href="#/sets" className="back">← All sets</a>
+      <a href="#/sets" className="back">
+        <IconArrowLeft size={18} />
+        All sets
+      </a>
       <div className="page-head">
         <div>
           <h1>151</h1>

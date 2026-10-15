@@ -6,6 +6,7 @@ import { CONDITION_LABELS, STATUS_LABELS, VARIANT_LABELS, type Card } from '../l
 import { CardImage } from './CardImage'
 import { ChangeBadge } from './ChangeBadge'
 import { Foil } from './Foil'
+import { IconCheck } from './Icons'
 
 interface Props {
   card: Card
@@ -84,7 +85,13 @@ function CardTileBase({ card, market, onOpen, onToggleSold, busy }: Props): JSX.
             disabled={busy}
             onClick={() => onToggleSold(card.id)}
           >
-            {card.status === 'sold' ? 'Sold ✓' : 'Mark as sold'}
+            {card.status === 'sold' ? (
+              <>
+                Sold <IconCheck size={14} />
+              </>
+            ) : (
+              'Mark as sold'
+            )}
           </button>
         )}
       </div>

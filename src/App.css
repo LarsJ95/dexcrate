@@ -202,8 +202,7 @@
     justify-content: space-between;
     align-items: center;
     padding: calc(var(--space-2) + env(safe-area-inset-top, 0px)) var(--space-3) var(--space-2) var(--space-4);
-    background: color-mix(in oklab, var(--bg) 85%, transparent);
-    backdrop-filter: blur(12px);
+    background: var(--bg);
     border-bottom: 1px solid var(--line);
   }
 
@@ -220,8 +219,7 @@
     align-items: end;
     height: calc(var(--tabbar) + env(safe-area-inset-bottom, 0px));
     padding: 0 var(--space-1) env(safe-area-inset-bottom, 0px);
-    background: color-mix(in oklab, var(--surface) 92%, transparent);
-    backdrop-filter: blur(12px);
+    background: var(--surface);
     border-top: 1px solid var(--line);
   }
 
@@ -492,7 +490,6 @@
 .status-badge {
   top: var(--space-2);
   left: var(--space-2);
-  backdrop-filter: blur(6px);
 }
 
 .status-badge.for_sale {
@@ -587,6 +584,10 @@
   font-weight: 700;
 }
 
+.change svg {
+  flex: none;
+}
+
 .change.up {
   color: var(--green);
 }
@@ -603,6 +604,7 @@
   margin-top: var(--space-2);
   padding: var(--space-1) var(--space-2);
   font-size: 0.78rem;
+  gap: var(--space-1);
   border-radius: var(--radius-pill);
   background: var(--amber-bg);
   border-color: transparent;
@@ -634,7 +636,6 @@
 
 .card-sheet::backdrop {
   background: var(--scrim-soft);
-  backdrop-filter: blur(3px);
 }
 
 .sheet-body {
@@ -1481,6 +1482,8 @@ a.stat:hover {
 /* ---------- Sets ---------- */
 .back {
   display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   justify-self: start;
   color: var(--muted);
   font-weight: 600;

@@ -1,4 +1,5 @@
 import type { JSX } from 'react'
+import { IconArrowDown, IconArrowUp, IconMinus } from './Icons'
 
 const pct = new Intl.NumberFormat('en-IE', { style: 'percent', maximumFractionDigits: 0 })
 
@@ -10,7 +11,7 @@ export function ChangeBadge({ change, label = 'vs 30-day average' }: { change: n
   const text = flat ? '±0%' : `${change > 0 ? '+' : '−'}${pct.format(Math.abs(change))}`
   return (
     <span className={`change ${dir}`} title={`${text} ${label}`}>
-      <span aria-hidden="true">{dir === 'up' ? '▲' : dir === 'down' ? '▼' : '■'}</span>
+      {dir === 'up' ? <IconArrowUp size={12} /> : dir === 'down' ? <IconArrowDown size={12} /> : <IconMinus size={12} />}
       {text}
       <span className="visually-hidden"> {label}</span>
     </span>

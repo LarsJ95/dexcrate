@@ -4,6 +4,7 @@ import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
 import { CardFace } from '../components/CardFace'
 import { CardPicture } from '../components/CardPicture'
+import { IconArrowLeft } from '../components/Icons'
 import { SetCardSheet } from '../components/SetCardSheet'
 import { getCardPrice, getSet, imageCandidates, isLang, setOfKey, type SetCard, type SetSummary } from '../lib/tcgdex'
 
@@ -161,7 +162,8 @@ export function SetBinderPage({ param }: Props): JSX.Element {
   return (
     <section className="page">
       <a href="#/sets" className="back">
-        ← All sets
+        <IconArrowLeft size={18} />
+        All sets
       </a>
       <div className="page-head">
         <div>
