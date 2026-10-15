@@ -2,6 +2,7 @@ const API = 'https://api.tcgdex.net/v2'
 
 import type { CardLanguage, Variant } from './types'
 import { parseTcgplayer, type TcgplayerPrice } from './valuation'
+import { parseDexId, parseRarity, parseSuffix, parseTypes, type EnergyType } from './cardTraits'
 
 /** Talen met eigen sets/nummering in TCGdex. */
 export const LANGS = ['en', 'ja', 'zh-cn', 'zh-tw', 'ko'] as const
@@ -47,6 +48,14 @@ export interface CardInfo {
   variants?: Variant[] | null
   /** Illustrator volgens de catalogus; null = onbekend. */
   illustrator?: string | null
+  /** Zeldzaamheid zoals TCGdex hem noemt (bv. "Double rare"); null = onbekend. */
+  rarity?: string | null
+  /** Energietypes; leeg bij trainers en energie. */
+  types?: EnergyType[]
+  /** Kaarttype-achtervoegsel: ex, V, VMAX …; null = geen. */
+  suffix?: string | null
+  /** Pokédex-nummer van de Pokémon op de kaart; null bij trainers en energie. */
+  dexId?: number | null
   set: SetSummary
 }
 
@@ -284,7 +293,7 @@ export function matchNumber(cards: readonly SetCard[], number: string): SetCard 
 
 // --- Kaartinfo en prijzen, met cache in localStorage ---
 
-const INFO_PREFIX = 'tcgdex:card:v5:' // v5: met uitvoeringen en illustrator
+const INFO_PREFIX = 'tcgdex:card:v6:' // v6: met zeldzaamheid, types, achtervoegsel en Pokédex-nummer
 const INFO_TTL_MS = 7 * 24 * 60 * 60 * 1000 // namen/plaatjes veranderen zelden
 const PRICE_PREFIX = 'tcgdex:price:v2:' // v2: met idProduct
 const PRICE_TTL_MS = 6 * 60 * 60 * 1000 // TCGdex ververst prijzen dagelijks
@@ -448,6 +457,10 @@ const fetchCardInfo = memo(async (key: string): Promise<CardInfo | null> => {
     tcgplayerId: findTcgplayerId(data),
     variants: parseVariants(data),
     illustrator: typeof data.illustrator === 'string' && data.illustrator.trim() ? data.illustrator.trim() : null,
+    rarity: parseRarity(data.rarity),
+    types: parseTypes(data.types),
+    suffix: parseSuffix(data.suffix),
+    dexId: parseDexId(data.dexId),
     set: { id: data.set.id, name: typeof data.set.name === 'string' ? data.set.name : data.set.id, logo },
   }
   writeCache(INFO_PREFIX, key, info)
