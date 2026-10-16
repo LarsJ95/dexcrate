@@ -1,4 +1,5 @@
 import { rarityRule } from './cardTraits'
+import { crateSetComplete, hasCrate, syncCrate } from './crate'
 import { listCards } from './db'
 import { celebrateNewCards, newSince, risenSince, showMoment, type PackCard } from './moments'
 import { motionAllowed } from './motion'
@@ -61,6 +62,39 @@ export function toProgressCards(cards: readonly Card[], infoOf: (key: string) =>
         createdAt: c.created_at || null,
       }
     })
+}
+
+/**
+ * Crate points bijwerken (STAP11): kaarten, transacties, nieuwe Pokédex-soorten en de dagbonus.
+ * Bonus per kaart naar zeldzaamheid (max. 20). Toont "+N Crate points" als er iets bij kwam.
+ */
+export async function syncCratePoints(cards: readonly ProgressCard[], reason: string): Promise<void> {
+  try {
+    if (!(await hasCrate())) return
+    const bonus: Record<string, number> = {}
+    for (const c of cards) {
+      const b = Math.min(20, rarityRule(c.rarity).rank * 2)
+      if (b > 0) bonus[c.id] = b
+    }
+    const result = await syncCrate(
+      bonus,
+      cards.flatMap((c) => (c.dexId ? [c.dexId] : [])),
+    )
+    if (result.earned > 0 && motionAllowed()) showMoment({ kind: 'points', amount: result.earned, reason })
+  } catch (err) {
+    console.warn('Crate points bijwerken mislukt', err)
+  }
+}
+
+/** Set compleet: 250 Crate points (eenmalig). */
+export async function crateForSet(setKey: string, setName: string): Promise<void> {
+  try {
+    if (!(await hasCrate())) return
+    const got = await crateSetComplete(setKey)
+    if (got > 0 && motionAllowed()) showMoment({ kind: 'points', amount: got, reason: `${setName} complete` })
+  } catch (err) {
+    console.warn('Crate points voor de set mislukt', err)
+  }
 }
 
 /** Level-up en nieuwe verborgen prestaties vieren. */
@@ -142,7 +176,9 @@ export async function celebrateAdded(rows: readonly Card[]): Promise<void> {
       }
     }
 
-    celebrateProgress(toProgressCards(all, (k) => infos.get(k)))
+    const progress = toProgressCards(all, (k) => infos.get(k))
+    celebrateProgress(progress)
+    await syncCratePoints(progress, rows.length === 1 ? 'For adding a card' : `For adding ${rows.length} cards`)
   } catch (err) {
     console.warn('Vieringen na toevoegen overgeslagen', err)
   }

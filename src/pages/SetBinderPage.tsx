@@ -4,6 +4,7 @@ import { ENERGY_TYPES, rarityRule } from '../lib/cardTraits'
 import { energyColor } from '../lib/energy'
 import { burstFrom } from '../lib/fx'
 import { SET_MILESTONES, celebrateMilestone, showMoment } from '../lib/moments'
+import { crateForSet } from '../lib/celebrate'
 import { useMotion } from '../lib/motion'
 import { hpLevel } from '../lib/trainer'
 import { spriteUrls } from '../lib/runner'
@@ -355,6 +356,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
     }
     remember(key, '1')
     showMoment({ kind: 'complete', setName: data.summary.name })
+    void crateForSet(`${lang}/${setId}`, data.summary.name)
   }, [data, progress, isComplete, lang, setId])
 
   // Mijlpaal (10, 25, 50 … kaarten in deze set); compleet heeft zijn eigen viering.

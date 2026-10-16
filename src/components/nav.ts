@@ -1,6 +1,6 @@
 import type { JSX } from 'react'
 import type { Route } from '../lib/routes'
-import { IconArchive, IconBinder, IconCamera, IconCards, IconHome, IconImage, IconLayers, IconMore, IconReceipt, IconSettings, IconStar, IconUpload } from './Icons'
+import { IconArchive, IconBinder, IconCrate, IconCamera, IconCards, IconHome, IconImage, IconLayers, IconMore, IconReceipt, IconSettings, IconStar, IconUpload } from './Icons'
 
 export interface NavItem {
   route: Route
@@ -19,6 +19,7 @@ export const COLLECT_ITEMS: NavItem[] = [
   { route: 'wishlist', label: 'Wishlist', Icon: IconStar },
   { route: 'transactions', label: 'Transactions', Icon: IconReceipt },
   { route: 'photos', label: 'Photos', Icon: IconImage },
+  { route: 'crate', label: 'Crate', Icon: IconCrate },
 ]
 
 /** Weinig gebruikt: apart onderaan gegroepeerd. */

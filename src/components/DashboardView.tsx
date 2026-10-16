@@ -9,7 +9,7 @@ import { celebrateBadges } from '../lib/moments'
 import { englishSpeciesName, isNonLatin } from '../lib/names'
 import { rememberAutoPartner, usePartnerChoice } from '../lib/partner'
 import { badges, dominantType, hpLevel, partnerDexId, pokedexProgress, typeTeam, type OwnedInfo } from '../lib/trainer'
-import { celebrateProgress, rememberTrainerName, toProgressCards } from '../lib/celebrate'
+import { celebrateProgress, rememberTrainerName, syncCratePoints, toProgressCards } from '../lib/celebrate'
 import { achievements, dailyDexId, levelFor, weekReport, xpFor } from '../lib/progress'
 import { BadgeCase } from './BadgeCase'
 import { DailyPokemon, WeekReportPanel } from './DailyPanels'
@@ -170,6 +170,7 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
   useEffect(() => {
     if (infosLoading || pricesLoading) return
     celebrateProgress(progressCards, badgesEarned)
+    void syncCratePoints(progressCards, 'Daily bonus and your collection')
     // eslint-disable-next-line react-hooks/exhaustive-deps -- alleen als het laden klaar is of de stand verandert
   }, [infosLoading, pricesLoading, level.level, secrets.filter((s) => s.earned).length])
   const ownedDex = useMemo(() => new Set(owned.flatMap((o) => (o.dexId ? [o.dexId] : []))), [owned])

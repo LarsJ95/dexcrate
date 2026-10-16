@@ -5733,3 +5733,181 @@ button.daily-sprite:disabled {
   font-weight: 800;
   overflow-wrap: anywhere;
 }
+
+/* ---------- Crate-game (goedgekeurd 16-10-2026) ---------- */
+.crate-top {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: var(--space-4);
+}
+
+.crate-wallet {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.crate-coin {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffe680, var(--yellow) 55%, #c99a00);
+  color: var(--on-yellow);
+  box-shadow: inset 0 -4px 0 rgb(0 0 0 / 0.18), var(--shadow-float);
+}
+
+.crate-points {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 900;
+  font-stretch: var(--stretch-display);
+  line-height: 1;
+}
+
+.crate-points-gain {
+  color: var(--accent-line);
+}
+
+.crate-shop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.crate-pack-art {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 84px;
+  aspect-ratio: 63 / 88;
+  border-radius: var(--radius-card);
+  border: 3px solid var(--ball-line);
+  background: conic-gradient(from 30deg, var(--card-back-1), var(--card-back-2), var(--card-back-3), var(--card-back-2), var(--card-back-1));
+  box-shadow: var(--shadow-float);
+}
+
+.crate-pack-art .pokeball {
+  --s: 34px;
+}
+
+[data-motion='on'] .crate-shop:hover .crate-pack-art {
+  animation: ball-wobble 700ms ease-in-out;
+}
+
+.crate-shop-info {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+
+.crate-reveal {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.crate-pack {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: var(--space-3);
+}
+
+.crate-pack li {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: center;
+  align-content: start;
+}
+
+button.crate-slot {
+  position: relative;
+  align-self: start;
+  width: 100%;
+  aspect-ratio: 63 / 88;
+  padding: 0;
+  border: 0;
+  background: none;
+  perspective: 900px;
+  animation: pack-in 300ms cubic-bezier(0.3, 1.2, 0.5, 1) both;
+  animation-delay: calc(var(--i, 0) * 50ms);
+}
+
+button.crate-slot:hover:not(:disabled) {
+  background: none;
+}
+
+[data-motion='on'] button.crate-slot:not(.is-open):hover {
+  transform: translateY(-4px);
+}
+
+.crate-flip {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 450ms cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.crate-slot.is-open .crate-flip {
+  transform: rotateY(180deg);
+}
+
+[data-motion='off'] .crate-flip {
+  transition: none;
+}
+
+.crate-pull-name {
+  text-align: center;
+  font-weight: 700;
+}
+
+.crate-grid .crate-card {
+  position: relative;
+  display: grid;
+  gap: var(--space-1);
+  align-content: start;
+}
+
+.crate-card .qty-badge {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+}
+
+.crate-earn summary {
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.crate-earn dl {
+  display: grid;
+  gap: var(--space-1);
+  margin: var(--space-3) 0;
+}
+
+.crate-earn dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.crate-earn dd {
+  margin: 0;
+  font-weight: 800;
+  color: var(--accent-line);
+}
+
+@media (max-width: 480px) {
+  .crate-pack {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+
+  .crate-shop {
+    align-items: flex-start;
+  }
+}

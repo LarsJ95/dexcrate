@@ -35,6 +35,8 @@ export type Moment =
   | { kind: 'pack'; id: number; cards: PackCard[] }
   /** Bijna een set compleet. */
   | { kind: 'almost'; id: number; setName: string; left: number; missing: string[] }
+  /** Crate points verdiend (toast). */
+  | { kind: 'points'; id: number; amount: number; reason: string }
   /** Wishlist-kaart onder je max. prijs. */
   | { kind: 'deal'; id: number; name: string; market: number; max: number; tcgdexId: string | null }
 

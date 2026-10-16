@@ -203,3 +203,11 @@ export function LogoMark({ size = 28 }: { size?: number }): JSX.Element {
     </svg>
   )
 }
+
+/** Krat met munt: de Crate-game. */
+export const IconCrate = (p: IconProps): JSX.Element => (
+  <Svg {...p}>
+    <path d="M3.5 8.5 12 4l8.5 4.5v8L12 21l-8.5-4.5z" />
+    <path d="M3.5 8.5 12 13l8.5-4.5M12 13v8" />
+  </Svg>
+)

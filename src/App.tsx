@@ -15,6 +15,7 @@ import { PhotosPage } from './pages/PhotosPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { TransactionsPage } from './pages/TransactionsPage'
 import { WishlistPage } from './pages/WishlistPage'
+import { CratePage } from './pages/CratePage'
 import { ScanPage } from './pages/ScanPage'
 import { SetBinderPage } from './pages/SetBinderPage'
 import { SetsPage } from './pages/SetsPage'
@@ -61,6 +62,7 @@ function App(): JSX.Element {
       {route === 'sets' && (param ? <SetBinderPage key={param} param={param} /> : <SetsPage />)}
       {route === 'locations' && <LocationsPage key={param} param={param} />}
       {route === 'wishlist' && <WishlistPage />}
+      {route === 'crate' && <CratePage />}
       {route === 'transactions' && <TransactionsPage />}
       {route === 'photos' && <PhotosPage />}
       {route === 'import' && <ImportPage />}

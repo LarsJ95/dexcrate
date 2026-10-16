@@ -98,7 +98,7 @@ function MomentLayer({ moment }: { moment: Moment }): JSX.Element {
     } else if (moment.kind === 'dex' || moment.kind === 'level' || moment.kind === 'achievement') {
       at(DEX.burst, () => target.current && burstFrom(target.current, { colors: moment.kind === 'level' ? ['var(--hp-high)', 'var(--yellow)', '#ffffff'] : ALL_ENERGY, count: 36, speed: 8 }))
       at(DEX.end, () => endMoment(moment.id))
-    } else if (moment.kind === 'almost' || moment.kind === 'deal') {
+    } else if (moment.kind === 'almost' || moment.kind === 'deal' || moment.kind === 'points') {
       at(DEX.end, () => endMoment(moment.id))
     } else if (moment.kind === 'gotcha') {
       at(GOTCHA.click, () => target.current && burstFrom(target.current, { colors: ['var(--yellow)', '#ffffff', 'var(--ball-red)'], count: 24, speed: 6, gravity: 0.08 }))
@@ -214,6 +214,17 @@ function MomentLayer({ moment }: { moment: Moment }): JSX.Element {
             <span>{moment.how}</span>
           </span>
         </div>
+      </div>
+    )
+  }
+
+  if (moment.kind === 'points') {
+    return (
+      <div ref={layer} className="moment-layer is-toast" popover="manual" role="status">
+        <p className="moment-caption">
+          <strong className="crate-points-gain">+{moment.amount} Crate points</strong>
+          <span>{moment.reason}</span>
+        </p>
       </div>
     )
   }
