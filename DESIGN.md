@@ -165,6 +165,9 @@ Toegestane effecten (alleen deze; uitgebreid 15-10-2026 volgens prototype "Holo 
   - Pokébal-vormen (ook zonder animaties): stip onder actieve tab/filter en naast het actieve menu-item; vinkjes als pokébal (leeg = open, aan = gevangen, wiebelt).
   - Pikachu kijkt om de rand van een kaart (eerst na 1–2 min, daarna elke 3–6 min; niet op Scan, bij popups, invoer of als de langsrenner er is; nooit over knoppen of velden). Tikken: "Pika!" en weg. 1 op 50 shiny. Scrollen: meteen weg.
   - Who's that Pokémon?: ontbrekende Pokémon-kaarten in een set als silhouet op zachte stralen; bij hover of focus kleurt het silhouet in en verschijnt de kaart.
+  - Overview (goedgekeurd 16-10-2026): Trainer Card met 8 badges (mijlpalen kaarten / soorten / waarde), Pokédex-teller per generatie, partner-Pokémon (sprite, tikken = sprong + roep), typekleur van je collectie als de topkaart Colorless is, grafiek met vlak in de typekleur en pokébal als eindpunt, spelzinnen bij Gainers/Losers, koopkansen uit de wishlist. Vanaf 2200 px een vaste trainer-zijkolom rechts (pagina dan max. 2080 px).
+  - HP-balken: voortgang groen > 50%, geel > 20%, anders rood (tokens `--hp-high/mid/low`, per thema).
+  - Gevechts-tekstvak: meldingen en momenten met dubbel kader; knipperend pijltje bij aantikbare meldingen en momenten.
   - Momenten: "Level up!" bij mijlpalen (kaarten in een set: 10, 25, 50, 100 …; collectie: 10, 25, 50, 100, 250 …; eerste bezoek alleen onthouden), "Gotcha!" bij toevoegen aan de wishlist (pokébal wiebelt en klikt dicht).
 - Popup en vergrote kaart verschijnen: opacity met schaal 0,96 → 1; op mobiel schuift de popup omhoog (translateY).
 
