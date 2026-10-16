@@ -1,34 +1,31 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useSyncExternalStore } from 'react'
+import { setPref, usePrefs } from '../lib/devicePrefs'
 
 export type Theme = 'dark' | 'light'
 
-const STORAGE_KEY = 'dexcrate:theme'
-/** Sleutels van vóór de naamswijzigingen; gelden tot er opnieuw gekozen wordt. */
-const OLD_KEYS = ['binderline:theme', 'kaartenmap:theme'] as const
+const darkQuery = typeof matchMedia === 'function' ? matchMedia('(prefers-color-scheme: dark)') : null
 
-function readTheme(): Theme {
-  try {
-    const saved = [STORAGE_KEY, ...OLD_KEYS].map((k) => localStorage.getItem(k)).find((v) => v !== null)
-    return saved === 'light' ? 'light' : 'dark'
-  } catch {
-    return 'dark' // geen opslag: standaard donker
-  }
+function subscribeSystem(l: () => void): () => void {
+  darkQuery?.addEventListener('change', l)
+  return () => darkQuery?.removeEventListener('change', l)
 }
 
-/** Donker is de basis; de keuze wordt per apparaat onthouden. */
+const systemTheme = (): Theme => (darkQuery && !darkQuery.matches ? 'light' : 'dark')
+
+/**
+ * Thema: donker, licht of automatisch (volgt het systeem). Keuze per apparaat (Settings → Appearance).
+ * `toggle` (knop in de kop) kiest het andere thema vast.
+ */
 export function useTheme(): { theme: Theme; toggle: () => void } {
-  const [theme, setTheme] = useState<Theme>(readTheme)
+  const { theme: choice } = usePrefs()
+  const system = useSyncExternalStore(subscribeSystem, systemTheme, () => 'dark' as Theme)
+  const theme: Theme = choice === 'system' ? system : choice
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0e0d12' : '#f4f3f6')
-    try {
-      localStorage.setItem(STORAGE_KEY, theme)
-    } catch (err) {
-      console.warn('Thema onthouden mislukt', err)
-    }
   }, [theme])
 
-  const toggle = useCallback(() => setTheme((t) => (t === 'dark' ? 'light' : 'dark')), [])
+  const toggle = useCallback(() => setPref('theme', theme === 'dark' ? 'light' : 'dark'), [theme])
   return { theme, toggle }
 }

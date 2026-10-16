@@ -6,6 +6,8 @@ import { VitePWA } from 'vite-plugin-pwa'
 export default defineConfig({
   // Relatieve paden: werkt op elke host/submap (bv. GitHub Pages /<repo>/) dankzij hash-routing.
   base: './',
+  // Bouwmoment, als versie-aanduiding in Settings.
+  define: { __APP_BUILD__: JSON.stringify(new Date().toISOString()) },
   plugins: [
     react(),
     VitePWA({

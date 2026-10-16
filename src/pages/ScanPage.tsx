@@ -14,6 +14,7 @@ import { useSchemaV2 } from '../hooks/useSchemaV2'
 import { summarize } from '../lib/scanQueue'
 import { enqueue, getQueue, removeItems, setWishedKeys, subscribe } from '../lib/scanQueueStore'
 import { useWakeLock } from '../hooks/useWakeLock'
+import { getPrefs } from '../lib/devicePrefs'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import { listWishlist } from '../lib/wishlist'
 import { closeSession, earlierInSession, hasScanSessions, itemsFromRows, openSession, saveSessionItems, startSession, type ScanItem, type ScanSession } from '../lib/scanSessions'
@@ -47,7 +48,7 @@ const MODE_HINT: Record<PageMode, string> = {
 export function ScanPage(): JSX.Element {
   const inputRef = useRef<HTMLInputElement>(null)
   const [cameraOpen, setCameraOpen] = useState(false)
-  const [mode, setMode] = useState<PageMode>('queue')
+  const [mode, setMode] = useState<PageMode>(() => getPrefs().scanMode)
   const [cards, setCards] = useState<Card[]>([])
   const [image, setImage] = useState<PreparedImage | null>(null)
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' })
@@ -138,7 +139,7 @@ export function ScanPage(): JSX.Element {
   /** `fromCamera`: wazige foto's tegenhouden (bestanden kies je bewust, die niet). */
   function addToQueue(file: File, fromCamera = false): void {
     setQueueError(null)
-    enqueue(file, fromCamera).catch((err: unknown) => {
+    enqueue(file, fromCamera && getPrefs().blurCheck).catch((err: unknown) => {
       console.error('Foto toevoegen aan wachtrij mislukt', err)
       setQueueError(err instanceof Error ? err.message : 'Adding the photo failed.')
     })

@@ -287,7 +287,11 @@ body {
   background: transparent;
 }
 
-/* Vaag behang van energiesymbolen in de typekleur. */
+/* Vaag behang van energiesymbolen in de typekleur (uit te zetten in Settings → Appearance). */
+:root[data-wallpaper='off'] body::before {
+  display: none;
+}
+
 body::before {
   content: '';
   position: fixed;

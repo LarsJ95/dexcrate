@@ -6999,3 +6999,135 @@ a.near-set > .set-symbol {
     transform: translateY(-8px);
   }
 }
+
+/* ---------- Settings (16-10-2026) ---------- */
+.page.settings {
+  max-width: 1100px;
+}
+
+.settings-section {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.settings-head h2 {
+  margin: 0;
+  font-size: var(--fs-h2);
+}
+
+.settings-scope {
+  flex: none;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.settings-scope.scope-account {
+  border-color: color-mix(in oklab, var(--yellow) 50%, var(--line));
+  color: var(--ink);
+}
+
+.settings-section > .muted.small {
+  margin: calc(var(--space-2) * -1) 0 0;
+}
+
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+}
+
+.settings-label {
+  min-width: 150px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.settings-value {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.settings-toggle {
+  display: grid;
+  gap: 2px;
+}
+
+.settings-toggle .muted.small {
+  margin: 0 0 0 calc(18px + var(--space-2));
+}
+
+.partner-current {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.partner-current img {
+  image-rendering: pixelated;
+}
+
+.partner-current > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.partner-current p {
+  margin: 0;
+}
+
+.settings-subhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.settings-subhead h3,
+.settings-subtitle {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.settings-password {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.settings-save {
+  margin: 0;
+  font-size: var(--fs-small);
+  font-weight: 700;
+}
+
+.settings-save.is-saved {
+  color: var(--accent-line);
+}
+
+.settings-save.is-saving {
+  color: var(--muted);
+}
+
+.settings-save.is-error {
+  color: var(--red);
+}

@@ -9,6 +9,20 @@ import { registerSW } from 'virtual:pwa-register'
 const CHECK_EVERY_MS = 60 * 60 * 1000
 const RETRY_MS = 15_000
 
+let registered: ServiceWorkerRegistration | null = null
+/** Er staat een nieuwe versie klaar (wordt geladen zodra het veilig is). */
+let pending = false
+
+/**
+ * Zelf zoeken naar een nieuwe versie (Settings). 'updating' = gevonden, de app herlaadt zo;
+ * 'latest' = je hebt de nieuwste; 'unavailable' = geen service worker (bv. in de ontwikkelomgeving).
+ */
+export async function checkForUpdate(): Promise<'updating' | 'latest' | 'unavailable'> {
+  if (!registered) return 'unavailable'
+  await registered.update()
+  return pending || registered.waiting || registered.installing ? 'updating' : 'latest'
+}
+
 function safeToReload(): boolean {
   if (document.querySelector('dialog[open]')) return false
   const a = document.activeElement
@@ -38,10 +52,12 @@ export function initAppUpdates(): void {
     immediate: true,
     onNeedRefresh() {
       waiting = true
+      pending = true
       applyWhenSafe()
     },
     onRegisteredSW(_url, registration) {
       if (!registration) return
+      registered = registration
       const check = (): void => {
         registration.update().catch((err: unknown) => console.warn('Zoeken naar een app-update mislukt', err))
       }

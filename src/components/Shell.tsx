@@ -1,4 +1,4 @@
-import type { JSX, ReactNode } from 'react'
+import { useEffect, type JSX, type ReactNode } from 'react'
 import type { Theme } from '../hooks/useTheme'
 import type { Route } from '../lib/routes'
 import { IconLogout, IconMoon, IconSun, LogoMark } from './Icons'
@@ -7,6 +7,7 @@ import { PartnerBuddy } from './PartnerBuddy'
 import { Peek } from './Peek'
 import { Runner } from './Runner'
 import { Sky } from './Sky'
+import { usePrefs } from '../lib/devicePrefs'
 import { SIDE_GROUPS, TAB_NAV, isActiveTab } from './nav'
 
 interface Props {
@@ -20,6 +21,11 @@ interface Props {
 
 /** App-schil: zijbalk op desktop; op mobiel een topbalk en een onderbalk met centrale scanknop. */
 export function Shell({ route, email, theme, onToggleTheme, onSignOut, children }: Props): JSX.Element {
+  const prefs = usePrefs()
+  // Energiebehang aan/uit (Settings → Appearance); de CSS kijkt naar data-wallpaper op <html>.
+  useEffect(() => {
+    document.documentElement.dataset.wallpaper = prefs.wallpaper ? 'on' : 'off'
+  }, [prefs.wallpaper])
   const themeLabel = theme === 'dark' ? 'Light theme' : 'Dark theme'
   const themeButton = (
     <button type="button" className="ghost icon-btn" onClick={onToggleTheme} aria-label={themeLabel} title={themeLabel}>
@@ -34,7 +40,7 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
 
   return (
     <div className="shell">
-      <Sky theme={theme} />
+      {prefs.sky && <Sky theme={theme} />}
       <aside className="sidebar">
         <a className="brand" href="#/overview">
           <LogoMark />

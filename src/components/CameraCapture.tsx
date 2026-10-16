@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type JSX, type ReactNode } from 'react'
 import { SAMPLE_H, SAMPLE_W, createAutoCapture, type AutoHint } from '../lib/autoCapture'
 import { frameToSource } from '../lib/cameraCrop'
+import { setPref, usePrefs } from '../lib/devicePrefs'
 import { toGray } from '../lib/sharpness'
 import { IconClose } from './Icons'
 
@@ -19,7 +20,6 @@ interface Props {
   autoCapture?: boolean
 }
 
-const AUTO_KEY = 'dexcrate:auto-capture'
 const AUTO_TICK_MS = 200
 const AUTO_TEXT: Record<AutoHint, string> = {
   place: 'Place a card in the frame',
@@ -28,13 +28,7 @@ const AUTO_TEXT: Record<AutoHint, string> = {
   capture: 'Got it. Next card',
 }
 
-function readAuto(): boolean {
-  try {
-    return localStorage.getItem(AUTO_KEY) === '1'
-  } catch {
-    return false
-  }
-}
+
 
 /**
  * Camera direct in de app (getUserMedia), zodat er geen keuzemenu "Camera / Bestanden" verschijnt.
@@ -51,7 +45,7 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose, children, 
   const [ready, setReady] = useState(false)
   // Korte flits als bevestiging dat de foto is genomen.
   const [flash, setFlash] = useState(0)
-  const [autoOn, setAutoOn] = useState(readAuto)
+  const autoOn = usePrefs().autoCapture
   const [autoHint, setAutoHint] = useState<AutoHint | null>(null)
   const captureRef = useRef<() => void>(() => undefined)
 
@@ -150,14 +144,8 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose, children, 
   }, [autoActive])
 
   function toggleAuto(): void {
-    const next = !autoOn
-    setAutoOn(next)
+    setPref('autoCapture', !autoOn)
     setAutoHint(null)
-    try {
-      localStorage.setItem(AUTO_KEY, next ? '1' : '0')
-    } catch (err) {
-      console.warn('Auto-instelling bewaren mislukt', err)
-    }
   }
 
   return (
