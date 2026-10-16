@@ -4,6 +4,8 @@ import { ENERGY_TYPES, rarityRule } from '../lib/cardTraits'
 import { energyColor } from '../lib/energy'
 import { burstFrom } from '../lib/fx'
 import { showMoment } from '../lib/moments'
+import { useMotion } from '../lib/motion'
+import { spriteUrls } from '../lib/runner'
 import { DEFAULT_GOAL, goalProgress, goalRequirements, type GoalSettings, type OwnedCopy, type RequirementState } from '../lib/goals'
 import { marketValue } from '../lib/prices'
 import { SET_SORT_LABELS, sortSetCards, type SetSort } from '../lib/setSort'
@@ -224,6 +226,9 @@ export function SetBinderPage({ param }: Props): JSX.Element {
   // Sorteren op zeldzaamheid: kaartinfo (7 dagen gecachet).
   const cardKeys = useMemo(() => (data && isLang(lang) ? data.cards.map((c) => `${lang}/${c.id}`) : []), [data, lang])
   const infos = useCatalogInfos(cardKeys, sort === 'rarity')
+  // Who's that Pokémon? Silhouet van ontbrekende Pokémon-kaarten (Pokédex-nummer uit de kaartinfo).
+  const motion = useMotion()
+  const silhouetteInfos = useCatalogInfos(cardKeys, motion)
   const ranks = useMemo(() => {
     const map = new Map<string, number>()
     for (const [key, info] of infos) if (info) map.set(key.slice(key.indexOf('/') + 1), rarityRule(info.rarity).rank)
@@ -594,10 +599,11 @@ export function SetBinderPage({ param }: Props): JSX.Element {
                   price = !fetched ? undefined : unknown ? null : cents / 100
                 }
                 const versioned = states.filter((st) => st.req.variant !== null)
+                const dexId = motion && !complete ? (silhouetteInfos.get(`${lang}/${c.id}`)?.dexId ?? null) : null
                 return (
                   <li
                     key={c.id}
-                    className={`slot${complete ? ' have' : ' missing'}${inGoal ? '' : ' outside'}${newIds.has(c.id) ? ' is-new' : ''}`}
+                    className={`slot${complete ? ' have' : ' missing'}${inGoal ? '' : ' outside'}${newIds.has(c.id) ? ' is-new' : ''}${dexId ? ' has-silhouette' : ''}`}
                     style={newIds.has(c.id) ? ({ '--pop-delay': `${[...newIds].indexOf(c.id) * 120}ms` } as CSSProperties) : undefined}
                   >
                     <button
@@ -619,6 +625,12 @@ export function SetBinderPage({ param }: Props): JSX.Element {
                         />
                       ) : (
                         <CardFace name={c.name} detail={`#${c.localId}`} />
+                      )}
+                      {dexId && (
+                        <span className="whos-that" aria-hidden="true">
+                          <img className="whos-that-dark" src={spriteUrls(dexId, false)[1]} alt="" loading="lazy" />
+                          <img className="whos-that-color" src={spriteUrls(dexId, false)[1]} alt="" loading="lazy" />
+                        </span>
                       )}
                       <span className="slot-name" title={c.name}>
                         {c.name}

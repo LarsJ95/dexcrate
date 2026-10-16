@@ -3916,3 +3916,72 @@ button.peek-pikachu:active:not(:disabled) {
   box-shadow: var(--shadow-float);
   animation: caption-in 200ms ease-out;
 }
+
+/* ---------- Pokémon-sfeer: Who's that Pokémon? (ontbrekende kaarten in een set) ---------- */
+button.slot-open {
+  position: relative;
+}
+
+.whos-that {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  aspect-ratio: 63 / 88;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  /* Zachte stralen die naar de rand vervagen, zoals in de tekenfilm. */
+  background:
+    radial-gradient(circle, transparent 15%, var(--surface-2) 72%),
+    repeating-conic-gradient(from 0deg, color-mix(in oklab, var(--accent-line) 14%, transparent) 0deg 8deg, transparent 8deg 20deg),
+    var(--surface-3);
+  transition: opacity 200ms ease-out, transform 150ms ease-out;
+}
+
+.whos-that img {
+  grid-area: 1 / 1;
+  width: 80%;
+  image-rendering: pixelated;
+  transition: opacity 300ms ease-out;
+}
+
+.whos-that-dark {
+  filter: brightness(0);
+  opacity: 0.9;
+}
+
+.whos-that-color {
+  opacity: 0;
+}
+
+/* Achter het silhouet ligt de kaart al in kleur klaar voor de onthulling. */
+.slot.missing.has-silhouette .card-img {
+  filter: none;
+  opacity: 1;
+}
+
+button.slot-open:hover .whos-that {
+  transform: translateY(-4px);
+}
+
+@media (hover: hover) {
+  .has-silhouette button.slot-open:hover .whos-that-color {
+    opacity: 1;
+  }
+
+  .has-silhouette button.slot-open:hover .whos-that {
+    opacity: 0;
+    transition-delay: 450ms;
+  }
+}
+
+.has-silhouette button.slot-open:focus-visible .whos-that-color {
+  opacity: 1;
+}
+
+.has-silhouette button.slot-open:focus-visible .whos-that {
+  opacity: 0;
+  transition-delay: 450ms;
+}
