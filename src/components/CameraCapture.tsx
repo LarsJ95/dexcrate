@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type JSX } from 'react'
+import { useEffect, useRef, useState, type JSX, type ReactNode } from 'react'
 import { IconClose } from './Icons'
 
 interface Props {
@@ -8,13 +8,15 @@ interface Props {
   /** Bestand kiezen in plaats van de camera. */
   onPickFile: () => void
   onClose: () => void
+  /** Extra boven de knoppen, bv. de strook met gescande kaarten (snel scannen). */
+  children?: ReactNode
 }
 
 /**
  * Camera direct in de app (getUserMedia), zodat er geen keuzemenu "Camera / Bestanden" verschijnt.
  * De browser vraagt één keer toestemming en onthoudt die voor deze site.
  */
-export function CameraCapture({ wide, onCapture, onPickFile, onClose }: Props): JSX.Element {
+export function CameraCapture({ wide, onCapture, onPickFile, onClose, children }: Props): JSX.Element {
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   // Geen camera-API (oude browser of geen HTTPS): meteen terugvallen op bestand kiezen.
@@ -22,6 +24,8 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose }: Props): 
     typeof navigator.mediaDevices?.getUserMedia === 'function' ? null : 'This browser cannot open the camera here.',
   )
   const [ready, setReady] = useState(false)
+  // Korte flits als bevestiging dat de foto is genomen.
+  const [flash, setFlash] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -68,6 +72,7 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose }: Props): 
       return
     }
     ctx.drawImage(video, 0, 0)
+    setFlash((n) => n + 1)
     canvas.toBlob(
       (blob) => {
         if (!blob) {
@@ -99,7 +104,10 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose }: Props): 
         </div>
       )}
 
+      {flash > 0 && <div key={flash} className="camera-flash" aria-hidden="true" />}
+
       <div className="camera-bar">
+        {children && <div className="camera-tray">{children}</div>}
         <button type="button" className="camera-files" onClick={onPickFile}>
           Files
         </button>

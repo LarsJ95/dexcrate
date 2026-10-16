@@ -6474,3 +6474,186 @@ button.recent-card:hover:not(:disabled) {
   font-size: 0.85rem;
   font-weight: 700;
 }
+
+/* ---------- Snel scannen: wachtrij (16-10-2026) ---------- */
+.camera-tray {
+  grid-column: 1 / -1;
+  margin-bottom: var(--space-3);
+  color: #fff;
+}
+
+.camera-flash {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  pointer-events: none;
+  animation: camera-flash 220ms ease-out forwards;
+}
+
+@keyframes camera-flash {
+  from {
+    opacity: 0.7;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+[data-motion='off'] .camera-flash {
+  animation-duration: 1ms;
+}
+
+.queue-strip {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: center;
+}
+
+.queue-strip-count,
+.queue-strip-hint {
+  margin: 0;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  text-align: center;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.6);
+}
+
+.queue-strip ol {
+  display: flex;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.queue-thumb {
+  position: relative;
+  width: 44px;
+  aspect-ratio: 63 / 88;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 2px solid rgb(255 255 255 / 0.35);
+}
+
+.queue-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.queue-thumb.is-ready {
+  border-color: var(--yellow);
+}
+
+.queue-thumb.is-error {
+  border-color: var(--red);
+}
+
+/* Bezig: zachte puls. */
+.queue-thumb:is(.is-waiting, .is-recognising, .is-matching) img {
+  opacity: 0.6;
+}
+
+[data-motion='on'] .queue-thumb:is(.is-recognising, .is-matching) {
+  animation: queue-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes queue-pulse {
+  50% {
+    border-color: rgb(255 255 255 / 0.9);
+  }
+}
+
+.queue-thumb .qty-badge {
+  top: auto;
+  right: 1px;
+  bottom: 1px;
+  font-size: 0.65rem;
+  padding: 1px 3px;
+}
+
+.queue-photos {
+  display: flex;
+  gap: var(--space-1);
+  align-items: start;
+}
+
+img.queue-own {
+  width: 44px;
+  aspect-ratio: 63 / 88;
+  object-fit: cover;
+  border-radius: 4px;
+  opacity: 0.85;
+}
+
+.queue-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: end;
+}
+
+.queue-fields select {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Match-keuze over de volle breedte; uitvoering en aantal eronder. */
+.queue-fields select:first-child {
+  flex: 1 1 100%;
+}
+
+.queue-fields select:nth-child(2) {
+  flex: 1 1 140px;
+}
+
+label.queue-qty {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+label.queue-qty input {
+  width: 64px;
+}
+
+.queue-actions {
+  display: flex;
+  align-items: start;
+  gap: var(--space-1);
+}
+
+.queue-row.is-error {
+  border-color: color-mix(in oklab, var(--red) 50%, var(--line));
+}
+
+.queue-row {
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.queue-photos .scan-thumb {
+  width: 64px;
+}
+
+@media (max-width: 560px) {
+  /* Telefoon: acties onder de info, foto's kleiner. */
+  .queue-row {
+    grid-template-columns: auto auto minmax(0, 1fr);
+  }
+
+  .queue-actions {
+    grid-column: 3;
+  }
+
+  img.queue-own {
+    display: none;
+  }
+}
+
+/* Lijst niet laten meegroeien met lange keuzelijsten (anders steekt hij op de telefoon uit). */
+.scan-queue .binder-scan,
+.queue-row .scan-info {
+  grid-template-columns: minmax(0, 1fr);
+}

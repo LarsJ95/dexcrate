@@ -4,12 +4,14 @@ import { CameraCapture } from '../components/CameraCapture'
 import { CardDialog } from '../components/CardDialog'
 import { CardFace } from '../components/CardFace'
 import { CatalogKeyPicture } from '../components/CatalogCardPicture'
+import { QueueStrip, ScanQueue } from '../components/ScanQueue'
 import { listCards } from '../lib/db'
 import { findCandidates, type Candidate } from '../lib/match'
 import { uploadPhoto } from '../lib/photos'
 import { useDbFeature } from '../hooks/useDbFeature'
 import { useNewCardDefaults } from '../hooks/useNewCardDefaults'
 import { useSchemaV2 } from '../hooks/useSchemaV2'
+import { enqueue, removeItems } from '../lib/scanQueueStore'
 import { closeSession, earlierInSession, hasScanSessions, itemsFromRows, openSession, saveSessionItems, startSession, type ScanItem, type ScanSession } from '../lib/scanSessions'
 import {
   draftFromScan,
@@ -29,7 +31,11 @@ type Phase =
   | { kind: 'multi'; recognitions: Recognition[]; scanId: number }
   | { kind: 'error'; message: string }
 
-const MODE_HINT: Record<ScanMode, string> = {
+/** 'queue' = snel scannen: foto na foto, herkennen op de achtergrond, later in één keer toevoegen. */
+type PageMode = ScanMode | 'queue'
+
+const MODE_HINT: Record<PageMode, string> = {
+  queue: 'Photograph card after card; recognition runs in the background. Check and add them all at once when you are done.',
   single: 'Photograph one card straight on, with the bottom edge readable.',
   multi: 'Photograph a full binder page from straight above, without glare on the sleeves.',
 }
@@ -37,11 +43,12 @@ const MODE_HINT: Record<ScanMode, string> = {
 export function ScanPage(): JSX.Element {
   const inputRef = useRef<HTMLInputElement>(null)
   const [cameraOpen, setCameraOpen] = useState(false)
-  const [mode, setMode] = useState<ScanMode>('single')
+  const [mode, setMode] = useState<PageMode>('queue')
   const [cards, setCards] = useState<Card[]>([])
   const [image, setImage] = useState<PreparedImage | null>(null)
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' })
-  const [draft, setDraft] = useState<{ values: Partial<CardInput>; position: number | null } | null>(null)
+  const [draft, setDraft] = useState<{ values: Partial<CardInput>; position: number | null; queueId?: string } | null>(null)
+  const [queueError, setQueueError] = useState<string | null>(null)
   const [donePositions, setDonePositions] = useState<ReadonlySet<number>>(new Set())
   const [added, setAdded] = useState<string[]>([])
   // Herkennen en de foto bewaren zijn aparte keuzes: alleen bewaren als je dat aanvinkt.
@@ -94,12 +101,25 @@ export function ScanPage(): JSX.Element {
   const nextSortOrder = cards.reduce((m, c) => Math.max(m, c.sort_order), -1) + 1
 
   function onFile(e: ChangeEvent<HTMLInputElement>): void {
-    const file = e.target.files?.[0]
+    const files = [...(e.target.files ?? [])]
     e.target.value = ''
-    if (file) void processPhoto(file)
+    if (mode === 'queue') {
+      // Snel scannen: meerdere foto's tegelijk kiezen mag.
+      for (const f of files) addToQueue(f)
+      return
+    }
+    if (files[0]) void processPhoto(files[0], mode)
   }
 
-  async function processPhoto(file: File): Promise<void> {
+  function addToQueue(file: File): void {
+    setQueueError(null)
+    enqueue(file).catch((err: unknown) => {
+      console.error('Foto toevoegen aan wachtrij mislukt', err)
+      setQueueError(err instanceof Error ? err.message : 'Adding the photo failed.')
+    })
+  }
+
+  async function processPhoto(file: File, mode: ScanMode): Promise<void> {
     setCameraOpen(false)
     if (phase.kind === 'working') return
     try {
@@ -198,6 +218,7 @@ export function ScanPage(): JSX.Element {
       <div className="segmented" role="group" aria-label="Scan mode">
         {(
           [
+            ['queue', 'Quick scan'],
             ['single', 'Single card'],
             ['multi', 'Binder page'],
           ] as const
@@ -221,6 +242,7 @@ export function ScanPage(): JSX.Element {
         ref={inputRef}
         type="file"
         accept="image/*"
+        multiple={mode === 'queue'}
         className="visually-hidden"
         tabIndex={-1}
         onChange={onFile}
@@ -264,39 +286,69 @@ export function ScanPage(): JSX.Element {
         </p>
       )}
 
-      <div className="scan-stage">
-        {image ? (
-          <img className={`scan-photo${mode === 'multi' ? ' wide' : ''}`} src={image.previewUrl} alt="Your photo" />
-        ) : (
-          <div className={`scan-photo empty${mode === 'multi' ? ' wide' : ''}`} aria-hidden="true" />
-        )}
-        <div className="scan-actions">
-          <button type="button" className="scan-button" onClick={() => setCameraOpen(true)} disabled={busy}>
-            {phase.kind === 'idle' ? 'Take photo' : 'New photo'}
+      {mode === 'queue' && (
+        <div className="scan-actions queue-start">
+          <button type="button" className="scan-button" onClick={() => setCameraOpen(true)}>
+            Take photos
           </button>
-          <button type="button" className="ghost" onClick={() => inputRef.current?.click()} disabled={busy}>
+          <button type="button" className="ghost" onClick={() => inputRef.current?.click()}>
             Choose from files
           </button>
-          {v2 && mode === 'single' && (
-            <label className="check">
-              <input type="checkbox" checked={keepPhoto} onChange={(e) => setKeepPhoto(e.target.checked)} />
-              Also save this scan as a photo of the card
-            </label>
+          {queueError && (
+            <p className="error" role="alert">
+              {queueError}
+            </p>
           )}
-          {busy && <p aria-live="polite">{phase.message}</p>}
-          {phase.kind === 'error' && <p className="error" role="alert">{phase.message}</p>}
         </div>
-      </div>
+      )}
+
+      {mode !== 'queue' && (
+        <div className="scan-stage">
+          {image ? (
+            <img className={`scan-photo${mode === 'multi' ? ' wide' : ''}`} src={image.previewUrl} alt="Your photo" />
+          ) : (
+            <div className={`scan-photo empty${mode === 'multi' ? ' wide' : ''}`} aria-hidden="true" />
+          )}
+          <div className="scan-actions">
+            <button type="button" className="scan-button" onClick={() => setCameraOpen(true)} disabled={busy}>
+              {phase.kind === 'idle' ? 'Take photo' : 'New photo'}
+            </button>
+            <button type="button" className="ghost" onClick={() => inputRef.current?.click()} disabled={busy}>
+              Choose from files
+            </button>
+            {v2 && mode === 'single' && (
+              <label className="check">
+                <input type="checkbox" checked={keepPhoto} onChange={(e) => setKeepPhoto(e.target.checked)} />
+                Also save this scan as a photo of the card
+              </label>
+            )}
+            {busy && <p aria-live="polite">{phase.message}</p>}
+            {phase.kind === 'error' && <p className="error" role="alert">{phase.message}</p>}
+          </div>
+        </div>
+      )}
 
       {cameraOpen && (
         <CameraCapture
           wide={mode === 'multi'}
-          onCapture={(file) => void processPhoto(file)}
+          onCapture={(file) => (mode === 'queue' ? addToQueue(file) : void processPhoto(file, mode))}
           onPickFile={() => {
             setCameraOpen(false)
             inputRef.current?.click()
           }}
           onClose={() => setCameraOpen(false)}
+        >
+          {mode === 'queue' ? <QueueStrip /> : null}
+        </CameraCapture>
+      )}
+
+      {mode === 'queue' && (
+        <ScanQueue
+          ownedByKey={ownedByKey}
+          nextSortOrder={nextSortOrder}
+          defaultCondition={newCardDefaults.condition ?? null}
+          onAdded={rememberAdded}
+          onEdit={(values, queueId) => setDraft({ values, position: null, queueId })}
         />
       )}
 
@@ -402,6 +454,12 @@ export function ScanPage(): JSX.Element {
           onSaved={(rows) => {
             rememberAdded(rows)
             const position = draft.position
+            // Uit de snelle wachtrij: die kaart is nu toegevoegd.
+            if (draft.queueId) {
+              removeItems([draft.queueId])
+              setDraft(null)
+              return
+            }
             // Scanfoto alleen bewaren als je dat koos. Hoofdfoto alleen als er geen officiële afbeelding is.
             const photo = image?.blob
             if (keepPhoto && position === null && photo) {
