@@ -6713,3 +6713,10 @@ label.queue-qty input {
 .queue-check .queue-group-title {
   color: var(--accent-line);
 }
+
+/* Vaste kolom voor het seticoon, zodat de setnamen recht onder elkaar staan. */
+a.near-set > .set-symbol {
+  flex: 0 0 40px;
+  display: flex;
+  justify-content: center;
+}
