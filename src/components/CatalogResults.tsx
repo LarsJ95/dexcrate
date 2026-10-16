@@ -1,5 +1,5 @@
-import { useEffect, useState, type JSX } from 'react'
-import { searchCatalog, type CatalogHit } from '../lib/catalogSearch'
+import { useEffect, useMemo, useState, type JSX } from 'react'
+import { searchCatalog, sortHits, type CatalogHit, type HitOrder } from '../lib/catalogSearch'
 import { imageCandidates, type Lang } from '../lib/tcgdex'
 import { CardFace } from './CardFace'
 import { CardPicture } from './CardPicture'
@@ -31,6 +31,7 @@ export function CatalogResults({ query, lang, wished, owned, onPick, note = null
   const key = `${lang}|${term.toLowerCase()}|${onlySets ? [...onlySets].join(',') : ''}`
   const [state, setState] = useState<State>({ key: '', hits: null, error: null })
   const [shown, setShown] = useState({ key: '', count: PAGE })
+  const [order, setOrder] = useState<HitOrder>('newest')
 
   useEffect(() => {
     if (term.length < 2) return
@@ -51,8 +52,10 @@ export function CatalogResults({ query, lang, wished, owned, onPick, note = null
     }
   }, [term, lang, key, onlySets])
 
-  if (term.length < 2) return null
   const current = state.key === key ? state : null
+  const currentHits = current?.hits ?? null
+  const hits = useMemo(() => (currentHits ? sortHits(currentHits, order) : null), [currentHits, order])
+  if (term.length < 2) return null
   const count = shown.key === key ? shown.count : PAGE
 
   return (
@@ -61,10 +64,14 @@ export function CatalogResults({ query, lang, wished, owned, onPick, note = null
         <h2 id="catalog-title" className="section-title">
           Card database
         </h2>
-        {current?.hits && (
-          <span className="muted small">
-            {current.hits.length === 0 ? 'No cards found' : `${current.hits.length} ${current.hits.length === 1 ? 'card' : 'cards'}, newest sets first`}
-          </span>
+        {hits && (
+          <span className="muted small">{hits.length === 0 ? 'No cards found' : `${hits.length} ${hits.length === 1 ? 'card' : 'cards'}`}</span>
+        )}
+        {hits && hits.length > 1 && (
+          <select className="catalog-sort" aria-label="Sort cards" value={order} onChange={(e) => setOrder(e.target.value === 'oldest' ? 'oldest' : 'newest')}>
+            <option value="newest">Newest sets first</option>
+            <option value="oldest">Oldest sets first</option>
+          </select>
         )}
       </div>
       {note && <p className="muted small">{note}</p>}
@@ -74,10 +81,10 @@ export function CatalogResults({ query, lang, wished, owned, onPick, note = null
           {current.error}
         </p>
       )}
-      {current?.hits && current.hits.length > 0 && (
+      {hits && hits.length > 0 && (
         <>
           <ul className="catalog-grid">
-            {current.hits.slice(0, count).map((hit) => {
+            {hits.slice(0, count).map((hit) => {
               const k = `${lang}/${hit.card.id}`
               const status = wished.has(k) ? 'On your wishlist' : owned.has(k) ? 'Owned' : null
               return (
@@ -99,9 +106,9 @@ export function CatalogResults({ query, lang, wished, owned, onPick, note = null
               )
             })}
           </ul>
-          {current.hits.length > count && (
+          {hits.length > count && (
             <button type="button" className="small-btn" onClick={() => setShown({ key, count: count + PAGE })}>
-              Show more ({current.hits.length - count} left)
+              Show more ({hits.length - count} left)
             </button>
           )}
         </>

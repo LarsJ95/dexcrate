@@ -21,4 +21,8 @@ describe('sortHits', () => {
     const sorted = sortHits([hit('base1-58', 'base1', 0), hit('sv03.5-173', 'sv03.5', 5), hit('sv03.5-25', 'sv03.5', 5), hit('x-1', 'x', -1)])
     expect(sorted.map((h) => h.card.id)).toEqual(['sv03.5-25', 'sv03.5-173', 'base1-58', 'x-1'])
   })
+  it('oudste sets eerst; onbekende sets blijven achteraan', () => {
+    const sorted = sortHits([hit('x-1', 'x', -1), hit('sv03.5-173', 'sv03.5', 5), hit('base1-58', 'base1', 0), hit('sv03.5-25', 'sv03.5', 5)], 'oldest')
+    expect(sorted.map((h) => h.card.id)).toEqual(['base1-58', 'sv03.5-25', 'sv03.5-173', 'x-1'])
+  })
 })

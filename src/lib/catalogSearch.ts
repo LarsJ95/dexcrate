@@ -23,10 +23,15 @@ export interface CatalogHit {
   order: number
 }
 
-/** Nieuwste sets eerst; binnen een set op nummer. Onbekende sets achteraan. */
-export function sortHits(hits: CatalogHit[]): CatalogHit[] {
+export type HitOrder = 'newest' | 'oldest'
+
+/** Nieuwste (of oudste) sets eerst; binnen een set op nummer. Onbekende sets altijd achteraan. */
+export function sortHits(hits: readonly CatalogHit[], order: HitOrder = 'newest'): CatalogHit[] {
   return [...hits].sort((a, b) => {
-    if (a.order !== b.order) return b.order - a.order
+    if (a.order !== b.order) {
+      if (a.order < 0 || b.order < 0) return b.order - a.order
+      return order === 'newest' ? b.order - a.order : a.order - b.order
+    }
     if (a.setId !== b.setId) return a.setId.localeCompare(b.setId)
     return (Number.parseInt(a.card.localId, 10) || 0) - (Number.parseInt(b.card.localId, 10) || 0)
   })
