@@ -318,6 +318,19 @@ function writeCache(prefix: string, key: string, v: unknown): void {
   }
 }
 
+const ABBR_PREFIX = 'tcgdex:abbr:v1:'
+const ABBR_TTL_MS = 30 * 24 * 60 * 60 * 1000 // afkortingen veranderen niet
+
+/** Officiële setafkorting (TEF, 30C); null als de set er geen heeft. Lokaal bewaard: het kost een volledige setdetail-request. */
+export async function getSetAbbr(lang: Lang, setId: string): Promise<string | null> {
+  const key = `${lang}|${setId}`
+  const cached = readCache<string | 'none'>(ABBR_PREFIX, ABBR_TTL_MS, key)
+  if (cached) return cached === 'none' ? null : cached
+  const abbr = (await getSet(lang, setId))?.summary.abbr ?? null
+  writeCache(ABBR_PREFIX, key, abbr ?? 'none')
+  return abbr
+}
+
 /** Kaartdetails uit de API; één request per kaart per sessie, gedeeld door info en prijs. */
 const fetchCardRaw = memo(async (key: string): Promise<Record<string, unknown> | null> => {
   const parts = splitKey(key)

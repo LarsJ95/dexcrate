@@ -1819,6 +1819,10 @@ a.stat:hover {
 }
 
 .set-code {
+  max-width: 88px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: 800;
   font-size: 0.9rem;
   color: var(--ink-soft);

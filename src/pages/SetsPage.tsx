@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState, type JSX } from 'react'
+import { useEffect, useMemo, useRef, useState, type JSX } from 'react'
 import { IconSearch } from '../components/Icons'
 import { listCards } from '../lib/db'
-import { digitalSetIds, getSetList, LANGS, setOfKey, type Lang, type SetSummary } from '../lib/tcgdex'
+import { digitalSetIds, getSetAbbr, getSetList, LANGS, setOfKey, type Lang, type SetSummary } from '../lib/tcgdex'
 import type { Card } from '../lib/types'
 import { Loading } from '../components/Loading'
 
@@ -43,6 +43,41 @@ function ownedBySet(cards: readonly Card[]): Map<Lang, Map<string, Set<string>>>
 }
 
 const ratioOf = (r: Row): number => (r.summary.total ? Math.min(1, r.owned / r.summary.total) : 0)
+
+/** Setcode voor sets zonder logo: de officiële afkorting, pas opgehaald als de tegel in beeld komt. */
+function SetBadge({ lang, setId }: { lang: Lang; setId: string }): JSX.Element {
+  const ref = useRef<HTMLSpanElement>(null)
+  const [abbr, setAbbr] = useState<string | null>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    let cancelled = false
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return
+        observer.disconnect()
+        getSetAbbr(lang, setId)
+          .then((a) => {
+            if (!cancelled) setAbbr(a)
+          })
+          .catch((err: unknown) => console.warn('Setafkorting ophalen mislukt', err))
+      },
+      { rootMargin: '200px' },
+    )
+    observer.observe(el)
+    return () => {
+      cancelled = true
+      observer.disconnect()
+    }
+  }, [lang, setId])
+
+  return (
+    <span ref={ref} className="set-code" title={setId}>
+      {abbr ?? setId}
+    </span>
+  )
+}
 
 export function SetsPage(): JSX.Element {
   const [cards, setCards] = useState<Card[] | null>(null)
@@ -202,7 +237,7 @@ export function SetsPage(): JSX.Element {
                         }}
                       />
                     ) : (
-                      <span className="set-code">{r.setId}</span>
+                      <SetBadge key={`${lang}/${r.setId}`} lang={lang} setId={r.setId} />
                     )}
                   </span>
                   <span className="set-info">
