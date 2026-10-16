@@ -298,7 +298,7 @@ button.notice-action:hover:not(:disabled) {
 
 /* ---------- Pagina ---------- */
 .page {
-  max-width: 1280px;
+  max-width: 1600px;
   margin: 0 auto;
   display: grid;
   gap: var(--gap-section);

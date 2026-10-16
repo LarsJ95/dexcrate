@@ -97,7 +97,7 @@ Regels:
 
 ## 5. Layout en spacing
 
-- Max contentbreedte: 1280 px voor pagina's; 760 px voor popups en formulieren
+- Max contentbreedte: 1600 px voor pagina's (gewijzigd 16-10-2026, was 1280: te veel witruimte naast de zijbalk op brede schermen); 760 px voor popups en formulieren
 - Grid: kaartraster auto-fill met minimaal 176 px per kaart, mobiel 2 kolommen; gutter 16 px desktop, 12 px mobiel
 - Spacing-schaal (alleen deze waarden): 4, 8, 12, 16, 24, 32, 48, 64 (tokens `--space-1` t/m `--space-8`; 96 en 128 niet nodig in deze app)
 - Verticale ruimte tussen secties: desktop 24 px / mobiel 16 px; binnen een paneel 12 px
