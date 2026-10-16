@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ChangeEvent, type JSX } from 'react'
 import { parseCsv } from '../lib/backup'
 import { IMPORT_FIELDS, findDuplicates, guessMapping, rowsToDrafts, type ImportField, type Mapping } from '../lib/csvImport'
 import { insertCards, listCards } from '../lib/db'
+import { celebrateAdded } from '../lib/celebrate'
 import { createBatch, deleteBatch, fileHash, listBatches, undoBatch, type ImportBatch } from '../lib/importBatches'
 import { findCandidates, nameSimilarity, type Candidate } from '../lib/match'
 import { findExact, lookupLang, stripLangTag } from '../lib/tcgdex'
@@ -138,7 +139,7 @@ export function CsvImport(): JSX.Element {
         const link = m?.kind === 'exact' ? { tcgdex_id: m.key, link_status: 'exact' as const } : m?.kind === 'chosen' ? { tcgdex_id: m.key, link_status: m.status } : { tcgdex_id: null, link_status: null }
         return { ...d.input, ...link, import_batch_id: batch?.id ?? null }
       })
-      await insertCards(inputs)
+      void celebrateAdded(await insertCards(inputs))
       setMessage({ ok: true, text: `${inputs.length} rows imported. You can undo this import below.` })
       setFile(null)
       refreshBatches()

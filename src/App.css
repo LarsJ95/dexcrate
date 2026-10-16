@@ -4464,6 +4464,7 @@ button.notice-action::after,
 .dash-rail {
   order: 2;
   display: grid;
+  align-items: start;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
   gap: var(--space-4);
   align-content: start;
@@ -5575,4 +5576,160 @@ a.button-link:hover {
   .moment-layer.is-toast {
     padding-bottom: calc(var(--tabbar) + var(--space-5) + env(safe-area-inset-bottom, 0px));
   }
+}
+
+/* ---------- Trainer-level, verborgen prestaties, Pokémon van de dag, weekrapport (goedgekeurd 16-10-2026) ---------- */
+.trainer-level {
+  font-size: 0.75em;
+  color: var(--accent-line);
+  white-space: nowrap;
+}
+
+.xp {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.xp-head {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 800;
+  color: #3fa9f5;
+}
+
+.xp-bar {
+  height: 8px;
+  padding: 1px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.xp-bar span {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, #3fa9f5, #7fd0ff);
+  transition: width 600ms ease-out;
+}
+
+.secret-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: var(--space-2);
+}
+
+.secret-list li {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+}
+
+.secret-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.secret-list li.is-earned .secret-icon {
+  background: var(--rarity-gold);
+  color: var(--on-yellow);
+}
+
+.daily-body {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+button.daily-sprite {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 104px;
+  height: 104px;
+  padding: 0;
+  border-radius: 50%;
+  border: 0;
+  background:
+    radial-gradient(circle, transparent 15%, var(--surface-2) 72%),
+    repeating-conic-gradient(from 0deg, color-mix(in oklab, var(--accent-line) 20%, transparent) 0deg 8deg, transparent 8deg 20deg),
+    var(--surface-3);
+}
+
+button.daily-sprite:hover:not(:disabled) {
+  background:
+    radial-gradient(circle, transparent 15%, var(--surface-2) 72%),
+    repeating-conic-gradient(from 0deg, color-mix(in oklab, var(--accent-line) 30%, transparent) 0deg 8deg, transparent 8deg 20deg),
+    var(--surface-3);
+}
+
+button.daily-sprite:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.daily-sprite img {
+  image-rendering: pixelated;
+  filter: brightness(0);
+  opacity: 0.85;
+  transition: filter 400ms ease-out;
+}
+
+.daily-sprite.is-shown img {
+  filter: none;
+  opacity: 1;
+}
+
+.daily-info {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.week-report {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+}
+
+.week-report .small-btn {
+  justify-self: start;
+}
+
+.week-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.week-stats div {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+}
+
+.week-stats dt {
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+
+.week-stats dd {
+  margin: 0;
+  font-weight: 800;
+  overflow-wrap: anywhere;
 }

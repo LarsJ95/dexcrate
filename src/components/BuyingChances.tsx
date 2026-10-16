@@ -4,6 +4,7 @@ import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
 import { listWishlist, type WishlistItem } from '../lib/wishlist'
+import { celebrateDeals } from '../lib/celebrate'
 import { CardImage } from './CardImage'
 
 const MAX_SHOWN = 5
@@ -44,6 +45,15 @@ export function BuyingChances(): JSX.Element | null {
         .sort((a, b) => b.margin - a.margin),
     [withMax, prices],
   )
+
+  // Nieuwe koopkans sinds vorige keer: "A deal appeared!" (pas als alle prijzen binnen zijn).
+  const pricesDone = withMax.every((i) => prices.has(i.tcgdex_id as string))
+  const dealKey = chances.map((c) => c.item.id).join(',')
+  useEffect(() => {
+    if (items === null || !pricesDone) return
+    celebrateDeals(chances.map((c) => ({ id: c.item.id, name: c.item.name, market: c.market, max: c.item.max_price ?? 0, tcgdexId: c.item.tcgdex_id })))
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- alleen bij een andere set koopkansen
+  }, [dealKey, pricesDone, items === null])
 
   if (enabled !== true) return null
 

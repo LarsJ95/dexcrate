@@ -29,12 +29,14 @@ interface TrainerProps {
   badges: Badge[]
   /** Badgekoffer openen (uitleg en voortgang per badge). */
   onOpenBadges: () => void
+  /** Trainer-level en XP (berekend uit je collectie). */
+  level: { level: number; into: number; needed: number }
 }
 
 const sinceFmt = new Intl.DateTimeFormat('en-GB', { month: 'short', year: 'numeric' })
 
 /** Trainer Card zoals in de games: naam, titel, je cijfers en je badges. */
-export function TrainerCard({ name, cards, species, setsStarted, since, badges, onOpenBadges }: TrainerProps): JSX.Element {
+export function TrainerCard({ name, cards, species, setsStarted, since, badges, onOpenBadges, level }: TrainerProps): JSX.Element {
   const earned = badges.filter((b) => b.earned).length
   const { title, next } = trainerTitle(earned)
   const sinceDate = since ? new Date(since) : null
@@ -43,12 +45,23 @@ export function TrainerCard({ name, cards, species, setsStarted, since, badges, 
       <header className="trainer-head">
         <div>
           <span className="stat-label">Trainer card</span>
-          <h2 id="trainer-title">{name}</h2>
+          <h2 id="trainer-title">
+            {name} <span className="trainer-level">Lv. {level.level}</span>
+          </h2>
         </div>
         <span className="trainer-rank" title={next ? `${next.badges} badges for ${next.title}` : 'Highest rank'}>
           {title}
         </span>
       </header>
+      <div className="xp">
+        <span className="xp-head small">
+          <span>EXP</span>
+          <span className="muted">{level.needed > 0 ? `${level.into} / ${level.needed} to Lv. ${level.level + 1}` : 'Max level'}</span>
+        </span>
+        <span className="xp-bar" role="meter" aria-label="Experience" aria-valuemin={0} aria-valuemax={level.needed || 1} aria-valuenow={level.needed ? level.into : 1}>
+          <span style={{ width: `${level.needed ? (level.into / level.needed) * 100 : 100}%` }} />
+        </span>
+      </div>
       <dl className="trainer-stats">
         <div>
           <dt>Cards</dt>

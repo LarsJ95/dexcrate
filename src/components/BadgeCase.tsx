@@ -1,6 +1,7 @@
 import type { JSX } from 'react'
 import { formatEur } from '../lib/stats'
 import { TITLES, hpLevel, trainerTitle, type Badge } from '../lib/trainer'
+import type { Achievement } from '../lib/progress'
 import { Sheet } from './Sheet'
 import { BadgeIcon } from './TrainerCard'
 
@@ -8,7 +9,7 @@ const progressText = (b: Badge): string =>
   b.kind === 'value' ? `${formatEur(Math.min(b.have, b.target))} of ${formatEur(b.target)}` : `${Math.min(b.have, b.target)} of ${b.target}`
 
 /** Badgekoffer: per badge wat je nodig hebt en hoe ver je bent, plus de trainer-titels. */
-export function BadgeCase({ badges, onClose }: { badges: Badge[]; onClose: () => void }): JSX.Element {
+export function BadgeCase({ badges, secrets, onClose }: { badges: Badge[]; secrets: Achievement[]; onClose: () => void }): JSX.Element {
   const earned = badges.filter((b) => b.earned).length
   const { title, next } = trainerTitle(earned)
   return (
@@ -30,6 +31,23 @@ export function BadgeCase({ badges, onClose }: { badges: Badge[]; onClose: () =>
               </span>
               <span className="muted small">{progressText(b)}</span>
             </div>
+          </li>
+        ))}
+      </ol>
+      <h3 className="section-title">
+        Secret achievements {secrets.filter((s) => s.earned).length}/{secrets.length}
+      </h3>
+      <p className="muted small">Hidden until you find them.</p>
+      <ol className="secret-list">
+        {secrets.map((s) => (
+          <li key={s.id} className={s.earned ? 'is-earned' : ''}>
+            <span className="secret-icon" aria-hidden="true">
+              {s.earned ? '★' : '?'}
+            </span>
+            <span>
+              <strong>{s.earned ? s.name : '???'}</strong>
+              {s.earned && <span className="muted small"> {s.how}</span>}
+            </span>
           </li>
         ))}
       </ol>

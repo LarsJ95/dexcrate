@@ -9,7 +9,10 @@ import { celebrateBadges } from '../lib/moments'
 import { englishSpeciesName, isNonLatin } from '../lib/names'
 import { rememberAutoPartner, usePartnerChoice } from '../lib/partner'
 import { badges, dominantType, hpLevel, partnerDexId, pokedexProgress, typeTeam, type OwnedInfo } from '../lib/trainer'
+import { celebrateProgress, rememberTrainerName, toProgressCards } from '../lib/celebrate'
+import { achievements, dailyDexId, levelFor, weekReport, xpFor } from '../lib/progress'
 import { BadgeCase } from './BadgeCase'
+import { DailyPokemon, WeekReportPanel } from './DailyPanels'
 import { EvolutionPanel } from './EvolutionPanel'
 import { PokedexSheet, type DexEntry } from './PokedexSheet'
 import { BuyingChances } from './BuyingChances'
@@ -150,6 +153,25 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
   const since = useMemo(() => cards.reduce<string | null>((first, c) => (c.created_at && (!first || c.created_at < first) ? c.created_at : first), null), [cards])
   const badgeList = badges({ cards: cardCount, species: dex.caught, value: market.owned.value })
   const team = useMemo(() => typeTeam(owned), [owned])
+  // Voortgang: XP/level, verborgen prestaties, Pokémon van de dag, weekrapport.
+  const progressCards = useMemo(
+    () => toProgressCards(cards, (k) => infos.get(k), (c) => marketValueOf(c, prices)?.value ?? null),
+    [cards, infos, prices],
+  )
+  const badgesEarned = badgeList.filter((b) => b.earned).length
+  const level = levelFor(xpFor(progressCards, badgesEarned))
+  const secrets = useMemo(() => achievements(progressCards), [progressCards])
+  const daily = dailyDexId(new Date())
+  const dailyOwned = owned.reduce((n, o) => n + (o.dexId === daily ? o.quantity : 0), 0)
+  const week = useMemo(() => weekReport(progressCards, new Date()), [progressCards])
+  useEffect(() => {
+    rememberTrainerName(trainer)
+  }, [trainer])
+  useEffect(() => {
+    if (infosLoading || pricesLoading) return
+    celebrateProgress(progressCards, badgesEarned)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- alleen als het laden klaar is of de stand verandert
+  }, [infosLoading, pricesLoading, level.level, secrets.filter((s) => s.earned).length])
   const ownedDex = useMemo(() => new Set(owned.flatMap((o) => (o.dexId ? [o.dexId] : []))), [owned])
   const [badgeCaseOpen, setBadgeCaseOpen] = useState(false)
   const [region, setRegion] = useState<number | null>(null)
@@ -307,13 +329,16 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
           since={since}
           badges={badgeList}
           onOpenBadges={() => setBadgeCaseOpen(true)}
+          level={level}
         />
+        <DailyPokemon key={daily} dexId={daily} ownedCount={infosLoading ? 0 : dailyOwned} />
         <PokedexPanel progress={dex} loading={infosLoading} onOpenRegion={setRegion} />
         <TypeTeamPanel team={team} />
         <EvolutionPanel owned={ownedDex} />
         <BuyingChances />
+        <WeekReportPanel report={week} trainer={trainer} partnerDex={partner?.dexId ?? null} />
       </aside>
-      {badgeCaseOpen && <BadgeCase badges={badgeList} onClose={() => setBadgeCaseOpen(false)} />}
+      {badgeCaseOpen && <BadgeCase badges={badgeList} secrets={secrets} onClose={() => setBadgeCaseOpen(false)} />}
       {region !== null && <PokedexSheet gen={region} caught={caught} onClose={() => setRegion(null)} onOpenCard={(id) => onOpenCard?.(id)} />}
     </section>
   )
