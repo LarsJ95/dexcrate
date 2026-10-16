@@ -80,6 +80,8 @@ export async function recognizeCards(img: PreparedImage, mode: ScanMode): Promis
     // Foutmelding van de functie zelf tonen als die er is.
     const ctx: unknown = error instanceof FunctionsHttpError ? error.context : null
     if (ctx instanceof Response) {
+      // 404 van Supabase zelf: de functie is (nog) niet gedeployd.
+      if (ctx.status === 404) throw new Error('Scanning is not set up yet: the recognize-card function is missing in Supabase (see TODO.md, "Camera aanzetten").')
       const body: unknown = await ctx.json().catch(() => null)
       const msg = typeof body === 'object' && body !== null ? (body as { error?: unknown }).error : null
       if (typeof msg === 'string') throw new Error(msg)
