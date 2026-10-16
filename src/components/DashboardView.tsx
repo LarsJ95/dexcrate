@@ -8,15 +8,14 @@ import { rememberFavouriteType } from '../lib/energy'
 import { celebrateBadges } from '../lib/moments'
 import { englishSpeciesName, isNonLatin } from '../lib/names'
 import { rememberAutoPartner, usePartnerChoice } from '../lib/partner'
-import { badges, dominantType, hpLevel, partnerDexId, pokedexProgress, typeTeam, type OwnedInfo } from '../lib/trainer'
+import { badges, dominantType, hpLevel, partnerDexId, pokedexProgress, type OwnedInfo } from '../lib/trainer'
 import { celebrateProgress, rememberTrainerName, syncCratePoints, toProgressCards } from '../lib/celebrate'
-import { achievements, dailyDexId, levelFor, weekReport, xpFor } from '../lib/progress'
+import { achievements, dailyDexId, levelFor, xpFor } from '../lib/progress'
 import { BadgeCase } from './BadgeCase'
-import { DailyPokemon, WeekReportPanel } from './DailyPanels'
-import { EvolutionPanel } from './EvolutionPanel'
+import { DailyPokemon } from './DailyPanels'
+import { RecentlyAdded, SetsNearlyComplete } from './OverviewPanels'
 import { PokedexSheet, type DexEntry } from './PokedexSheet'
-import { BuyingChances } from './BuyingChances'
-import { Partner, PokedexPanel, TrainerCard, TypeTeamPanel } from './TrainerCard'
+import { Partner, PokedexPanel, TrainerCard } from './TrainerCard'
 import { computeStats, formatEur, type Bucket } from '../lib/stats'
 import { thumbPath, type Card } from '../lib/types'
 import { CardImage } from './CardImage'
@@ -152,7 +151,6 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
   const setsStarted = useMemo(() => new Set(ownedKeys.flatMap((k) => setOfKey(k)?.setId ?? [])).size, [ownedKeys])
   const since = useMemo(() => cards.reduce<string | null>((first, c) => (c.created_at && (!first || c.created_at < first) ? c.created_at : first), null), [cards])
   const badgeList = badges({ cards: cardCount, species: dex.caught, value: market.owned.value })
-  const team = useMemo(() => typeTeam(owned), [owned])
   // Voortgang: XP/level, verborgen prestaties, Pokémon van de dag, weekrapport.
   const progressCards = useMemo(
     () => toProgressCards(cards, (k) => infos.get(k), (c) => marketValueOf(c, prices)?.value ?? null),
@@ -163,7 +161,6 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
   const secrets = useMemo(() => achievements(progressCards), [progressCards])
   const daily = dailyDexId(new Date())
   const dailyOwned = owned.reduce((n, o) => n + (o.dexId === daily ? o.quantity : 0), 0)
-  const week = useMemo(() => weekReport(progressCards, new Date()), [progressCards])
   useEffect(() => {
     rememberTrainerName(trainer)
   }, [trainer])
@@ -173,7 +170,6 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
     void syncCratePoints(progressCards, 'Daily bonus and your collection')
     // eslint-disable-next-line react-hooks/exhaustive-deps -- alleen als het laden klaar is of de stand verandert
   }, [infosLoading, pricesLoading, level.level, secrets.filter((s) => s.earned).length])
-  const ownedDex = useMemo(() => new Set(owned.flatMap((o) => (o.dexId ? [o.dexId] : []))), [owned])
   const [badgeCaseOpen, setBadgeCaseOpen] = useState(false)
   const [region, setRegion] = useState<number | null>(null)
   // Pokédex-nummer → jouw kaarten van die Pokémon (voor het Pokédex-raster).
@@ -334,10 +330,8 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
         />
         <DailyPokemon key={daily} dexId={daily} ownedCount={infosLoading ? 0 : dailyOwned} />
         <PokedexPanel progress={dex} loading={infosLoading} onOpenRegion={setRegion} />
-        <TypeTeamPanel team={team} />
-        <EvolutionPanel owned={ownedDex} />
-        <BuyingChances />
-        <WeekReportPanel report={week} trainer={trainer} partnerDex={partner?.dexId ?? null} />
+        <SetsNearlyComplete ownedKeys={ownedKeys} />
+        <RecentlyAdded cards={cards} prices={prices} onOpenCard={onOpenCard} />
       </aside>
       {badgeCaseOpen && <BadgeCase badges={badgeList} secrets={secrets} onClose={() => setBadgeCaseOpen(false)} />}
       {region !== null && <PokedexSheet gen={region} caught={caught} onClose={() => setRegion(null)} onOpenCard={(id) => onOpenCard?.(id)} />}
