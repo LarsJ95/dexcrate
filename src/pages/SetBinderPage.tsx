@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type JSX } from 'react'
 import { listCards } from '../lib/db'
-import { ENERGY_TYPES } from '../lib/cardTraits'
+import { ENERGY_TYPES, rarityRule } from '../lib/cardTraits'
 import { energyColor } from '../lib/energy'
 import { burstFrom } from '../lib/fx'
 import { showMoment } from '../lib/moments'
 import { DEFAULT_GOAL, goalProgress, goalRequirements, type GoalSettings, type OwnedCopy, type RequirementState } from '../lib/goals'
 import { marketValue } from '../lib/prices'
+import { SET_SORT_LABELS, sortSetCards, type SetSort } from '../lib/setSort'
 import { formatEur } from '../lib/stats'
 import { VARIANT_LABELS, type Variant } from '../lib/types'
 import { loadGoal } from '../lib/wishlist'
@@ -14,6 +15,7 @@ import { CatalogCardPicture } from '../components/CatalogCardPicture'
 import { GoalSheet } from '../components/GoalSheet'
 import { IconArrowLeft } from '../components/Icons'
 import { SetCardSheet } from '../components/SetCardSheet'
+import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import { getCardInfo, getCardPrice, getSet, isLang, setOfKey, type SetCard, type SetSummary } from '../lib/tcgdex'
 import { Loading } from '../components/Loading'
@@ -45,6 +47,8 @@ interface Cost {
 
 /** Korte aanduiding van een uitvoering in een binder-vak. */
 const VARIANT_SHORT: Record<Variant, string> = { normal: 'N', holo: 'H', reverse: 'R', firstEdition: '1st' }
+
+const formatValue = (v: number | null): string => (v === null ? 'no price' : formatEur(v))
 
 const stateKey = (s: RequirementState): string => `${s.req.cardId}|${s.req.variant ?? 'any'}`
 
@@ -91,6 +95,9 @@ export function SetBinderPage({ param }: Props): JSX.Element {
   const [pageSize, setPageSize] = useState<PageSize>(readPageSize)
   const [cost, setCost] = useState<Cost | null>(null)
   const [openCard, setOpenCard] = useState<SetCard | null>(null)
+  const [sort, setSort] = useState<SetSort>('number')
+  // Marktwaarde per kaart-id, alleen geladen bij sorteren op waarde.
+  const [values, setValues] = useState<{ prices: ReadonlyMap<string, number | null>; done: number; total: number } | null>(null)
   const cancelCost = useRef(false)
   // Verzameldoel (STAP6): wat telt mee voor "compleet".
   const goalsEnabled = useWishlistEnabled() === true
@@ -187,6 +194,42 @@ export function SetBinderPage({ param }: Props): JSX.Element {
     }
   }, [needVariants, data, lang])
 
+  /** Sorteren op waarde: marktprijs (standaarduitvoering) van elke kaart laden; prijzen worden 6 uur gecachet. */
+  function loadValues(): void {
+    if (!data || !isLang(lang) || values) return
+    cancelCost.current = false
+    const prices = new Map<string, number | null>()
+    let done = 0
+    const total = data.cards.length
+    setValues({ prices, done, total })
+    for (const c of data.cards) {
+      getCardPrice(`${lang}/${c.id}`)
+        .then((p) => prices.set(c.id, marketValue(p, null)?.value ?? null))
+        .catch((err: unknown) => {
+          console.warn(`Prijs ophalen mislukt voor ${c.id}`, err)
+          prices.set(c.id, null)
+        })
+        .finally(() => {
+          done += 1
+          if (!cancelCost.current && (done % 10 === 0 || done === total)) setValues({ prices: new Map(prices), done, total })
+        })
+    }
+  }
+
+  function changeSort(next: SetSort): void {
+    setSort(next)
+    if (next === 'value') loadValues()
+  }
+
+  // Sorteren op zeldzaamheid: kaartinfo (7 dagen gecachet).
+  const cardKeys = useMemo(() => (data && isLang(lang) ? data.cards.map((c) => `${lang}/${c.id}`) : []), [data, lang])
+  const infos = useCatalogInfos(cardKeys, sort === 'rarity')
+  const ranks = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const [key, info] of infos) if (info) map.set(key.slice(key.indexOf('/') + 1), rarityRule(info.rarity).rank)
+    return map
+  }, [infos])
+
   // Lopende kostenberekening stoppen bij verlaten van de pagina.
   useEffect(
     () => () => {
@@ -248,16 +291,22 @@ export function SetBinderPage({ param }: Props): JSX.Element {
       const states = statesByCard.get(id)
       return Boolean(states && states.length > 0 && states.every((st) => st.missing === 0))
     }
-    if (show === 'owned') return data.cards.filter((c) => complete(c.id))
-    if (show === 'missing') return data.cards.filter((c) => statesByCard.has(c.id) && !complete(c.id))
-    return data.cards
-  }, [data, show, statesByCard])
+    const shown =
+      show === 'owned'
+        ? data.cards.filter((c) => complete(c.id))
+        : show === 'missing'
+          ? data.cards.filter((c) => statesByCard.has(c.id) && !complete(c.id))
+          : data.cards
+    return sortSetCards(shown, sort, { complete, value: values?.prices ?? new Map(), rank: ranks })
+  }, [data, show, statesByCard, sort, values, ranks])
 
+  // Binderpagina's alleen in setvolgorde; gesorteerd is het één doorlopend raster.
   const pages = useMemo(() => {
+    if (sort !== 'number') return [visible]
     const out: SetCard[][] = []
     for (let i = 0; i < visible.length; i += pageSize) out.push(visible.slice(i, i + pageSize))
     return out
-  }, [visible, pageSize])
+  }, [visible, pageSize, sort])
 
   // Nieuw sinds het vorige bezoek (eerste bezoek: niets); daarna onthouden wat je nu hebt.
   const newIds = useMemo<ReadonlySet<string>>(() => {
@@ -445,14 +494,33 @@ export function SetBinderPage({ param }: Props): JSX.Element {
             </button>
           ))}
         </div>
-        <div className="segmented" role="group" aria-label="Pockets per page">
-          {([9, 12] as const).map((size) => (
-            <button key={size} type="button" aria-pressed={pageSize === size} onClick={() => changePageSize(size)}>
-              {size === 9 ? '9 per page' : '12 per page'}
-            </button>
+        {sort === 'number' && (
+          <div className="segmented" role="group" aria-label="Pockets per page">
+            {([9, 12] as const).map((size) => (
+              <button key={size} type="button" aria-pressed={pageSize === size} onClick={() => changePageSize(size)}>
+                {size === 9 ? '9 per page' : '12 per page'}
+              </button>
+            ))}
+          </div>
+        )}
+        <select aria-label="Sort" value={sort} onChange={(e) => changeSort(e.target.value as SetSort)}>
+          {(Object.keys(SET_SORT_LABELS) as SetSort[]).map((k) => (
+            <option key={k} value={k}>
+              {SET_SORT_LABELS[k]}
+            </option>
           ))}
-        </div>
+        </select>
       </div>
+      {sort === 'value' && values && values.done < values.total && (
+        <p className="muted small" aria-live="polite">
+          Loading prices… {values.done} of {values.total}
+        </p>
+      )}
+      {sort === 'rarity' && infos.size < cardKeys.length && (
+        <p className="muted small" aria-live="polite">
+          Loading rarities… {infos.size} of {cardKeys.length}
+        </p>
+      )}
 
       {data.cards.length === 0 && (
         <p className="notice">No card list is available for this set.</p>
@@ -499,11 +567,11 @@ export function SetBinderPage({ param }: Props): JSX.Element {
         </div>
       )}
 
-      <div className="binder-pages">
+      <div className={sort === 'number' ? 'binder-pages' : 'binder-sorted'}>
         {pages.map((page, i) => (
-          <section key={i} className="binder-page" aria-label={`Page ${i + 1}`}>
-            <p className="binder-page-label">Page {i + 1}</p>
-            <ul className="binder set-binder" style={{ ['--binder-cols' as string]: pageSize === 9 ? 3 : 4 }}>
+          <section key={i} className="binder-page" aria-label={sort === 'number' ? `Page ${i + 1}` : `Cards sorted by ${SET_SORT_LABELS[sort].toLowerCase()}`}>
+            {sort === 'number' && <p className="binder-page-label">Page {i + 1}</p>}
+            <ul className="binder set-binder" style={sort === 'number' ? { ['--binder-cols' as string]: pageSize === 9 ? 3 : 4 } : undefined}>
               {page.map((c) => {
                 const qty = data.owned.get(c.id)
                 const states = statesByCard.get(c.id) ?? []
@@ -569,9 +637,9 @@ export function SetBinderPage({ param }: Props): JSX.Element {
                           ))}
                         </span>
                       )}
-                      {!complete && inGoal && price !== undefined && (
-                        <span className="slot-price">{price === null ? 'no price' : formatEur(price)}</span>
-                      )}
+                      {sort === 'value'
+                        ? values?.prices.has(c.id) && <span className="slot-price">{formatValue(values.prices.get(c.id) ?? null)}</span>
+                        : !complete && inGoal && price !== undefined && <span className="slot-price">{price === null ? 'no price' : formatEur(price)}</span>}
                       {qty && qty > 1 ? <span className="qty-badge">{qty}×</span> : null}
                     </button>
                   </li>

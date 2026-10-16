@@ -1682,6 +1682,17 @@ a.stat:hover {
   gap: var(--space-2);
 }
 
+/* Gesorteerd (niet op nummer): één doorlopend raster over de volle breedte. */
+.binder-sorted .set-binder {
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+
+@media (max-width: 480px) {
+  .binder-sorted .set-binder {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .binder-page-label {
   font-size: var(--fs-small);
   font-weight: 600;
