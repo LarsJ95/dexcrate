@@ -4554,11 +4554,11 @@ a.mover:hover {
   justify-items: end;
 }
 
-/* Breed scherm (vanaf 2200 px): hoofdkolom en een vaste zijkolom rechts, samen breder dan de gewone pagina. */
+/* Breed scherm (vanaf 2200 px): vaste trainer-kolom links en de hoofdkolom ernaast, samen breder dan de gewone pagina. */
 @media (min-width: 2200px) {
   .page.dashboard {
     max-width: 2080px;
-    grid-template-columns: minmax(0, 1fr) 420px;
+    grid-template-columns: 420px minmax(0, 1fr);
     column-gap: var(--space-6);
     align-items: start;
   }
@@ -4566,7 +4566,8 @@ a.mover:hover {
   .dash-main {
     display: grid;
     gap: var(--gap-section);
-    grid-column: 1;
+    grid-column: 2;
+    grid-row: 1;
     min-width: 0;
   }
 
@@ -4577,7 +4578,8 @@ a.mover:hover {
   }
 
   .dash-rail {
-    grid-column: 2;
+    grid-column: 1;
+    grid-row: 1;
     grid-template-columns: 1fr;
     position: sticky;
     top: var(--space-6);
