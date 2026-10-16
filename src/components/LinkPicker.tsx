@@ -5,6 +5,7 @@ import { imageCandidates, imageCandidatesForKey, lookupLang, splitKey, stripLang
 import type { CardLanguage } from '../lib/types'
 import { CardFace } from './CardFace'
 import { CardPicture } from './CardPicture'
+import { CardZoom } from './CardZoom'
 
 interface Props {
   name: string
@@ -32,6 +33,7 @@ export function LinkPicker({ name, language, setCode, cardNumber, value, onSelec
   const [results, setResults] = useState<Candidate[] | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [zoomOpen, setZoomOpen] = useState(false)
 
   const search = useCallback(
     async (searchTerm: string, searchLang: Lang): Promise<void> => {
@@ -66,12 +68,22 @@ export function LinkPicker({ name, language, setCode, cardNumber, value, onSelec
         {value ? (
           <>
             {linked && (
-              <CardPicture
-                className="link-thumb"
-                sources={imageCandidates(linked.lang, linked.set.id, linked.localId, linked.image, 'low')}
-                alt=""
-                fallback={null}
-              />
+              <button type="button" className="zoom-trigger link-thumb" onClick={() => setZoomOpen(true)} aria-label={`Enlarge ${linked.name}`}>
+                <CardPicture
+                  sources={imageCandidates(linked.lang, linked.set.id, linked.localId, linked.image, 'low')}
+                  alt=""
+                  fallback={null}
+                />
+              </button>
+            )}
+            {linked && zoomOpen && (
+              <CardZoom label={linked.name} onClose={() => setZoomOpen(false)}>
+                <CardPicture
+                  sources={imageCandidates(linked.lang, linked.set.id, linked.localId, linked.image, 'high')}
+                  alt={linked.name}
+                  fallback={<CardFace name={linked.name} detail={`${linked.set.name} #${linked.localId}`} />}
+                />
+              </CardZoom>
             )}
             <div>
               <p className="link-title">{linked ? linked.name : 'Loading…'}</p>

@@ -908,7 +908,13 @@ label.check {
 
 .link-thumb {
   width: 46px;
+  flex: 0 0 auto;
   border-radius: var(--radius-card);
+}
+
+button.zoom-trigger.link-thumb {
+  width: 46px;
+  overflow: hidden;
 }
 
 .link-title {
