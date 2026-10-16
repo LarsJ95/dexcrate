@@ -21,23 +21,26 @@ export interface ProgressCard {
 
 // --- XP en level ---
 
-/** XP: 10 per kaart, extra voor zeldzaamheid, 25 per verschillende Pokémon, 100 per badge. */
+/** XP: 10 per kaart, extra voor zeldzaamheid, 15 per verschillende Pokémon, 50 per badge. */
 export function xpFor(cards: readonly ProgressCard[], badgesEarned: number): number {
   let xp = 0
   const species = new Set<number>()
   for (const c of cards) {
-    xp += c.quantity * (10 + rarityRule(c.rarity).rank * 4)
+    xp += c.quantity * (10 + rarityRule(c.rarity).rank * 2)
     if (c.dexId) species.add(c.dexId)
   }
-  return xp + species.size * 25 + badgesEarned * 100
+  return xp + species.size * 15 + badgesEarned * 50
 }
 
 export const MAX_LEVEL = 100
 
-/** Totale XP die nodig is om level n te bereiken (level 1 = 0). Groeit geleidelijk, zoals in de games. */
+/**
+ * Totale XP die nodig is om level n te bereiken (level 1 = 0). Kwadratisch, zodat hoge levels echt veel vragen:
+ * ongeveer 40 kaarten → level 6, 250 → 13, 1000 → 24.
+ */
 export function xpForLevel(level: number): number {
   const n = Math.max(1, Math.min(MAX_LEVEL, level)) - 1
-  return Math.round(40 * n ** 1.6)
+  return 50 * n * n
 }
 
 export function levelFor(xp: number): { level: number; into: number; needed: number } {
