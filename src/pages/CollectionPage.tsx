@@ -77,7 +77,7 @@ export function CollectionPage(): JSX.Element {
   const [filter, setFilter] = useState<StatusFilter>(initialView.filter)
   const [sort, setSort] = useState<SortKey>(initialView.sort)
   const [extra, setExtra] = useState<ExtraFilters>(initialView.extra)
-  const [showFilters, setShowFilters] = useState(activeFilterCount(initialView.extra) > 0)
+  const [showFilters, setShowFilters] = useState(true)
   // Kaartinfo (illustrator, zeldzaamheid, types) alleen laden als je op de catalogus filtert.
   const catalogKeys = useMemo(() => (cards ?? []).flatMap((c) => (c.tcgdex_id ? [c.tcgdex_id] : [])), [cards])
   const infos = useCatalogInfos(catalogKeys, needsCatalog(extra))
