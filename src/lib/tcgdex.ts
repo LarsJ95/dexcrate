@@ -1,6 +1,7 @@
 const API = 'https://api.tcgdex.net/v2'
 
 import type { CardLanguage, Variant } from './types'
+import { parseCardGame, type CardGame } from './cardGame'
 import { parseTcgplayer, type TcgplayerPrice } from './valuation'
 import { parseDexId, parseRarity, parseSuffix, parseTypes, type EnergyType } from './cardTraits'
 
@@ -64,6 +65,8 @@ export interface CardInfo {
   suffix?: string | null
   /** Pokédex-nummer van de Pokémon op de kaart; null bij trainers en energie. */
   dexId?: number | null
+  /** HP, aanvallen, zwakte enz. (sinds cache v7). */
+  game?: CardGame | null
   set: SetSummary
 }
 
@@ -325,7 +328,7 @@ export function matchNumber(cards: readonly SetCard[], number: string): SetCard 
 
 // --- Kaartinfo en prijzen, met cache in localStorage ---
 
-const INFO_PREFIX = 'tcgdex:card:v6:' // v6: met zeldzaamheid, types, achtervoegsel en Pokédex-nummer
+const INFO_PREFIX = 'tcgdex:card:v7:' // v7: met spelgegevens (HP, aanvallen, zwakte)
 const INFO_TTL_MS = 7 * 24 * 60 * 60 * 1000 // namen/plaatjes veranderen zelden
 const PRICE_PREFIX = 'tcgdex:price:v2:' // v2: met idProduct
 const PRICE_TTL_MS = 6 * 60 * 60 * 1000 // TCGdex ververst prijzen dagelijks
@@ -506,6 +509,7 @@ const fetchCardInfo = memo(async (key: string): Promise<CardInfo | null> => {
     types: parseTypes(data.types),
     suffix: parseSuffix(data.suffix),
     dexId: parseDexId(data.dexId),
+    game: parseCardGame(data),
     set: { id: data.set.id, name: typeof data.set.name === 'string' ? data.set.name : data.set.id, logo },
   }
   writeCache(INFO_PREFIX, key, info)
