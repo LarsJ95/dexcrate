@@ -3,7 +3,7 @@ import { listCards } from '../lib/db'
 import { ENERGY_TYPES, rarityRule } from '../lib/cardTraits'
 import { energyColor } from '../lib/energy'
 import { burstFrom } from '../lib/fx'
-import { showMoment } from '../lib/moments'
+import { SET_MILESTONES, celebrateMilestone, showMoment } from '../lib/moments'
 import { useMotion } from '../lib/motion'
 import { spriteUrls } from '../lib/runner'
 import { DEFAULT_GOAL, goalProgress, goalRequirements, type GoalSettings, type OwnedCopy, type RequirementState } from '../lib/goals'
@@ -59,6 +59,8 @@ const PAGE_SIZE_KEY = 'dexcrate:binder-page-size'
 const SEEN_KEY = 'dexcrate:binder-seen:'
 /** Set al gevierd als compleet; weer weg als de set niet meer compleet is. */
 const COMPLETE_KEY = 'dexcrate:set-complete:'
+/** Hoogste gevierde mijlpaal per set. */
+const MILESTONE_KEY = 'dexcrate:set-milestone:'
 const MAX_NEW = 12
 const SPARKLE_COLORS = ENERGY_TYPES.filter((t) => t !== 'Colorless').map(energyColor)
 
@@ -352,6 +354,13 @@ export function SetBinderPage({ param }: Props): JSX.Element {
     }
     remember(key, '1')
     showMoment({ kind: 'complete', setName: data.summary.name })
+  }, [data, progress, isComplete, lang, setId])
+
+  // Mijlpaal (10, 25, 50 … kaarten in deze set); compleet heeft zijn eigen viering.
+  useEffect(() => {
+    if (!data || !progress || isComplete) return
+    const setName = data.summary.name
+    celebrateMilestone(`${MILESTONE_KEY}${lang}/${setId}`, progress.cardsOwned, SET_MILESTONES, (n) => `${n} cards in ${setName}`)
   }, [data, progress, isComplete, lang, setId])
 
   const costSummary = useMemo(() => {

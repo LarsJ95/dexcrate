@@ -7,6 +7,9 @@ import { listCards, listSnapshotsFor } from '../lib/db'
 import { portfolioSeries, type SnapshotRow } from '../lib/prices'
 import type { Card } from '../lib/types'
 import { Loading } from '../components/Loading'
+import { COLLECTION_MILESTONES, celebrateMilestone } from '../lib/moments'
+
+const COLLECTION_MILESTONE_KEY = 'dexcrate:collection-milestone'
 
 export function DashboardPage(): JSX.Element {
   const [cards, setCards] = useState<Card[] | null>(null)
@@ -39,6 +42,13 @@ export function DashboardPage(): JSX.Element {
       cancelled = true
     }
   }, [reloadKey])
+
+  // Mijlpaal voor de hele collectie (10, 25, 50, 100 … kaarten in bezit).
+  useEffect(() => {
+    if (!cards) return
+    const owned = cards.reduce((n, c) => n + (c.ownership === 'owned' ? c.quantity : 0), 0)
+    celebrateMilestone(COLLECTION_MILESTONE_KEY, owned, COLLECTION_MILESTONES, (n) => `${n} cards in your collection`)
+  }, [cards])
 
   const { prices, loading } = useMarketPrices(cards)
   const series = useMemo(() => (cards && snapshots ? portfolioSeries(cards, snapshots) : null), [cards, snapshots])

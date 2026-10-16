@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type JSX } from 'react'
 import { useCardInfo } from '../hooks/useCardInfo'
 import type { Candidate } from '../lib/match'
+import { showMoment } from '../lib/moments'
 import { moneyText, parseMoney } from '../lib/money'
 import { getSet, lookupLang, type Lang } from '../lib/tcgdex'
 import { CONDITION_LABELS, LANGUAGE_LABELS, VARIANT_LABELS, type CardLanguage, type Condition, type Variant } from '../lib/types'
@@ -93,7 +94,13 @@ export function WishlistDialog({ item, initial, onClose, onSaved, onDeleted }: P
     setBusy(true)
     setError(null)
     try {
-      onSaved(item ? await updateWishlistItem(item.id, input) : await addWishlistItem(input))
+      if (item) {
+        onSaved(await updateWishlistItem(item.id, input))
+      } else {
+        const added = await addWishlistItem(input)
+        onSaved(added)
+        showMoment({ kind: 'gotcha', name: added.name })
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Saving failed.')
       setBusy(false)

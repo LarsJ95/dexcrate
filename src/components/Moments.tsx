@@ -11,6 +11,8 @@ import { RaritySymbols } from './RaritySymbols'
 const REVEAL = { flip: 300, burst: 620, end: 2100 }
 const CATCH = { absorb: 520, click: 1350, end: 2300 }
 const COMPLETE = { end: 2200 }
+const MILESTONE = { burst: 350, end: 2200 }
+const GOTCHA = { click: 1350, end: 2300 }
 
 const ALL_ENERGY = ENERGY_TYPES.filter((t) => t !== 'Colorless').map(energyColor)
 
@@ -53,6 +55,12 @@ function MomentLayer({ moment }: { moment: Moment }): JSX.Element {
         })
         at(REVEAL.end, () => endMoment(moment.id))
       }
+    } else if (moment.kind === 'milestone') {
+      at(MILESTONE.burst, () => target.current && burstFrom(target.current, { colors: ALL_ENERGY, count: 36, speed: 8 }))
+      at(MILESTONE.end, () => endMoment(moment.id))
+    } else if (moment.kind === 'gotcha') {
+      at(GOTCHA.click, () => target.current && burstFrom(target.current, { colors: ['var(--yellow)', '#ffffff', 'var(--ball-red)'], count: 24, speed: 6, gravity: 0.08 }))
+      at(GOTCHA.end, () => endMoment(moment.id))
     } else {
       confetti(ALL_ENERGY)
       at(COMPLETE.end, () => endMoment(moment.id))
@@ -62,6 +70,36 @@ function MomentLayer({ moment }: { moment: Moment }): JSX.Element {
       if (el?.matches(':popover-open')) el.hidePopover()
     }
   }, [moment])
+
+  if (moment.kind === 'milestone') {
+    return (
+      <div ref={layer} className="moment-layer" popover="manual" role="status">
+        <div className="moment-complete is-milestone" ref={target}>
+          <span className="moment-stamp">Lv. {moment.level}</span>
+          <span className="moment-caption">
+            <strong>Level up!</strong>
+            <span>{moment.caption}</span>
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  if (moment.kind === 'gotcha') {
+    return (
+      <div ref={layer} className="moment-layer" popover="manual" role="status">
+        <div className="moment-stage is-catch is-gotcha">
+          <div className="moment-card" ref={target}>
+            <span className="moment-ball pokeball" aria-hidden="true" />
+          </div>
+          <p className="moment-caption">
+            <strong>Gotcha!</strong>
+            <span>{moment.name} is on your wishlist</span>
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   if (moment.kind === 'complete') {
     return (

@@ -3985,3 +3985,15 @@ button.slot-open:hover .whos-that {
   opacity: 0;
   transition-delay: 450ms;
 }
+
+/* ---------- Pokémon-sfeer: mijlpalen en "Gotcha!" ---------- */
+.is-milestone .moment-stamp {
+  border-color: var(--accent-line);
+  color: var(--accent-line);
+  rotate: -6deg;
+}
+
+/* Gotcha: alleen de bal, iets kleiner vak dan bij een kaart. */
+.is-gotcha .moment-card {
+  height: 160px;
+}

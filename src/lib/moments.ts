@@ -17,6 +17,10 @@ export type Moment =
       caught: boolean
     }
   | { kind: 'complete'; id: number; setName: string }
+  /** Mijlpaal: "Lv. 25" met uitleg, bv. "25 cards in 151". */
+  | { kind: 'milestone'; id: number; level: number; caption: string }
+  /** Toegevoegd aan de wishlist: pokébal wiebelt en klikt dicht. */
+  | { kind: 'gotcha'; id: number; name: string }
 
 type NewMoment = Moment extends infer M ? (M extends Moment ? Omit<M, 'id'> : never) : never
 
@@ -32,6 +36,41 @@ export function showMoment(m: NewMoment): void {
   if (!motionAllowed()) return
   current = { ...m, id: ++seq } as Moment
   emit()
+}
+
+/** Mijlpalen voor kaarten in één set en voor de hele collectie. */
+export const SET_MILESTONES = [10, 25, 50, 100, 150, 200, 250, 300] as const
+export const COLLECTION_MILESTONES = [10, 25, 50, 100, 250, 500, 1000, 2500] as const
+
+/** Hoogste mijlpaal die nu gehaald is maar nog niet gevierd (boven `celebrated`), of null. */
+export function newMilestone(count: number, celebrated: number, steps: readonly number[]): number | null {
+  let hit: number | null = null
+  for (const s of steps) if (s <= count && s > celebrated) hit = s
+  return hit
+}
+
+/**
+ * Mijlpaal vieren als die nieuw is; onthoudt per sleutel wat al gevierd is. Eerste keer (nog niets
+ * onthouden): alleen onthouden, niet vieren, zodat oude voortgang niet ineens een feest wordt.
+ */
+export function celebrateMilestone(key: string, count: number, steps: readonly number[], caption: (level: number) => string): void {
+  let stored: string | null
+  try {
+    stored = localStorage.getItem(key)
+  } catch {
+    return // geen opslag: niet bij elk bezoek opnieuw vieren
+  }
+  const reached = newMilestone(count, 0, steps) ?? 0
+  const celebrated = stored === null ? null : Number.parseInt(stored, 10) || 0
+  try {
+    // Ook omlaag bijwerken (kaarten verkocht), zodat de mijlpaal later opnieuw gevierd kan worden.
+    if (celebrated === null || reached !== celebrated) localStorage.setItem(key, String(reached))
+  } catch (err) {
+    console.warn('Mijlpaal onthouden mislukt', err)
+  }
+  if (celebrated === null) return
+  const level = newMilestone(count, celebrated, steps)
+  if (level !== null) showMoment({ kind: 'milestone', level, caption: caption(level) })
 }
 
 export function endMoment(id: number): void {

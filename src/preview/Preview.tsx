@@ -109,13 +109,15 @@ if (params.get('runner')) {
 // ?peek=<ms>: Pikachu kijkt na zoveel ms om een hoekje.
 if (params.get('peek')) seedPeekForPreview(Number(params.get('peek')))
 
-// ?moment=reveal|catch|complete&at=ms: moment zo starten dat de screenshot (na 7 s) op `at` ms valt.
+// ?moment=reveal|catch|complete|milestone|gotcha&at=ms: moment zo starten dat de screenshot (na 7 s) op `at` ms valt.
 const momentParam = params.get('moment')
 if (momentParam) {
   const at = Number(params.get('at') ?? 800)
   const card = CARDS[Number(params.get('idx') ?? 0)]?.card ?? CARDS[0].card
   window.setTimeout(() => {
     if (momentParam === 'complete') showMoment({ kind: 'complete', setName: '151' })
+    else if (momentParam === 'milestone') showMoment({ kind: 'milestone', level: 25, caption: '25 cards in 151' })
+    else if (momentParam === 'gotcha') showMoment({ kind: 'gotcha', name: 'Charizard ex' })
     else showMoment({ kind: 'reveal', card, rarity: params.get('rarity') ?? 'Double rare', type: 'Psychic', caught: momentParam === 'catch' })
   }, 7000 - at)
 }
