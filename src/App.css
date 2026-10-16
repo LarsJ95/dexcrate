@@ -6720,3 +6720,9 @@ a.near-set > .set-symbol {
   display: flex;
   justify-content: center;
 }
+
+/* Gescande kaart staat op je wishlist. */
+.wish-star {
+  color: var(--accent-line);
+  font-weight: 900;
+}

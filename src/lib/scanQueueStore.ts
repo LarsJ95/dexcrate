@@ -58,6 +58,12 @@ export interface ScanFeedback {
 }
 
 let feedback: ScanFeedback | null = null
+/** Kaart-sleutels op je wishlist (gezet door de scanpagina). */
+let wished: ReadonlySet<string> = new Set()
+
+export function setWishedKeys(keys: ReadonlySet<string>): void {
+  wished = keys
+}
 let feedbackSeq = 0
 
 export const getFeedback = (): ScanFeedback | null => feedback
@@ -202,7 +208,8 @@ async function process(id: string): Promise<void> {
     set(merged)
     dropImage(id)
     const best = candidates[0]
-    const what = best ? `${best.name} · ${best.setName} #${best.localId}` : `${rec.nameEnglish || rec.namePrinted || 'Unknown card'} (no match)`
+    const star = best && wished.has(best.key) ? '★ On your wishlist: ' : ''
+    const what = best ? `${star}${best.name} · ${best.setName} #${best.localId}` : `${rec.nameEnglish || rec.namePrinted || 'Unknown card'} (no match)`
     // Samengevoegd: de eerdere regel met dezelfde kaart heeft nu een hoger aantal.
     const target = merged.some((q) => q.id === id) ? null : merged.find((q) => q.chosen === best?.key && q.status === 'ready')
     announce({

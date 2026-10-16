@@ -99,16 +99,25 @@ interface Props {
   onAdded: (rows: Card[]) => void
   /** Eén kaart in het gewone formulier openen; bij opslaan verdwijnt hij uit de wachtrij. */
   onEdit: (draft: Partial<CardInput>, queueId: string) => void
+  /** Kaart-sleutels op je wishlist. */
+  wished: ReadonlySet<string>
 }
 
 /** Wachtrij nakijken en in één keer toevoegen. */
-export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded, onEdit }: Props): JSX.Element | null {
+export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded, onEdit, wished }: Props): JSX.Element | null {
   const queue = useScanQueue()
   const [condition, setCondition] = useState<Condition | ''>(defaultCondition ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmClear, setConfirmClear] = useState(false)
-  if (queue.length === 0) return null
+  const [done, setDone] = useState<string | null>(null)
+  if (queue.length === 0) {
+    return done ? (
+      <p className="success" role="status">
+        {done}
+      </p>
+    ) : null
+  }
 
   const s = summarize(queue)
   const selected = queue.filter((q) => q.status === 'ready' && q.include && q.rec)
@@ -124,6 +133,7 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
     if (busy || selected.length === 0) return
     setBusy(true)
     setError(null)
+    setDone(null)
     try {
       const inputs = await Promise.all(
         selected.map(async (q, i): Promise<CardInput> => {
@@ -132,6 +142,9 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
         }),
       )
       const rows = await insertCards(inputs)
+      const fromWishlist = selected.filter((q) => wished.has(q.chosen)).length
+      const count = rows.reduce((n, r) => n + r.quantity, 0)
+      setDone(`Added ${count} ${count === 1 ? 'card' : 'cards'}${fromWishlist > 0 ? `, ${fromWishlist} from your wishlist ★` : ''}.`)
       removeItems(selected.map((q) => q.id))
       onAdded(rows)
       void celebrateAdded(rows)
@@ -169,7 +182,14 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
           </span>
         </span>
         <div className="scan-info">
-          <p className="tile-name">{label}</p>
+          <p className="tile-name">
+            {c && wished.has(c.key) && (
+              <span className="wish-star" title="On your wishlist">
+                ★ <span className="visually-hidden">On your wishlist: </span>
+              </span>
+            )}
+            {label}
+          </p>
           {q.status === 'error' && <p className="error small">{q.error}</p>}
           {!ready && q.status !== 'error' && <p className="muted small">{STATUS_TEXT[q.status]}</p>}
           {q.rec && (
@@ -302,6 +322,11 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
         )}
       </div>
       {s.busy > 0 && <p className="muted small">You can keep scanning or leave this page; recognition continues while the app is open.</p>}
+      {done && (
+        <p className="success" role="status">
+          {done}
+        </p>
+      )}
       {error && (
         <p className="error" role="alert">
           {error}
