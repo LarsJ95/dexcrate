@@ -40,5 +40,7 @@ describe('zoekparameters en bladeren', () => {
     expect(catalogActive('', { rarity: 'ACE SPEC Rare' })).toBe(true)
     expect(catalogActive('p', { rarity: 'ACE SPEC Rare' })).toBe(false)
     expect(catalogActive('pi', {})).toBe(true)
+    // Alleen een set gekozen: de hele set bekijken.
+    expect(catalogActive('', {}, 'sv03.5')).toBe(true)
   })
 })

@@ -3,6 +3,7 @@ import { CardImage } from '../components/CardImage'
 import { CatalogFilterFields } from '../components/CatalogFilterFields'
 import { CardmarketLink } from '../components/CardmarketLink'
 import { CatalogResults } from '../components/CatalogResults'
+import { SetPicker } from '../components/SetPicker'
 import { CardSetSymbol } from '../components/SetIcon'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { useCardPrices } from '../hooks/useCardPrices'
@@ -166,7 +167,7 @@ export function WishlistPage(): JSX.Element {
   const wishedKeys = useMemo(() => new Set((items ?? []).flatMap((i) => (i.tcgdex_id ? [i.tcgdex_id] : []))), [items])
   const ownedKeys = useMemo(() => new Set(cards.flatMap((c) => (c.tcgdex_id && c.ownership === 'owned' ? [c.tcgdex_id] : []))), [cards])
   // Bladeren in de kaartendatabase (zonder zoekterm) alleen buiten een opgeslagen lijst.
-  const searching = activeList ? query.trim().length >= 2 : catalogActive(query, filters)
+  const searching = activeList ? query.trim().length >= 2 : catalogActive(query, filters, filters.set.trim())
   const filterCount = activeWishFilterCount(filters)
   const listChanged = activeList !== null && !sameWishFilters(filters, activeList.filters)
 
@@ -307,10 +308,7 @@ export function WishlistPage(): JSX.Element {
             <option value="3">Low</option>
           </select>
         </label>
-        <label>
-          Set
-          <input value={filters.set} maxLength={20} placeholder="e.g. SCR" onChange={(e) => setFilter({ set: e.target.value })} />
-        </label>
+        <SetPicker value={filters.set.trim()} lang={lookupLang(language || null)} onChange={(set) => setFilter({ set })} />
         <label className="check">
           <input type="checkbox" checked={filters.underMax} onChange={(e) => setFilter({ underMax: e.target.checked })} />
           Within my max. price
@@ -408,6 +406,7 @@ export function WishlistPage(): JSX.Element {
       {searching && (
         <CatalogResults
           filters={filters}
+          setId={filters.set.trim()}
           query={query}
           lang={lookupLang(language || null)}
           wished={wishedKeys}

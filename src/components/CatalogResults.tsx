@@ -20,6 +20,8 @@ interface Props {
   onlySets?: ReadonlySet<string> | null
   /** Zeldzaamheid, type en kaarttype; met een filter kun je ook zonder zoekterm bladeren. */
   filters?: CardQueryFilters
+  /** Alleen deze set ("sv03.5"); zonder zoekterm toont hij de hele set. */
+  setId?: string
 }
 
 const PAGE = 24
@@ -30,11 +32,11 @@ type State = { key: string; hits: CatalogHit[] | null; error: string | null }
 /** Kaarten uit de kaartendatabase (TCGdex) voor de zoekterm, om aan de wishlist toe te voegen. */
 const NO_FILTERS: CardQueryFilters = {}
 
-export function CatalogResults({ query, lang, wished, owned, onPick, note = null, onlySets = null, filters = NO_FILTERS }: Props): JSX.Element | null {
+export function CatalogResults({ query, lang, wished, owned, onPick, note = null, onlySets = null, filters = NO_FILTERS, setId = '' }: Props): JSX.Element | null {
   const term = query.trim()
-  const active = catalogActive(query, filters)
+  const active = catalogActive(query, filters, setId)
   const { rarity = '', type = '', suffix = '' } = filters
-  const key = `${lang}|${term.toLowerCase()}|${onlySets ? [...onlySets].join(',') : ''}|${rarity}|${type}|${suffix}`
+  const key = `${lang}|${term.toLowerCase()}|${onlySets ? [...onlySets].join(',') : ''}|${rarity}|${type}|${suffix}|${setId}`
   const [state, setState] = useState<State>({ key: '', hits: null, error: null })
   const [shown, setShown] = useState({ key: '', count: PAGE })
   const [order, setOrder] = useState<HitOrder>('newest')
@@ -43,7 +45,7 @@ export function CatalogResults({ query, lang, wished, owned, onPick, note = null
     if (!active) return
     let cancelled = false
     const t = window.setTimeout(() => {
-      searchCatalog(term, lang, { rarity, type, suffix })
+      searchCatalog(term, lang, { rarity, type, suffix }, setId)
         .then((hits) => {
           if (!cancelled) setState({ key, hits: onlySets ? hits.filter((h) => onlySets.has(h.setId)) : hits, error: null })
         })
@@ -56,7 +58,7 @@ export function CatalogResults({ query, lang, wished, owned, onPick, note = null
       cancelled = true
       clearTimeout(t)
     }
-  }, [active, term, lang, key, onlySets, rarity, type, suffix])
+  }, [active, term, lang, key, onlySets, rarity, type, suffix, setId])
 
   const current = state.key === key ? state : null
   const currentHits = current?.hits ?? null

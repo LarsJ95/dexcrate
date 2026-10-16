@@ -1,6 +1,7 @@
 import { RARITY_FILTERS, SUFFIX_FILTERS, isEnergyType, type EnergyType } from './cardTraits'
 import { matchesCatalog, type CatalogTraits } from './collectionFilters'
 import { formatEur } from './stats'
+import { setOfKey } from './tcgdex'
 import { LANGUAGE_LABELS, VARIANT_LABELS, type CardLanguage, type Variant } from './types'
 
 /** Filters op de wishlist; ook de inhoud van een slimme lijst. '' / null = geen filter. */
@@ -16,7 +17,7 @@ export interface WishFilters {
   /** Alleen wensen waarvan de marktprijs binnen jouw max. prijs valt. */
   underMax: boolean
   priority: 1 | 2 | 3 | null
-  /** Setcode (bv. "SCR"), hoofdletterongevoelig. */
+  /** Set-id uit de catalogus ("sv03.5"); oudere lijsten bevatten een setcode ("SCR"), die telt ook. */
   set: string
   showFound: boolean
 }
@@ -64,12 +65,18 @@ export interface WishContext {
   info: CatalogTraits | null | undefined
 }
 
+/** Hoort de wens bij de set? Op catalogus-set-id, of (oude lijsten) op setcode. */
+function inSet(item: WishRow, set: string): boolean {
+  const s = item.tcgdex_id ? setOfKey(item.tcgdex_id) : null
+  return s?.setId === set || (item.set_code ?? '').toLowerCase() === set.toLowerCase()
+}
+
 export function matchesWishFilters(item: WishRow, f: WishFilters, ctx: WishContext): boolean {
   if (!f.showFound && ctx.found) return false
   if (f.variant && item.variant !== f.variant) return false
   if (f.language && item.language !== f.language) return false
   if (f.priority !== null && item.priority !== f.priority) return false
-  if (f.set.trim() && (item.set_code ?? '').toLowerCase() !== f.set.trim().toLowerCase()) return false
+  if (f.set.trim() && !inSet(item, f.set.trim())) return false
   if (needsWishCatalog(f)) {
     // Zonder koppeling geen zeldzaamheid of type: valt dan buiten het filter.
     if (!item.tcgdex_id) return false

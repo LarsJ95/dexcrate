@@ -18,6 +18,9 @@ describe('wishlist-filters', () => {
   it('prioriteit, set, type en gevonden', () => {
     expect(matchesWishFilters(item, { ...NO_WISH_FILTERS, priority: 2 }, ctx)).toBe(false)
     expect(matchesWishFilters(item, { ...NO_WISH_FILTERS, set: ' scr ' }, ctx)).toBe(true)
+    // Nieuwe set-kiezer: op catalogus-set-id.
+    expect(matchesWishFilters(item, { ...NO_WISH_FILTERS, set: 'sv07' }, ctx)).toBe(true)
+    expect(matchesWishFilters(item, { ...NO_WISH_FILTERS, set: 'sv03.5' }, ctx)).toBe(false)
     expect(matchesWishFilters(item, { ...NO_WISH_FILTERS, type: 'Fire' }, ctx)).toBe(false)
     expect(matchesWishFilters(item, { ...NO_WISH_FILTERS, type: 'Water' }, ctx)).toBe(true)
     expect(matchesWishFilters({ ...item, tcgdex_id: null }, { ...NO_WISH_FILTERS, type: 'Water' }, ctx)).toBe(false)
