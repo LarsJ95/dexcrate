@@ -292,7 +292,6 @@ export function CardForm({
   const ownershipOptions: Ownership[] | null = sellViaDialog ? ['incoming', 'owned', 'traded', 'given_away'] : null
   const allowedVariants = info?.variants ?? null
   const variantMismatch = form.variant !== '' && allowedVariants !== null && !allowedVariants.includes(form.variant)
-  const onlyVariant = allowedVariants?.length === 1 ? allowedVariants[0] : null
 
   function changeOwnership(ownership: Ownership, availability?: Availability): void {
     setForm((f) => ({
@@ -499,14 +498,6 @@ export function CardForm({
           <p className="notice small" role="status">
             The catalog (TCGdex) does not list {VARIANT_LABELS[form.variant as Variant]} for this card
             {allowedVariants && `; it exists as ${allowedVariants.map((v) => VARIANT_LABELS[v]).join(', ')}`}.
-          </p>
-        )}
-        {isCard && onlyVariant && form.variant !== onlyVariant && (
-          <p className="small muted">
-            This card only exists as {VARIANT_LABELS[onlyVariant]}.{' '}
-            <button type="button" className="ghost small-btn" onClick={() => set('variant', onlyVariant)}>
-              Set to {VARIANT_LABELS[onlyVariant]}
-            </button>
           </p>
         )}
         <label className="check">
