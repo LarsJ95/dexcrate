@@ -108,3 +108,19 @@ export async function translateName(englishName: string, lang: Lang): Promise<st
 
 /** Bevat de tekst al niet-Latijnse tekens (de gebruiker typte zelf Japans/Chinees/Koreaans)? */
 export const isNonLatin = (s: string): boolean => /[^ -ɏ\s\d.'’:♀♂-]/.test(s)
+
+/** Engelse soortnaam bij een Pokédex-nummer (25 → "Pikachu"), of null. Gedeelde cache met de vertalingen. */
+export async function englishSpeciesName(dexId: number): Promise<string | null> {
+  if (!Number.isInteger(dexId) || dexId < 1 || dexId > 2000) return null
+  const key = String(dexId)
+  let p = inflight.get(key)
+  if (!p) {
+    p = fetchNames(key).catch((err: unknown) => {
+      console.error(`Soortnaam ophalen mislukt voor #${key}`, err)
+      inflight.delete(key)
+      return null
+    })
+    inflight.set(key, p)
+  }
+  return (await p)?.en ?? null
+}

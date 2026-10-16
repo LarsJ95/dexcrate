@@ -55,7 +55,7 @@ function App(): JSX.Element {
 
   return (
     <Shell route={route} email={session.user.email ?? null} theme={theme} onToggleTheme={toggle} onSignOut={() => void signOut()}>
-      {route === 'overview' && <DashboardPage />}
+      {route === 'overview' && <DashboardPage email={session.user.email ?? null} />}
       {route === 'collection' && <CollectionPage />}
       {route === 'scan' && <ScanPage />}
       {route === 'sets' && (param ? <SetBinderPage key={param} param={param} /> : <SetsPage />)}

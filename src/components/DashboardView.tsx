@@ -1,6 +1,11 @@
 import { useMemo, type JSX, type ReactNode } from 'react'
+import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { useCountUp } from '../hooks/useCountUp'
-import { summarizeMarket, topMovers, type Mover, type PriceMap, type SeriesPoint } from '../lib/prices'
+import { marketValueOf, summarizeMarket, topMovers, type Mover, type PriceMap, type SeriesPoint } from '../lib/prices'
+import { speciesName } from '../lib/runner'
+import { setOfKey } from '../lib/tcgdex'
+import { badges, dominantType, partnerDexId, pokedexProgress, type OwnedInfo } from '../lib/trainer'
+import { Partner, PokedexPanel, TrainerCard } from './TrainerCard'
 import { computeStats, formatEur, type Bucket } from '../lib/stats'
 import { thumbPath, type Card } from '../lib/types'
 import { CardImage } from './CardImage'
@@ -18,6 +23,8 @@ interface Props {
   onOpenCard?: (id: string) => void
   /** Waardeoverzicht onder het hoofdcijfer (kosten, marktwaarde, eigen waardering, resultaat). */
   breakdown?: ReactNode
+  /** Naam op de Trainer Card. */
+  trainer?: string
 }
 
 const pct = new Intl.NumberFormat('en-IE', { style: 'percent', maximumFractionDigits: 1 })
@@ -42,11 +49,14 @@ function Tile({ label, bucket, unit }: { label: string; bucket: Bucket; unit: st
 
 function MoverList({
   title,
+  flavor,
   items,
   empty,
   onOpenCard,
 }: {
   title: string
+  /** Spelzin onder de titel, bv. "It's super effective!". */
+  flavor?: string
   items: Mover<Card>[]
   empty: string
   onOpenCard?: (id: string) => void
@@ -54,6 +64,7 @@ function MoverList({
   return (
     <div className="panel">
       <h2 className="panel-title">{title}</h2>
+      {flavor && <p className="flavor">{flavor}</p>}
       {items.length === 0 ? (
         <p className="muted small">{empty}</p>
       ) : (
@@ -83,11 +94,36 @@ function MoverList({
   )
 }
 
-export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard, breakdown }: Props): JSX.Element {
+export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard, breakdown, trainer = 'Trainer' }: Props): JSX.Element {
   const stats = useMemo(() => computeStats(cards), [cards])
   const market = useMemo(() => summarizeMarket(cards, prices), [cards, prices])
   const movers = useMemo(() => topMovers(cards, prices), [cards, prices])
   const shownValue = useCountUp(pricesLoading ? null : market.owned.value)
+
+  // Pokémon-laag: typekleur, Pokédex, partner en badges uit de kaartinfo (7 dagen gecachet).
+  const ownedCards = useMemo(() => cards.filter((c) => c.ownership === 'owned' && c.kind === 'card'), [cards])
+  const ownedKeys = useMemo(() => ownedCards.flatMap((c) => (c.tcgdex_id ? [c.tcgdex_id] : [])), [ownedCards])
+  const infos = useCatalogInfos(ownedKeys, true)
+  const owned = useMemo<(OwnedInfo & { name: string })[]>(
+    () =>
+      ownedCards.map((c) => {
+        const info = c.tcgdex_id ? infos.get(c.tcgdex_id) : null
+        return { quantity: c.quantity, value: marketValueOf(c, prices)?.value ?? null, types: info?.types ?? null, dexId: info?.dexId ?? null, name: info?.name ?? c.name }
+      }),
+    [ownedCards, infos, prices],
+  )
+  const infosLoading = new Set(ownedKeys).size > infos.size
+  const dex = useMemo(() => pokedexProgress(owned.flatMap((o) => (o.dexId ? [o.dexId] : []))), [owned])
+  const favourite = useMemo(() => dominantType(owned), [owned])
+  const partner = useMemo(() => {
+    const dexId = partnerDexId(owned)
+    const card = owned.find((o) => o.dexId === dexId)
+    return dexId && card ? { dexId, name: speciesName(card.name) } : null
+  }, [owned])
+  const cardCount = ownedCards.reduce((n, c) => n + c.quantity, 0)
+  const setsStarted = useMemo(() => new Set(ownedKeys.flatMap((k) => setOfKey(k)?.setId ?? [])).size, [ownedKeys])
+  const since = useMemo(() => cards.reduce<string | null>((first, c) => (c.created_at && (!first || c.created_at < first) ? c.created_at : first), null), [cards])
+  const badgeList = badges({ cards: cardCount, species: dex.caught, value: market.owned.value })
 
   if (cards.length === 0) {
     return (
@@ -107,6 +143,7 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
       <h1>Overview</h1>
 
       <div className="hero">
+        {partner && <Partner dexId={partner.dexId} name={partner.name} />}
         <span className="stat-label">Collection value</span>
         <p className="hero-value">{pricesLoading || shownValue === null ? '…' : formatEur(shownValue)}</p>
         {!pricesLoading && (
@@ -126,14 +163,19 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
         {series && series.length >= 2 && <LineChart points={series} label="Value history" valueLabel="Value" />}
       </div>
 
-      {!pricesLoading && movers.valuable[0] && <Spotlight item={movers.valuable[0]} onOpenCard={onOpenCard} />}
+      <div className="trainer-row">
+        <TrainerCard name={trainer} cards={cardCount} species={dex.caught} setsStarted={setsStarted} since={since} badges={badgeList} />
+        <PokedexPanel progress={dex} loading={infosLoading} />
+      </div>
+
+      {!pricesLoading && movers.valuable[0] && <Spotlight item={movers.valuable[0]} onOpenCard={onOpenCard} fallbackType={favourite} />}
 
       {breakdown}
 
       {!pricesLoading && (
         <div className="movers">
-          <MoverList title="Gainers" items={movers.up} empty="No clear risers." onOpenCard={onOpenCard} />
-          <MoverList title="Losers" items={movers.down} empty="No clear fallers." onOpenCard={onOpenCard} />
+          <MoverList title="Gainers" flavor="It's super effective!" items={movers.up} empty="No clear risers." onOpenCard={onOpenCard} />
+          <MoverList title="Losers" flavor="It's not very effective…" items={movers.down} empty="No clear fallers." onOpenCard={onOpenCard} />
           <MoverList title="Most valuable" items={movers.valuable} empty="No market prices yet." onOpenCard={onOpenCard} />
         </div>
       )}

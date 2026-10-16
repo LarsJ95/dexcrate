@@ -8,10 +8,11 @@ import { portfolioSeries, type SnapshotRow } from '../lib/prices'
 import type { Card } from '../lib/types'
 import { Loading } from '../components/Loading'
 import { COLLECTION_MILESTONES, celebrateMilestone } from '../lib/moments'
+import { trainerName } from '../lib/trainer'
 
 const COLLECTION_MILESTONE_KEY = 'dexcrate:collection-milestone'
 
-export function DashboardPage(): JSX.Element {
+export function DashboardPage({ email = null }: { email?: string | null }): JSX.Element {
   const [cards, setCards] = useState<Card[] | null>(null)
   const [snapshots, setSnapshots] = useState<SnapshotRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -83,6 +84,7 @@ export function DashboardPage(): JSX.Element {
         pricesLoading={loading}
         series={series}
         onOpenCard={setOpenId}
+        trainer={trainerName(email)}
         breakdown={<ValueBreakdown cards={cards} prices={prices} pricesLoading={loading} snapshots={snapshots} />}
       />
       {openCard && (

@@ -1,6 +1,6 @@
 import { useEffect, type JSX } from 'react'
 import { useCardInfo } from '../hooks/useCardInfo'
-import { foilStyleFor } from '../lib/cardTraits'
+import { foilStyleFor, type EnergyType } from '../lib/cardTraits'
 import { applyPageType } from '../lib/energy'
 import type { Mover } from '../lib/prices'
 import { formatEur } from '../lib/stats'
@@ -10,12 +10,22 @@ import { HoloCard } from './HoloCard'
 import { EnergyIcon, RaritySymbols } from './RaritySymbols'
 
 /** Je waardevolste kaart groot in beeld op Overview; de app kleurt mee met zijn type. */
-export function Spotlight({ item, onOpenCard }: { item: Mover<Card>; onOpenCard?: (id: string) => void }): JSX.Element {
+export function Spotlight({
+  item,
+  onOpenCard,
+  fallbackType = null,
+}: {
+  item: Mover<Card>
+  onOpenCard?: (id: string) => void
+  /** Kleur als deze kaart Colorless is (grijs): het type dat je het meest verzamelt. */
+  fallbackType?: EnergyType | null
+}): JSX.Element {
   const { card, market } = item
   const info = useCardInfo(card.tcgdex_id)
   const type = info?.types?.[0] ?? null
+  const pageType = type && type !== 'Colorless' ? type : (fallbackType ?? type)
 
-  useEffect(() => (type ? applyPageType(type) : undefined), [type])
+  useEffect(() => (pageType ? applyPageType(pageType) : undefined), [pageType])
 
   return (
     <div className="panel spotlight">
