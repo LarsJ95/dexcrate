@@ -172,55 +172,6 @@ export function generationRange(gen: number): { first: number; last: number } {
   return { first: gen === 1 ? 1 : GENERATIONS[gen - 2] + 1, last }
 }
 
-/**
- * Zwakte per energietype zoals op de kaarten (Scarlet & Violet-tijdperk): een Pokémon van type X
- * krijgt dubbele schade van WEAK_TO[X]. Dragon heeft op moderne kaarten geen zwakte.
- */
-export const WEAK_TO: Readonly<Record<EnergyType, EnergyType | null>> = {
-  Grass: 'Fire',
-  Fire: 'Water',
-  Water: 'Lightning',
-  Lightning: 'Fighting',
-  Psychic: 'Darkness',
-  Fighting: 'Psychic',
-  Darkness: 'Grass',
-  Metal: 'Fire',
-  Dragon: null,
-  Fairy: 'Metal',
-  Colorless: 'Fighting',
-}
-
-export interface TeamType {
-  type: EnergyType
-  count: number
-  /** Types waar dit type super effectief tegen is. */
-  strongAgainst: EnergyType[]
-  weakTo: EnergyType | null
-}
-
-/** Je collectie als team: aantal exemplaren per type, met sterk/zwak tegen. Meeste eerst. */
-export function typeTeam(owned: readonly OwnedInfo[]): TeamType[] {
-  const count = new Map<EnergyType, number>()
-  for (const o of owned) {
-    const t = o.types?.[0]
-    if (t) count.set(t, (count.get(t) ?? 0) + o.quantity)
-  }
-  return [...count]
-    .map(([type, n]) => ({
-      type,
-      count: n,
-      strongAgainst: (Object.keys(WEAK_TO) as EnergyType[]).filter((t) => WEAK_TO[t] === type),
-      weakTo: WEAK_TO[type],
-    }))
-    .sort((a, b) => b.count - a.count || a.type.localeCompare(b.type))
-}
-
-/** Types die je team niet super effectief kan raken (niemand in je team is daar sterk tegen). */
-export function teamGaps(team: readonly TeamType[]): EnergyType[] {
-  const covered = new Set(team.flatMap((t) => t.strongAgainst))
-  return (Object.keys(WEAK_TO) as EnergyType[]).filter((t) => WEAK_TO[t] !== null && !covered.has(t))
-}
-
 /** Regio en generatie bij een Pokédex-nummer, of null buiten 1-1025. */
 export function regionOf(dexId: number): { gen: number; region: string } | null {
   const i = GENERATIONS.findIndex((last) => dexId <= last)

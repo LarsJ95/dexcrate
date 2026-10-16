@@ -23,8 +23,6 @@ export type Moment =
   | { kind: 'gotcha'; id: number; name: string }
   /** Nieuwe badge verdiend. */
   | { kind: 'badge'; id: number; name: string; color: string }
-  /** Hele evolutielijn in bezit (Pokédex-nummers van basis tot eindvorm). */
-  | { kind: 'evolution'; id: number; path: number[] }
   /** Nieuwe Pokémon in je Pokédex (eerste kaart van deze soort); `more` = nog zoveel andere nieuwe. */
   | { kind: 'dex'; id: number; dexId: number; name: string; more: number }
   /** Trainer-level omhoog. */
@@ -37,8 +35,6 @@ export type Moment =
   | { kind: 'almost'; id: number; setName: string; left: number; missing: string[] }
   /** Crate points verdiend (toast). */
   | { kind: 'points'; id: number; amount: number; reason: string }
-  /** Wishlist-kaart onder je max. prijs. */
-  | { kind: 'deal'; id: number; name: string; market: number; max: number; tcgdexId: string | null }
 
 export interface PackCard {
   card: Pick<Card, 'id' | 'tcgdex_id' | 'kind' | 'name' | 'image_path' | 'set_code' | 'card_number'>
@@ -174,29 +170,6 @@ export function celebrateBadges(earned: readonly { id: string; name: string; col
   const fresh = earned.filter((b) => !known.has(b.id))
   const last = fresh[fresh.length - 1]
   if (last) showMoment({ kind: 'badge', name: last.name, color: last.color })
-}
-
-const EVOLUTIONS_KEY = 'dexcrate:evolutions-complete'
-
-/** Nieuwe complete evolutielijn vieren (de laatste); eerste keer alleen onthouden. */
-export function celebrateEvolutions(complete: readonly number[][]): void {
-  let stored: string | null
-  try {
-    stored = localStorage.getItem(EVOLUTIONS_KEY)
-  } catch {
-    return
-  }
-  const keys = complete.map((p) => p.join('>'))
-  const known = stored === null ? null : new Set(stored.split('|').filter(Boolean))
-  try {
-    localStorage.setItem(EVOLUTIONS_KEY, keys.join('|'))
-  } catch (err) {
-    console.warn('Evolutielijnen onthouden mislukt', err)
-  }
-  if (known === null) return
-  const fresh = complete.filter((p) => !known.has(p.join('>')))
-  const last = fresh[fresh.length - 1]
-  if (last) showMoment({ kind: 'evolution', path: last })
 }
 
 export function endMoment(id: number): void {

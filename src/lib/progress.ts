@@ -95,36 +95,3 @@ export function achievements(cards: readonly ProgressCard[], rocketBlasts = 0): 
   const ctx = { dex: new Set(dexCount.keys()), dexCount, cards, rocketBlasts }
   return RULES.map((r) => ({ id: r.id, name: r.name, how: r.how, earned: r.test(ctx) }))
 }
-
-// --- Pokémon van de dag ---
-
-/** Vaste Pokémon per kalenderdag (1-1025), voor iedereen dezelfde op die dag. */
-export function dailyDexId(date: Date): number {
-  const day = Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86_400_000)
-  // Eenvoudige spreiding zodat opeenvolgende dagen ver uit elkaar liggen.
-  return ((day * 7919) % 1025) + 1
-}
-
-// --- Weekrapport ---
-
-export interface WeekReport {
-  added: number
-  newSpecies: number
-  addedValue: number
-  best: ProgressCard | null
-}
-
-/** Wat je de afgelopen 7 dagen toevoegde: aantal, nieuwe Pokémon, waarde en je beste kaart. */
-export function weekReport(cards: readonly ProgressCard[], now: Date): WeekReport {
-  const since = now.getTime() - 7 * 86_400_000
-  const recent = cards.filter((c) => c.createdAt && new Date(c.createdAt).getTime() >= since)
-  const before = new Set(cards.filter((c) => !recent.includes(c)).flatMap((c) => (c.dexId ? [c.dexId] : [])))
-  const fresh = new Set(recent.flatMap((c) => (c.dexId && !before.has(c.dexId) ? [c.dexId] : [])))
-  let best: ProgressCard | null = null
-  let value = 0
-  for (const c of recent) {
-    value += (c.value ?? 0) * c.quantity
-    if (c.value !== null && (best === null || c.value > (best.value ?? 0))) best = c
-  }
-  return { added: recent.reduce((n, c) => n + c.quantity, 0), newSpecies: fresh.size, addedValue: Math.round(value * 100) / 100, best }
-}

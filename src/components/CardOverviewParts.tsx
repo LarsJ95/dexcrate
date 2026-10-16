@@ -7,7 +7,7 @@ import { formatEur } from '../lib/stats'
 import { getSet, type Lang } from '../lib/tcgdex'
 import { regionOf } from '../lib/trainer'
 import { VARIANT_LABELS, type Card, type Variant } from '../lib/types'
-import { EvolutionRow } from './EvolutionPanel'
+import { EvolutionRow } from './EvolutionRow'
 
 const loadPaths = (key: string): Promise<number[][]> => getEvolutionPaths(Number(key))
 const loadSetTotal = async (key: string): Promise<number | null> => {

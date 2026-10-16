@@ -10,7 +10,6 @@ function cheer(m: Moment): string {
   if (m.kind === 'reveal') return m.caught ? 'Gotcha!' : 'Wow!'
   if (m.kind === 'gotcha') return 'Let’s find it!'
   if (m.kind === 'complete') return 'Set complete!'
-  if (m.kind === 'evolution') return 'They evolved!'
   return 'Yay!'
 }
 

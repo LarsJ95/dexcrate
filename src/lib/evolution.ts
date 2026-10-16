@@ -73,21 +73,3 @@ export interface EvolutionLine {
   complete: boolean
 }
 
-/**
- * Lijnen waar je minstens één Pokémon van hebt (alleen echte evoluties, 2+ stadia). Complete lijnen eerst,
- * dan de lijnen die het dichtst bij compleet zijn.
- */
-export function evolutionLines(owned: ReadonlySet<number>, pathsByDex: ReadonlyMap<number, number[][]>): EvolutionLine[] {
-  const seen = new Set<string>()
-  const lines: EvolutionLine[] = []
-  for (const dex of owned) {
-    for (const path of pathsByDex.get(dex) ?? []) {
-      const key = path.join('>')
-      if (path.length < 2 || seen.has(key)) continue
-      seen.add(key)
-      const have = path.filter((d) => owned.has(d)).length
-      lines.push({ path, owned: have, complete: have === path.length })
-    }
-  }
-  return lines.sort((a, b) => Number(b.complete) - Number(a.complete) || b.owned / b.path.length - a.owned / a.path.length || a.path[0] - b.path[0])
-}

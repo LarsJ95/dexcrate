@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { achievements, dailyDexId, levelFor, weekReport, xpFor, xpForLevel, type ProgressCard } from './progress'
+import { achievements, levelFor, xpFor, xpForLevel, type ProgressCard } from './progress'
 
 let n = 0
 const card = (patch: Partial<ProgressCard>): ProgressCard => ({
@@ -46,25 +46,3 @@ describe('verborgen prestaties', () => {
   })
 })
 
-describe('Pokémon van de dag en weekrapport', () => {
-  it('vast per dag, binnen 1-1025', () => {
-    const a = dailyDexId(new Date(2026, 9, 16, 8))
-    expect(dailyDexId(new Date(2026, 9, 16, 23))).toBe(a)
-    expect(dailyDexId(new Date(2026, 9, 17))).not.toBe(a)
-    expect(a).toBeGreaterThanOrEqual(1)
-    expect(a).toBeLessThanOrEqual(1025)
-  })
-  it('alleen de laatste 7 dagen; nieuwe soorten en beste kaart', () => {
-    const now = new Date('2026-10-16T12:00:00Z')
-    const r = weekReport(
-      [
-        card({ dexId: 25, createdAt: '2026-09-01T00:00:00Z', value: 50 }),
-        card({ dexId: 25, createdAt: '2026-10-15T00:00:00Z', value: 3 }),
-        card({ dexId: 6, createdAt: '2026-10-14T00:00:00Z', value: 20, name: 'Charizard ex' }),
-      ],
-      now,
-    )
-    expect(r).toMatchObject({ added: 2, newSpecies: 1, addedValue: 23 })
-    expect(r.best?.name).toBe('Charizard ex')
-  })
-})

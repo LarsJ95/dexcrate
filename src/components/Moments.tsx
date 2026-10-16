@@ -9,7 +9,6 @@ import { RaritySymbols } from './RaritySymbols'
 import { BadgeIcon } from './TrainerCard'
 import { spriteUrls } from '../lib/runner'
 import { buzz } from '../lib/haptics'
-import { formatEur } from '../lib/stats'
 
 /** Tijdlijn per moment in ms (DESIGN.md §9: beweging ≤ 1,5 s, daarna even zichtbaar om te lezen). */
 const REVEAL = { flip: 300, burst: 620, end: 2100 }
@@ -29,7 +28,6 @@ const BUZZ: Partial<Record<Moment['kind'], number[]>> = {
   achievement: [30, 60, 30],
   dex: [20, 40, 20],
   complete: [60, 80, 60],
-  evolution: [30, 60, 30],
 }
 
 const ALL_ENERGY = ENERGY_TYPES.filter((t) => t !== 'Colorless').map(energyColor)
@@ -78,9 +76,6 @@ function MomentLayer({ moment }: { moment: Moment }): JSX.Element {
     } else if (moment.kind === 'milestone') {
       at(MILESTONE.burst, () => target.current && burstFrom(target.current, { colors: ALL_ENERGY, count: 36, speed: 8 }))
       at(MILESTONE.end, () => endMoment(moment.id))
-    } else if (moment.kind === 'evolution') {
-      at(MILESTONE.burst, () => target.current && burstFrom(target.current, { colors: ALL_ENERGY, count: 44, speed: 8 }))
-      at(MILESTONE.end, () => endMoment(moment.id))
     } else if (moment.kind === 'badge') {
       at(MILESTONE.burst, () => target.current && burstFrom(target.current, { colors: [moment.color, 'var(--gold-a)', '#ffffff'], count: 40, speed: 8 }))
       at(MILESTONE.end, () => endMoment(moment.id))
@@ -98,7 +93,7 @@ function MomentLayer({ moment }: { moment: Moment }): JSX.Element {
     } else if (moment.kind === 'dex' || moment.kind === 'level' || moment.kind === 'achievement') {
       at(DEX.burst, () => target.current && burstFrom(target.current, { colors: moment.kind === 'level' ? ['var(--hp-high)', 'var(--yellow)', '#ffffff'] : ALL_ENERGY, count: 36, speed: 8 }))
       at(DEX.end, () => endMoment(moment.id))
-    } else if (moment.kind === 'almost' || moment.kind === 'deal' || moment.kind === 'points') {
+    } else if (moment.kind === 'almost' || moment.kind === 'points') {
       at(DEX.end, () => endMoment(moment.id))
     } else if (moment.kind === 'gotcha') {
       at(GOTCHA.click, () => target.current && burstFrom(target.current, { colors: ['var(--yellow)', '#ffffff', 'var(--ball-red)'], count: 24, speed: 6, gravity: 0.08 }))
@@ -229,44 +224,15 @@ function MomentLayer({ moment }: { moment: Moment }): JSX.Element {
     )
   }
 
-  if (moment.kind === 'almost' || moment.kind === 'deal') {
+  if (moment.kind === 'almost') {
     return (
       <div ref={layer} className="moment-layer is-toast" popover="manual" role="status">
         <p className="moment-caption">
-          {moment.kind === 'almost' ? (
-            <>
-              <strong>
-                Only {moment.left} left in {moment.setName}!
-              </strong>
-              <span>Missing: {moment.missing.join(', ')}</span>
-            </>
-          ) : (
-            <>
-              <strong>A deal appeared!</strong>
-              <span>
-                {moment.name} is {formatEur(moment.market)} on Cardmarket (your max. {formatEur(moment.max)})
-              </span>
-            </>
-          )}
+          <strong>
+            Only {moment.left} left in {moment.setName}!
+          </strong>
+          <span>Missing: {moment.missing.join(', ')}</span>
         </p>
-      </div>
-    )
-  }
-
-  if (moment.kind === 'evolution') {
-    return (
-      <div ref={layer} className="moment-layer" popover="manual" role="status">
-        <div className="moment-complete is-evolution" ref={target}>
-          <span className="moment-evo">
-            {moment.path.map((d, i) => (
-              <img key={d} src={spriteUrls(d, false)[1]} alt="" width={96} height={96} style={{ animationDelay: `${i * 180}ms` }} />
-            ))}
-          </span>
-          <span className="moment-caption">
-            <strong>Evolution line complete!</strong>
-            <span>You have every stage of this line</span>
-          </span>
-        </div>
       </div>
     )
   }

@@ -19,7 +19,6 @@ const LEVEL_KEY = 'dexcrate:trainer-level'
 const ACHIEVEMENTS_KEY = 'dexcrate:achievements'
 const TRAINER_KEY = 'dexcrate:trainer-name'
 const BADGES_KEY = 'dexcrate:badges-earned'
-const DEALS_KEY = 'dexcrate:deals-seen'
 
 export function rememberTrainerName(name: string): void {
   try {
@@ -119,16 +118,6 @@ export function celebrateSecret(id: string): void {
   if (!a) return
   addSeen(ACHIEVEMENTS_KEY, id)
   showMoment({ kind: 'achievement', name: a.name, how: a.how })
-}
-
-/** Wishlist-kaarten die nu onder je max. prijs zitten en dat vorige keer nog niet deden. */
-export function celebrateDeals(deals: readonly { id: string; name: string; market: number; max: number; tcgdexId: string | null }[]): void {
-  const fresh = newSince(
-    DEALS_KEY,
-    deals.map((d) => d.id),
-  )
-  const d = deals.find((x) => x.id === fresh[0])
-  if (d) showMoment({ kind: 'deal', name: d.name, market: d.market, max: d.max, tcgdexId: d.tcgdexId })
 }
 
 async function englishName(info: CardInfo): Promise<string> {

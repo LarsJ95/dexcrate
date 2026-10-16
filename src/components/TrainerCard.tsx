@@ -1,13 +1,10 @@
 import { useState, type CSSProperties, type JSX } from 'react'
 import { useKeyed } from '../hooks/useKeyed'
-import type { EnergyType } from '../lib/cardTraits'
-import { energyColor } from '../lib/energy'
 import { burstFrom } from '../lib/fx'
 import { useMotion } from '../lib/motion'
 import { englishSpeciesName, isNonLatin } from '../lib/names'
 import { spriteUrls } from '../lib/runner'
-import { REGIONS, hpLevel, teamGaps, trainerTitle, type Badge, type DexProgress, type TeamType } from '../lib/trainer'
-import { EnergyIcon } from './RaritySymbols'
+import { REGIONS, hpLevel, trainerTitle, type Badge, type DexProgress } from '../lib/trainer'
 
 /** Eén badge: eenvoudige achthoekige medaille in de badgekleur; nog niet verdiend = grijs. */
 export function BadgeIcon({ badge }: { badge: Pick<Badge, 'earned' | 'color'> }): JSX.Element {
@@ -147,65 +144,6 @@ export function PokedexPanel({ progress, loading, onOpenRegion }: { progress: De
         <p className="small dex-hint">{loading ? 'Counting your Pokémon…' : 'Tap a region to see which Pokémon you have.'}</p>
       </div>
     </section>
-  )
-}
-
-/** Je collectie als team: per type hoeveel kaarten, en waar je team sterk of zwak tegen is. */
-export function TypeTeamPanel({ team }: { team: TeamType[] }): JSX.Element | null {
-  if (team.length === 0) return null
-  const gaps = teamGaps(team)
-  const total = team.reduce((n, t) => n + t.count, 0)
-  return (
-    <section className="panel type-team" aria-labelledby="team-title">
-      <h2 id="team-title" className="panel-title">
-        Your team
-      </h2>
-      <p className="flavor">Your cards by type, and who they are super effective against.</p>
-      <ul className="team-list">
-        {team.map((t) => (
-          <li key={t.type} style={{ '--t': energyColor(t.type) } as CSSProperties}>
-            <span className="team-type">
-              <EnergyIcon type={t.type} />
-              {t.type}
-            </span>
-            <span className="team-bar" aria-hidden="true">
-              <span style={{ width: `${(t.count / total) * 100}%` }} />
-            </span>
-            <span className="team-count">{t.count}</span>
-            <span className="team-vs small">
-              {t.strongAgainst.length > 0 && (
-                <span>
-                  Strong vs <TypeList types={t.strongAgainst} />
-                </span>
-              )}
-              {t.weakTo && (
-                <span>
-                  Weak to <TypeList types={[t.weakTo]} />
-                </span>
-              )}
-            </span>
-          </li>
-        ))}
-      </ul>
-      {gaps.length > 0 && (
-        <p className="small muted">
-          No super-effective answer yet against: <TypeList types={gaps} />
-        </p>
-      )}
-    </section>
-  )
-}
-
-function TypeList({ types }: { types: EnergyType[] }): JSX.Element {
-  return (
-    <span className="type-list">
-      {types.map((t) => (
-        <span key={t} className="type-pill" title={t}>
-          <EnergyIcon type={t} />
-          <span className="visually-hidden">{t}</span>
-        </span>
-      ))}
-    </span>
   )
 }
 
