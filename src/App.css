@@ -334,7 +334,7 @@ button.notice-action:hover:not(:disabled) {
 
 .search {
   position: relative;
-  flex: 1 1 260px;
+  flex: 1 1 200px;
   display: flex;
 }
 

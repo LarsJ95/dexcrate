@@ -330,9 +330,16 @@ export function WishlistPage(): JSX.Element {
               Save as new list
             </button>
           )}
-          {filterCount > 0 && !activeList && (
-            <button type="button" className="ghost small-btn" onClick={() => setFilters(NO_WISH_FILTERS)}>
-              Clear filters
+          {(filterCount > 0 || query.trim() !== '') && !activeList && (
+            <button
+              type="button"
+              className="small-btn"
+              onClick={() => {
+                setFilters(NO_WISH_FILTERS)
+                setQuery('')
+              }}
+            >
+              Clear all filters
             </button>
           )}
         </div>

@@ -302,6 +302,17 @@ export function CollectionPage(): JSX.Element {
         <button type="button" aria-expanded={showFilters} onClick={() => setShowFilters((s) => !s)}>
           Filters{activeFilterCount(extra) > 0 ? ` (${activeFilterCount(extra)})` : ''}
         </button>
+        {(activeFilterCount(extra) > 0 || query.trim() !== '') && (
+          <button
+            type="button"
+            onClick={() => {
+              setExtra(NO_EXTRA_FILTERS)
+              setQuery('')
+            }}
+          >
+            Clear all filters
+          </button>
+        )}
         <select aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
           <option value="list">Date added</option>
           <option value="set">Set and number</option>
@@ -378,11 +389,6 @@ export function CollectionPage(): JSX.Element {
               <input value={extra.illustrator} maxLength={60} placeholder="e.g. Arita" onChange={(e) => setExtra((f) => ({ ...f, illustrator: e.target.value }))} />
             </label>
           </div>
-          {activeFilterCount(extra) > 0 && (
-            <button type="button" className="ghost small-btn" onClick={() => setExtra(NO_EXTRA_FILTERS)}>
-              Clear filters
-            </button>
-          )}
         </div>
       )}
 
