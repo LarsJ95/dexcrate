@@ -3,6 +3,7 @@ import type { Theme } from '../hooks/useTheme'
 import type { Route } from '../lib/routes'
 import { IconLogout, IconMoon, IconSun, LogoMark } from './Icons'
 import { Moments } from './Moments'
+import { Peek } from './Peek'
 import { Runner } from './Runner'
 import { SIDE_GROUPS, TAB_NAV, isActiveTab } from './nav'
 
@@ -75,6 +76,7 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
       <main className="main">{children}</main>
       <Moments />
       <Runner paused={route === 'scan'} />
+      <Peek paused={route === 'scan'} />
 
       <nav className="tab-bar" aria-label="Main menu">
         {TAB_NAV.map(({ route: r, label, Icon }) => (

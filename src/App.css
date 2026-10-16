@@ -3831,3 +3831,88 @@ input[type='checkbox']:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
+
+/* ---------- Pokémon-sfeer: Pikachu kijkt om een hoekje ---------- */
+/* Venster boven de rand van een kaart; Pikachu komt van eronder omhoog, dus lijkt erachter te zitten. */
+.peek {
+  position: fixed;
+  z-index: 30;
+  pointer-events: none;
+}
+
+.peek-pikachu {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+button.peek-pikachu:hover:not(:disabled),
+button.peek-pikachu:active:not(:disabled) {
+  background: none;
+  transform: none;
+}
+
+.peek-pikachu img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  image-rendering: pixelated;
+  transform: translateY(var(--peek-h));
+  animation: peek-up var(--peek-ms) ease-in-out forwards;
+}
+
+.peek-pikachu.is-duck img {
+  animation: peek-duck 250ms ease-in forwards;
+}
+
+@keyframes peek-up {
+  0% {
+    transform: translateY(var(--peek-h));
+  }
+  18%,
+  45% {
+    transform: translateY(0);
+  }
+  52% {
+    transform: translateY(6px);
+  }
+  60%,
+  85% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(var(--peek-h));
+  }
+}
+
+@keyframes peek-duck {
+  from {
+    transform: translateY(-6px);
+  }
+  to {
+    transform: translateY(var(--peek-h));
+  }
+}
+
+.peek-bubble {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translate(-50%, -6px);
+  white-space: nowrap;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-s);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: var(--fs-small);
+  box-shadow: var(--shadow-float);
+  animation: caption-in 200ms ease-out;
+}

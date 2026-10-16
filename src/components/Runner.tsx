@@ -3,6 +3,7 @@ import { energyColor } from '../lib/energy'
 import { burstFrom } from '../lib/fx'
 import { motionAllowed, useMotion } from '../lib/motion'
 import { SHINY_CHANCE, pickRunner, previewRunnerDelay, spriteUrls, type RunnerEntry } from '../lib/runner'
+import { busy, loadSprite } from '../lib/sprites'
 
 interface Run {
   entry: RunnerEntry
@@ -25,27 +26,6 @@ interface Props {
 const NEXT_MIN = 3 * 60_000
 const NEXT_SPREAD = 3 * 60_000
 const RETRY = 30_000
-
-/** Iets anders aan de gang (popup, formulier, verborgen tab): dan niet storen. */
-function busy(): boolean {
-  if (document.hidden) return true
-  if (document.querySelector('dialog[open], .sheet[open]')) return true
-  const a = document.activeElement
-  return a instanceof HTMLInputElement || a instanceof HTMLTextAreaElement || a instanceof HTMLSelectElement
-}
-
-function loadSprite(urls: string[]): Promise<{ src: string; width: number; height: number; animated: boolean } | null> {
-  return new Promise((resolve) => {
-    const tryAt = (i: number): void => {
-      if (i >= urls.length) return resolve(null)
-      const img = new Image()
-      img.onload = () => resolve({ src: urls[i], width: img.naturalWidth, height: img.naturalHeight, animated: urls[i].endsWith('.gif') })
-      img.onerror = () => tryAt(i + 1)
-      img.src = urls[i]
-    }
-    tryAt(0)
-  })
-}
 
 /** Af en toe rent een Pokémon uit je collectie onderlangs; tikken laat hem springen. */
 export function Runner({ paused, firstDelay }: Props): JSX.Element | null {

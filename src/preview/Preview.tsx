@@ -27,6 +27,7 @@ import { SetsPage } from '../pages/SetsPage'
 import { overrideSchemaV2ForPreview } from '../lib/db'
 import { showMoment } from '../lib/moments'
 import { seedRunnerForPreview } from '../lib/runner'
+import { seedPeekForPreview } from '../lib/sprites'
 import { overrideTransactionsForPreview } from '../lib/transactions'
 import { overrideGoalForPreview } from '../lib/wishlist'
 import { overrideValuationsForPreview } from '../lib/valuationDb'
@@ -104,6 +105,9 @@ if (params.get('runner')) {
   const dexId = Number(params.get('runner'))
   seedRunnerForPreview([{ dexId, name: params.get('runnername') ?? 'Pikachu', type: 'Lightning' }], 7000 - Number(params.get('at') ?? 2500))
 }
+
+// ?peek=<ms>: Pikachu kijkt na zoveel ms om een hoekje.
+if (params.get('peek')) seedPeekForPreview(Number(params.get('peek')))
 
 // ?moment=reveal|catch|complete&at=ms: moment zo starten dat de screenshot (na 7 s) op `at` ms valt.
 const momentParam = params.get('moment')
