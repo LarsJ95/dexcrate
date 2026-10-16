@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { NO_EXTRA_FILTERS, activeFilterCount, matchesExtra, parseView } from './collectionFilters'
+import { NO_EXTRA_FILTERS, activeFilterCount, matchesExtra, parseView, setKeyOf } from './collectionFilters'
 import { EMPTY_CARD } from './types'
 
 const mew = { ...EMPTY_CARD, name: 'Mew ex', language: 'ja' as const, variant: 'holo' as const, condition: 'NM' as const, location_id: 'red' }
@@ -23,6 +23,20 @@ describe('extra filters', () => {
     expect(matchesExtra({ ...loose, kind: 'sealed' as const }, f, none)).toBe(false)
     expect(activeFilterCount(f)).toBe(1)
     expect(parseView(JSON.stringify({ extra: { link: 'unlinked' } }), ['list'], ['owned'], { query: '', filter: 'owned', sort: 'list', extra: NO_EXTRA_FILTERS }).extra.link).toBe('unlinked')
+  })
+
+  it('set: gekoppeld op set-id, anders op setcode', () => {
+    const linked = { ...loose, tcgdex_id: 'en/sv03.5-151', set_code: 'MEW' }
+    const excel = { ...loose, set_code: ' mew ' }
+    expect(setKeyOf(linked)).toBe('en/sv03.5')
+    expect(setKeyOf(excel)).toBe('code:MEW')
+    expect(setKeyOf(loose)).toBe(null)
+    const f = { ...NO_EXTRA_FILTERS, set: 'en/sv03.5' }
+    expect(matchesExtra(linked, f, none)).toBe(true)
+    expect(matchesExtra(excel, f, none)).toBe(false)
+    expect(matchesExtra(excel, { ...NO_EXTRA_FILTERS, set: 'code:MEW' }, none)).toBe(true)
+    expect(activeFilterCount(f)).toBe(1)
+    expect(parseView(JSON.stringify({ extra: { set: 'en/sv03.5' } }), ['list'], ['owned'], { query: '', filter: 'owned', sort: 'list', extra: NO_EXTRA_FILTERS }).extra.set).toBe('en/sv03.5')
   })
 
   it('illustrator: deelnaam; tijdens laden niet wegfilteren', () => {

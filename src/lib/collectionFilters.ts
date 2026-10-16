@@ -1,5 +1,5 @@
 import { RARITY_FILTERS, SUFFIX_FILTERS, isEnergyType, rarityMatches, type EnergyType } from './cardTraits'
-import type { CardInfo } from './tcgdex'
+import { setOfKey, type CardInfo } from './tcgdex'
 import { CONDITION_LABELS, LANGUAGE_LABELS, VARIANT_LABELS, type CardInput, type CardLanguage, type Condition, type Variant } from './types'
 
 /** Extra filters naast status en zoeken; '' = alle, 'none' = alleen zonder waarde (onbekend / geen locatie). */
@@ -16,12 +16,14 @@ export interface ExtraFilters {
   suffix: string
   /** 'unlinked' = alleen kaarten zonder koppeling met de catalogus. */
   link: '' | 'unlinked'
+  /** Set (zie setKeyOf); leeg = alle. */
+  set: string
 }
 
-export const NO_EXTRA_FILTERS: ExtraFilters = { language: '', variant: '', condition: '', location: '', illustrator: '', rarity: '', type: '', suffix: '', link: '' }
+export const NO_EXTRA_FILTERS: ExtraFilters = { language: '', variant: '', condition: '', location: '', illustrator: '', rarity: '', type: '', suffix: '', link: '', set: '' }
 
 export function activeFilterCount(f: ExtraFilters): number {
-  return [f.language, f.variant, f.condition, f.location, f.illustrator.trim(), f.rarity, f.type, f.suffix, f.link].filter(Boolean).length
+  return [f.language, f.variant, f.condition, f.location, f.illustrator.trim(), f.rarity, f.type, f.suffix, f.link, f.set].filter(Boolean).length
 }
 
 /** Wat de catalogusfilters van een kaart nodig hebben. */
@@ -44,6 +46,17 @@ export function matchesCatalog(info: CatalogTraits | null, f: CatalogFilters): b
   return true
 }
 
+/**
+ * Set van een kaartregel voor het setfilter: "en/sv03.5" als hij gekoppeld is,
+ * anders "code:MEW" (setcode uit de Excel); null zonder set (bv. sealed product).
+ */
+export function setKeyOf(c: Pick<CardInput, 'tcgdex_id' | 'set_code'>): string | null {
+  const s = c.tcgdex_id ? setOfKey(c.tcgdex_id) : null
+  if (s) return `${s.lang}/${s.setId}`
+  const code = c.set_code?.trim()
+  return code ? `code:${code.toUpperCase()}` : null
+}
+
 /** Losse kaart (geen sealed product) zonder koppeling met de catalogus. */
 export const isUnlinked = (c: Pick<CardInput, 'kind' | 'tcgdex_id'>): boolean => c.kind === 'card' && !c.tcgdex_id
 
@@ -58,6 +71,7 @@ export function matchesExtra(c: CardInput, f: ExtraFilters, infoOf: (c: CardInpu
   if (!fieldMatches(c.language, f.language) || !fieldMatches(c.variant, f.variant) || !fieldMatches(c.condition, f.condition)) return false
   if (f.location === 'none' ? c.location_id !== null : f.location !== '' && c.location_id !== f.location) return false
   if (f.link === 'unlinked' && !isUnlinked(c)) return false
+  if (f.set && setKeyOf(c) !== f.set) return false
   if (!needsCatalog(f)) return true
   const info = infoOf(c)
   if (info === undefined) return true
@@ -107,6 +121,7 @@ export function parseView<S extends string, F extends string>(
         type: isEnergyType(extra.type) ? extra.type : '',
         suffix: (SUFFIX_FILTERS as readonly string[]).includes(str(extra.suffix)) ? str(extra.suffix) : '',
         link: extra.link === 'unlinked' ? 'unlinked' : '',
+        set: str(extra.set).slice(0, 80),
       },
     }
   } catch {

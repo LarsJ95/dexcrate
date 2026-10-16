@@ -4,10 +4,10 @@ import { BulkEditDialog, type BulkChange } from '../components/BulkEditDialog'
 import { CardTile } from '../components/CardTile'
 import { useLocations } from '../hooks/useLocations'
 import { useSchemaV2 } from '../hooks/useSchemaV2'
-import { NO_EXTRA_FILTERS, activeFilterCount, isUnlinked, matchesExtra, needsCatalog, parseView, type ExtraFilters, type SavedView } from '../lib/collectionFilters'
+import { NO_EXTRA_FILTERS, activeFilterCount, isUnlinked, matchesExtra, needsCatalog, parseView, setKeyOf, type ExtraFilters, type SavedView } from '../lib/collectionFilters'
 import { CatalogFilterFields } from '../components/CatalogFilterFields'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
-import type { CardInfo } from '../lib/tcgdex'
+import { getSetList, isLang, type CardInfo } from '../lib/tcgdex'
 import { PurchaseDialog } from '../components/PurchaseDialog'
 import { SaleDialog } from '../components/SaleDialog'
 import { useNewCardDefaults } from '../hooks/useNewCardDefaults'
@@ -69,6 +69,53 @@ function matchesFilter(c: Card, f: StatusFilter): boolean {
   return c.status === f
 }
 
+interface SetOption {
+  key: string
+  label: string
+}
+
+/** Sets waar je (binnen de gekozen status) kaarten van hebt, met naam en afkorting: "151 (MEW)". */
+function useSetOptions(cards: readonly Card[] | null, filter: StatusFilter): SetOption[] {
+  const [names, setNames] = useState<ReadonlyMap<string, string>>(new Map())
+  // Afkorting uit de kaarten zelf (setcode bij toevoegen), zodat er niets extra opgehaald hoeft te worden.
+  const groups = useMemo(() => {
+    const out = new Map<string, string | null>()
+    for (const c of cards ?? []) {
+      if (!matchesFilter(c, filter)) continue
+      const key = setKeyOf(c)
+      if (key && !out.get(key)) out.set(key, c.set_code?.trim().toUpperCase() || null)
+    }
+    return out
+  }, [cards, filter])
+  const langs = useMemo(() => [...new Set([...groups.keys()].map((k) => k.split('/')[0]).filter(isLang))].sort(), [groups])
+
+  useEffect(() => {
+    let cancelled = false
+    Promise.all(langs.map(async (l) => [l, await getSetList(l)] as const))
+      .then((lists) => {
+        if (cancelled) return
+        const map = new Map<string, string>()
+        for (const [l, list] of lists) for (const [id, s] of list) map.set(`${l}/${id}`, s.name)
+        setNames(map)
+      })
+      .catch((err: unknown) => console.warn('Setnamen ophalen mislukt', err))
+    return () => {
+      cancelled = true
+    }
+  }, [langs])
+
+  return useMemo(() => {
+    const out: SetOption[] = []
+    for (const [key, code] of groups) {
+      const lang = key.split('/')[0]
+      const name = key.startsWith('code:') ? null : (names.get(key) ?? key.slice(key.indexOf('/') + 1))
+      const label = name ? `${name}${code && code !== name.toUpperCase() ? ` (${code})` : ''}${lang !== 'en' ? `, ${lang}` : ''}` : key.slice(5)
+      out.push({ key, label })
+    }
+    return out.sort((a, b) => a.label.localeCompare(b.label, 'en', { numeric: true }))
+  }, [groups, names])
+}
+
 export function CollectionPage(): JSX.Element {
   const [cards, setCards] = useState<Card[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -83,6 +130,7 @@ export function CollectionPage(): JSX.Element {
   // Kaartinfo (illustrator, zeldzaamheid, types) alleen laden als je op de catalogus filtert.
   const catalogKeys = useMemo(() => (cards ?? []).flatMap((c) => (c.tcgdex_id ? [c.tcgdex_id] : [])), [cards])
   const infos = useCatalogInfos(catalogKeys, needsCatalog(extra))
+  const setOptions = useSetOptions(cards, filter)
   const v2 = useSchemaV2() === true
   const locations = useLocations(v2)
   const [bulkFor, setBulkFor] = useState<Card[] | null>(null)
@@ -337,7 +385,7 @@ export function CollectionPage(): JSX.Element {
         <button type="button" aria-expanded={showFilters} onClick={() => setShowFilters((s) => !s)}>
           Filters{activeFilterCount(extra) > 0 ? ` (${activeFilterCount(extra)})` : ''}
         </button>
-        {(activeFilterCount(extra) > 0 || query.trim() !== '') && (
+        {!showFilters && (activeFilterCount(extra) > 0 || query.trim() !== '') && (
           <button
             type="button"
             onClick={() => {
@@ -362,6 +410,18 @@ export function CollectionPage(): JSX.Element {
       {showFilters && (
         <div className="panel extra-filters">
           <div className="form-grid">
+            <label className="filter-set">
+              Set
+              <select value={extra.set} onChange={(e) => setExtra((f) => ({ ...f, set: e.target.value }))}>
+                <option value="">All</option>
+                {extra.set && !setOptions.some((o) => o.key === extra.set) && <option value={extra.set}>{extra.set}</option>}
+                {setOptions.map((o) => (
+                  <option key={o.key} value={o.key}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <label>
               Language
               <select value={extra.language} onChange={(e) => setExtra((f) => ({ ...f, language: e.target.value as ExtraFilters['language'] }))}>
@@ -424,6 +484,18 @@ export function CollectionPage(): JSX.Element {
               Illustrator
               <input value={extra.illustrator} maxLength={60} placeholder="e.g. Arita" onChange={(e) => setExtra((f) => ({ ...f, illustrator: e.target.value }))} />
             </label>
+          </div>
+          <div className="extra-filters-foot">
+            <button
+              type="button"
+              disabled={activeFilterCount(extra) === 0 && query.trim() === ''}
+              onClick={() => {
+                setExtra(NO_EXTRA_FILTERS)
+                setQuery('')
+              }}
+            >
+              Clear all filters
+            </button>
           </div>
         </div>
       )}
