@@ -5,12 +5,14 @@ import { CardmarketLink } from '../components/CardmarketLink'
 import { CatalogResults } from '../components/CatalogResults'
 import { CardSetSymbol } from '../components/SetIcon'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
+import { useCardPrices } from '../hooks/useCardPrices'
+import { useDbFeature } from '../hooks/useDbFeature'
+import { WishlistListSheet } from '../components/WishlistListSheet'
 import { IconPlus, IconSearch } from '../components/Icons'
 import { WishlistDialog } from '../components/WishlistDialog'
 import { useCardPrice } from '../hooks/useCardPrice'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import { catalogActive, type CatalogHit } from '../lib/catalogSearch'
-import { matchesCatalog, needsCatalog, type CatalogFilters } from '../lib/collectionFilters'
 import { listCards } from '../lib/db'
 import { PRINTED_SETS, getSet, isLang, lookupLang, type Lang } from '../lib/tcgdex'
 import { marketValue } from '../lib/prices'
@@ -18,6 +20,17 @@ import { matchesWords } from '../lib/search'
 import { formatEur } from '../lib/stats'
 import { CONDITION_LABELS, LANGUAGE_LABELS, VARIANT_LABELS, type Card, type CardLanguage, type Variant } from '../lib/types'
 import { listWishlist, ownedForWish, type WishlistInput, type WishlistItem } from '../lib/wishlist'
+import {
+  NO_WISH_FILTERS,
+  activeWishFilterCount,
+  describeWishFilters,
+  matchesWishFilters,
+  needsWishCatalog,
+  needsWishPrices,
+  sameWishFilters,
+  type WishFilters,
+} from '../lib/wishFilters'
+import { hasWishlistLists, listWishlistLists, updateWishlistList, type WishlistList } from '../lib/wishlistLists'
 import { Loading } from '../components/Loading'
 
 const PRIORITY: Record<1 | 2 | 3, string> = { 1: 'High priority', 2: '', 3: 'Low priority' }
@@ -39,6 +52,13 @@ function WishCardmarket({ item }: { item: WishlistItem }): JSX.Element {
   return <CardmarketLink idProduct={price?.idProduct ?? null} searchText={[item.name, item.card_number].filter(Boolean).join(' ')} compact />
 }
 
+/** Prijsveld → bedrag of null (leeg of ongeldig = geen filter). */
+const priceInput = (text: string): number | null => {
+  if (text.trim() === '') return null
+  const n = Number(text.replace(',', '.'))
+  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null
+}
+
 const matches = (item: WishlistItem, query: string): boolean =>
   matchesWords([item.name, item.set_code, item.card_number, item.card_number && `#${item.card_number}`, item.notes], query)
 
@@ -49,12 +69,20 @@ export function WishlistPage(): JSX.Element {
   const [cards, setCards] = useState<Card[]>([])
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  const [variant, setVariant] = useState<Variant | ''>('')
-  const [language, setLanguage] = useState<CardLanguage | ''>('')
-  const [showFound, setShowFound] = useState(false)
-  const [catalogFilter, setCatalogFilter] = useState<CatalogFilters>({ rarity: '', type: '', suffix: '' })
+  const [filters, setFilters] = useState<WishFilters>(NO_WISH_FILTERS)
+  const setFilter = (patch: Partial<WishFilters>): void => setFilters((f) => ({ ...f, ...patch }))
+  const { language } = filters
   const wishKeys = useMemo(() => (items ?? []).flatMap((i) => (i.tcgdex_id ? [i.tcgdex_id] : [])), [items])
-  const infos = useCatalogInfos(wishKeys, needsCatalog(catalogFilter))
+  const infos = useCatalogInfos(wishKeys, needsWishCatalog(filters))
+  const prices = useCardPrices(wishKeys, needsWishPrices(filters))
+  // Slimme lijsten (STAP10): opgeslagen filters.
+  const listsEnabled = useDbFeature(hasWishlistLists)
+  const [lists, setLists] = useState<WishlistList[]>([])
+  const [activeListId, setActiveListId] = useState<string | null>(null)
+  const [listSheet, setListSheet] = useState<WishlistList | 'new' | null>(null)
+  const [listNotice, setListNotice] = useState<string | null>(null)
+  const [listBusy, setListBusy] = useState(false)
+  const activeList = lists.find((l) => l.id === activeListId) ?? null
   const [editing, setEditing] = useState<WishlistItem | 'new' | null>(null)
   // Startwaarden als je een kaart uit de kaartendatabase kiest.
   const [initial, setInitial] = useState<Partial<WishlistInput> | undefined>(undefined)
@@ -76,6 +104,49 @@ export function WishlistPage(): JSX.Element {
     }
   }, [enabled])
 
+  useEffect(() => {
+    if (listsEnabled !== true) return
+    let cancelled = false
+    listWishlistLists()
+      .then((l) => {
+        if (!cancelled) setLists(l)
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setListNotice(err instanceof Error ? err.message : 'Loading your lists failed.')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [listsEnabled])
+
+  function chooseList(list: WishlistList | null): void {
+    setActiveListId(list?.id ?? null)
+    setFilters(list?.filters ?? NO_WISH_FILTERS)
+    setListNotice(null)
+  }
+
+  function saveAsList(): void {
+    if (listsEnabled !== true) {
+      setListNotice('Saving lists is not set up yet: run STAP10 in Supabase.')
+      return
+    }
+    setListSheet('new')
+  }
+
+  async function updateActiveList(): Promise<void> {
+    if (!activeList || listBusy) return
+    setListBusy(true)
+    setListNotice(null)
+    try {
+      const saved = await updateWishlistList(activeList.id, { filters })
+      setLists((l) => l.map((x) => (x.id === saved.id ? saved : x)))
+    } catch (err) {
+      setListNotice(err instanceof Error ? err.message : 'Saving the list failed.')
+    } finally {
+      setListBusy(false)
+    }
+  }
+
   const rows = useMemo(
     () =>
       (items ?? []).map((item) => {
@@ -84,20 +155,20 @@ export function WishlistPage(): JSX.Element {
       }),
     [items, cards],
   )
-  const visible = rows.filter(
-    (r) =>
-      (showFound || !r.found) &&
-      (!variant || r.item.variant === variant) &&
-      (!language || r.item.language === language) &&
-      matches(r.item, query) &&
-      // Catalogusfilters: tijdens laden niet wegfilteren; zonder koppeling past een wens niet.
-      (!needsCatalog(catalogFilter) ||
-        (r.item.tcgdex_id !== null && (!infos.has(r.item.tcgdex_id) || matchesCatalog(infos.get(r.item.tcgdex_id) ?? null, catalogFilter)))),
-  )
+  const visible = rows.filter((r) => {
+    const key = r.item.tcgdex_id
+    // undefined = nog aan het laden (dan niet wegfilteren), null = onbekend.
+    const market = !key ? null : prices.has(key) ? (marketValue(prices.get(key) ?? null, r.item.variant)?.value ?? null) : undefined
+    const info = !key ? null : infos.has(key) ? (infos.get(key) ?? null) : undefined
+    return matches(r.item, query) && matchesWishFilters(r.item, filters, { found: r.found, market, info })
+  })
   const foundCount = rows.filter((r) => r.found).length
   const wishedKeys = useMemo(() => new Set((items ?? []).flatMap((i) => (i.tcgdex_id ? [i.tcgdex_id] : []))), [items])
   const ownedKeys = useMemo(() => new Set(cards.flatMap((c) => (c.tcgdex_id && c.ownership === 'owned' ? [c.tcgdex_id] : []))), [cards])
-  const searching = catalogActive(query, catalogFilter)
+  // Bladeren in de kaartendatabase (zonder zoekterm) alleen buiten een opgeslagen lijst.
+  const searching = activeList ? query.trim().length >= 2 : catalogActive(query, filters)
+  const filterCount = activeWishFilterCount(filters)
+  const listChanged = activeList !== null && !sameWishFilters(filters, activeList.filters)
 
   function openNew(start?: Partial<WishlistInput>): void {
     setInitial(start)
@@ -146,6 +217,26 @@ export function WishlistPage(): JSX.Element {
         </button>
       </div>
 
+      {(lists.length > 0 || listsEnabled === true) && (
+        <div className="wish-lists">
+          <div className="segmented" role="group" aria-label="Lists">
+            <button type="button" aria-pressed={activeList === null} onClick={() => chooseList(null)}>
+              All wishes
+            </button>
+            {lists.map((l) => (
+              <button key={l.id} type="button" aria-pressed={activeList?.id === l.id} onClick={() => chooseList(l)} title={describeWishFilters(l.filters)}>
+                {l.name}
+              </button>
+            ))}
+          </div>
+          {activeList && (
+            <button type="button" className="ghost small-btn" onClick={() => setListSheet(activeList)}>
+              Rename or remove
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="filters">
         <div className="search">
           <IconSearch size={18} />
@@ -157,7 +248,7 @@ export function WishlistPage(): JSX.Element {
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
-        <select aria-label="Variant" value={variant} onChange={(e) => setVariant(e.target.value as Variant | '')}>
+        <select aria-label="Variant" value={filters.variant} onChange={(e) => setFilter({ variant: e.target.value as Variant | '' })}>
           <option value="">All variants</option>
           {(Object.keys(VARIANT_LABELS) as Variant[]).map((v) => (
             <option key={v} value={v}>
@@ -165,7 +256,7 @@ export function WishlistPage(): JSX.Element {
             </option>
           ))}
         </select>
-        <select aria-label="Language" value={language} onChange={(e) => setLanguage(e.target.value as CardLanguage | '')}>
+        <select aria-label="Language" value={filters.language} onChange={(e) => setFilter({ language: e.target.value as CardLanguage | '' })}>
           <option value="">All languages</option>
           {(Object.keys(LANGUAGE_LABELS) as CardLanguage[]).map((l) => (
             <option key={l} value={l}>
@@ -173,12 +264,84 @@ export function WishlistPage(): JSX.Element {
             </option>
           ))}
         </select>
-        <CatalogFilterFields value={catalogFilter} onChange={setCatalogFilter} compact />
+        <CatalogFilterFields value={filters} onChange={(next) => setFilter({ rarity: next.rarity, type: next.type, suffix: next.suffix })} compact />
+      </div>
+
+      <div className="filters wish-more">
+        <label>
+          Market from (€)
+          <input
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step="0.01"
+            placeholder="any"
+            value={filters.minPrice ?? ''}
+            onChange={(e) => setFilter({ minPrice: priceInput(e.target.value) })}
+          />
+        </label>
+        <label>
+          Market to (€)
+          <input
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step="0.01"
+            placeholder="any"
+            value={filters.maxPrice ?? ''}
+            onChange={(e) => setFilter({ maxPrice: priceInput(e.target.value) })}
+          />
+        </label>
+        <label>
+          Priority
+          <select
+            value={filters.priority ?? ''}
+            onChange={(e) => {
+              const p = Number(e.target.value)
+              setFilter({ priority: p === 1 || p === 2 || p === 3 ? p : null })
+            }}
+          >
+            <option value="">All</option>
+            <option value="1">High</option>
+            <option value="2">Normal</option>
+            <option value="3">Low</option>
+          </select>
+        </label>
+        <label>
+          Set
+          <input value={filters.set} maxLength={20} placeholder="e.g. SCR" onChange={(e) => setFilter({ set: e.target.value })} />
+        </label>
         <label className="check">
-          <input type="checkbox" checked={showFound} onChange={(e) => setShowFound(e.target.checked)} />
+          <input type="checkbox" checked={filters.underMax} onChange={(e) => setFilter({ underMax: e.target.checked })} />
+          Within my max. price
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={filters.showFound} onChange={(e) => setFilter({ showFound: e.target.checked })} />
           Show found
         </label>
+        <div className="wish-list-actions">
+          {listChanged && (
+            <button type="button" className="primary small-btn" onClick={() => void updateActiveList()} disabled={listBusy}>
+              Update “{activeList.name}”
+            </button>
+          )}
+          {(filterCount > 0 || filters.showFound) && (listChanged || !activeList) && (
+            <button type="button" className={listChanged ? 'small-btn' : 'primary small-btn'} onClick={saveAsList}>
+              Save as new list
+            </button>
+          )}
+          {filterCount > 0 && !activeList && (
+            <button type="button" className="ghost small-btn" onClick={() => setFilters(NO_WISH_FILTERS)}>
+              Clear filters
+            </button>
+          )}
+        </div>
       </div>
+      {listNotice && (
+        <p className="notice" role="status">
+          {listNotice}
+        </p>
+      )}
 
       {error && (
         <p className="error" role="alert">
@@ -190,7 +353,9 @@ export function WishlistPage(): JSX.Element {
         <p className="empty">Your wishlist is empty. Search for a Pokémon above, or add cards from a set's missing cards.</p>
       )}
       {items && items.length > 0 && visible.length === 0 && (
-        <p className="empty">{searching ? 'None of your wishes match. Cards from the database are below.' : 'No wishes match these filters.'}</p>
+        <p className="empty">
+          {searching ? 'None of your wishes match. Cards from the database are below.' : activeList ? 'No wishes in this list right now.' : 'No wishes match these filters.'}
+        </p>
       )}
 
       {visible.length > 0 && (
@@ -235,7 +400,7 @@ export function WishlistPage(): JSX.Element {
 
       {searching && (
         <CatalogResults
-          filters={catalogFilter}
+          filters={filters}
           query={query}
           lang={lookupLang(language || null)}
           wished={wishedKeys}
@@ -250,6 +415,26 @@ export function WishlistPage(): JSX.Element {
                 : null
           }
           onlySets={language ? (PRINTED_SETS[language] ?? null) : null}
+        />
+      )}
+
+      {listSheet && (
+        <WishlistListSheet
+          list={listSheet === 'new' ? null : listSheet}
+          filters={filters}
+          existing={lists}
+          onClose={() => setListSheet(null)}
+          onSaved={(saved) => {
+            setLists((l) => (l.some((x) => x.id === saved.id) ? l.map((x) => (x.id === saved.id ? saved : x)) : [...l, saved]))
+            setActiveListId(saved.id)
+            setFilters(saved.filters)
+            setListSheet(null)
+          }}
+          onDeleted={(id) => {
+            setLists((l) => l.filter((x) => x.id !== id))
+            chooseList(null)
+            setListSheet(null)
+          }}
         />
       )}
 
