@@ -6,21 +6,31 @@ interface Props {
   searchText: string
   /** Korte vorm ("Cardmarket") als knop, bv. in een lijstregel. */
   compact?: boolean
+  /** Als gewone knop (actiebalk). */
+  button?: boolean
 }
 
 /** Link naar de Cardmarket-productpagina, of een zoekopdracht als het product-id onbekend is. */
-export function CardmarketLink({ idProduct, searchText, compact = false }: Props): JSX.Element {
+export function CardmarketLink({ idProduct, searchText, compact = false, button = false }: Props): JSX.Element {
   const label = idProduct ? 'View on Cardmarket' : 'Search on Cardmarket'
   return (
     <a
-      className={compact ? 'external-link cm-button' : 'external-link'}
+      className={button ? 'external-link button-link' : compact ? 'external-link cm-button' : 'external-link'}
       href={cardmarketUrl(idProduct, searchText)}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label={compact ? `${label} (opens in a new tab)` : undefined}
+      aria-label={compact || button ? `${label} (opens in a new tab)` : undefined}
       title={compact ? label : undefined}
     >
-      {compact ? <span className="cm-button-text">Cardmarket</span> : label}
+      {compact ? (
+        <span className="cm-button-text">Cardmarket</span>
+      ) : button ? (
+        <span>
+          <span className="hide-narrow">{idProduct ? 'View on ' : 'Search on '}</span>Cardmarket
+        </span>
+      ) : (
+        label
+      )}
       <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14">
         <path
           d="M6 3h7v7M13 3 5.5 10.5M11 9.5V13H3V5h3.5"

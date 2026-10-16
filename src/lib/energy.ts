@@ -39,3 +39,23 @@ export function applyPageType(type: EnergyType): () => void {
     root.removeProperty('--glyph')
   }
 }
+
+const FAVOURITE_KEY = 'dexcrate:favourite-type'
+
+/** Het type dat je het meest verzamelt (berekend op Overview), voor kaarten zonder eigen kleur (Colorless). */
+export function rememberFavouriteType(type: EnergyType): void {
+  try {
+    localStorage.setItem(FAVOURITE_KEY, type)
+  } catch (err) {
+    console.warn('Favoriete type onthouden mislukt', err)
+  }
+}
+
+export function favouriteType(): EnergyType | null {
+  try {
+    const v = localStorage.getItem(FAVOURITE_KEY)
+    return v && v !== 'Colorless' && Object.hasOwn(ENERGY_GLYPHS, v) ? (v as EnergyType) : null
+  } catch {
+    return null // geen opslag: standaardkleur
+  }
+}

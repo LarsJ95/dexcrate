@@ -4,6 +4,7 @@ import { useCountUp } from '../hooks/useCountUp'
 import { marketValueOf, summarizeMarket, topMovers, type Mover, type PriceMap, type SeriesPoint } from '../lib/prices'
 import { speciesName } from '../lib/runner'
 import { setOfKey } from '../lib/tcgdex'
+import { rememberFavouriteType } from '../lib/energy'
 import { celebrateBadges } from '../lib/moments'
 import { englishSpeciesName, isNonLatin } from '../lib/names'
 import { rememberAutoPartner, usePartnerChoice } from '../lib/partner'
@@ -122,6 +123,10 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
   const infosLoading = new Set(ownedKeys).size > infos.size
   const dex = useMemo(() => pokedexProgress(owned.flatMap((o) => (o.dexId ? [o.dexId] : []))), [owned])
   const favourite = useMemo(() => dominantType(owned), [owned])
+  // Onthouden voor kaarten zonder eigen kleur (Colorless) in de kaartpopup.
+  useEffect(() => {
+    if (favourite) rememberFavouriteType(favourite)
+  }, [favourite])
   const autoPartner = useMemo(() => {
     const dexId = partnerDexId(owned)
     const card = owned.find((o) => o.dexId === dexId)

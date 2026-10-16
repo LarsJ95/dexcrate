@@ -49,3 +49,14 @@ describe('Overview: titels, regio\'s en type-team', async () => {
     expect(teamGaps(team)).toContain('Lightning')
   })
 })
+
+describe('regio bij Pokédex-nummer', async () => {
+  const { regionOf } = await import('./trainer')
+  it('Kanto t/m Paldea', () => {
+    expect(regionOf(25)).toEqual({ gen: 1, region: 'Kanto' })
+    expect(regionOf(573)).toEqual({ gen: 5, region: 'Unova' })
+    expect(regionOf(1025)).toEqual({ gen: 9, region: 'Paldea' })
+    expect(regionOf(0)).toBeNull()
+    expect(regionOf(2000)).toBeNull()
+  })
+})

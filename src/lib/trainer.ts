@@ -220,3 +220,9 @@ export function teamGaps(team: readonly TeamType[]): EnergyType[] {
   const covered = new Set(team.flatMap((t) => t.strongAgainst))
   return (Object.keys(WEAK_TO) as EnergyType[]).filter((t) => WEAK_TO[t] !== null && !covered.has(t))
 }
+
+/** Regio en generatie bij een Pokédex-nummer, of null buiten 1-1025. */
+export function regionOf(dexId: number): { gen: number; region: string } | null {
+  const i = GENERATIONS.findIndex((last) => dexId <= last)
+  return dexId >= 1 && i >= 0 ? { gen: i + 1, region: REGIONS[i] } : null
+}

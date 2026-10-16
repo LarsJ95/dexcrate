@@ -1,11 +1,11 @@
-import { useEffect, useState, type FormEvent, type JSX } from 'react'
+import { useEffect, useState, type FormEvent, type JSX, type ReactNode } from 'react'
 import { useDbFeature } from '../hooks/useDbFeature'
 import { useKeyed } from '../hooks/useKeyed'
 import { moneyText, parseMoney, today } from '../lib/money'
 import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
 import { getTcgplayerPrice, type CardmarketPrice } from '../lib/tcgdex'
-import { CONDITION_LABELS, LINK_STATUS_LABELS, VARIANT_LABELS, type Card } from '../lib/types'
+import { CONDITION_LABELS, type Card } from '../lib/types'
 import { EMPTY_SETTINGS, TCGP_KEY_LABELS, conditionEstimate, tcgplayerFor, type UserSettings } from '../lib/valuation'
 import { addValuation, deleteValuation, hasValuations, listValuations, loadSettings, type Valuation } from '../lib/valuationDb'
 
@@ -21,6 +21,18 @@ const dateText = (iso: string | null): string | null => {
   if (!iso) return null
   const d = new Date(iso)
   return Number.isNaN(d.getTime()) ? null : day.format(d)
+}
+
+/** Uitleg achter een ⓘ, zodat de prijzen zelf compact blijven. */
+function InfoTip({ label, children }: { label: string; children: ReactNode }): JSX.Element {
+  return (
+    <details className="info-tip">
+      <summary aria-label={label} title={label}>
+        i
+      </summary>
+      <span className="info-tip-text small">{children}</span>
+    </details>
+  )
 }
 
 const BASIS_LABELS = { trend: 'trend price', avg30: '30-day average (no trend price)', avg7: '7-day average (no trend or 30-day price)' } as const
@@ -109,7 +121,7 @@ export function ValuePanel({ card, price }: Props): JSX.Element | null {
   return (
     <section className="value-panel" aria-labelledby={`value-${card.id}`}>
       <h3 id={`value-${card.id}`} className="panel-title">
-        Value per copy
+        Prices per copy
       </h3>
       <dl className="value-list">
         {card.kind === 'card' && (
@@ -120,15 +132,13 @@ export function ValuePanel({ card, price }: Props): JSX.Element | null {
                 {price === undefined ? (
                   '…'
                 ) : cm ? (
-                  <>
-                    <span className="small">
-                      The Market price above is the {BASIS_LABELS[cm.basis]}
-                      {cm.reverse ? ', reverse holo price' : ''}
-                      {price?.updated && dateText(price.updated) ? `, updated ${dateText(price.updated)}` : ''}
-                    </span>
-                    {card.grading_company && <span className="muted small">For ungraded copies; yours is {card.grading_company} {card.grade}.</span>}
-                    <span className="muted small">Condition is not part of this price.</span>
-                  </>
+                  <span className="value-line">
+                    <strong>{formatEur(cm.value)}</strong>
+                    <InfoTip label="About the Cardmarket price">
+                      {`The ${BASIS_LABELS[cm.basis]}${cm.reverse ? ' for reverse holo' : ''}${price?.updated && dateText(price.updated) ? `, updated ${dateText(price.updated)}` : ''}. Condition is not part of this price.`}
+                      {card.grading_company ? ` For ungraded copies; yours is ${card.grading_company} ${card.grade ?? ''}.` : ''}
+                    </InfoTip>
+                  </span>
                 ) : (
                   <span className="muted">
                     No price{card.variant === 'reverse' ? ' for reverse holo' : ''}
@@ -143,12 +153,12 @@ export function ValuePanel({ card, price }: Props): JSX.Element | null {
                 {tcgp === undefined ? (
                   '…'
                 ) : tp ? (
-                  <>
+                  <span className="value-line">
                     <strong>{usd.format(tp.market)}</strong>
-                    <span className="muted small">
-                      {TCGP_KEY_LABELS[tp.key] ?? tp.key} market price in US dollars, not converted; not a European price.
-                    </span>
-                  </>
+                    <InfoTip label="About the TCGplayer price">
+                      {`${TCGP_KEY_LABELS[tp.key] ?? tp.key} market price in US dollars, not converted; not a European price.`}
+                    </InfoTip>
+                  </span>
                 ) : (
                   <span className="muted">
                     {tcgp && !card.variant ? 'Set the variant to see the matching price' : 'No price'}
@@ -162,8 +172,10 @@ export function ValuePanel({ card, price }: Props): JSX.Element | null {
           <div>
             <dt>Estimate for {CONDITION_LABELS[card.condition]}</dt>
             <dd>
-              <strong>{formatEur(estimate.value)}</strong>
-              <span className="muted small">Estimate: {estimate.pct}% of the Cardmarket price (your setting).</span>
+              <span className="value-line">
+                <strong>{formatEur(estimate.value)}</strong>
+                <InfoTip label="About this estimate">{`Estimate: ${estimate.pct}% of the Cardmarket price (your setting).`}</InfoTip>
+              </span>
             </dd>
           </div>
         )}
@@ -185,12 +197,6 @@ export function ValuePanel({ card, price }: Props): JSX.Element | null {
                 <span className="muted">None yet</span>
               )}
             </dd>
-          </div>
-        )}
-        {card.tcgdex_id && card.link_status && (
-          <div>
-            <dt>Catalog link</dt>
-            <dd>{LINK_STATUS_LABELS[card.link_status]}{card.variant ? `, ${VARIANT_LABELS[card.variant]}` : ', variant unknown'}</dd>
           </div>
         )}
       </dl>
