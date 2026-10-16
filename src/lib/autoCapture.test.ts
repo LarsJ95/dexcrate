@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { SAMPLE_H, SAMPLE_W, createAutoCapture, normalize } from './autoCapture'
+import { DEFAULT_TUNING, SAMPLE_H, SAMPLE_W, createAutoCapture, normalize } from './autoCapture'
 
 /** Kunstmatig meetbeeld: een 'kaart' is een patroon met veel randen, een lege tafel bijna vlak. */
 function card(seed: number, shift = 0): Float32Array {
@@ -17,8 +17,9 @@ const table = (): Float32Array => new Float32Array(SAMPLE_W * SAMPLE_H).map((_, 
 
 function run(frames: Float32Array[]): string[] {
   const auto = createAutoCapture()
-  return frames.map((f) => {
-    const r = auto.step(f)
+  // Gesimuleerde klok: één beeld per seconde, zodat de minimale wachttijd hier niet meespeelt.
+  return frames.map((f, i) => {
+    const r = auto.step(f, i * 1000)
     return r.capture ? 'FOTO' : r.hint
   })
 }
@@ -56,5 +57,21 @@ describe('automatisch afdrukken', () => {
   it('normaliseren: gemiddelde 0', () => {
     const n = normalize(card(1))
     expect(Math.abs(n.reduce((a, b) => a + b, 0) / n.length)).toBeLessThan(1e-6)
+  })
+
+  it("minimale tijd tussen twee foto's: te snel een andere kaart = eerst wachten", () => {
+    const auto = createAutoCapture({ ...DEFAULT_TUNING, minGapMs: 2500 })
+    const at = (f: Float32Array, t: number): string => {
+      const r = auto.step(f, t)
+      return r.capture ? 'FOTO' : r.hint
+    }
+    const first = [0, 200, 400, 600].map((t) => at(card(1), t))
+    expect(first.at(-1)).toBe('FOTO')
+    // Meteen een andere kaart, stil: binnen 2,5 s geen foto.
+    const soon = [800, 1000, 1200, 1400, 2800].map((t) => at(card(2), t))
+    expect(soon).not.toContain('FOTO')
+    expect(soon.at(-1)).toBe('wait')
+    // Na de wachttijd wel.
+    expect(at(card(2), 3200)).toBe('FOTO')
   })
 })

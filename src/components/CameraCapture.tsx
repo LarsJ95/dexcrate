@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type JSX, type ReactNode } from 'react'
-import { SAMPLE_H, SAMPLE_W, createAutoCapture, type AutoHint } from '../lib/autoCapture'
+import { DEFAULT_TUNING, SAMPLE_H, SAMPLE_W, createAutoCapture, type AutoHint } from '../lib/autoCapture'
 import { frameToSource } from '../lib/cameraCrop'
 import { setPref, usePrefs } from '../lib/devicePrefs'
 import { toGray } from '../lib/sharpness'
@@ -26,6 +26,7 @@ const AUTO_TEXT: Record<AutoHint, string> = {
   hold: 'Hold still…',
   swap: 'Got it. Next card',
   same: 'Looks like the last card. Tap the shutter for another copy',
+  wait: 'Next card…',
   capture: 'Got it. Next card',
 }
 
@@ -46,7 +47,7 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose, children, 
   const [ready, setReady] = useState(false)
   // Korte flits als bevestiging dat de foto is genomen.
   const [flash, setFlash] = useState(0)
-  const autoOn = usePrefs().autoCapture
+  const { autoCapture: autoOn, autoGapMs } = usePrefs()
   const [autoHint, setAutoHint] = useState<AutoHint | null>(null)
   const captureRef = useRef<() => void>(() => undefined)
 
@@ -125,7 +126,7 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose, children, 
   const autoActive = autoCapture && autoOn && ready && !error
   useEffect(() => {
     if (!autoActive) return
-    const auto = createAutoCapture()
+    const auto = createAutoCapture({ ...DEFAULT_TUNING, minGapMs: autoGapMs })
     const canvas = document.createElement('canvas')
     canvas.width = SAMPLE_W
     canvas.height = SAMPLE_H
@@ -142,7 +143,7 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose, children, 
       if (shoot) captureRef.current()
     }, AUTO_TICK_MS)
     return () => window.clearInterval(timer)
-  }, [autoActive])
+  }, [autoActive, autoGapMs])
 
   function toggleAuto(): void {
     setPref('autoCapture', !autoOn)

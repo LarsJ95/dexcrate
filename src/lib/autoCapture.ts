@@ -22,6 +22,8 @@ export interface AutoTuning {
   detail: number
   /** Aantal stille tikken achter elkaar voor de foto. */
   stableTicks: number
+  /** Minimale tijd tussen twee automatische foto's (ms), zodat je rustig naar de volgende kaart kunt. */
+  minGapMs: number
 }
 
 /**
@@ -31,9 +33,9 @@ export interface AutoTuning {
  *   Sterk gelijkende kaarten (zelfde kleur en opmaak, ±0,13) ziet Auto als dezelfde: dan zelf afdrukken.
  * - detail: kaart ±50-130, lege tafel 0-4.
  */
-export const DEFAULT_TUNING: AutoTuning = { still: 0.25, changed: 0.33, detail: 15, stableTicks: 3 }
+export const DEFAULT_TUNING: AutoTuning = { still: 0.25, changed: 0.33, detail: 15, stableTicks: 3, minGapMs: 2500 }
 
-export type AutoHint = 'place' | 'hold' | 'swap' | 'same' | 'capture'
+export type AutoHint = 'place' | 'hold' | 'swap' | 'same' | 'wait' | 'capture'
 
 /** z-score per beeld: gemiddelde 0, spreiding 1. */
 export function normalize(gray: Float32Array): Float32Array {
@@ -65,8 +67,8 @@ export function meanAbsDiff(a: Float32Array, b: Float32Array): number {
 }
 
 export interface AutoCapture {
-  /** Eén tik met een grijs meetbeeld (SAMPLE_W × SAMPLE_H). */
-  step(gray: Float32Array): { capture: boolean; hint: AutoHint }
+  /** Eén tik met een grijs meetbeeld (SAMPLE_W × SAMPLE_H); `now` in ms. */
+  step(gray: Float32Array, now?: number): { capture: boolean; hint: AutoHint }
   reset(): void
 }
 
@@ -76,6 +78,7 @@ export function createAutoCapture(tuning: AutoTuning = DEFAULT_TUNING): AutoCapt
   /** Laatste tikken: stil of niet (nieuwste achteraan). */
   let recent: boolean[] = []
   let cooling = false
+  let lastShot = Number.NEGATIVE_INFINITY
 
   return {
     reset() {
@@ -83,8 +86,9 @@ export function createAutoCapture(tuning: AutoTuning = DEFAULT_TUNING): AutoCapt
       last = null
       recent = []
       cooling = false
+      lastShot = Number.NEGATIVE_INFINITY
     },
-    step(gray) {
+    step(gray, now = performance.now()) {
       // Eerst ruis wegfilteren: een camera in de hand ruist en trilt altijd een beetje.
       const smooth = smooth3(gray, SAMPLE_W, SAMPLE_H)
       const norm = normalize(smooth)
@@ -104,6 +108,9 @@ export function createAutoCapture(tuning: AutoTuning = DEFAULT_TUNING): AutoCapt
       if (detail < tuning.detail) return { capture: false, hint: 'place' }
       if (!stableEnough) return { capture: false, hint: 'hold' }
       if (!differs) return { capture: false, hint: 'same' }
+      // Te kort na de vorige foto: eerst even wachten (je bent waarschijnlijk nog aan het wisselen).
+      if (now - lastShot < tuning.minGapMs) return { capture: false, hint: 'wait' }
+      lastShot = now
       last = shape
       cooling = true
       recent = []

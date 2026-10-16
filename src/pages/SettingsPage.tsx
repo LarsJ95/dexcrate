@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent, type JSX, type ReactNode } from 'react'
 import { useDbFeature } from '../hooks/useDbFeature'
 import { checkForUpdate } from '../lib/appUpdate'
-import { setPref, usePrefs, type ScanModePref, type ThemeChoice } from '../lib/devicePrefs'
+import { AUTO_GAPS, setPref, usePrefs, type AutoGap, type ScanModePref, type ThemeChoice } from '../lib/devicePrefs'
 import { setMotionPreference, useMotion, useMotionPreference } from '../lib/motion'
 import { STARTERS, setPartnerChoice, usePartner, usePartnerChoice } from '../lib/partner'
 import { spriteUrls } from '../lib/runner'
@@ -134,6 +134,12 @@ function ScanningSection(): JSX.Element {
       <Toggle checked={prefs.autoCapture} onChange={(v) => setPref('autoCapture', v)} hint="Quick scan takes the photo itself when a new card lies still in the frame. You can also switch it in the camera.">
         Auto capture
       </Toggle>
+      <Choice
+        label="Time between auto photos"
+        value={String(prefs.autoGapMs)}
+        options={AUTO_GAPS.map((g) => [String(g), `${(g / 1000).toLocaleString('en-GB')} s`] as [string, string])}
+        onChange={(v) => setPref('autoGapMs', Number(v) as AutoGap)}
+      />
       <Toggle checked={prefs.blurCheck} onChange={(v) => setPref('blurCheck', v)} hint="Clearly blurry camera photos are not sent; you can still choose to use them.">
         Hold back blurry photos
       </Toggle>
