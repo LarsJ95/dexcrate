@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type JSX, type ReactNode } from 'react'
 import { useDbFeature } from '../hooks/useDbFeature'
+import { resetAccount } from '../lib/accountReset'
 import { checkForUpdate } from '../lib/appUpdate'
 import { AUTO_GAPS, setPref, usePrefs, type AutoGap, type ScanModePref, type ThemeChoice } from '../lib/devicePrefs'
 import { setMotionPreference, useMotion, useMotionPreference } from '../lib/motion'
@@ -468,6 +469,72 @@ function AccountSection(): JSX.Element {
   )
 }
 
+const RESET_WORD = 'RESET'
+
+/** Account helemaal leegmaken om opnieuw te beginnen; je login blijft. */
+function ResetSection(): JSX.Element {
+  const [typed, setTyped] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [state, setState] = useState<{ ok: boolean; text: string } | null>(null)
+  const ready = typed.trim() === RESET_WORD && !busy
+
+  async function reset(): Promise<void> {
+    if (!ready) return
+    setBusy(true)
+    setState(null)
+    try {
+      const r = await resetAccount()
+      const cards = r.rows.cards ?? 0
+      if (r.filesFailed > 0) {
+        setState({ ok: false, text: `Your data is deleted (${cards} card rows), but ${r.filesFailed} files could not be removed. Type RESET and try again to remove them.` })
+        setTyped('')
+        return
+      }
+      setState({ ok: true, text: `Done: ${cards} card rows and ${r.filesRemoved} files deleted. Starting fresh…` })
+      // Even tonen, dan schoon opnieuw beginnen op Overview (alles in het geheugen is dan ook weg).
+      window.setTimeout(() => {
+        window.location.hash = '#/overview'
+        window.location.reload()
+      }, 2000)
+    } catch (err) {
+      setState({ ok: false, text: err instanceof Error ? err.message : 'Resetting failed. Nothing was deleted.' })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Section title="Reset account" scope="account">
+      <div className="settings-danger">
+        <p>
+          Start over from scratch. This permanently deletes <strong>all your cards, photos, sales and purchases, wishlist, goals, scan history and your Crate</strong> (points,
+          cards and packs). Levels, badges and secret achievements start again from zero. Your login, theme and scanning settings stay.
+        </p>
+        <p className="muted small">This cannot be undone. Make a backup first if you might want anything back.</p>
+        <div className="settings-actions">
+          <a className="button-link" href="#/backup">
+            Make a backup first
+          </a>
+        </div>
+        <label className="settings-confirm">
+          Type {RESET_WORD} to confirm
+          <input value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" spellCheck={false} placeholder={RESET_WORD} disabled={busy} />
+        </label>
+        <div className="settings-actions">
+          <button type="button" className="danger" onClick={() => void reset()} disabled={!ready}>
+            {busy ? 'Deleting everything…' : 'Reset my account'}
+          </button>
+          {state && (
+            <span className={state.ok ? 'success' : 'error'} role={state.ok ? 'status' : 'alert'}>
+              {state.text}
+            </span>
+          )}
+        </div>
+      </div>
+    </Section>
+  )
+}
+
 export function SettingsPage(): JSX.Element {
   return (
     <section className="page settings">
@@ -482,6 +549,7 @@ export function SettingsPage(): JSX.Element {
       <ScanningSection />
       <AccountSettings />
       <AccountSection />
+      <ResetSection />
     </section>
   )
 }

@@ -7138,3 +7138,21 @@ a.near-set > .set-symbol {
   color: var(--accent-line);
   font-weight: 700;
 }
+
+/* Account resetten: duidelijk anders dan de rest. */
+.settings-danger {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid color-mix(in oklab, var(--red) 55%, var(--line));
+  border-radius: var(--radius-l);
+  background: color-mix(in oklab, var(--red) 7%, transparent);
+}
+
+.settings-danger p {
+  margin: 0;
+}
+
+label.settings-confirm {
+  max-width: 260px;
+}
