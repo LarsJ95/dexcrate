@@ -6,6 +6,8 @@ import { CONDITION_LABELS, LANGUAGE_LABELS, type CardLanguage, type Condition } 
 import type { NewCardDefaults, UserSettings } from '../lib/valuation'
 import { hasValuations, loadSettings, saveSettings } from '../lib/valuationDb'
 import { setMotionPreference, useMotion, useMotionPreference } from '../lib/motion'
+import { STARTERS, setPartnerChoice, usePartnerChoice } from '../lib/partner'
+import { spriteUrls } from '../lib/runner'
 import { Loading } from '../components/Loading'
 
 type Form = { pct: Record<Condition, string>; fee: string; cost: string; defaults: NewCardDefaults }
@@ -39,6 +41,31 @@ function MotionSetting(): JSX.Element {
       <p className="muted small">
         {preference && !allowed ? 'Your device is set to reduce motion, so animations stay off.' : 'Saved on this device only.'}
       </p>
+    </fieldset>
+  )
+}
+
+/** Partner kiezen: een starter, of automatisch (de Pokémon waar je de meeste kaarten van hebt). */
+function PartnerSetting(): JSX.Element {
+  const choice = usePartnerChoice()
+  return (
+    <fieldset className="form-group panel">
+      <legend>Partner Pokémon</legend>
+      <p className="muted small">Your partner walks with you through the app and cheers when you add cards. Saved on this device only.</p>
+      <div className="partner-picker" role="group" aria-label="Choose your partner">
+        <button type="button" aria-pressed={choice === null} onClick={() => setPartnerChoice(null)} className="partner-option">
+          <span className="partner-auto" aria-hidden="true">
+            ★
+          </span>
+          <span>Automatic</span>
+        </button>
+        {STARTERS.map((s) => (
+          <button key={s.dex} type="button" aria-pressed={choice?.dex === s.dex} onClick={() => setPartnerChoice({ dex: s.dex, name: s.name })} className="partner-option">
+            <img src={spriteUrls(s.dex, false)[1]} alt="" width={56} height={56} loading="lazy" />
+            <span>{s.name}</span>
+          </button>
+        ))}
+      </div>
     </fieldset>
   )
 }
@@ -103,6 +130,7 @@ export function SettingsPage(): JSX.Element {
       <section className="page">
         <h1>Settings</h1>
         <MotionSetting />
+        <PartnerSetting />
         <p className="notice">Settings are not set up yet (run STAP7 in Supabase).</p>
       </section>
     )
@@ -118,6 +146,7 @@ export function SettingsPage(): JSX.Element {
       </div>
 
       <MotionSetting />
+      <PartnerSetting />
       {!form && !message && <Loading />}
       {form && (
         <form className="card-form panel" onSubmit={onSubmit} noValidate>

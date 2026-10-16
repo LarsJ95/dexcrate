@@ -5,6 +5,8 @@ import { marketValueOf, summarizeMarket, topMovers, type Mover, type PriceMap, t
 import { speciesName } from '../lib/runner'
 import { setOfKey } from '../lib/tcgdex'
 import { celebrateBadges } from '../lib/moments'
+import { englishSpeciesName, isNonLatin } from '../lib/names'
+import { rememberAutoPartner, usePartnerChoice } from '../lib/partner'
 import { badges, dominantType, hpLevel, partnerDexId, pokedexProgress, typeTeam, type OwnedInfo } from '../lib/trainer'
 import { BadgeCase } from './BadgeCase'
 import { EvolutionPanel } from './EvolutionPanel'
@@ -120,11 +122,24 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
   const infosLoading = new Set(ownedKeys).size > infos.size
   const dex = useMemo(() => pokedexProgress(owned.flatMap((o) => (o.dexId ? [o.dexId] : []))), [owned])
   const favourite = useMemo(() => dominantType(owned), [owned])
-  const partner = useMemo(() => {
+  const autoPartner = useMemo(() => {
     const dexId = partnerDexId(owned)
     const card = owned.find((o) => o.dexId === dexId)
     return dexId && card ? { dexId, name: speciesName(card.name) } : null
   }, [owned])
+  // Zelf gekozen partner gaat voor; de automatische onthouden voor de partner op andere pagina's.
+  const chosen = usePartnerChoice()
+  const partner = chosen ? { dexId: chosen.dex, name: chosen.name } : autoPartner
+  useEffect(() => {
+    if (!autoPartner) return
+    const { dexId, name } = autoPartner
+    if (!isNonLatin(name)) {
+      rememberAutoPartner({ dex: dexId, name })
+      return
+    }
+    // Japanse/Chinese kaart: Engelse soortnaam ophalen.
+    void englishSpeciesName(dexId).then((en) => rememberAutoPartner({ dex: dexId, name: en ?? name }))
+  }, [autoPartner])
   const cardCount = ownedCards.reduce((n, c) => n + c.quantity, 0)
   const setsStarted = useMemo(() => new Set(ownedKeys.flatMap((k) => setOfKey(k)?.setId ?? [])).size, [ownedKeys])
   const since = useMemo(() => cards.reduce<string | null>((first, c) => (c.created_at && (!first || c.created_at < first) ? c.created_at : first), null), [cards])

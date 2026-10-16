@@ -3,6 +3,7 @@ import type { Theme } from '../hooks/useTheme'
 import type { Route } from '../lib/routes'
 import { IconLogout, IconMoon, IconSun, LogoMark } from './Icons'
 import { Moments } from './Moments'
+import { PartnerBuddy } from './PartnerBuddy'
 import { Peek } from './Peek'
 import { Runner } from './Runner'
 import { SIDE_GROUPS, TAB_NAV, isActiveTab } from './nav'
@@ -50,6 +51,7 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
           ))}
         </nav>
         <div className="side-foot">
+          <PartnerBuddy />
           {email && (
             <p className="side-user" title={email}>
               {email}
@@ -67,6 +69,7 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
           <LogoMark size={24} />
           <span>Dexcrate</span>
         </a>
+        <PartnerBuddy compact />
         <div className="side-actions">
           {themeButton}
           {logoutButton}
