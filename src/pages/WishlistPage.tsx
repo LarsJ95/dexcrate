@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type JSX } from 'react'
 import { CardImage } from '../components/CardImage'
 import { CatalogFilterFields } from '../components/CatalogFilterFields'
+import { CardmarketLink } from '../components/CardmarketLink'
 import { CatalogResults } from '../components/CatalogResults'
 import { CardSetSymbol } from '../components/SetIcon'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
@@ -30,6 +31,12 @@ function WishPrice({ item }: { item: WishlistItem }): JSX.Element | null {
   if (!market) return <span className="muted small">No market price</span>
   const under = item.max_price !== null && market.value <= item.max_price
   return <span className={under ? 'up small' : 'small'}>Market {formatEur(market.value)}{under ? ', within your max.' : ''}</span>
+}
+
+/** Cardmarket-knop naast een wens: productpagina als de kaart gekoppeld is, anders zoeken op naam en nummer. */
+function WishCardmarket({ item }: { item: WishlistItem }): JSX.Element {
+  const price = useCardPrice(item.tcgdex_id)
+  return <CardmarketLink idProduct={price?.idProduct ?? null} searchText={[item.name, item.card_number].filter(Boolean).join(' ')} compact />
 }
 
 const matches = (item: WishlistItem, query: string): boolean =>
@@ -189,7 +196,7 @@ export function WishlistPage(): JSX.Element {
       {visible.length > 0 && (
         <ul className="tx-list">
           {visible.map(({ item, owned, incoming, found }) => (
-            <li key={item.id}>
+            <li key={item.id} className="wish-item">
               <button type="button" className="tx-row wish-row" onClick={() => setEditing(item)}>
                 <span className="wish-thumb" aria-hidden="true">
                   <CardImage tcgdexId={item.tcgdex_id} kind="card" name={item.name} detail={item.card_number ? `#${item.card_number}` : null} />
@@ -220,6 +227,7 @@ export function WishlistPage(): JSX.Element {
                   {item.max_price !== null && <span className="muted small">max. {formatEur(item.max_price)}</span>}
                 </span>
               </button>
+              <WishCardmarket item={item} />
             </li>
           ))}
         </ul>

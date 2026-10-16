@@ -1,11 +1,26 @@
 import type { JSX } from 'react'
 import { cardmarketUrl } from '../lib/tcgdex'
 
+interface Props {
+  idProduct: number | null
+  searchText: string
+  /** Korte vorm ("Cardmarket") als knop, bv. in een lijstregel. */
+  compact?: boolean
+}
+
 /** Link naar de Cardmarket-productpagina, of een zoekopdracht als het product-id onbekend is. */
-export function CardmarketLink({ idProduct, searchText }: { idProduct: number | null; searchText: string }): JSX.Element {
+export function CardmarketLink({ idProduct, searchText, compact = false }: Props): JSX.Element {
+  const label = idProduct ? 'View on Cardmarket' : 'Search on Cardmarket'
   return (
-    <a className="external-link" href={cardmarketUrl(idProduct, searchText)} target="_blank" rel="noopener noreferrer">
-      {idProduct ? 'View on Cardmarket' : 'Search on Cardmarket'}
+    <a
+      className={compact ? 'external-link cm-button' : 'external-link'}
+      href={cardmarketUrl(idProduct, searchText)}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={compact ? `${label} (opens in a new tab)` : undefined}
+      title={compact ? label : undefined}
+    >
+      {compact ? <span className="cm-button-text">Cardmarket</span> : label}
       <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14">
         <path
           d="M6 3h7v7M13 3 5.5 10.5M11 9.5V13H3V5h3.5"
@@ -16,7 +31,7 @@ export function CardmarketLink({ idProduct, searchText }: { idProduct: number | 
           strokeLinejoin="round"
         />
       </svg>
-      <span className="visually-hidden"> (opens in a new tab)</span>
+      {!compact && <span className="visually-hidden"> (opens in a new tab)</span>}
     </a>
   )
 }
