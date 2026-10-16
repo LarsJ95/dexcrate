@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState, type JSX } from 'react'
+import { useEffect, useMemo, useState, type JSX, type KeyboardEvent } from 'react'
 import { IconSearch } from '../components/Icons'
 import { SetIcon } from '../components/SetIcon'
 import { listCards } from '../lib/db'
 import { hpLevel } from '../lib/trainer'
-import { digitalSetIds, getSetList, LANGS, setOfKey, type Lang, type SetSummary } from '../lib/tcgdex'
+import { looksLikeAbbr, suggestSets } from '../lib/setSearch'
+import { digitalSetIds, getSetList, LANGS, resolveSetId, setOfKey, type Lang, type SetSummary } from '../lib/tcgdex'
 import type { Card } from '../lib/types'
 import { Loading } from '../components/Loading'
 
@@ -55,6 +56,10 @@ export function SetsPage(): JSX.Element {
   const [scope, setScope] = useState<Scope>('all')
   const [sort, setSort] = useState<SortKey>('newest')
   const [query, setQuery] = useState('')
+  const [suggestOpen, setSuggestOpen] = useState(false)
+  const [active, setActive] = useState(0)
+  /** Set gevonden via de officiële afkorting (MEW → 151); alleen Engels. */
+  const [abbrHit, setAbbrHit] = useState<{ q: string; setId: string | null } | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -87,6 +92,25 @@ export function SetsPage(): JSX.Element {
 
   const owned = useMemo(() => ownedBySet(cards ?? []), [cards])
 
+  // Afkorting opzoeken (kort wachten tot je stopt met typen).
+  useEffect(() => {
+    const q = query.trim()
+    if (lang !== 'en' || !looksLikeAbbr(q)) return
+    let cancelled = false
+    const timer = window.setTimeout(() => {
+      resolveSetId('en', q)
+        .then((setId) => {
+          if (!cancelled) setAbbrHit({ q, setId })
+        })
+        .catch((err: unknown) => console.warn('Afkorting opzoeken mislukt', err))
+    }, 250)
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [query, lang])
+  const abbrSetId = lang === 'en' && abbrHit?.q === query.trim() ? abbrHit.setId : null
+
   const rows = useMemo<Row[]>(() => {
     if (!sets || sets.lang !== lang) return []
     const mine = owned.get(lang) ?? new Map<string, Set<string>>()
@@ -111,7 +135,7 @@ export function SetsPage(): JSX.Element {
       if (scope === 'owned' && r.owned === 0) return false
       if (scope === 'almost' && !(ratio >= 0.75 && ratio < 1)) return false
       if (scope === 'complete' && ratio < 1) return false
-      return !q || r.summary.name.toLowerCase().includes(q) || r.setId.toLowerCase().includes(q)
+      return !q || r.summary.name.toLowerCase().includes(q) || r.setId.toLowerCase().includes(q) || r.setId === abbrSetId
     })
     const sorters: Record<SortKey, (a: Row, b: Row) => number> = {
       newest: (a, b) => b.order - a.order,
@@ -120,7 +144,32 @@ export function SetsPage(): JSX.Element {
       name: (a, b) => a.summary.name.localeCompare(b.summary.name, 'en'),
     }
     return [...list].sort(sorters[sort])
-  }, [rows, scope, sort, query])
+  }, [rows, scope, sort, query, abbrSetId])
+
+  const suggestions = useMemo(
+    () => suggestSets(rows.map((r) => ({ ...r, name: r.summary.name })), query, 6, abbrSetId),
+    [rows, query, abbrSetId],
+  )
+  const showSuggest = suggestOpen && suggestions.length > 0
+  const hrefOf = (setId: string): string => `#/sets/${lang}/${encodeURIComponent(setId)}`
+
+  function onSearchKey(e: KeyboardEvent<HTMLInputElement>): void {
+    if (e.key === 'Escape') {
+      setSuggestOpen(false)
+      return
+    }
+    if (suggestions.length === 0) return
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      setSuggestOpen(true)
+      const step = e.key === 'ArrowDown' ? 1 : -1
+      setActive((i) => (Math.min(i, suggestions.length - 1) + step + suggestions.length) % suggestions.length)
+    }
+    if (e.key === 'Enter' && showSuggest) {
+      e.preventDefault()
+      window.location.hash = hrefOf(suggestions[Math.min(active, suggestions.length - 1)].setId)
+    }
+  }
 
   const counts = useMemo(
     () => ({
@@ -152,9 +201,52 @@ export function SetsPage(): JSX.Element {
       </div>
 
       <div className="filters">
-        <div className="search">
+        <div className="search set-search">
           <IconSearch size={18} />
-          <input type="search" placeholder="Search sets" aria-label="Search sets" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <input
+            type="search"
+            placeholder="Search sets, e.g. 151 or MEW"
+            aria-label="Search sets"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={showSuggest}
+            aria-controls="set-suggestions"
+            aria-activedescendant={showSuggest ? `set-suggestion-${Math.min(active, suggestions.length - 1)}` : undefined}
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              setActive(0)
+              setSuggestOpen(true)
+            }}
+            onFocus={() => setSuggestOpen(true)}
+            onBlur={() => setSuggestOpen(false)}
+            onKeyDown={onSearchKey}
+          />
+          {showSuggest && (
+            <ul id="set-suggestions" className="set-suggestions" role="listbox" aria-label="Suggested sets">
+              {suggestions.map((r, i) => {
+                const total = r.summary.total ?? 0
+                return (
+                  <li
+                    key={r.setId}
+                    id={`set-suggestion-${i}`}
+                    role="option"
+                    aria-selected={i === Math.min(active, suggestions.length - 1)}
+                    // Niet eerst het zoekveld laten blurren (dan verdwijnt de lijst vóór de klik).
+                    onPointerDown={(e) => e.preventDefault()}
+                    onPointerEnter={() => setActive(i)}
+                    onClick={() => {
+                      window.location.hash = hrefOf(r.setId)
+                    }}
+                  >
+                    <SetIcon key={`${lang}/${r.setId}`} kind="symbol" lang={lang} setId={r.setId} name={r.summary.name} logo={r.summary.logo} />
+                    <span className="set-suggestion-name">{r.summary.name}</span>
+                    <span className="muted small">{r.owned > 0 ? `${r.owned}/${total || '?'}` : total ? `${total} cards` : ''}</span>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
         </div>
         <div className="segmented" role="group" aria-label="Filter">
           {(

@@ -6086,3 +6086,52 @@ button.crate-slot:hover:not(:disabled) {
   outline-offset: 3px;
   border-radius: var(--radius-card);
 }
+
+/* ---------- Sets: zoeken met suggesties (16-10-2026) ---------- */
+.set-search {
+  position: relative;
+}
+
+.set-suggestions {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  right: 0;
+  z-index: 30;
+  list-style: none;
+  margin: 0;
+  padding: var(--space-1);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-float);
+}
+
+.set-suggestions li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-s);
+  cursor: pointer;
+}
+
+/* .search svg is het vergrootglas; iconen in de lijst gewoon laten staan. */
+.set-suggestions svg {
+  position: static;
+  transform: none;
+}
+
+.set-suggestions li[aria-selected='true'] {
+  background: var(--surface-2);
+}
+
+.set-suggestion-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
