@@ -25,6 +25,7 @@ const AUTO_TEXT: Record<AutoHint, string> = {
   place: 'Place a card in the frame',
   hold: 'Hold still…',
   swap: 'Got it. Next card',
+  same: 'Looks like the last card. Tap the shutter for another copy',
   capture: 'Got it. Next card',
 }
 
