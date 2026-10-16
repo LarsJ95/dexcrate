@@ -7,6 +7,7 @@ import { setOfKey } from '../lib/tcgdex'
 import { celebrateBadges } from '../lib/moments'
 import { badges, dominantType, hpLevel, partnerDexId, pokedexProgress, typeTeam, type OwnedInfo } from '../lib/trainer'
 import { BadgeCase } from './BadgeCase'
+import { EvolutionPanel } from './EvolutionPanel'
 import { PokedexSheet, type DexEntry } from './PokedexSheet'
 import { BuyingChances } from './BuyingChances'
 import { Partner, PokedexPanel, TrainerCard, TypeTeamPanel } from './TrainerCard'
@@ -129,6 +130,7 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
   const since = useMemo(() => cards.reduce<string | null>((first, c) => (c.created_at && (!first || c.created_at < first) ? c.created_at : first), null), [cards])
   const badgeList = badges({ cards: cardCount, species: dex.caught, value: market.owned.value })
   const team = useMemo(() => typeTeam(owned), [owned])
+  const ownedDex = useMemo(() => new Set(owned.flatMap((o) => (o.dexId ? [o.dexId] : []))), [owned])
   const [badgeCaseOpen, setBadgeCaseOpen] = useState(false)
   const [region, setRegion] = useState<number | null>(null)
   // Pokédex-nummer → jouw kaarten van die Pokémon (voor het Pokédex-raster).
@@ -288,6 +290,7 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
         />
         <PokedexPanel progress={dex} loading={infosLoading} onOpenRegion={setRegion} />
         <TypeTeamPanel team={team} />
+        <EvolutionPanel owned={ownedDex} />
         <BuyingChances />
       </aside>
       {badgeCaseOpen && <BadgeCase badges={badgeList} onClose={() => setBadgeCaseOpen(false)} />}

@@ -119,6 +119,7 @@ if (momentParam) {
     else if (momentParam === 'milestone') showMoment({ kind: 'milestone', level: 25, caption: '25 cards in 151' })
     else if (momentParam === 'gotcha') showMoment({ kind: 'gotcha', name: 'Charizard ex' })
     else if (momentParam === 'badge') showMoment({ kind: 'badge', name: 'Thunder Badge', color: 'var(--energy-lightning)' })
+    else if (momentParam === 'evolution') showMoment({ kind: 'evolution', path: [4, 5, 6] })
     else showMoment({ kind: 'reveal', card, rarity: params.get('rarity') ?? 'Double rare', type: 'Psychic', caught: momentParam === 'catch' })
   }, 7000 - at)
 }

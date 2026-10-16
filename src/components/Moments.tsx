@@ -7,6 +7,7 @@ import { CardImage } from './CardImage'
 import { HoloCard } from './HoloCard'
 import { RaritySymbols } from './RaritySymbols'
 import { BadgeIcon } from './TrainerCard'
+import { spriteUrls } from '../lib/runner'
 
 /** Tijdlijn per moment in ms (DESIGN.md §9: beweging ≤ 1,5 s, daarna even zichtbaar om te lezen). */
 const REVEAL = { flip: 300, burst: 620, end: 2100 }
@@ -59,6 +60,9 @@ function MomentLayer({ moment }: { moment: Moment }): JSX.Element {
     } else if (moment.kind === 'milestone') {
       at(MILESTONE.burst, () => target.current && burstFrom(target.current, { colors: ALL_ENERGY, count: 36, speed: 8 }))
       at(MILESTONE.end, () => endMoment(moment.id))
+    } else if (moment.kind === 'evolution') {
+      at(MILESTONE.burst, () => target.current && burstFrom(target.current, { colors: ALL_ENERGY, count: 44, speed: 8 }))
+      at(MILESTONE.end, () => endMoment(moment.id))
     } else if (moment.kind === 'badge') {
       at(MILESTONE.burst, () => target.current && burstFrom(target.current, { colors: [moment.color, 'var(--gold-a)', '#ffffff'], count: 40, speed: 8 }))
       at(MILESTONE.end, () => endMoment(moment.id))
@@ -83,6 +87,24 @@ function MomentLayer({ moment }: { moment: Moment }): JSX.Element {
           <span className="moment-caption">
             <strong>Level up!</strong>
             <span>{moment.caption}</span>
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  if (moment.kind === 'evolution') {
+    return (
+      <div ref={layer} className="moment-layer" popover="manual" role="status">
+        <div className="moment-complete is-evolution" ref={target}>
+          <span className="moment-evo">
+            {moment.path.map((d, i) => (
+              <img key={d} src={spriteUrls(d, false)[1]} alt="" width={96} height={96} style={{ animationDelay: `${i * 180}ms` }} />
+            ))}
+          </span>
+          <span className="moment-caption">
+            <strong>Evolution line complete!</strong>
+            <span>You have every stage of this line</span>
           </span>
         </div>
       </div>
