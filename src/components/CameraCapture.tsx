@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type JSX, type ReactNode } from 'react'
+import { frameToSource } from '../lib/cameraCrop'
 import { IconClose } from './Icons'
 
 interface Props {
@@ -10,14 +11,17 @@ interface Props {
   onClose: () => void
   /** Extra boven de knoppen, bv. de strook met gescande kaarten (snel scannen). */
   children?: ReactNode
+  /** Alleen het kader (plus wat marge) bewaren: scherpere tekst, snellere en goedkopere herkenning. */
+  crop?: boolean
 }
 
 /**
  * Camera direct in de app (getUserMedia), zodat er geen keuzemenu "Camera / Bestanden" verschijnt.
  * De browser vraagt één keer toestemming en onthoudt die voor deze site.
  */
-export function CameraCapture({ wide, onCapture, onPickFile, onClose, children }: Props): JSX.Element {
+export function CameraCapture({ wide, onCapture, onPickFile, onClose, children, crop = false }: Props): JSX.Element {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const frameRef = useRef<HTMLDivElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   // Geen camera-API (oude browser of geen HTTPS): meteen terugvallen op bestand kiezen.
   const [error, setError] = useState<string | null>(() =>
@@ -63,15 +67,23 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose, children }
   function capture(): void {
     const video = videoRef.current
     if (!video || !video.videoWidth) return
+    const source = { width: video.videoWidth, height: video.videoHeight }
+    const frame = frameRef.current
+    const box =
+      crop && frame
+        ? frameToSource(video.getBoundingClientRect(), frame.getBoundingClientRect(), source)
+        : { x: 0, y: 0, ...source }
+    // Kader niet te meten (bv. heel klein): toch de hele foto gebruiken.
+    const area = box.width > 50 && box.height > 50 ? box : { x: 0, y: 0, ...source }
     const canvas = document.createElement('canvas')
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
+    canvas.width = area.width
+    canvas.height = area.height
     const ctx = canvas.getContext('2d')
     if (!ctx) {
       setError('Could not take the photo.')
       return
     }
-    ctx.drawImage(video, 0, 0)
+    ctx.drawImage(video, area.x, area.y, area.width, area.height, 0, 0, area.width, area.height)
     setFlash((n) => n + 1)
     canvas.toBlob(
       (blob) => {
@@ -89,7 +101,7 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose, children }
   return (
     <div className="camera" role="dialog" aria-modal="true" aria-label="Camera">
       <video ref={videoRef} className="camera-video" playsInline muted autoPlay onLoadedData={() => setReady(true)} />
-      {!error && <div className={`camera-frame${wide ? ' wide' : ''}`} aria-hidden="true" />}
+      {!error && <div ref={frameRef} className={`camera-frame${wide ? ' wide' : ''}`} aria-hidden="true" />}
 
       <button type="button" className="camera-close icon-btn" onClick={onClose} aria-label="Close camera">
         <IconClose />
