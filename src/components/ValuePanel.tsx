@@ -135,7 +135,7 @@ export function ValuePanel({ card, price }: Props): JSX.Element | null {
                   <span className="value-line">
                     <strong>{formatEur(cm.value)}</strong>
                     <InfoTip label="About the Cardmarket price">
-                      {`The ${BASIS_LABELS[cm.basis]}${cm.reverse ? ' for reverse holo' : ''}${price?.updated && dateText(price.updated) ? `, updated ${dateText(price.updated)}` : ''}. Condition is not part of this price.`}
+                      {`The ${BASIS_LABELS[cm.basis]}${cm.reverse ? ' for reverse holo' : ''}${price?.updated && dateText(price.updated) ? `, updated ${dateText(price.updated)}` : ''}. Cardmarket averages all conditions (Poor to Mint); no Excellent+ price is published. The Cardmarket link opens with Excellent or better selected.`}
                       {card.grading_company ? ` For ungraded copies; yours is ${card.grading_company} ${card.grade ?? ''}.` : ''}
                     </InfoTip>
                   </span>

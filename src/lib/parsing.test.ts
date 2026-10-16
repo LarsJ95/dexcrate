@@ -87,9 +87,9 @@ describe('parseCardmarket', () => {
   })
 
   it('cardmarketUrl: productpagina of zoekopdracht', () => {
-    expect(cardmarketUrl(733746, 'Mew ex')).toBe('https://www.cardmarket.com/en/Pokemon/Products?idProduct=733746')
+    expect(cardmarketUrl(733746, 'Mew ex')).toBe('https://www.cardmarket.com/en/Pokemon/Products?idProduct=733746&minCondition=3')
     expect(cardmarketUrl(null, ' Mew ex 151 ')).toBe(
-      'https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=Mew%20ex%20151',
+      'https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=Mew%20ex%20151&minCondition=3',
     )
   })
 

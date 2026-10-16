@@ -426,9 +426,12 @@ const fetchCardPrice = memo(async (key: string): Promise<CardmarketPrice | null>
  * Link naar Cardmarket: de productpagina als het product-id bekend is, anders een zoekopdracht.
  * Formaat gebruikt door andere tools; door Cardmarkets botbescherming niet automatisch te controleren.
  */
+/** Cardmarket-conditiefilter: 3 = Excellent of beter (MT 1, NM 2, EX 3, GD 4, LP 5, PL 6, PO 7). */
+const MIN_CONDITION = 3
+
 export function cardmarketUrl(idProduct: number | null, searchText: string): string {
-  if (idProduct) return `https://www.cardmarket.com/en/Pokemon/Products?idProduct=${idProduct}`
-  return `https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=${encodeURIComponent(searchText.trim())}`
+  if (idProduct) return `https://www.cardmarket.com/en/Pokemon/Products?idProduct=${idProduct}&minCondition=${MIN_CONDITION}`
+  return `https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=${encodeURIComponent(searchText.trim())}&minCondition=${MIN_CONDITION}`
 }
 
 export function getCardPrice(key: string): Promise<CardmarketPrice | null> {
