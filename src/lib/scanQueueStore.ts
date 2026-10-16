@@ -1,3 +1,4 @@
+import { buzz } from './haptics'
 import { findCandidates } from './match'
 import { prepareImage, recognizeCards, type PreparedImage } from './scan'
 import { MAX_QUEUE, QUEUE_KEY, mergeDuplicate, newItem, parseQueue, withMatch, type QueueItem } from './scanQueue'
@@ -40,6 +41,39 @@ function set(next: QueueItem[]): void {
 }
 
 const patch = (id: string, p: Partial<QueueItem>): void => set(queue.map((q) => (q.id === id ? { ...q, ...p } : q)))
+
+/** Laatste resultaat, voor directe terugkoppeling in de camera ("Pikachu · 151 #025"). */
+export interface ScanFeedback {
+  /** Loopt op per melding, zodat dezelfde tekst opnieuw getoond wordt. */
+  seq: number
+  ok: boolean
+  text: string
+  /** Ongedaan maken: regel weghalen, of bij een samengevoegde kaart het aantal met 1 verlagen. */
+  undo: { kind: 'remove' | 'decrement'; id: string } | null
+}
+
+let feedback: ScanFeedback | null = null
+let feedbackSeq = 0
+
+export const getFeedback = (): ScanFeedback | null => feedback
+
+function announce(f: Omit<ScanFeedback, 'seq'>): void {
+  feedbackSeq += 1
+  feedback = { ...f, seq: feedbackSeq }
+  for (const l of listeners) l()
+}
+
+/** Laatste herkenning terugdraaien (vanuit de camera). */
+export function undoFeedback(): void {
+  const u = feedback?.undo
+  feedback = null
+  if (!u) {
+    for (const l of listeners) l()
+    return
+  }
+  if (u.kind === 'remove') removeItems([u.id])
+  else set(queue.map((q) => (q.id === u.id ? { ...q, quantity: Math.max(1, q.quantity - 1) } : q)))
+}
 
 export function subscribe(listener: () => void): () => void {
   listeners.add(listener)
@@ -88,6 +122,7 @@ async function process(id: string): Promise<void> {
     const rec = (await recognizeCards(img, 'single')).cards[0]
     if (!rec) {
       patch(id, { status: 'error', error: 'No Pokémon card found. Try again with the card filling the frame.' })
+      announce({ ok: false, text: 'No card found. Take it again.', undo: { kind: 'remove', id } })
       return
     }
     patch(id, { status: 'matching', rec })
@@ -99,11 +134,26 @@ async function process(id: string): Promise<void> {
     )
     // Item kan intussen verwijderd zijn.
     if (!queue.some((q) => q.id === id)) return
-    set(mergeDuplicate(queue.map((q) => (q.id === id ? withMatch(q, rec, candidates) : q)), id))
+    const matched = queue.map((q) => (q.id === id ? withMatch(q, rec, candidates) : q))
+    const merged = mergeDuplicate(matched, id)
+    set(merged)
     dropImage(id)
+    const best = candidates[0]
+    const what = best ? `${best.name} · ${best.setName} #${best.localId}` : `${rec.nameEnglish || rec.namePrinted || 'Unknown card'} (no match)`
+    // Samengevoegd: de eerdere regel met dezelfde kaart heeft nu een hoger aantal.
+    const target = merged.some((q) => q.id === id) ? null : merged.find((q) => q.chosen === best?.key && q.status === 'ready')
+    announce({
+      ok: Boolean(best) && rec.confidence !== 'low',
+      text: target ? `${what} · ${target.quantity}×` : what,
+      undo: target ? { kind: 'decrement', id: target.id } : { kind: 'remove', id },
+    })
+    buzz(15)
   } catch (err) {
     console.error('Scannen mislukt', err)
-    if (queue.some((q) => q.id === id)) patch(id, { status: 'error', error: err instanceof Error ? err.message : 'Recognition failed.' })
+    if (queue.some((q) => q.id === id)) {
+      patch(id, { status: 'error', error: err instanceof Error ? err.message : 'Recognition failed.' })
+      announce({ ok: false, text: 'Recognition failed. You can retry it in the list.', undo: null })
+    }
   }
 }
 

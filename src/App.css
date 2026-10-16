@@ -6657,3 +6657,40 @@ label.queue-qty input {
 .queue-row .scan-info {
   grid-template-columns: minmax(0, 1fr);
 }
+
+/* Terugkoppeling na elke herkende foto (in de camera). */
+.scan-toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 100%;
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: rgb(0 0 0 / 0.72);
+  border: 1px solid rgb(255 255 255 / 0.25);
+  font-size: var(--fs-small);
+  font-weight: 700;
+}
+
+.scan-toast.ok {
+  border-color: var(--yellow);
+}
+
+.scan-toast.bad {
+  border-color: var(--red);
+}
+
+.scan-toast-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scan-toast .small-btn {
+  flex: none;
+}
+
+[data-motion='on'] .scan-toast {
+  animation: pack-in 220ms ease-out both;
+}

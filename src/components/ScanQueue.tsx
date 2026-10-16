@@ -1,9 +1,9 @@
-import { useState, useSyncExternalStore, type JSX } from 'react'
+import { useEffect, useState, useSyncExternalStore, type JSX } from 'react'
 import { celebrateAdded } from '../lib/celebrate'
 import { insertCards } from '../lib/db'
 import { draftFromScan } from '../lib/scan'
 import { MAX_QTY, isCondition, summarize, type QueueItem } from '../lib/scanQueue'
-import { canRetry, getQueue, removeItems, retry, subscribe, updateItem } from '../lib/scanQueueStore'
+import { canRetry, getFeedback, getQueue, removeItems, retry, subscribe, undoFeedback, updateItem } from '../lib/scanQueueStore'
 import { lookupLang } from '../lib/tcgdex'
 import { CONDITION_LABELS, EMPTY_CARD, LANGUAGE_LABELS, VARIANT_LABELS, type Card, type CardInput, type Condition, type Variant } from '../lib/types'
 import { CardFace } from './CardFace'
@@ -22,6 +22,33 @@ function useScanQueue(): QueueItem[] {
   return useSyncExternalStore(subscribe, getQueue)
 }
 
+const FEEDBACK_MS = 4000
+
+/** Wat de laatste foto opleverde, kort in beeld, met ongedaan maken. */
+function ScanToast(): JSX.Element | null {
+  const f = useSyncExternalStore(subscribe, getFeedback)
+  const [hidden, setHidden] = useState(0)
+  useEffect(() => {
+    if (!f) return
+    const t = window.setTimeout(() => setHidden(f.seq), FEEDBACK_MS)
+    return () => window.clearTimeout(t)
+  }, [f])
+  if (!f || hidden === f.seq) return null
+  return (
+    <div className={`scan-toast${f.ok ? ' ok' : ' bad'}`} role="status">
+      <span className="scan-toast-text">
+        <span aria-hidden="true">{f.ok ? '✓ ' : '! '}</span>
+        {f.text}
+      </span>
+      {f.undo && (
+        <button type="button" className="small-btn" onClick={undoFeedback}>
+          Undo
+        </button>
+      )}
+    </div>
+  )
+}
+
 /** Strook onderin de camera: laatste foto's en hoeveel er klaar zijn. */
 export function QueueStrip(): JSX.Element | null {
   const queue = useScanQueue()
@@ -29,6 +56,7 @@ export function QueueStrip(): JSX.Element | null {
   const s = summarize(queue)
   return (
     <div className="queue-strip" aria-live="polite">
+      <ScanToast />
       <span className="queue-strip-count">
         {s.total} scanned{s.busy > 0 ? `, ${s.busy} working` : ''}
         {s.failed > 0 ? `, ${s.failed} failed` : ''}
