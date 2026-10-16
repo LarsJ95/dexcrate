@@ -3,6 +3,9 @@ import { matchesCatalog, type CatalogTraits } from './collectionFilters'
 import { formatEur } from './stats'
 import { LANGUAGE_LABELS, VARIANT_LABELS, type CardLanguage, type Variant } from './types'
 
+/** Zoekterm die de wishlist bij openen overneemt (bv. uit een wilde-Pokémon-ontmoeting); sessionStorage. */
+export const WISHLIST_QUERY_KEY = 'dexcrate:wishlist-query'
+
 /** Filters op de wishlist; ook de inhoud van een slimme lijst. '' / null = geen filter. */
 export interface WishFilters {
   variant: Variant | ''

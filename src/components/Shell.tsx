@@ -5,6 +5,7 @@ import { IconLogout, IconMoon, IconSun, LogoMark } from './Icons'
 import { Moments } from './Moments'
 import { PartnerBuddy } from './PartnerBuddy'
 import { Peek } from './Peek'
+import { TallGrass } from './TallGrass'
 import { Runner } from './Runner'
 import { SIDE_GROUPS, TAB_NAV, isActiveTab } from './nav'
 
@@ -80,6 +81,7 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
       <Moments />
       <Runner paused={route === 'scan'} />
       <Peek paused={route === 'scan'} />
+      <TallGrass paused={route === 'scan'} />
 
       <nav className="tab-bar" aria-label="Main menu">
         {TAB_NAV.map(({ route: r, label, Icon }) => (

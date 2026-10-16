@@ -102,3 +102,18 @@ export function seedRunnerForPreview(entries: RunnerEntry[], firstDelay: number)
 export function previewRunnerDelay(): number | null {
   return previewDelay
 }
+
+/** Pokédex-nummers van Pokémon die je hebt (zoals bekend bij de langsrenner). */
+export function ownedDexIds(): Set<number> {
+  return new Set(load().keys())
+}
+
+/** Wilde Pokémon in het hoge gras: meestal een die je nog niet hebt (70%), anders willekeurig. */
+export function pickEncounter(owned: ReadonlySet<number>, random = Math.random, max = 1025): number {
+  const wantNew = random() < 0.7 && owned.size < max
+  for (let i = 0; i < 50; i++) {
+    const dex = 1 + Math.floor(random() * max)
+    if (!wantNew || !owned.has(dex)) return dex
+  }
+  return 1 + Math.floor(random() * max)
+}

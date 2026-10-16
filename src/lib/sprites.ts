@@ -39,3 +39,14 @@ export function seedPeekForPreview(ms: number): void {
 export function previewPeekDelay(): number | null {
   return peekPreviewDelay
 }
+
+let grassPreviewDelay: number | null = null
+
+/** Alleen voor de ontwerppreview: het gras ritselt na zoveel ms. */
+export function seedGrassForPreview(ms: number): void {
+  grassPreviewDelay = ms
+}
+
+export function previewGrassDelay(): number | null {
+  return grassPreviewDelay
+}
