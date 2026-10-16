@@ -1,3 +1,4 @@
+import { rarityRule } from './cardTraits'
 import { supabase } from './supabase'
 import { getSetList, searchCards, setIdOf, type SetCard } from './tcgdex'
 
@@ -6,8 +7,21 @@ import { getSetList, searchCards, setIdOf, type SetCard } from './tcgdex'
  * Punten en virtuele kaarten veranderen alleen via databasefuncties; de app leest en vraagt aan.
  */
 
-export const PACK_COST = 100
 export const PACK_SIZE = 10
+
+/** Soorten pakjes (STAP12); zonder STAP12 bestaat alleen de booster. */
+export type PackKind = 'booster' | 'great' | 'master'
+
+export const PACKS: Record<PackKind, { name: string; cost: number; contents: string }> = {
+  booster: { name: 'Booster pack', cost: 100, contents: '6 common, 3 uncommon and 1 rare or better. One free every day.' },
+  great: { name: 'Great pack', cost: 300, contents: '5 common, 3 uncommon and 2 rare slots with better odds.' },
+  master: { name: 'Master pack', cost: 1000, contents: '4 uncommon, 4 rare slots with better odds and 2 guaranteed hits (Double rare or better).' },
+}
+
+/** Pakje van de soort is voor dit aantal punten te openen (booster ook gratis). */
+export function canAfford(pack: PackKind, points: number, freePack: boolean): boolean {
+  return (pack === 'booster' && freePack) || points >= PACKS[pack].cost
+}
 
 export interface CrateWallet {
   points: number
@@ -68,11 +82,46 @@ export async function crateSetComplete(setKey: string): Promise<number> {
   return num(data)
 }
 
-export async function openCratePack(cards: readonly PackPull[]): Promise<CrateWallet & { cost: number }> {
-  const { data, error } = await supabase.rpc('crate_open_pack', { p_cards: cards })
+/** Functie bestaat (nog) niet in de database: STAP12 niet gedraaid. */
+const missingFunction = (error: { code?: string; message: string }): boolean => error.code === 'PGRST202' || /could not find the function/i.test(error.message)
+
+export async function openCratePack(cards: readonly PackPull[], pack: PackKind = 'booster'): Promise<CrateWallet & { cost: number }> {
+  let { data, error } = await supabase.rpc('crate_open_pack', { p_cards: cards, p_pack: pack })
+  if (error && missingFunction(error)) {
+    if (pack !== 'booster') throw new Error('Great and Master packs are not set up yet: run STAP12 in Supabase.')
+    ;({ data, error } = await supabase.rpc('crate_open_pack', { p_cards: cards }))
+  }
   if (error) throw new Error(error.message.includes('Not enough') ? 'Not enough Crate points.' : `Opening the pack failed: ${error.message}`)
   const o = isRecord(data) ? data : {}
-  return { points: num(o.points), freePack: false, cost: num(o.cost) }
+  return { points: num(o.points), freePack: o.free_pack === true, cost: num(o.cost) }
+}
+
+/** Inruilwaarde per extra exemplaar (gelijk aan de databasefunctie crate_trade_value). */
+export function tradeValue(rarity: string | null): number {
+  const r = (rarity ?? '').toLowerCase()
+  if (['special illustration rare', 'hyper rare', 'mega hyper rare', 'crown'].includes(r)) return 30
+  if (['illustration rare', 'secret rare', 'shiny ultra rare'].includes(r)) return 15
+  if (['double rare', 'ultra rare', 'shiny rare', 'ace spec rare', 'radiant rare', 'amazing rare'].includes(r)) return 10
+  if (r.includes('rare')) return 5
+  if (r === 'uncommon') return 3
+  return 2
+}
+
+/** Alle dubbelen in één keer inruilen; van elke kaart blijft er één over. Zonder STAP12: per kaart. */
+export async function tradeAllDuplicates(cards: readonly CrateCard[]): Promise<{ points: number; gained: number }> {
+  const { data, error } = await supabase.rpc('crate_trade_all')
+  if (!error) {
+    const o = isRecord(data) ? data : {}
+    return { points: num(o.points), gained: num(o.gained) }
+  }
+  if (!missingFunction(error)) throw new Error(`Trading in failed: ${error.message}`)
+  let result = { points: 0, gained: 0 }
+  for (const c of cards) {
+    if (c.quantity < 2) continue
+    const r = await tradeCrateCard(c.tcgdexId, c.quantity - 1)
+    result = { points: r.points, gained: result.gained + r.gained }
+  }
+  return result
 }
 
 export async function tradeCrateCard(tcgdexId: string, count: number): Promise<{ points: number; gained: number }> {
@@ -104,8 +153,10 @@ export async function listCrateCards(): Promise<CrateCard[]> {
 
 // --- Pakje trekken ---
 
-/** Kans per zeldzaamheid in het rare-vak (samen 1). */
-export const RARE_SLOT: readonly { rarity: string; weight: number }[] = [
+type Odds = readonly { rarity: string; weight: number }[]
+
+/** Kans per zeldzaamheid in het rare-vak van een booster (samen 1). */
+export const RARE_SLOT: Odds = [
   { rarity: 'Rare', weight: 0.55 },
   { rarity: 'Rare Holo', weight: 0.17 },
   { rarity: 'Double rare', weight: 0.11 },
@@ -115,18 +166,42 @@ export const RARE_SLOT: readonly { rarity: string; weight: number }[] = [
   { rarity: 'Hyper rare', weight: 0.02 },
 ]
 
-/** Zeldzaamheden van een pakje: 6 common, 3 uncommon, 1 rare-vak (gewogen). */
-export function packSlots(random: () => number = Math.random): string[] {
+/** Rare-vak van Great en Master: vaker holo, ex en illustraties. */
+export const GREAT_SLOT: Odds = [
+  { rarity: 'Rare', weight: 0.3 },
+  { rarity: 'Rare Holo', weight: 0.22 },
+  { rarity: 'Double rare', weight: 0.18 },
+  { rarity: 'Ultra Rare', weight: 0.1 },
+  { rarity: 'Illustration rare', weight: 0.12 },
+  { rarity: 'Special illustration rare', weight: 0.05 },
+  { rarity: 'Hyper rare', weight: 0.03 },
+]
+
+/** Gegarandeerde hit in een Master pack: Double rare of beter. */
+export const HIT_SLOT: Odds = [
+  { rarity: 'Double rare', weight: 0.38 },
+  { rarity: 'Ultra Rare', weight: 0.22 },
+  { rarity: 'Illustration rare', weight: 0.22 },
+  { rarity: 'Special illustration rare', weight: 0.12 },
+  { rarity: 'Hyper rare', weight: 0.06 },
+]
+
+function pick(odds: Odds, random: () => number): string {
   let r = random()
-  let rare = RARE_SLOT[0].rarity
-  for (const s of RARE_SLOT) {
-    if (r < s.weight) {
-      rare = s.rarity
-      break
-    }
+  for (const s of odds) {
+    if (r < s.weight) return s.rarity
     r -= s.weight
   }
-  return [...Array<string>(6).fill('Common'), ...Array<string>(3).fill('Uncommon'), rare]
+  return odds[0].rarity
+}
+
+const times = (n: number, f: () => string): string[] => Array.from({ length: n }, f)
+
+/** Zeldzaamheden van een pakje (10 vakken). */
+export function packSlots(pack: PackKind = 'booster', random: () => number = Math.random): string[] {
+  if (pack === 'great') return [...times(5, () => 'Common'), ...times(3, () => 'Uncommon'), ...times(2, () => pick(GREAT_SLOT, random))]
+  if (pack === 'master') return [...times(4, () => 'Uncommon'), ...times(4, () => pick(GREAT_SLOT, random)), ...times(2, () => pick(HIT_SLOT, random))]
+  return [...times(6, () => 'Common'), ...times(3, () => 'Uncommon'), pick(RARE_SLOT, random)]
 }
 
 const pools = new Map<string, Promise<SetCard[]>>()
@@ -143,8 +218,8 @@ function pool(rarity: string): Promise<SetCard[]> {
 }
 
 /** Een virtueel pakje van 10 kaarten trekken (nog niet opgeslagen). */
-export async function drawPack(random: () => number = Math.random): Promise<PackPull[]> {
-  const slots = packSlots(random)
+export async function drawPack(pack: PackKind = 'booster', random: () => number = Math.random): Promise<PackPull[]> {
+  const slots = packSlots(pack, random)
   const sets = await getSetList('en').catch(() => new Map())
   const pulls: PackPull[] = []
   for (const rarity of slots) {
@@ -155,4 +230,47 @@ export async function drawPack(random: () => number = Math.random): Promise<Pack
   }
   if (pulls.length === 0) throw new Error('No cards could be drawn. Check your connection and try again.')
   return pulls
+}
+
+// --- Overzicht ---
+
+export interface CrateSummary {
+  unique: number
+  copies: number
+  /** Totale Cardmarket-waarde (alle exemplaren) van de kaarten met een prijs. */
+  value: number
+  /** Waarde van alle extra exemplaren. */
+  duplicateValue: number
+  /** Punten als je alle dubbelen inruilt. */
+  duplicatePoints: number
+  /** Aantal kaarten met een bekende prijs. */
+  priced: number
+  top: { card: CrateCard; value: number } | null
+  byRarity: { rarity: string; unique: number; copies: number; value: number }[]
+}
+
+/** Totalen van je Crate; `valueOf` geeft de prijs van één exemplaar (null/undefined = onbekend). */
+export function summarizeCrate(cards: readonly CrateCard[], valueOf: (tcgdexId: string) => number | null | undefined): CrateSummary {
+  const out: CrateSummary = { unique: cards.length, copies: 0, value: 0, duplicateValue: 0, duplicatePoints: 0, priced: 0, top: null, byRarity: [] }
+  const groups = new Map<string, { rarity: string; unique: number; copies: number; value: number }>()
+  for (const c of cards) {
+    const v = valueOf(c.tcgdexId)
+    const each = typeof v === 'number' ? v : 0
+    out.copies += c.quantity
+    out.duplicatePoints += (c.quantity - 1) * tradeValue(c.rarity)
+    if (typeof v === 'number') {
+      out.priced += 1
+      out.value += each * c.quantity
+      out.duplicateValue += each * (c.quantity - 1)
+      if (!out.top || v > out.top.value) out.top = { card: c, value: v }
+    }
+    const rarity = c.rarity ?? 'Unknown'
+    const g = groups.get(rarity) ?? { rarity, unique: 0, copies: 0, value: 0 }
+    g.unique += 1
+    g.copies += c.quantity
+    g.value += each * c.quantity
+    groups.set(rarity, g)
+  }
+  out.byRarity = [...groups.values()].sort((a, b) => rarityRule(b.rarity).rank - rarityRule(a.rarity).rank || b.copies - a.copies)
+  return out
 }

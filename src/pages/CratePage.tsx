@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type JSX } from 'react'
 import { CardFace } from '../components/CardFace'
+import { CrateCardSheet, CrateTilePrice } from '../components/CrateCardSheet'
+import { CrateOverview } from '../components/CrateOverview'
 import { CatalogKeyPicture } from '../components/CatalogCardPicture'
 import { HoloCard } from '../components/HoloCard'
 import { IconCrate } from '../components/Icons'
@@ -7,23 +9,14 @@ import { Loading } from '../components/Loading'
 import { RaritySymbols } from '../components/RaritySymbols'
 import { useDbFeature } from '../hooks/useDbFeature'
 import { foilStyleFor, rarityRule } from '../lib/cardTraits'
-import { PACK_COST, drawPack, hasCrate, listCrateCards, openCratePack, syncCrate, tradeCrateCard, type CrateCard, type PackPull } from '../lib/crate'
+import { PACKS, canAfford, drawPack, hasCrate, listCrateCards, openCratePack, syncCrate, tradeAllDuplicates, tradeCrateCard, tradeValue, type CrateCard, type PackKind, type PackPull } from '../lib/crate'
 import { burstFrom } from '../lib/fx'
 import { buzz } from '../lib/haptics'
 import { useMotion } from '../lib/motion'
 
 type Sort = 'newest' | 'rarity' | 'name'
-
-/** Inruilwaarde per extra exemplaar (gelijk aan de databasefunctie crate_trade). */
-function tradeValue(rarity: string | null): number {
-  const r = (rarity ?? '').toLowerCase()
-  if (['special illustration rare', 'hyper rare', 'mega hyper rare', 'crown'].includes(r)) return 30
-  if (['illustration rare', 'secret rare', 'shiny ultra rare'].includes(r)) return 15
-  if (['double rare', 'ultra rare', 'shiny rare', 'ace spec rare', 'radiant rare', 'amazing rare'].includes(r)) return 10
-  if (r.includes('rare')) return 5
-  if (r === 'uncommon') return 3
-  return 2
-}
+type View = 'cards' | 'overview'
+const PACK_KINDS = Object.keys(PACKS) as PackKind[]
 
 const EARN = [
   ['Add a card to your collection', '10 + up to 20 for rarity'],
@@ -124,6 +117,9 @@ export function CratePage(): JSX.Element {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sort, setSort] = useState<Sort>('newest')
+  const [view, setView] = useState<View>('cards')
+  const [opened, setOpened] = useState<CrateCard | null>(null)
+  const [confirmAll, setConfirmAll] = useState(false)
 
   const apply = useCallback((d: Loaded): void => {
     setPoints(d.points)
@@ -152,15 +148,15 @@ export function CratePage(): JSX.Element {
     }
   }, [enabled, apply])
 
-  async function openPack(): Promise<void> {
+  async function openPack(pack: PackKind): Promise<void> {
     if (busy) return
     setBusy(true)
     setError(null)
     try {
-      const drawn = await drawPack()
-      const result = await openCratePack(drawn)
+      const drawn = await drawPack(pack)
+      const result = await openCratePack(drawn, pack)
       setPoints(result.points)
-      setFreePack(false)
+      setFreePack(result.freePack)
       setPulls(drawn)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Opening the pack failed.')
@@ -177,10 +173,29 @@ export function CratePage(): JSX.Element {
       const r = await tradeCrateCard(card.tcgdexId, card.quantity - 1)
       setPoints(r.points)
       setCards((list) => list?.map((c) => (c.tcgdexId === card.tcgdexId ? { ...c, quantity: 1 } : c)) ?? null)
+      setOpened((o) => (o?.tcgdexId === card.tcgdexId ? { ...o, quantity: 1 } : o))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Trading in failed.')
     } finally {
       setBusy(false)
+    }
+  }
+
+  async function tradeInAll(): Promise<void> {
+    if (busy || !cards) return
+    setBusy(true)
+    setError(null)
+    setConfirmAll(false)
+    try {
+      const r = await tradeAllDuplicates(cards)
+      setPoints(r.points)
+      buzz([20])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Trading in failed.')
+    } finally {
+      // Altijd opnieuw laden: bij een fout halverwege klopt de lijst dan met de database.
+      setBusy(false)
+      reload()
     }
   }
 
@@ -192,6 +207,7 @@ export function CratePage(): JSX.Element {
   }, [cards, sort])
   const total = (cards ?? []).reduce((n, c) => n + c.quantity, 0)
   const extras = (cards ?? []).reduce((n, c) => n + (c.quantity - 1) * tradeValue(c.rarity), 0)
+  const extraCopies = (cards ?? []).reduce((n, c) => n + c.quantity - 1, 0)
 
   if (enabled === false) {
     return (
@@ -201,8 +217,6 @@ export function CratePage(): JSX.Element {
       </section>
     )
   }
-
-  const canOpen = freePack || (points ?? 0) >= PACK_COST
 
   return (
     <section className="page crate">
@@ -224,19 +238,29 @@ export function CratePage(): JSX.Element {
           </div>
         </section>
 
-        <section className="panel crate-shop" aria-label="Open a pack">
-          <div className="crate-pack-art" aria-hidden="true">
-            <span className="pokeball" />
-          </div>
-          <div className="crate-shop-info">
-            <strong>Booster pack</strong>
-            <span className="muted small">10 random cards from all English sets: 6 common, 3 uncommon and 1 rare or better.</span>
-            <button type="button" className="primary" onClick={() => void openPack()} disabled={busy || !canOpen || pulls !== null || points === null}>
-              {busy ? 'Opening…' : freePack ? 'Open free daily pack' : `Open pack (${PACK_COST} points)`}
-            </button>
-            {!canOpen && points !== null && <span className="small muted">You need {PACK_COST - points} more points.</span>}
-          </div>
-        </section>
+
+        <ul className="crate-packs" aria-label="Packs">
+        {PACK_KINDS.map((kind) => {
+          const p = PACKS[kind]
+          const free = kind === 'booster' && freePack
+          const ok = points !== null && canAfford(kind, points, freePack)
+          return (
+            <li key={kind} className={`panel crate-shop pack-${kind}`}>
+              <div className="crate-pack-art" aria-hidden="true">
+                <span className="pokeball" />
+              </div>
+              <div className="crate-shop-info">
+                <strong>{p.name}</strong>
+                <span className="muted small">{p.contents}</span>
+                <button type="button" className="primary" onClick={() => void openPack(kind)} disabled={busy || !ok || pulls !== null}>
+                  {busy ? 'Opening…' : free ? 'Open free daily pack' : `Open (${p.cost.toLocaleString('en-IE')} points)`}
+                </button>
+                {!ok && points !== null && <span className="small muted">You need {(p.cost - points).toLocaleString('en-IE')} more points.</span>}
+              </div>
+            </li>
+          )
+        })}
+        </ul>
       </div>
 
       {error && (
@@ -265,7 +289,17 @@ export function CratePage(): JSX.Element {
               {cards.length} different, {total} in total
             </span>
           )}
-          {cards && cards.length > 1 && (
+          {cards && cards.length > 0 && (
+            <div className="segmented" role="group" aria-label="View">
+              <button type="button" aria-pressed={view === 'cards'} onClick={() => setView('cards')}>
+                Cards
+              </button>
+              <button type="button" aria-pressed={view === 'overview'} onClick={() => setView('overview')}>
+                Overview
+              </button>
+            </div>
+          )}
+          {view === 'cards' && cards && cards.length > 1 && (
             <select className="catalog-sort" aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
               <option value="newest">Newest first</option>
               <option value="rarity">Rarest first</option>
@@ -273,21 +307,45 @@ export function CratePage(): JSX.Element {
             </select>
           )}
         </div>
-        {extras > 0 && <p className="muted small">Your duplicates are worth {extras} points if you trade them in.</p>}
+        {extras > 0 && (
+          <div className="crate-trade-all" role="group" aria-label="Trade in duplicates">
+            {confirmAll ? (
+              <>
+                <span>
+                  Trade in {extraCopies} duplicate {extraCopies === 1 ? 'copy' : 'copies'} for {extras} points? You keep one of each card.
+                </span>
+                <button type="button" className="primary small-btn" onClick={() => void tradeInAll()} disabled={busy}>
+                  Trade in
+                </button>
+                <button type="button" className="small-btn" onClick={() => setConfirmAll(false)}>
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button type="button" className="small-btn" onClick={() => setConfirmAll(true)} disabled={busy}>
+                Trade in all duplicates (+{extras} pts)
+              </button>
+            )}
+          </div>
+        )}
         {cards === null && !error && <Loading />}
-        {cards?.length === 0 && <p className="empty">No virtual cards yet. Open your first pack above.</p>}
-        {sorted.length > 0 && (
+        {view === 'overview' && cards && <CrateOverview cards={cards} onOpen={setOpened} />}
+        {view === 'cards' && cards?.length === 0 && <p className="empty">No virtual cards yet. Open your first pack above.</p>}
+        {view === 'cards' && sorted.length > 0 && (
           <ul className="catalog-grid crate-grid">
             {sorted.map((c) => (
               <li key={c.tcgdexId} className="crate-card">
-                <HoloCard foil={foilStyleFor(null, c.rarity)}>
-                  <CatalogKeyPicture cardKey={c.tcgdexId} image={c.image} name={c.name} quality="low" alt={c.name} fallback={<CardFace name={c.name} detail={c.setName} />} />
-                </HoloCard>
-                {c.quantity > 1 && <span className="qty-badge">{c.quantity}×</span>}
+                <button type="button" className="crate-card-open" onClick={() => setOpened(c)} aria-label={`${c.name}, ${c.quantity}×. Show details`}>
+                  <HoloCard foil={foilStyleFor(null, c.rarity)}>
+                    <CatalogKeyPicture cardKey={c.tcgdexId} image={c.image} name={c.name} quality="low" alt={c.name} fallback={<CardFace name={c.name} detail={c.setName} />} />
+                  </HoloCard>
+                  {c.quantity > 1 && <span className="qty-badge">{c.quantity}×</span>}
+                </button>
                 <span className="catalog-name">{c.name}</span>
                 <span className="muted small">
                   <RaritySymbols rarity={c.rarity} /> {c.setName ?? ''}
                 </span>
+                <CrateTilePrice tcgdexId={c.tcgdexId} />
                 {c.quantity > 1 && (
                   <button type="button" className="small-btn" onClick={() => void tradeIn(c)} disabled={busy}>
                     Trade {c.quantity - 1} for {(c.quantity - 1) * tradeValue(c.rarity)} pts
@@ -298,6 +356,8 @@ export function CratePage(): JSX.Element {
           </ul>
         )}
       </section>
+
+      {opened && <CrateCardSheet card={opened} busy={busy} onTrade={(c) => void tradeIn(c)} onClose={() => setOpened(null)} />}
 
       <details className="panel crate-earn">
         <summary>How to earn Crate points</summary>
