@@ -1,5 +1,8 @@
-import { describe, expect, it } from 'vitest'
-import { SET_MILESTONES, newMilestone } from './moments'
+import { describe, expect, it, vi } from 'vitest'
+
+// moments.ts haalt via de wishlist Supabase binnen; in CI zijn daar geen sleutels voor.
+vi.mock('./supabase', () => ({ supabase: {} }))
+const { SET_MILESTONES, newMilestone } = await import('./moments')
 
 describe('mijlpalen', () => {
   it('hoogste nieuwe mijlpaal boven wat al gevierd is', () => {
