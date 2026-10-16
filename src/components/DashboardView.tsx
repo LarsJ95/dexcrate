@@ -229,7 +229,15 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
         {series && series.length >= 2 && <LineChart points={series} label="Value history" valueLabel="Value" />}
       </div>
 
-      {!pricesLoading && movers.valuable[0] && <Spotlight item={movers.valuable[0]} onOpenCard={onOpenCard} fallbackType={favourite} />}
+      {!pricesLoading && movers.valuable[0] && (
+        <Spotlight
+          item={movers.valuable[0]}
+          others={movers.valuable.slice(1, 5)}
+          price={movers.valuable[0].card.tcgdex_id ? (prices.get(movers.valuable[0].card.tcgdex_id) ?? null) : null}
+          onOpenCard={onOpenCard}
+          fallbackType={favourite}
+        />
+      )}
 
       {breakdown}
 
