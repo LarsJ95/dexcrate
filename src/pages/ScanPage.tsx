@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type JSX } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ChangeEvent, type JSX } from 'react'
 import { BinderScanResult } from '../components/BinderScanResult'
 import { CameraCapture } from '../components/CameraCapture'
 import { CardDialog } from '../components/CardDialog'
@@ -11,7 +11,9 @@ import { uploadPhoto } from '../lib/photos'
 import { useDbFeature } from '../hooks/useDbFeature'
 import { useNewCardDefaults } from '../hooks/useNewCardDefaults'
 import { useSchemaV2 } from '../hooks/useSchemaV2'
-import { enqueue, removeItems } from '../lib/scanQueueStore'
+import { summarize } from '../lib/scanQueue'
+import { enqueue, getQueue, removeItems, subscribe } from '../lib/scanQueueStore'
+import { useWakeLock } from '../hooks/useWakeLock'
 import { closeSession, earlierInSession, hasScanSessions, itemsFromRows, openSession, saveSessionItems, startSession, type ScanItem, type ScanSession } from '../lib/scanSessions'
 import {
   draftFromScan,
@@ -49,6 +51,8 @@ export function ScanPage(): JSX.Element {
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' })
   const [draft, setDraft] = useState<{ values: Partial<CardInput>; position: number | null; queueId?: string } | null>(null)
   const [queueError, setQueueError] = useState<string | null>(null)
+  // Snel scannen: scherm aan houden zolang de camera open is of er nog foto's herkend worden.
+  const queueBusy = summarize(useSyncExternalStore(subscribe, getQueue)).busy > 0
   const [donePositions, setDonePositions] = useState<ReadonlySet<number>>(new Set())
   const [added, setAdded] = useState<string[]>([])
   // Herkennen en de foto bewaren zijn aparte keuzes: alleen bewaren als je dat aanvinkt.
@@ -205,6 +209,7 @@ export function ScanPage(): JSX.Element {
   }
 
   const busy = phase.kind === 'working'
+  useWakeLock(mode === 'queue' && (cameraOpen || queueBusy))
 
   return (
     <section className="page scan">
