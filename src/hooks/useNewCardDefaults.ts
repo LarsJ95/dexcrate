@@ -17,7 +17,6 @@ export function useNewCardDefaults(): Partial<CardInput> {
         if (s.defaults.language) d.language = s.defaults.language
         if (s.defaults.condition) d.condition = s.defaults.condition
         if (s.defaults.set_code) d.set_code = s.defaults.set_code
-        if (s.defaults.location_id) d.location_id = s.defaults.location_id
         setDefaults(d)
       })
       .catch((err: unknown) => console.warn('Standaardwaarden laden mislukt', err))

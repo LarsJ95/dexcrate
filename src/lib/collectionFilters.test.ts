@@ -7,13 +7,10 @@ const loose = { ...EMPTY_CARD, name: 'Arbok' }
 const none = (): null => null
 
 describe('extra filters', () => {
-  it('taal, variant, conditie en locatie; "none" = zonder waarde', () => {
+  it('taal, variant en conditie; "none" = zonder waarde', () => {
     expect(matchesExtra(mew, { ...NO_EXTRA_FILTERS, language: 'ja', variant: 'holo' }, none)).toBe(true)
     expect(matchesExtra(mew, { ...NO_EXTRA_FILTERS, language: 'en' }, none)).toBe(false)
     expect(matchesExtra(loose, { ...NO_EXTRA_FILTERS, variant: 'none' }, none)).toBe(true)
-    expect(matchesExtra(mew, { ...NO_EXTRA_FILTERS, location: 'red' }, none)).toBe(true)
-    expect(matchesExtra(loose, { ...NO_EXTRA_FILTERS, location: 'none' }, none)).toBe(true)
-    expect(matchesExtra(mew, { ...NO_EXTRA_FILTERS, location: 'none' }, none)).toBe(false)
   })
 
   it('niet gekoppeld: alleen losse kaarten zonder catalogus-id', () => {

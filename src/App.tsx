@@ -9,7 +9,6 @@ import { BackupPage } from './pages/BackupPage'
 import { CollectionPage } from './pages/CollectionPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { ImportPage } from './pages/ImportPage'
-import { LocationsPage } from './pages/LocationsPage'
 import { MorePage } from './pages/MorePage'
 import { PhotosPage } from './pages/PhotosPage'
 import { SettingsPage } from './pages/SettingsPage'
@@ -60,7 +59,6 @@ function App(): JSX.Element {
       {route === 'collection' && <CollectionPage />}
       {route === 'scan' && <ScanPage />}
       {route === 'sets' && (param ? <SetBinderPage key={param} param={param} /> : <SetsPage />)}
-      {route === 'locations' && <LocationsPage key={param} param={param} />}
       {route === 'wishlist' && <WishlistPage />}
       {route === 'crate' && <CratePage />}
       {route === 'transactions' && <TransactionsPage />}

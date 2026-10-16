@@ -1,6 +1,6 @@
 import type { JSX } from 'react'
 import type { Route } from '../lib/routes'
-import { IconArchive, IconBinder, IconCrate, IconCamera, IconCards, IconHome, IconImage, IconLayers, IconMore, IconReceipt, IconSettings, IconStar, IconUpload } from './Icons'
+import { IconArchive, IconCrate, IconCamera, IconCards, IconHome, IconImage, IconLayers, IconMore, IconReceipt, IconSettings, IconStar, IconUpload } from './Icons'
 
 export interface NavItem {
   route: Route
@@ -15,7 +15,6 @@ const SETS: NavItem = { route: 'sets', label: 'Sets', Icon: IconLayers }
 
 /** Verzamelen: op mobiel onder "More", op desktop in de zijbalk. */
 export const COLLECT_ITEMS: NavItem[] = [
-  { route: 'locations', label: 'Locations', Icon: IconBinder },
   { route: 'wishlist', label: 'Wishlist', Icon: IconStar },
   { route: 'transactions', label: 'Transactions', Icon: IconReceipt },
   { route: 'photos', label: 'Photos', Icon: IconImage },

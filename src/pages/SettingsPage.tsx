@@ -1,7 +1,5 @@
 import { useEffect, useState, type FormEvent, type JSX } from 'react'
 import { useDbFeature } from '../hooks/useDbFeature'
-import { useLocations } from '../hooks/useLocations'
-import { useSchemaV2 } from '../hooks/useSchemaV2'
 import { CONDITION_LABELS, LANGUAGE_LABELS, type CardLanguage, type Condition } from '../lib/types'
 import type { NewCardDefaults, UserSettings } from '../lib/valuation'
 import { hasValuations, loadSettings, saveSettings } from '../lib/valuationDb'
@@ -74,7 +72,6 @@ function PartnerSetting(): JSX.Element {
 export function SettingsPage(): JSX.Element {
   const enabled = useDbFeature(hasValuations)
   const [form, setForm] = useState<Form | null>(null)
-  const locations = useLocations(useSchemaV2() === true)
   const setDefault = <K extends keyof NewCardDefaults>(key: K, value: NewCardDefaults[K]): void =>
     setForm((f) => (f ? { ...f, defaults: { ...f.defaults, [key]: value } } : f))
   const [busy, setBusy] = useState(false)
@@ -213,19 +210,6 @@ export function SettingsPage(): JSX.Element {
                 Set
                 <input value={form.defaults.set_code ?? ''} maxLength={20} placeholder="e.g. MEW" onChange={(e) => setDefault('set_code', e.target.value || null)} />
               </label>
-              {locations.length > 0 && (
-                <label>
-                  Location
-                  <select value={form.defaults.location_id ?? ''} onChange={(e) => setDefault('location_id', e.target.value || null)}>
-                    <option value="">No default</option>
-                    {locations.map((l) => (
-                      <option key={l.id} value={l.id}>
-                        {l.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
             </div>
           </fieldset>
 

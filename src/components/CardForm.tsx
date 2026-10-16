@@ -31,7 +31,6 @@ import {
 } from '../lib/types'
 import { useCardInfo } from '../hooks/useCardInfo'
 import { useSchemaV2 } from '../hooks/useSchemaV2'
-import { useLocations } from '../hooks/useLocations'
 import { useTransactionsEnabled } from '../hooks/useTransactionsEnabled'
 import { LinkPicker } from './LinkPicker'
 
@@ -282,8 +281,6 @@ export function CardForm({
   const info = useCardInfo(isCard ? form.tcgdex_id : null)
   // Nieuwe velden pas tonen als de database ze kan opslaan (STAP4).
   const v2 = useSchemaV2() === true
-  const locations = useLocations(v2)
-  const chosenLocation = locations.find((l) => l.id === form.location_id) ?? null
   // Met transacties (STAP5) verkoop je via "Sell", zodat opbrengst en kosten worden vastgelegd.
   const salesTracked = useTransactionsEnabled() === true
   const wasSold = card?.ownership === 'sold'
@@ -547,36 +544,6 @@ export function CardForm({
             onSelect={(c, lang) => void onPick(c, lang)}
             onClear={() => setForm((f) => ({ ...f, tcgdex_id: null, link_status: null }))}
           />
-        </Group>
-      )}
-
-      {v2 && locations.length > 0 && (
-        <Group title="Location">
-          <div className="form-grid">
-            <label>
-              Where is it
-              <select value={form.location_id} onChange={(e) => set('location_id', e.target.value)}>
-                <option value="">No location</option>
-                {locations.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {chosenLocation?.page_size && (
-              <>
-                <label>
-                  Page
-                  <input type="number" min={1} max={999} value={form.location_page} onChange={(e) => set('location_page', e.target.value)} />
-                </label>
-                <label>
-                  Pocket
-                  <input type="number" min={1} max={chosenLocation.page_size} value={form.location_slot} onChange={(e) => set('location_slot', e.target.value)} />
-                </label>
-              </>
-            )}
-          </div>
         </Group>
       )}
 

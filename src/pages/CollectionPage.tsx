@@ -2,8 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from 'rea
 import { CardDialog } from '../components/CardDialog'
 import { BulkEditDialog, type BulkChange } from '../components/BulkEditDialog'
 import { CardTile } from '../components/CardTile'
-import { useLocations } from '../hooks/useLocations'
-import { useSchemaV2 } from '../hooks/useSchemaV2'
 import { NO_EXTRA_FILTERS, activeFilterCount, isUnlinked, matchesExtra, needsCatalog, parseView, setKeyOf, type ExtraFilters, type SavedView } from '../lib/collectionFilters'
 import { CatalogFilterFields } from '../components/CatalogFilterFields'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
@@ -131,8 +129,6 @@ export function CollectionPage(): JSX.Element {
   const catalogKeys = useMemo(() => (cards ?? []).flatMap((c) => (c.tcgdex_id ? [c.tcgdex_id] : [])), [cards])
   const infos = useCatalogInfos(catalogKeys, needsCatalog(extra))
   const setOptions = useSetOptions(cards, filter)
-  const v2 = useSchemaV2() === true
-  const locations = useLocations(v2)
   const [bulkFor, setBulkFor] = useState<Card[] | null>(null)
   const [lastBulk, setLastBulk] = useState<BulkChange[] | null>(null)
 
@@ -458,20 +454,6 @@ export function CollectionPage(): JSX.Element {
                 ))}
               </select>
             </label>
-            {locations.length > 0 && (
-              <label>
-                Location
-                <select value={extra.location} onChange={(e) => setExtra((f) => ({ ...f, location: e.target.value }))}>
-                  <option value="">All</option>
-                  <option value="none">No location</option>
-                  {locations.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {l.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
             <CatalogFilterFields value={extra} onChange={(next) => setExtra((f) => ({ ...f, ...next }))} />
             <label>
               Linked card
@@ -586,7 +568,6 @@ export function CollectionPage(): JSX.Element {
       {bulkFor && (
         <BulkEditDialog
           cards={bulkFor}
-          locations={locations}
           onClose={() => setBulkFor(null)}
           onApplied={(rows, changes, error) => {
             setCards((list) => list?.map((c) => rows.find((r) => r.id === c.id) ?? c) ?? null)

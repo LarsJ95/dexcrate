@@ -2,12 +2,11 @@ import { RARITY_FILTERS, SUFFIX_FILTERS, isEnergyType, rarityMatches, type Energ
 import { setOfKey, type CardInfo } from './tcgdex'
 import { CONDITION_LABELS, LANGUAGE_LABELS, VARIANT_LABELS, type CardInput, type CardLanguage, type Condition, type Variant } from './types'
 
-/** Extra filters naast status en zoeken; '' = alle, 'none' = alleen zonder waarde (onbekend / geen locatie). */
+/** Extra filters naast status en zoeken; '' = alle, 'none' = alleen zonder waarde (onbekend). */
 export interface ExtraFilters {
   language: CardLanguage | '' | 'none'
   variant: Variant | '' | 'none'
   condition: Condition | '' | 'none'
-  location: string
   /** Deel van de illustratornaam; leeg = alle. */
   illustrator: string
   /** Uit de catalogus: zeldzaamheid, energietype en kaarttype (ex, V …); leeg = alle. */
@@ -20,10 +19,10 @@ export interface ExtraFilters {
   set: string
 }
 
-export const NO_EXTRA_FILTERS: ExtraFilters = { language: '', variant: '', condition: '', location: '', illustrator: '', rarity: '', type: '', suffix: '', link: '', set: '' }
+export const NO_EXTRA_FILTERS: ExtraFilters = { language: '', variant: '', condition: '', illustrator: '', rarity: '', type: '', suffix: '', link: '', set: '' }
 
 export function activeFilterCount(f: ExtraFilters): number {
-  return [f.language, f.variant, f.condition, f.location, f.illustrator.trim(), f.rarity, f.type, f.suffix, f.link, f.set].filter(Boolean).length
+  return [f.language, f.variant, f.condition, f.illustrator.trim(), f.rarity, f.type, f.suffix, f.link, f.set].filter(Boolean).length
 }
 
 /** Wat de catalogusfilters van een kaart nodig hebben. */
@@ -69,7 +68,6 @@ const fieldMatches = <T extends string>(value: T | null, wanted: T | '' | 'none'
  */
 export function matchesExtra(c: CardInput, f: ExtraFilters, infoOf: (c: CardInput) => CatalogTraits | null | undefined): boolean {
   if (!fieldMatches(c.language, f.language) || !fieldMatches(c.variant, f.variant) || !fieldMatches(c.condition, f.condition)) return false
-  if (f.location === 'none' ? c.location_id !== null : f.location !== '' && c.location_id !== f.location) return false
   if (f.link === 'unlinked' && !isUnlinked(c)) return false
   if (f.set && setKeyOf(c) !== f.set) return false
   if (!needsCatalog(f)) return true
@@ -115,7 +113,6 @@ export function parseView<S extends string, F extends string>(
         language: allowed(str(extra.language), LANGUAGE_LABELS),
         variant: allowed(str(extra.variant), VARIANT_LABELS),
         condition: allowed(str(extra.condition), CONDITION_LABELS),
-        location: str(extra.location),
         illustrator: str(extra.illustrator).slice(0, 60),
         rarity: (RARITY_FILTERS as readonly string[]).includes(str(extra.rarity)) ? str(extra.rarity) : '',
         type: isEnergyType(extra.type) ? extra.type : '',

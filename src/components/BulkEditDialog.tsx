@@ -1,6 +1,5 @@
 import { useState, type FormEvent, type JSX } from 'react'
 import { updateCard } from '../lib/db'
-import type { Location } from '../lib/binder'
 import {
   AVAILABILITY_LABELS,
   CONDITION_LABELS,
@@ -23,7 +22,6 @@ export interface BulkChange {
 
 interface Props {
   cards: Card[]
-  locations: readonly Location[]
   onClose: () => void
   /** Bijgewerkte kaarten en de wijzigingen (ook bij een gedeeltelijke fout). */
   onApplied: (rows: Card[], changes: BulkChange[], error: string | null) => void
@@ -33,12 +31,11 @@ const KEEP = 'keep'
 const CLEAR = 'clear'
 
 /** Meerdere kaarten tegelijk wijzigen; alleen de velden die je kiest, de rest blijft zoals het is. */
-export function BulkEditDialog({ cards, locations, onClose, onApplied }: Props): JSX.Element {
+export function BulkEditDialog({ cards, onClose, onApplied }: Props): JSX.Element {
   const [language, setLanguage] = useState<string>(KEEP)
   const [condition, setCondition] = useState<string>(KEEP)
   const [variant, setVariant] = useState<string>(KEEP)
   const [availability, setAvailability] = useState<string>(KEEP)
-  const [location, setLocation] = useState<string>(KEEP)
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState<string | null>(null)
   const allOwned = cards.every((c) => c.ownership === 'owned' || c.ownership === 'incoming')
@@ -50,12 +47,6 @@ export function BulkEditDialog({ cards, locations, onClose, onApplied }: Props):
     if (language !== KEEP) patch.language = language === CLEAR ? null : (language as CardLanguage)
     if (condition !== KEEP) patch.condition = condition === CLEAR ? null : (condition as Condition)
     if (variant !== KEEP) patch.variant = variant === CLEAR ? null : (variant as Variant)
-    if (location !== KEEP) {
-      patch.location_id = location === CLEAR ? null : location
-      // Andere map: oude pagina/vak klopt niet meer.
-      patch.location_page = null
-      patch.location_slot = null
-    }
     const changeAvailability = availability !== KEEP && allOwned
     if (Object.keys(patch).length === 0 && !changeAvailability) {
       onClose()
@@ -106,8 +97,6 @@ export function BulkEditDialog({ cards, locations, onClose, onApplied }: Props):
           {select('Condition', condition, setCondition, CONDITION_LABELS)}
           {select('Variant', variant, setVariant, VARIANT_LABELS)}
           {allOwned && select('Availability', availability, setAvailability, AVAILABILITY_LABELS, false)}
-          {locations.length > 0 &&
-            select('Location', location, setLocation, Object.fromEntries(locations.map((l) => [l.id, l.name])))}
         </div>
         {progress && <p aria-live="polite">{progress}</p>}
         <footer className="sheet-foot">

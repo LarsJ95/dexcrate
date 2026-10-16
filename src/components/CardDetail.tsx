@@ -4,9 +4,7 @@ import { useCardPrice } from '../hooks/useCardPrice'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { useOwnedCards } from '../hooks/useOwnedCards'
 import { useSchemaV2 } from '../hooks/useSchemaV2'
-import { useLocations } from '../hooks/useLocations'
 import { useTransactionsEnabled } from '../hooks/useTransactionsEnabled'
-import { placeLabel } from '../lib/binder'
 import { foilStyleFor } from '../lib/cardTraits'
 import { applyPageType, favouriteType } from '../lib/energy'
 import { updateCard } from '../lib/db'
@@ -90,8 +88,6 @@ export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props):
   // Eigen foto's beheren kan pas als STAP4 gedraaid is.
   const v2 = useSchemaV2() === true
   const main = primaryPhoto(card)
-  const locations = useLocations(v2)
-  const place = placeLabel(card, new Map(locations.map((l) => [l.id, l])))
 
   const facts = [
     card.language ? LANGUAGE_LABELS[card.language] : null,
@@ -250,14 +246,8 @@ export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props):
             )}
             {info?.dexId && <DexStrip dexId={info.dexId} name={speciesName(info.name)} ownedDex={ownedDex} />}
             {setRef && owned && <SetProgress lang={setRef.lang} setId={setRef.setId} setName={info?.set.name ?? card.set_code ?? setRef.setId} ownedKeys={ownedKeys} />}
-            {(card.cert_number || card.notes || place) && (
+            {(card.cert_number || card.notes) && (
               <dl className="detail-meta">
-                {place && (
-                  <div>
-                    <dt>Location</dt>
-                    <dd>{place}</dd>
-                  </div>
-                )}
                 {card.cert_number && (
                   <div>
                     <dt>Certificate</dt>
@@ -272,7 +262,7 @@ export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props):
                 )}
               </dl>
             )}
-            {!info?.dexId && !setRef && !(card.cert_number || card.notes || place) && card.kind === 'card' && (
+            {!info?.dexId && !setRef && !(card.cert_number || card.notes) && card.kind === 'card' && (
               <p className="muted small">Link this card to the catalog (Edit) to see its Pokédex entry and set progress.</p>
             )}
           </>
