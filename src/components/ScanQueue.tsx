@@ -2,7 +2,7 @@ import { useEffect, useState, useSyncExternalStore, type JSX } from 'react'
 import { celebrateAdded } from '../lib/celebrate'
 import { insertCards } from '../lib/db'
 import { draftFromScan } from '../lib/scan'
-import { MAX_QTY, isCondition, summarize, type QueueItem } from '../lib/scanQueue'
+import { MAX_QTY, isCondition, reviewGroups, summarize, type QueueItem } from '../lib/scanQueue'
 import { canRetry, getFeedback, getQueue, removeItems, retry, subscribe, undoFeedback, updateItem } from '../lib/scanQueueStore'
 import { lookupLang } from '../lib/tcgdex'
 import { CONDITION_LABELS, EMPTY_CARD, LANGUAGE_LABELS, VARIANT_LABELS, type Card, type CardInput, type Condition, type Variant } from '../lib/types'
@@ -142,6 +142,99 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
     }
   }
 
+  const row = (q: QueueItem): JSX.Element => {
+    const c = candidateOf(q)
+    const label = q.rec ? q.rec.nameEnglish || q.rec.namePrinted || 'Unknown card' : STATUS_TEXT[q.status] || 'Photo'
+    const owned = c ? ownedByKey.get(c.key) : undefined
+    const ready = q.status === 'ready'
+    return (
+      <li key={q.id} className={`scan-row queue-row${ready && q.include ? ' on' : ''}${q.status === 'error' ? ' is-error' : ''}`}>
+        <label className="scan-check">
+          <input
+            type="checkbox"
+            checked={ready && q.include}
+            disabled={!ready}
+            onChange={(e) => updateItem(q.id, { include: e.target.checked })}
+            aria-label={`Add ${label}`}
+          />
+        </label>
+        <span className="queue-photos">
+          <img className="queue-own" src={q.thumb} alt="Your photo" />
+          <span className="scan-thumb">
+            {c ? (
+              <CatalogKeyPicture cardKey={c.key} image={c.image} name={c.name} quality="low" alt="" fallback={<CardFace name={c.name} detail={`${c.setName} #${c.localId}`} />} />
+            ) : (
+              <CardFace name={label} detail={q.rec ? [q.rec.setCode, q.rec.cardNumber].filter(Boolean).join(' ') : undefined} loading={!ready && q.status !== 'error'} />
+            )}
+          </span>
+        </span>
+        <div className="scan-info">
+          <p className="tile-name">{label}</p>
+          {q.status === 'error' && <p className="error small">{q.error}</p>}
+          {!ready && q.status !== 'error' && <p className="muted small">{STATUS_TEXT[q.status]}</p>}
+          {q.rec && (
+            <p className="muted small">
+              Read: {[q.rec.setCode, q.rec.cardNumber, q.rec.language ? LANGUAGE_LABELS[q.rec.language] : null].filter(Boolean).join(', ') || 'unreadable'}
+              {q.rec.confidence !== 'high' && ' (uncertain)'}
+            </p>
+          )}
+          {ready && (
+            <div className="queue-fields">
+              <select aria-label={`Match for ${label}`} value={q.chosen} onChange={(e) => updateItem(q.id, { chosen: e.target.value })}>
+                {q.candidates.map((cand) => (
+                  <option key={cand.key} value={cand.key}>
+                    {cand.name}, {cand.setName} {cand.localId}
+                  </option>
+                ))}
+                <option value="">Add without link</option>
+              </select>
+              <select aria-label={`Variant of ${label}`} value={q.variant ?? ''} onChange={(e) => updateItem(q.id, { variant: e.target.value ? (e.target.value as Variant) : null })}>
+                <option value="">Variant unknown</option>
+                {(Object.keys(VARIANT_LABELS) as Variant[]).map((v) => (
+                  <option key={v} value={v}>
+                    {VARIANT_LABELS[v]}
+                  </option>
+                ))}
+              </select>
+              <label className="queue-qty">
+                Qty
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={MAX_QTY}
+                  value={q.quantity}
+                  onChange={(e) => {
+                    const n = Number.parseInt(e.target.value, 10)
+                    if (Number.isInteger(n)) updateItem(q.id, { quantity: Math.min(MAX_QTY, Math.max(1, n)) })
+                  }}
+                />
+              </label>
+            </div>
+          )}
+          {owned && <p className="small">Owned {owned}×</p>}
+        </div>
+        <div className="queue-actions">
+          {ready && (
+            <button type="button" className="ghost small-btn" onClick={() => void draftOf(q).then((d) => onEdit(d, q.id))}>
+              Edit
+            </button>
+          )}
+          {q.status === 'error' && canRetry(q.id) && (
+            <button type="button" className="ghost small-btn" onClick={() => retry(q.id)}>
+              Retry
+            </button>
+          )}
+          <button type="button" className="ghost icon-btn" onClick={() => removeItems([q.id])} aria-label={`Remove ${label}`}>
+            <IconClose size={16} />
+          </button>
+        </div>
+      </li>
+    )
+  }
+
+  const groups = reviewGroups(queue)
+
   return (
     <section className="scan-result scan-queue" aria-labelledby="queue-title">
       <div className="catalog-head">
@@ -153,98 +246,23 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
         </span>
       </div>
 
-      <ul className="binder-scan">
-        {queue.map((q) => {
-          const c = candidateOf(q)
-          const label = q.rec ? q.rec.nameEnglish || q.rec.namePrinted || 'Unknown card' : STATUS_TEXT[q.status] || 'Photo'
-          const owned = c ? ownedByKey.get(c.key) : undefined
-          const ready = q.status === 'ready'
-          return (
-            <li key={q.id} className={`scan-row queue-row${ready && q.include ? ' on' : ''}${q.status === 'error' ? ' is-error' : ''}`}>
-              <label className="scan-check">
-                <input
-                  type="checkbox"
-                  checked={ready && q.include}
-                  disabled={!ready}
-                  onChange={(e) => updateItem(q.id, { include: e.target.checked })}
-                  aria-label={`Add ${label}`}
-                />
-              </label>
-              <span className="queue-photos">
-                <img className="queue-own" src={q.thumb} alt="Your photo" />
-                <span className="scan-thumb">
-                  {c ? (
-                    <CatalogKeyPicture cardKey={c.key} image={c.image} name={c.name} quality="low" alt="" fallback={<CardFace name={c.name} detail={`${c.setName} #${c.localId}`} />} />
-                  ) : (
-                    <CardFace name={label} detail={q.rec ? [q.rec.setCode, q.rec.cardNumber].filter(Boolean).join(' ') : undefined} loading={!ready && q.status !== 'error'} />
-                  )}
-                </span>
-              </span>
-              <div className="scan-info">
-                <p className="tile-name">{label}</p>
-                {q.status === 'error' && <p className="error small">{q.error}</p>}
-                {!ready && q.status !== 'error' && <p className="muted small">{STATUS_TEXT[q.status]}</p>}
-                {q.rec && (
-                  <p className="muted small">
-                    Read: {[q.rec.setCode, q.rec.cardNumber, q.rec.language ? LANGUAGE_LABELS[q.rec.language] : null].filter(Boolean).join(', ') || 'unreadable'}
-                    {q.rec.confidence !== 'high' && ' (uncertain)'}
-                  </p>
-                )}
-                {ready && (
-                  <div className="queue-fields">
-                    <select aria-label={`Match for ${label}`} value={q.chosen} onChange={(e) => updateItem(q.id, { chosen: e.target.value })}>
-                      {q.candidates.map((cand) => (
-                        <option key={cand.key} value={cand.key}>
-                          {cand.name}, {cand.setName} {cand.localId}
-                        </option>
-                      ))}
-                      <option value="">Add without link</option>
-                    </select>
-                    <select aria-label={`Variant of ${label}`} value={q.variant ?? ''} onChange={(e) => updateItem(q.id, { variant: e.target.value ? (e.target.value as Variant) : null })}>
-                      <option value="">Variant unknown</option>
-                      {(Object.keys(VARIANT_LABELS) as Variant[]).map((v) => (
-                        <option key={v} value={v}>
-                          {VARIANT_LABELS[v]}
-                        </option>
-                      ))}
-                    </select>
-                    <label className="queue-qty">
-                      Qty
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        min={1}
-                        max={MAX_QTY}
-                        value={q.quantity}
-                        onChange={(e) => {
-                          const n = Number.parseInt(e.target.value, 10)
-                          if (Number.isInteger(n)) updateItem(q.id, { quantity: Math.min(MAX_QTY, Math.max(1, n)) })
-                        }}
-                      />
-                    </label>
-                  </div>
-                )}
-                {owned && <p className="small">Owned {owned}×</p>}
-              </div>
-              <div className="queue-actions">
-                {ready && (
-                  <button type="button" className="ghost small-btn" onClick={() => void draftOf(q).then((d) => onEdit(d, q.id))}>
-                    Edit
-                  </button>
-                )}
-                {q.status === 'error' && canRetry(q.id) && (
-                  <button type="button" className="ghost small-btn" onClick={() => retry(q.id)}>
-                    Retry
-                  </button>
-                )}
-                <button type="button" className="ghost icon-btn" onClick={() => removeItems([q.id])} aria-label={`Remove ${label}`}>
-                  <IconClose size={16} />
-                </button>
-              </div>
-            </li>
-          )
-        })}
-      </ul>
+      {(
+        [
+          ['check', 'Check these', groups.check],
+          ['working', 'Still working', groups.working],
+          ['good', 'Looks good', groups.good],
+        ] as const
+      ).map(
+        ([key, title, list]) =>
+          list.length > 0 && (
+            <div key={key} className={`queue-group queue-${key}`}>
+              <h3 className="queue-group-title">
+                {title} <span className="muted small">{list.length}</span>
+              </h3>
+              <ul className="binder-scan">{list.map(row)}</ul>
+            </div>
+          ),
+      )}
 
       <div className="scan-bulk">
         <label>

@@ -6694,3 +6694,22 @@ label.queue-qty input {
 [data-motion='on'] .scan-toast {
   animation: pack-in 220ms ease-out both;
 }
+
+/* Nakijken: groepen in de scanlijst. */
+.queue-group {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.queue-group + .queue-group {
+  margin-top: var(--space-4);
+}
+
+.queue-group-title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.queue-check .queue-group-title {
+  color: var(--accent-line);
+}

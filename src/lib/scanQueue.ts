@@ -159,3 +159,19 @@ export function parseQueue(raw: string | null): QueueItem[] {
 export function isCondition(v: string): v is Condition {
   return Object.hasOwn(CONDITION_LABELS, v)
 }
+
+/**
+ * Indeling voor het nakijken: eerst wat aandacht nodig heeft (mislukt, twijfel, geen match),
+ * dan wat nog bezig is, dan wat goed lijkt. Op herkenning gebaseerd, niet op aanvinken,
+ * zodat regels niet verspringen terwijl je ze aanpast.
+ */
+export function reviewGroups(queue: readonly QueueItem[]): { check: QueueItem[]; working: QueueItem[]; good: QueueItem[] } {
+  const out = { check: [] as QueueItem[], working: [] as QueueItem[], good: [] as QueueItem[] }
+  for (const q of queue) {
+    if (q.status === 'error') out.check.push(q)
+    else if (q.status !== 'ready') out.working.push(q)
+    else if (q.candidates.length === 0 || q.rec?.confidence !== 'high') out.check.push(q)
+    else out.good.push(q)
+  }
+  return out
+}

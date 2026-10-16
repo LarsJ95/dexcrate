@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Candidate } from './match'
 import type { Recognition } from './scanResult'
-import { mergeDuplicate, newItem, parseQueue, summarize, withMatch, type QueueItem } from './scanQueue'
+import { mergeDuplicate, newItem, parseQueue, reviewGroups, summarize, withMatch, type QueueItem } from './scanQueue'
 
 const rec = (over: Partial<Recognition> = {}): Recognition => ({
   position: 1,
@@ -53,5 +53,17 @@ describe('scan-wachtrij', () => {
     expect(q[1].error).toMatch(/Take it again/)
     expect(parseQueue('{kapot')).toEqual([])
     expect(parseQueue(null)).toEqual([])
+  })
+
+  it('nakijken: mislukt en twijfel eerst, dan bezig, dan goed', () => {
+    const err = { ...newItem('e', THUMB), status: 'error' as const }
+    const unsure = withMatch(newItem('u', THUMB), rec({ confidence: 'medium' }), [cand('x')])
+    const nomatch = withMatch(newItem('n', THUMB), rec(), [])
+    const g = reviewGroups([ready('a'), newItem('w', THUMB), err, unsure, nomatch])
+    expect(g.check.map((q) => q.id)).toEqual(['e', 'u', 'n'])
+    expect(g.working.map((q) => q.id)).toEqual(['w'])
+    expect(g.good.map((q) => q.id)).toEqual(['a'])
+    // Uitvinken verplaatst een regel niet.
+    expect(reviewGroups([{ ...ready('a'), include: false }]).good).toHaveLength(1)
   })
 })
