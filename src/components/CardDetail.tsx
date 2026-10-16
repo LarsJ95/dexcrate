@@ -254,7 +254,8 @@ export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props):
       <div className="detail-panel" role="tabpanel" id={`panel-${card.id}-${activeTab}`} aria-labelledby={`tab-${card.id}-${activeTab}`}>
         {activeTab === 'overview' && (
           <>
-            {card.kind === 'card' && card.tcgdex_id && !card.variant && info && (
+            {/* Alleen vragen als er echt iets te kiezen is (bestaat de kaart in maar één versie, dan klopt de prijs al). */}
+            {card.kind === 'card' && card.tcgdex_id && !card.variant && info && (info.variants?.length ?? 2) > 1 && (
               <VariantQuestion card={card} options={info.variants ?? null} onChanged={onChanged} />
             )}
             {info?.dexId && <DexStrip dexId={info.dexId} name={speciesName(info.name)} ownedDex={ownedDex} />}

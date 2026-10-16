@@ -88,9 +88,7 @@ export function VariantQuestion({ card, options, onChanged }: { card: Card; opti
     <section className="variant-question notice" aria-labelledby={`variant-q-${card.id}`}>
       <strong id={`variant-q-${card.id}`}>Which version is yours?</strong>
       <span className="small">
-        {list.length === 1
-          ? `This card only exists as ${VARIANT_LABELS[list[0]]}. Confirm it so the right market price is used.`
-          : 'The version decides which market price counts (a reverse holo can cost a lot more).'}
+        The version decides which market price counts (a reverse holo can cost a lot more).
       </span>
       <span className="variant-options">
         {list.map((v) => (
