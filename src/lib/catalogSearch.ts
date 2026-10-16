@@ -1,5 +1,5 @@
 import { isNonLatin, translateName } from './names'
-import { getSetList, searchCards, setIdOf, type Lang, type SetCard, type SetSummary } from './tcgdex'
+import { getSetList, searchCards, setIdOf, type CardQueryFilters, type Lang, type SetCard, type SetSummary } from './tcgdex'
 
 /** Zoekregel uit het zoekveld: naam, en optioneel een kaartnummer ("Pikachu 25", "pikachu #173"). */
 export function parseCatalogQuery(text: string): { name: string; number: string | null } {
@@ -25,6 +25,12 @@ export interface CatalogHit {
 
 export type HitOrder = 'newest' | 'oldest'
 
+/** Zoekterm van minstens 2 tekens, of geen zoekterm maar wel een filter (bladeren). */
+export function catalogActive(query: string, filters: CardQueryFilters): boolean {
+  const term = query.trim()
+  return term.length >= 2 || (term.length === 0 && Boolean(filters.rarity || filters.type || filters.suffix))
+}
+
 /** Nieuwste (of oudste) sets eerst; binnen een set op nummer. Onbekende sets altijd achteraan. */
 export function sortHits(hits: readonly CatalogHit[], order: HitOrder = 'newest'): CatalogHit[] {
   return [...hits].sort((a, b) => {
@@ -38,16 +44,18 @@ export function sortHits(hits: readonly CatalogHit[], order: HitOrder = 'newest'
 }
 
 /**
- * Kaarten in de TCGdex-catalogus op naam (en nummer). Engels direct; voor Aziatische talen wordt
- * een Engelse naam eerst vertaald (Pikachu → ピカチュウ), een eigen schrijfwijze blijft zoals getypt.
+ * Kaarten in de TCGdex-catalogus op naam (en nummer) en/of filters (zeldzaamheid, type, kaarttype).
+ * Engels direct; voor Aziatische talen wordt een Engelse naam eerst vertaald (Pikachu → ピカチュウ),
+ * een eigen schrijfwijze blijft zoals getypt. Zonder naam: bladeren op filter.
  */
-export async function searchCatalog(text: string, lang: Lang): Promise<CatalogHit[]> {
+export async function searchCatalog(text: string, lang: Lang, filters: CardQueryFilters = {}): Promise<CatalogHit[]> {
   const { name, number } = parseCatalogQuery(text)
-  if (name.length < 2) return []
-  const term = lang === 'en' || isNonLatin(name) ? name : await translateName(name, lang)
-  if (!term) return []
+  const filtered = Boolean(filters.rarity || filters.type || filters.suffix)
+  if (name.length < 2 && !(name.length === 0 && filtered)) return []
+  const term = name === '' || lang === 'en' || isNonLatin(name) ? name : await translateName(name, lang)
+  if (term === null || (name !== '' && !term)) return []
   const [cards, sets] = await Promise.all([
-    searchCards(lang, term),
+    searchCards(lang, term, filters),
     getSetList(lang).catch((err: unknown) => {
       console.error('Setlijst ophalen mislukt', err)
       return new Map<string, SetSummary>()

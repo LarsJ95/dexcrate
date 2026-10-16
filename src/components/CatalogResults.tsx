@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type JSX } from 'react'
-import { searchCatalog, sortHits, type CatalogHit, type HitOrder } from '../lib/catalogSearch'
-import type { Lang } from '../lib/tcgdex'
+import { catalogActive, searchCatalog, sortHits, type CatalogHit, type HitOrder } from '../lib/catalogSearch'
+import type { CardQueryFilters, Lang } from '../lib/tcgdex'
 import { CardFace } from './CardFace'
 import { CatalogCardPicture } from './CatalogCardPicture'
 import { Loading } from './Loading'
@@ -18,6 +18,8 @@ interface Props {
   note?: string | null
   /** Alleen kaarten uit deze sets tonen (bv. de paar sets die in het Nederlands bestaan). */
   onlySets?: ReadonlySet<string> | null
+  /** Zeldzaamheid, type en kaarttype; met een filter kun je ook zonder zoekterm bladeren. */
+  filters?: CardQueryFilters
 }
 
 const PAGE = 24
@@ -26,18 +28,22 @@ const DEBOUNCE_MS = 400
 type State = { key: string; hits: CatalogHit[] | null; error: string | null }
 
 /** Kaarten uit de kaartendatabase (TCGdex) voor de zoekterm, om aan de wishlist toe te voegen. */
-export function CatalogResults({ query, lang, wished, owned, onPick, note = null, onlySets = null }: Props): JSX.Element | null {
+const NO_FILTERS: CardQueryFilters = {}
+
+export function CatalogResults({ query, lang, wished, owned, onPick, note = null, onlySets = null, filters = NO_FILTERS }: Props): JSX.Element | null {
   const term = query.trim()
-  const key = `${lang}|${term.toLowerCase()}|${onlySets ? [...onlySets].join(',') : ''}`
+  const active = catalogActive(query, filters)
+  const { rarity = '', type = '', suffix = '' } = filters
+  const key = `${lang}|${term.toLowerCase()}|${onlySets ? [...onlySets].join(',') : ''}|${rarity}|${type}|${suffix}`
   const [state, setState] = useState<State>({ key: '', hits: null, error: null })
   const [shown, setShown] = useState({ key: '', count: PAGE })
   const [order, setOrder] = useState<HitOrder>('newest')
 
   useEffect(() => {
-    if (term.length < 2) return
+    if (!active) return
     let cancelled = false
     const t = window.setTimeout(() => {
-      searchCatalog(term, lang)
+      searchCatalog(term, lang, { rarity, type, suffix })
         .then((hits) => {
           if (!cancelled) setState({ key, hits: onlySets ? hits.filter((h) => onlySets.has(h.setId)) : hits, error: null })
         })
@@ -50,12 +56,12 @@ export function CatalogResults({ query, lang, wished, owned, onPick, note = null
       cancelled = true
       clearTimeout(t)
     }
-  }, [term, lang, key, onlySets])
+  }, [active, term, lang, key, onlySets, rarity, type, suffix])
 
   const current = state.key === key ? state : null
   const currentHits = current?.hits ?? null
   const hits = useMemo(() => (currentHits ? sortHits(currentHits, order) : null), [currentHits, order])
-  if (term.length < 2) return null
+  if (!active) return null
   const count = shown.key === key ? shown.count : PAGE
 
   return (

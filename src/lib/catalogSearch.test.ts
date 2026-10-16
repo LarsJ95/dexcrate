@@ -26,3 +26,19 @@ describe('sortHits', () => {
     expect(sorted.map((h) => h.card.id)).toEqual(['base1-58', 'sv03.5-25', 'sv03.5-173', 'x-1'])
   })
 })
+
+describe('zoekparameters en bladeren', () => {
+  it('filters gaan exact naar TCGdex; Rare Holo telt ook Holo Rare; achtervoegsel alleen in het Engels', async () => {
+    const { cardQuery } = await import('./tcgdex')
+    expect(cardQuery('en', 'pikachu', { rarity: 'Illustration rare' })).toBe('name=pikachu&rarity=eq:Illustration%20rare')
+    expect(cardQuery('en', '', { rarity: 'Rare Holo', type: 'Fire', suffix: 'ex' })).toBe('rarity=eq:Rare%20Holo%7CHolo%20Rare&types=eq:Fire&suffix=eq:ex')
+    expect(cardQuery('ja', 'リザードン', { suffix: 'ex' })).toBe(`name=${encodeURIComponent('リザードン')}`)
+  })
+  it('zonder zoekterm alleen actief met een filter', async () => {
+    const { catalogActive } = await import('./catalogSearch')
+    expect(catalogActive('', {})).toBe(false)
+    expect(catalogActive('', { rarity: 'ACE SPEC Rare' })).toBe(true)
+    expect(catalogActive('p', { rarity: 'ACE SPEC Rare' })).toBe(false)
+    expect(catalogActive('pi', {})).toBe(true)
+  })
+})

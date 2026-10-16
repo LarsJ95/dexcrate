@@ -279,15 +279,39 @@ export async function digitalSetIds(lang: Lang): Promise<Set<string>> {
   })
 }
 
-/** Kaarten waarvan de naam de zoekterm bevat (hoofdletterongevoelig); zonder digitale Pocket-kaarten. */
-export async function searchCards(lang: Lang, name: string): Promise<SetCard[]> {
+/** Filters die TCGdex zelf toepast (exacte waarden, zoals TCGdex ze noemt); leeg = geen filter. */
+export interface CardQueryFilters {
+  rarity?: string
+  type?: string
+  suffix?: string
+}
+
+/** "Rare Holo" en "Holo Rare" zijn dezelfde zeldzaamheid; TCGdex gebruikt allebei. */
+const RARITY_ALIASES: Record<string, string> = { 'Rare Holo': 'Rare Holo|Holo Rare' }
+
+/** Zoekparameters voor TCGdex: naam (bevat) plus exacte filters. Japans e.d. kennen geen achtervoegsel-veld. */
+export function cardQuery(lang: Lang, name: string, filters: CardQueryFilters = {}): string {
+  const params: string[] = []
   const q = name.trim()
-  if (q.length < 2) return []
-  const [cards, digital] = await Promise.all([
-    getJson(`${API}/${lang}/cards?name=${encodeURIComponent(q)}`).then(parseCards),
-    digitalSetIds(lang),
-  ])
-  return cards.filter((c) => !digital.has(setIdOf(c)))
+  if (q) params.push(`name=${encodeURIComponent(q)}`)
+  if (filters.rarity) params.push(`rarity=eq:${encodeURIComponent(RARITY_ALIASES[filters.rarity] ?? filters.rarity)}`)
+  if (filters.type) params.push(`types=eq:${encodeURIComponent(filters.type)}`)
+  if (filters.suffix && lang === 'en') params.push(`suffix=eq:${encodeURIComponent(filters.suffix)}`)
+  return params.join('&')
+}
+
+/**
+ * Kaarten op naam (bevat, hoofdletterongevoelig) en/of filters; zonder digitale Pocket-kaarten.
+ * Zonder naam alleen als er een filter is (bladeren, bv. alle ACE SPEC-kaarten).
+ */
+export async function searchCards(lang: Lang, name: string, filters: CardQueryFilters = {}): Promise<SetCard[]> {
+  const q = name.trim()
+  const filtered = Boolean(filters.rarity || filters.type || filters.suffix)
+  if (q.length < 2 && !(q.length === 0 && filtered)) return []
+  const [cards, digital] = await Promise.all([getJson(`${API}/${lang}/cards?${cardQuery(lang, q, filters)}`).then(parseCards), digitalSetIds(lang)])
+  // Buiten het Engels geen achtervoegsel-veld: dan op de naam ("リザードンex").
+  const suffix = lang !== 'en' && filters.suffix ? filters.suffix : null
+  return cards.filter((c) => !digital.has(setIdOf(c)) && (!suffix || c.name.endsWith(suffix)))
 }
 
 export function matchNumber(cards: readonly SetCard[], number: string): SetCard | undefined {

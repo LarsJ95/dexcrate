@@ -8,7 +8,7 @@ import { IconPlus, IconSearch } from '../components/Icons'
 import { WishlistDialog } from '../components/WishlistDialog'
 import { useCardPrice } from '../hooks/useCardPrice'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
-import type { CatalogHit } from '../lib/catalogSearch'
+import { catalogActive, type CatalogHit } from '../lib/catalogSearch'
 import { matchesCatalog, needsCatalog, type CatalogFilters } from '../lib/collectionFilters'
 import { listCards } from '../lib/db'
 import { PRINTED_SETS, getSet, isLang, lookupLang, type Lang } from '../lib/tcgdex'
@@ -90,7 +90,7 @@ export function WishlistPage(): JSX.Element {
   const foundCount = rows.filter((r) => r.found).length
   const wishedKeys = useMemo(() => new Set((items ?? []).flatMap((i) => (i.tcgdex_id ? [i.tcgdex_id] : []))), [items])
   const ownedKeys = useMemo(() => new Set(cards.flatMap((c) => (c.tcgdex_id && c.ownership === 'owned' ? [c.tcgdex_id] : []))), [cards])
-  const searching = query.trim().length >= 2
+  const searching = catalogActive(query, catalogFilter)
 
   function openNew(start?: Partial<WishlistInput>): void {
     setInitial(start)
@@ -227,6 +227,7 @@ export function WishlistPage(): JSX.Element {
 
       {searching && (
         <CatalogResults
+          filters={catalogFilter}
           query={query}
           lang={lookupLang(language || null)}
           wished={wishedKeys}
