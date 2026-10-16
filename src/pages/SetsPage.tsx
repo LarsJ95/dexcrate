@@ -242,6 +242,7 @@ export function SetsPage(): JSX.Element {
                   </span>
                   <span className="set-info">
                     <span className="set-name">{r.summary.name}</span>
+                    {r.owned === 0 && <span className="muted small">{total ? `${total} cards` : ''}</span>}
                     {r.owned > 0 && (
                       <span
                         className="meter"
@@ -256,15 +257,13 @@ export function SetsPage(): JSX.Element {
                     )}
                   </span>
                   <span className="set-count">
-                    {r.owned > 0 ? (
+                    {r.owned > 0 && (
                       <>
                         <span>
                           <strong>{r.owned}</strong>/{total || '?'}
                         </span>
                         {total > 0 && <span className="muted small">{pct.format(ratio)}</span>}
                       </>
-                    ) : (
-                      <span className="muted small">{total ? `${total} cards` : ''}</span>
                     )}
                   </span>
                 </a>

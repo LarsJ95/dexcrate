@@ -1593,8 +1593,11 @@ a.stat:hover {
   object-fit: contain;
 }
 
+/* Tweede regel (voortgang of aantal kaarten) altijd even hoog: alle tegels gelijk, namen op één lijn. */
 .set-info {
   display: grid;
+  grid-template-rows: auto var(--space-5);
+  align-items: center;
   gap: var(--space-2);
   min-width: 0;
 }
@@ -1829,10 +1832,6 @@ a.stat:hover {
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-s);
   background: var(--surface-2);
-}
-
-.set-row.set-empty {
-  padding-block: var(--space-2);
 }
 
 .set-row.set-empty .set-name {
