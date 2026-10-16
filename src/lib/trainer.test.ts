@@ -32,3 +32,20 @@ describe('Overview: trainer', () => {
     expect(trainerName(null)).toBe('Trainer')
   })
 })
+
+describe('Overview: titels, regio\'s en type-team', async () => {
+  const { trainerTitle, generationRange, typeTeam, teamGaps } = await import('./trainer')
+  it('titel groeit met badges', () => {
+    expect(trainerTitle(0)).toEqual({ title: 'Youngster', next: { title: 'Rookie Trainer', badges: 1 } })
+    expect(trainerTitle(3).title).toBe('Ace Trainer')
+    expect(trainerTitle(8)).toEqual({ title: 'Champion', next: null })
+  })
+  it('generaties en team', () => {
+    expect(generationRange(1)).toEqual({ first: 1, last: 151 })
+    expect(generationRange(9)).toEqual({ first: 906, last: 1025 })
+    const team = typeTeam([o(4, ['Fire'], 3), o(7, ['Water'], 1)])
+    expect(team[0]).toEqual({ type: 'Fire', count: 3, strongAgainst: ['Grass', 'Metal'], weakTo: 'Water' })
+    expect(teamGaps(team)).not.toContain('Grass')
+    expect(teamGaps(team)).toContain('Lightning')
+  })
+})

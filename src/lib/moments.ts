@@ -21,6 +21,8 @@ export type Moment =
   | { kind: 'milestone'; id: number; level: number; caption: string }
   /** Toegevoegd aan de wishlist: pokébal wiebelt en klikt dicht. */
   | { kind: 'gotcha'; id: number; name: string }
+  /** Nieuwe badge verdiend. */
+  | { kind: 'badge'; id: number; name: string; color: string }
 
 type NewMoment = Moment extends infer M ? (M extends Moment ? Omit<M, 'id'> : never) : never
 
@@ -71,6 +73,31 @@ export function celebrateMilestone(key: string, count: number, steps: readonly n
   if (celebrated === null) return
   const level = newMilestone(count, celebrated, steps)
   if (level !== null) showMoment({ kind: 'milestone', level, caption: caption(level) })
+}
+
+const BADGES_KEY = 'dexcrate:badges-earned'
+
+/**
+ * Nieuwe badges vieren (hoogstens één moment: de laatst verdiende). Eerste keer alleen onthouden.
+ * Kwijtgeraakte badges (kaarten verkocht) worden weer vergeten, zodat ze later opnieuw gevierd kunnen worden.
+ */
+export function celebrateBadges(earned: readonly { id: string; name: string; color: string }[]): void {
+  let stored: string | null
+  try {
+    stored = localStorage.getItem(BADGES_KEY)
+  } catch {
+    return
+  }
+  const known = stored === null ? null : new Set(stored.split(',').filter(Boolean))
+  try {
+    localStorage.setItem(BADGES_KEY, earned.map((b) => b.id).join(','))
+  } catch (err) {
+    console.warn('Badges onthouden mislukt', err)
+  }
+  if (known === null) return
+  const fresh = earned.filter((b) => !known.has(b.id))
+  const last = fresh[fresh.length - 1]
+  if (last) showMoment({ kind: 'badge', name: last.name, color: last.color })
 }
 
 export function endMoment(id: number): void {

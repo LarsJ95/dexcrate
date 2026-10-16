@@ -1,27 +1,22 @@
 import { useState, type CSSProperties, type JSX } from 'react'
 import { useKeyed } from '../hooks/useKeyed'
+import type { EnergyType } from '../lib/cardTraits'
+import { energyColor } from '../lib/energy'
 import { burstFrom } from '../lib/fx'
-import { englishSpeciesName, isNonLatin } from '../lib/names'
 import { useMotion } from '../lib/motion'
+import { englishSpeciesName, isNonLatin } from '../lib/names'
 import { spriteUrls } from '../lib/runner'
-import { hpLevel, type Badge, type DexProgress } from '../lib/trainer'
+import { REGIONS, hpLevel, teamGaps, trainerTitle, type Badge, type DexProgress, type TeamType } from '../lib/trainer'
+import { EnergyIcon } from './RaritySymbols'
 
-/** Eén badge: eenvoudige achthoekige medaille in de badgekleur; nog niet verdiend = grijs met voortgang. */
-function BadgeIcon({ badge }: { badge: Badge }): JSX.Element {
-  const label = `${badge.name}: ${badge.earned ? 'earned' : `${Math.round(badge.progress * 100)}% of ${badge.goal}`}`
+/** Eén badge: eenvoudige achthoekige medaille in de badgekleur; nog niet verdiend = grijs. */
+export function BadgeIcon({ badge }: { badge: Pick<Badge, 'earned' | 'color'> }): JSX.Element {
   return (
-    <li className={`badge${badge.earned ? ' is-earned' : ''}`} style={{ '--badge': badge.color } as CSSProperties} title={`${badge.name} (${badge.goal})`} aria-label={label}>
-      <svg viewBox="0 0 40 40" aria-hidden="true">
-        <polygon className="badge-outer" points="13,2 27,2 38,13 38,27 27,38 13,38 2,27 2,13" />
-        <polygon className="badge-inner" points="16,9 24,9 31,16 31,24 24,31 16,31 9,24 9,16" />
-        <circle className="badge-shine" cx="15" cy="14" r="3" />
-      </svg>
-      {!badge.earned && (
-        <span className="badge-progress" aria-hidden="true">
-          <span style={{ width: `${badge.progress * 100}%` }} />
-        </span>
-      )}
-    </li>
+    <svg className={`badge-icon${badge.earned ? ' is-earned' : ''}`} style={{ '--badge': badge.color } as CSSProperties} viewBox="0 0 40 40" aria-hidden="true">
+      <polygon className="badge-outer" points="13,2 27,2 38,13 38,27 27,38 13,38 2,27 2,13" />
+      <polygon className="badge-inner" points="16,9 24,9 31,16 31,24 24,31 16,31 9,24 9,16" />
+      <circle className="badge-shine" cx="15" cy="14" r="3" />
+    </svg>
   )
 }
 
@@ -32,19 +27,27 @@ interface TrainerProps {
   setsStarted: number
   since: string | null
   badges: Badge[]
+  /** Badgekoffer openen (uitleg en voortgang per badge). */
+  onOpenBadges: () => void
 }
 
 const sinceFmt = new Intl.DateTimeFormat('en-GB', { month: 'short', year: 'numeric' })
 
-/** Trainer Card zoals in de games: naam, je cijfers en je badges. */
-export function TrainerCard({ name, cards, species, setsStarted, since, badges }: TrainerProps): JSX.Element {
+/** Trainer Card zoals in de games: naam, titel, je cijfers en je badges. */
+export function TrainerCard({ name, cards, species, setsStarted, since, badges, onOpenBadges }: TrainerProps): JSX.Element {
   const earned = badges.filter((b) => b.earned).length
+  const { title, next } = trainerTitle(earned)
   const sinceDate = since ? new Date(since) : null
   return (
     <section className="panel trainer-card" aria-labelledby="trainer-title">
       <header className="trainer-head">
-        <span className="stat-label">Trainer card</span>
-        <h2 id="trainer-title">{name}</h2>
+        <div>
+          <span className="stat-label">Trainer card</span>
+          <h2 id="trainer-title">{name}</h2>
+        </div>
+        <span className="trainer-rank" title={next ? `${next.badges} badges for ${next.title}` : 'Highest rank'}>
+          {title}
+        </span>
       </header>
       <dl className="trainer-stats">
         <div>
@@ -66,66 +69,136 @@ export function TrainerCard({ name, cards, species, setsStarted, since, badges }
           </div>
         )}
       </dl>
-      <div className="trainer-badges">
-        <span className="stat-label">
-          Badges {earned}/{badges.length}
+      <button type="button" className="trainer-badges" onClick={onOpenBadges} aria-label={`Badges: ${earned} of ${badges.length}. Show how to earn them.`}>
+        <span className="trainer-badges-head">
+          <span className="stat-label">
+            Badges {earned}/{badges.length}
+          </span>
+          <span className="small trainer-badges-hint">How to earn ›</span>
         </span>
-        <ol className="badge-row">
+        <span className="badge-row">
           {badges.map((b) => (
-            <BadgeIcon key={b.id} badge={b} />
+            <span key={b.id} className="badge" title={`${b.name}: ${b.goal}`}>
+              <BadgeIcon badge={b} />
+              {!b.earned && (
+                <span className="badge-progress">
+                  <span style={{ width: `${b.progress * 100}%` }} />
+                </span>
+              )}
+            </span>
+          ))}
+        </span>
+      </button>
+    </section>
+  )
+}
+
+/** Pokédex als het rode apparaat uit de games: totaal, en per regio een knop naar het Pokédex-raster. */
+export function PokedexPanel({ progress, loading, onOpenRegion }: { progress: DexProgress; loading: boolean; onOpenRegion: (gen: number) => void }): JSX.Element {
+  return (
+    <section className="panel pokedex" aria-labelledby="pokedex-title">
+      <div className="dex-top" aria-hidden="true">
+        <span className="dex-lens" />
+        <span className="dex-light red" />
+        <span className="dex-light yellow" />
+        <span className="dex-light green" />
+      </div>
+      <div className="dex-screen">
+        <div className="meter-head">
+          <h2 id="pokedex-title" className="stat-label">
+            Pokédex
+          </h2>
+          <span className="meter-value">
+            {progress.caught}
+            <span className="small"> / {progress.total} caught</span>
+          </span>
+        </div>
+        <span className="meter" role="meter" aria-label="Pokédex" aria-valuemin={0} aria-valuemax={progress.total} aria-valuenow={progress.caught}>
+          <span className="meter-fill" data-hp={hpLevel(progress.caught / progress.total)} style={{ width: `${(progress.caught / progress.total) * 100}%` }} />
+        </span>
+        <ol className="dex-gens" aria-label="Per region">
+          {progress.perGen.map((g) => (
+            <li key={g.gen}>
+              <button type="button" className="dex-gen" onClick={() => onOpenRegion(g.gen)} aria-label={`${REGIONS[g.gen - 1]} (generation ${g.gen}): ${g.caught} of ${g.total}. Open.`}>
+                <span className="dex-gen-bar" aria-hidden="true">
+                  <span style={{ height: `${Math.max(g.caught > 0 ? 8 : 0, (g.caught / g.total) * 100)}%` }} />
+                </span>
+                <span className="dex-gen-name">{REGIONS[g.gen - 1]}</span>
+                <span className="dex-gen-count">
+                  {g.caught}/{g.total}
+                </span>
+              </button>
+            </li>
           ))}
         </ol>
+        <p className="small dex-hint">{loading ? 'Counting your Pokémon…' : 'Tap a region to see which Pokémon you have.'}</p>
       </div>
     </section>
   )
 }
 
-/** Pokédex-teller: hoeveel verschillende Pokémon je hebt, in totaal en per generatie. */
-export function PokedexPanel({ progress, loading }: { progress: DexProgress; loading: boolean }): JSX.Element {
+/** Je collectie als team: per type hoeveel kaarten, en waar je team sterk of zwak tegen is. */
+export function TypeTeamPanel({ team }: { team: TeamType[] }): JSX.Element | null {
+  if (team.length === 0) return null
+  const gaps = teamGaps(team)
+  const total = team.reduce((n, t) => n + t.count, 0)
   return (
-    <section className="panel pokedex" aria-labelledby="pokedex-title">
-      <div className="meter-head">
-        <h2 id="pokedex-title" className="stat-label">
-          Pokédex
-        </h2>
-        <span className="meter-value">
-          {progress.caught}
-          <span className="muted small"> / {progress.total} caught</span>
-        </span>
-      </div>
-      <span
-        className="meter hp"
-        role="meter"
-        aria-label="Pokédex"
-        aria-valuemin={0}
-        aria-valuemax={progress.total}
-        aria-valuenow={progress.caught}
-      >
-        <span className="meter-fill" data-hp={hpLevel(progress.caught / progress.total)} style={{ width: `${(progress.caught / progress.total) * 100}%` }} />
-      </span>
-      <ol className="dex-gens" aria-label="Per generation">
-        {progress.perGen.map((g) => (
-          <li key={g.gen} title={`Generation ${g.gen}: ${g.caught} of ${g.total}`}>
-            <span className="dex-gen-bar" aria-hidden="true">
-              <span style={{ height: `${Math.max(g.caught > 0 ? 8 : 0, (g.caught / g.total) * 100)}%` }} />
+    <section className="panel type-team" aria-labelledby="team-title">
+      <h2 id="team-title" className="panel-title">
+        Your team
+      </h2>
+      <p className="flavor">Your cards by type, and who they are super effective against.</p>
+      <ul className="team-list">
+        {team.map((t) => (
+          <li key={t.type} style={{ '--t': energyColor(t.type) } as CSSProperties}>
+            <span className="team-type">
+              <EnergyIcon type={t.type} />
+              {t.type}
             </span>
-            <span className="dex-gen-label">
-              {['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'][g.gen - 1]}
-              <span className="visually-hidden">
-                : {g.caught} of {g.total}
-              </span>
+            <span className="team-bar" aria-hidden="true">
+              <span style={{ width: `${(t.count / total) * 100}%` }} />
+            </span>
+            <span className="team-count">{t.count}</span>
+            <span className="team-vs small">
+              {t.strongAgainst.length > 0 && (
+                <span>
+                  Strong vs <TypeList types={t.strongAgainst} />
+                </span>
+              )}
+              {t.weakTo && (
+                <span>
+                  Weak to <TypeList types={[t.weakTo]} />
+                </span>
+              )}
             </span>
           </li>
         ))}
-      </ol>
-      {loading && <p className="muted small">Counting your Pokémon…</p>}
+      </ul>
+      {gaps.length > 0 && (
+        <p className="small muted">
+          No super-effective answer yet against: <TypeList types={gaps} />
+        </p>
+      )}
     </section>
   )
 }
 
-/** Partner-Pokémon naast je collectiewaarde; tikken laat hem springen en roepen. */
+function TypeList({ types }: { types: EnergyType[] }): JSX.Element {
+  return (
+    <span className="type-list">
+      {types.map((t) => (
+        <span key={t} className="type-pill" title={t}>
+          <EnergyIcon type={t} />
+          <span className="visually-hidden">{t}</span>
+        </span>
+      ))}
+    </span>
+  )
+}
+
 const loadEnglishName = (key: string): Promise<string | null> => englishSpeciesName(Number(key))
 
+/** Partner-Pokémon naast je collectiewaarde; tikken laat hem springen en roepen. */
 export function Partner({ dexId, name: cardName }: { dexId: number; name: string }): JSX.Element {
   const motion = useMotion()
   // Japanse/Chinese/Koreaanse kaart: Engelse soortnaam via PokéAPI.

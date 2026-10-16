@@ -76,6 +76,12 @@ export interface Badge {
   progress: number
   /** Kleur (CSS-variabele) van de badge. */
   color: string
+  /** Huidige stand en doel, bv. 41 van 50 kaarten. */
+  have: number
+  target: number
+  kind: 'cards' | 'species' | 'value'
+  /** Uitleg in een zin. */
+  how: string
 }
 
 interface BadgeRule {
@@ -98,6 +104,12 @@ const RULES: readonly BadgeRule[] = [
   { id: 'earth', name: 'Earth Badge', kind: 'value', target: 1000, color: 'var(--energy-fighting)' },
 ]
 
+const HOW_TEXT: Record<BadgeRule['kind'], string> = {
+  cards: 'Own this many cards (copies count).',
+  species: 'Own cards of this many different Pokémon (your Pokédex).',
+  value: 'Reach this collection value (Cardmarket trend prices).',
+}
+
 const GOAL_TEXT: Record<BadgeRule['kind'], (n: number) => string> = {
   cards: (n) => `${n} cards`,
   species: (n) => `${n} different Pokémon`,
@@ -107,7 +119,18 @@ const GOAL_TEXT: Record<BadgeRule['kind'], (n: number) => string> = {
 export function badges(stats: { cards: number; species: number; value: number }): Badge[] {
   return RULES.map((r) => {
     const have = r.kind === 'cards' ? stats.cards : r.kind === 'species' ? stats.species : stats.value
-    return { id: r.id, name: r.name, goal: GOAL_TEXT[r.kind](r.target), earned: have >= r.target, progress: Math.min(1, Math.max(0, have / r.target)), color: r.color }
+    return {
+      id: r.id,
+      name: r.name,
+      goal: GOAL_TEXT[r.kind](r.target),
+      earned: have >= r.target,
+      progress: Math.min(1, Math.max(0, have / r.target)),
+      color: r.color,
+      have,
+      target: r.target,
+      kind: r.kind,
+      how: HOW_TEXT[r.kind],
+    }
   })
 }
 
@@ -120,4 +143,80 @@ export function trainerName(email: string | null | undefined): string {
 /** Kleur van een HP-balk zoals in de games: groen boven 50%, geel boven 20%, anders rood. */
 export function hpLevel(ratio: number): 'high' | 'mid' | 'low' {
   return ratio > 0.5 ? 'high' : ratio > 0.2 ? 'mid' : 'low'
+}
+
+/** Trainer-titels zoals in de games, oplopend met het aantal badges. */
+export const TITLES = [
+  { badges: 0, title: 'Youngster' },
+  { badges: 1, title: 'Rookie Trainer' },
+  { badges: 2, title: 'Ace Trainer' },
+  { badges: 4, title: 'Gym Leader' },
+  { badges: 6, title: 'Elite Four' },
+  { badges: 8, title: 'Champion' },
+] as const
+
+/** Huidige titel en de volgende (met hoeveel badges die nodig heeft). */
+export function trainerTitle(earned: number): { title: string; next: { title: string; badges: number } | null } {
+  let i = 0
+  for (let j = 0; j < TITLES.length; j++) if (earned >= TITLES[j].badges) i = j
+  const next = TITLES[i + 1]
+  return { title: TITLES[i].title, next: next ? { title: next.title, badges: next.badges } : null }
+}
+
+/** Regio per generatie (de spellen waar die Pokémon voor het eerst verschenen). */
+export const REGIONS = ['Kanto', 'Johto', 'Hoenn', 'Sinnoh', 'Unova', 'Kalos', 'Alola', 'Galar', 'Paldea'] as const
+
+/** Eerste en laatste Pokédex-nummer van een generatie (1-9). */
+export function generationRange(gen: number): { first: number; last: number } {
+  const last = GENERATIONS[gen - 1]
+  return { first: gen === 1 ? 1 : GENERATIONS[gen - 2] + 1, last }
+}
+
+/**
+ * Zwakte per energietype zoals op de kaarten (Scarlet & Violet-tijdperk): een Pokémon van type X
+ * krijgt dubbele schade van WEAK_TO[X]. Dragon heeft op moderne kaarten geen zwakte.
+ */
+export const WEAK_TO: Readonly<Record<EnergyType, EnergyType | null>> = {
+  Grass: 'Fire',
+  Fire: 'Water',
+  Water: 'Lightning',
+  Lightning: 'Fighting',
+  Psychic: 'Darkness',
+  Fighting: 'Psychic',
+  Darkness: 'Grass',
+  Metal: 'Fire',
+  Dragon: null,
+  Fairy: 'Metal',
+  Colorless: 'Fighting',
+}
+
+export interface TeamType {
+  type: EnergyType
+  count: number
+  /** Types waar dit type super effectief tegen is. */
+  strongAgainst: EnergyType[]
+  weakTo: EnergyType | null
+}
+
+/** Je collectie als team: aantal exemplaren per type, met sterk/zwak tegen. Meeste eerst. */
+export function typeTeam(owned: readonly OwnedInfo[]): TeamType[] {
+  const count = new Map<EnergyType, number>()
+  for (const o of owned) {
+    const t = o.types?.[0]
+    if (t) count.set(t, (count.get(t) ?? 0) + o.quantity)
+  }
+  return [...count]
+    .map(([type, n]) => ({
+      type,
+      count: n,
+      strongAgainst: (Object.keys(WEAK_TO) as EnergyType[]).filter((t) => WEAK_TO[t] === type),
+      weakTo: WEAK_TO[type],
+    }))
+    .sort((a, b) => b.count - a.count || a.type.localeCompare(b.type))
+}
+
+/** Types die je team niet super effectief kan raken (niemand in je team is daar sterk tegen). */
+export function teamGaps(team: readonly TeamType[]): EnergyType[] {
+  const covered = new Set(team.flatMap((t) => t.strongAgainst))
+  return (Object.keys(WEAK_TO) as EnergyType[]).filter((t) => WEAK_TO[t] !== null && !covered.has(t))
 }

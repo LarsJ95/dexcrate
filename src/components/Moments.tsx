@@ -6,6 +6,7 @@ import { endMoment, useMoment, type Moment } from '../lib/moments'
 import { CardImage } from './CardImage'
 import { HoloCard } from './HoloCard'
 import { RaritySymbols } from './RaritySymbols'
+import { BadgeIcon } from './TrainerCard'
 
 /** Tijdlijn per moment in ms (DESIGN.md §9: beweging ≤ 1,5 s, daarna even zichtbaar om te lezen). */
 const REVEAL = { flip: 300, burst: 620, end: 2100 }
@@ -58,6 +59,9 @@ function MomentLayer({ moment }: { moment: Moment }): JSX.Element {
     } else if (moment.kind === 'milestone') {
       at(MILESTONE.burst, () => target.current && burstFrom(target.current, { colors: ALL_ENERGY, count: 36, speed: 8 }))
       at(MILESTONE.end, () => endMoment(moment.id))
+    } else if (moment.kind === 'badge') {
+      at(MILESTONE.burst, () => target.current && burstFrom(target.current, { colors: [moment.color, 'var(--gold-a)', '#ffffff'], count: 40, speed: 8 }))
+      at(MILESTONE.end, () => endMoment(moment.id))
     } else if (moment.kind === 'gotcha') {
       at(GOTCHA.click, () => target.current && burstFrom(target.current, { colors: ['var(--yellow)', '#ffffff', 'var(--ball-red)'], count: 24, speed: 6, gravity: 0.08 }))
       at(GOTCHA.end, () => endMoment(moment.id))
@@ -79,6 +83,22 @@ function MomentLayer({ moment }: { moment: Moment }): JSX.Element {
           <span className="moment-caption">
             <strong>Level up!</strong>
             <span>{moment.caption}</span>
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  if (moment.kind === 'badge') {
+    return (
+      <div ref={layer} className="moment-layer" popover="manual" role="status">
+        <div className="moment-complete is-badge" ref={target}>
+          <span className="moment-badge">
+            <BadgeIcon badge={{ earned: true, color: moment.color }} />
+          </span>
+          <span className="moment-caption">
+            <strong>You earned the {moment.name}!</strong>
+            <span>See your badge case on Overview</span>
           </span>
         </div>
       </div>

@@ -1,12 +1,15 @@
-import { useMemo, type JSX, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type JSX, type ReactNode } from 'react'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { useCountUp } from '../hooks/useCountUp'
 import { marketValueOf, summarizeMarket, topMovers, type Mover, type PriceMap, type SeriesPoint } from '../lib/prices'
 import { speciesName } from '../lib/runner'
 import { setOfKey } from '../lib/tcgdex'
-import { badges, dominantType, hpLevel, partnerDexId, pokedexProgress, type OwnedInfo } from '../lib/trainer'
+import { celebrateBadges } from '../lib/moments'
+import { badges, dominantType, hpLevel, partnerDexId, pokedexProgress, typeTeam, type OwnedInfo } from '../lib/trainer'
+import { BadgeCase } from './BadgeCase'
+import { PokedexSheet, type DexEntry } from './PokedexSheet'
 import { BuyingChances } from './BuyingChances'
-import { Partner, PokedexPanel, TrainerCard } from './TrainerCard'
+import { Partner, PokedexPanel, TrainerCard, TypeTeamPanel } from './TrainerCard'
 import { computeStats, formatEur, type Bucket } from '../lib/stats'
 import { thumbPath, type Card } from '../lib/types'
 import { CardImage } from './CardImage'
@@ -125,6 +128,28 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
   const setsStarted = useMemo(() => new Set(ownedKeys.flatMap((k) => setOfKey(k)?.setId ?? [])).size, [ownedKeys])
   const since = useMemo(() => cards.reduce<string | null>((first, c) => (c.created_at && (!first || c.created_at < first) ? c.created_at : first), null), [cards])
   const badgeList = badges({ cards: cardCount, species: dex.caught, value: market.owned.value })
+  const team = useMemo(() => typeTeam(owned), [owned])
+  const [badgeCaseOpen, setBadgeCaseOpen] = useState(false)
+  const [region, setRegion] = useState<number | null>(null)
+  // Pokédex-nummer → jouw kaarten van die Pokémon (voor het Pokédex-raster).
+  const caught = useMemo(() => {
+    const map = new Map<number, DexEntry>()
+    for (const c of ownedCards) {
+      const dexId = c.tcgdex_id ? infos.get(c.tcgdex_id)?.dexId : null
+      if (!dexId) continue
+      const entry = map.get(dexId) ?? { cards: [] }
+      entry.cards.push({ id: c.id, name: [c.name, c.set_code, c.card_number && `#${c.card_number}`].filter(Boolean).join(' ') })
+      map.set(dexId, entry)
+    }
+    return map
+  }, [ownedCards, infos])
+  // Nieuwe badge vieren, pas als kaartinfo en prijzen binnen zijn (anders lijkt er even iets te verdwijnen).
+  const earnedKey = badgeList.filter((b) => b.earned).map((b) => b.id).join(',')
+  useEffect(() => {
+    if (infosLoading || pricesLoading) return
+    celebrateBadges(badgeList.filter((b) => b.earned))
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- alleen bij een andere set verdiende badges
+  }, [earnedKey, infosLoading, pricesLoading])
 
   if (cards.length === 0) {
     return (
@@ -252,10 +277,21 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
 
       {/* Trainer-zijkolom: op brede schermen rechts, anders direct onder het hoofdpaneel. */}
       <aside className="dash-rail" aria-label="Trainer">
-        <TrainerCard name={trainer} cards={cardCount} species={dex.caught} setsStarted={setsStarted} since={since} badges={badgeList} />
-        <PokedexPanel progress={dex} loading={infosLoading} />
+        <TrainerCard
+          name={trainer}
+          cards={cardCount}
+          species={dex.caught}
+          setsStarted={setsStarted}
+          since={since}
+          badges={badgeList}
+          onOpenBadges={() => setBadgeCaseOpen(true)}
+        />
+        <PokedexPanel progress={dex} loading={infosLoading} onOpenRegion={setRegion} />
+        <TypeTeamPanel team={team} />
         <BuyingChances />
       </aside>
+      {badgeCaseOpen && <BadgeCase badges={badgeList} onClose={() => setBadgeCaseOpen(false)} />}
+      {region !== null && <PokedexSheet gen={region} caught={caught} onClose={() => setRegion(null)} onOpenCard={(id) => onOpenCard?.(id)} />}
     </section>
   )
 }
