@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type JSX, type PointerEvent } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type JSX, type PointerEvent } from 'react'
 import { formatEur } from '../lib/stats'
 
 export interface Point {
@@ -26,6 +26,7 @@ export function LineChart({
   valueLabel?: string
 }): JSX.Element {
   const [hover, setHover] = useState<number | null>(null)
+  const gradientId = useId()
   const boxRef = useRef<HTMLDivElement>(null)
   const [W, setW] = useState(DEFAULT_W)
 
@@ -51,7 +52,10 @@ export function LineChart({
     const x = (i: number): number => PAD.left + (i / (points.length - 1)) * (W - PAD.left - PAD.right)
     const y = (v: number): number => PAD.top + (1 - (v - min) / (max - min)) * (H - PAD.top - PAD.bottom)
     const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join('')
-    return { min, max, x, y, path }
+    // Vlak onder de lijn (decoratief, in de typekleur).
+    const bottom = (H - PAD.bottom).toFixed(1)
+    const area = `${path}L${x(points.length - 1).toFixed(1)},${bottom}L${x(0).toFixed(1)},${bottom}Z`
+    return { min, max, x, y, path, area }
   }, [points, W])
 
   function onMove(e: PointerEvent<SVGRectElement>): void {
@@ -82,7 +86,22 @@ export function LineChart({
           <text className="axis" x={W - PAD.right} y={H - 6} textAnchor="end">
             {dateFmt.format(parseDate(points[points.length - 1].date))}
           </text>
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" className="area-top" />
+              <stop offset="1" className="area-bottom" />
+            </linearGradient>
+          </defs>
+          <path className="area" d={geo.area} fill={`url(#${CSS.escape(gradientId)})`} />
           <path className="line" d={geo.path} />
+          {/* Eindpunt als pokébal: de huidige waarde. */}
+          <g className="end-ball" transform={`translate(${geo.x(points.length - 1).toFixed(1)},${geo.y(points[points.length - 1].value).toFixed(1)})`} aria-hidden="true">
+            <path d="M-6,0 A6,6 0 0 1 6,0 Z" className="ball-top" />
+            <path d="M-6,0 A6,6 0 0 0 6,0 Z" className="ball-bottom" />
+            <line x1="-6" x2="6" y1="0" y2="0" className="ball-line" />
+            <circle r="6" className="ball-ring" />
+            <circle r="2" className="ball-button" />
+          </g>
           {active && hover !== null && (
             <g>
               <line className="crosshair" x1={geo.x(hover)} x2={geo.x(hover)} y1={PAD.top} y2={H - PAD.bottom} />

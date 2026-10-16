@@ -4330,3 +4330,32 @@ button.partner:active:not(:disabled) {
   font-style: italic;
   color: var(--muted);
 }
+
+/* Grafiek: zacht vlak in de typekleur en een pokébal als eindpunt. */
+.chart .area-top {
+  stop-color: var(--type);
+  stop-opacity: 0.35;
+}
+
+.chart .area-bottom {
+  stop-color: var(--type);
+  stop-opacity: 0;
+}
+
+.chart .end-ball .ball-top {
+  fill: var(--ball-red);
+}
+
+.chart .end-ball .ball-bottom,
+.chart .end-ball .ball-button {
+  fill: var(--ball-white);
+}
+
+.chart .end-ball :is(.ball-line, .ball-ring, .ball-button) {
+  stroke: var(--ball-line);
+  stroke-width: 1.5;
+}
+
+.chart .end-ball .ball-ring {
+  fill: none;
+}
