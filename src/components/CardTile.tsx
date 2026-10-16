@@ -66,6 +66,7 @@ function CardTileBase({ card, market, onOpen, onToggleSold, busy, selected, sale
     <li
       className={`tile status-${card.status}${selected ? ' is-selected' : ''}${type ? ' has-type' : ''}`}
       style={typeStyle}
+      data-drag-id={card.id}
       onPointerEnter={(e) => {
         // Pokémon wipt uit de bovenrand bij hover (alleen muis; sprite pas dan laden).
         if (e.pointerType === 'mouse' && dexId && motionAllowed()) setPop(true)

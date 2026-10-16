@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type JSX } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from 'react'
 import { CardDialog } from '../components/CardDialog'
 import { BulkEditDialog, type BulkChange } from '../components/BulkEditDialog'
 import { CardTile } from '../components/CardTile'
@@ -15,6 +15,7 @@ import { useTransactionsEnabled } from '../hooks/useTransactionsEnabled'
 import { IconEdit, IconPlus, IconReceipt, IconSearch, IconTag } from '../components/Icons'
 import { useMarketPrices } from '../hooks/useMarketPrices'
 import { listCards, updateCard } from '../lib/db'
+import { compareOrder, swapOrder, useDragSwap } from '../lib/dragSwap'
 import { marketValueOf, type MarketValue } from '../lib/prices'
 import { matchesSearch } from '../lib/search'
 import { formatEur } from '../lib/stats'
@@ -32,8 +33,9 @@ import {
 import { Loading } from '../components/Loading'
 
 type StatusFilter = 'all' | 'owned' | CardStatus
-type SortKey = 'list' | 'priceDesc' | 'priceAsc' | 'marketDesc' | 'name' | 'set'
-const SORTS: readonly SortKey[] = ['list', 'priceDesc', 'priceAsc', 'marketDesc', 'name', 'set']
+/** 'list' = eigen volgorde oud → nieuw, 'newest' = dezelfde volgorde omgekeerd; in beide kun je slepen. */
+type SortKey = 'list' | 'newest' | 'priceDesc' | 'priceAsc' | 'marketDesc' | 'name' | 'set'
+const SORTS: readonly SortKey[] = ['list', 'newest', 'priceDesc', 'priceAsc', 'marketDesc', 'name', 'set']
 const STATUS_FILTERS: readonly StatusFilter[] = ['all', 'owned', 'collection', 'for_sale', 'sold']
 
 /** Weergave (zoeken, filters, sortering) per apparaat onthouden. */
@@ -132,6 +134,8 @@ export function CollectionPage(): JSX.Element {
     const infoOf = (c: CardInput): CardInfo | null | undefined => (c.tcgdex_id ? (infos.has(c.tcgdex_id) ? infos.get(c.tcgdex_id) : undefined) : null)
     const filtered = cards.filter((c) => matchesFilter(c, filter) && matchesSearch(c, query) && matchesExtra(c, extra, infoOf))
     const sorted = [...filtered]
+    if (sort === 'list') sorted.sort(compareOrder)
+    if (sort === 'newest') sorted.sort((a, b) => compareOrder(b, a))
     if (sort === 'priceDesc') sorted.sort((a, b) => relevantPrice(b) - relevantPrice(a))
     if (sort === 'priceAsc') sorted.sort((a, b) => relevantPrice(a) - relevantPrice(b))
     if (sort === 'marketDesc') {
@@ -238,6 +242,37 @@ export function CollectionPage(): JSX.Element {
   }
   const onToggle = useCallback((id: string) => void toggleSold(id), [toggleSold])
 
+  // Slepen: twee kaarten wisselen van plek in je eigen volgorde (opgeslagen in sort_order).
+  const binderRef = useRef<HTMLUListElement>(null)
+  const savingOrder = useRef(false)
+  const sortable = (sort === 'list' || sort === 'newest') && selected === null && cards !== null
+  const swapCards = useCallback(
+    async (fromId: string, toId: string): Promise<void> => {
+      if (!cards || savingOrder.current) return
+      const changes = swapOrder(cards, fromId, toId)
+      if (changes.size === 0) return
+      savingOrder.current = true
+      setActionError(null)
+      setCards((list) =>
+        list?.map((c) => {
+          const v = changes.get(c.id)
+          return v === undefined ? c : { ...c, sort_order: v }
+        }) ?? null,
+      )
+      try {
+        for (const [id, v] of changes) await updateCard(id, { sort_order: v })
+      } catch (err) {
+        setActionError(err instanceof Error ? `Saving the new order failed: ${err.message}` : 'Saving the new order failed.')
+        setReloadKey((k) => k + 1) // terug naar wat er echt is opgeslagen
+      } finally {
+        savingOrder.current = false
+      }
+    },
+    [cards],
+  )
+  const onSwap = useCallback((fromId: string, toId: string) => void swapCards(fromId, toId), [swapCards])
+  useDragSwap(binderRef, sortable, onSwap)
+
   const editingCard = editing?.id ? (cards?.find((c) => c.id === editing.id) ?? null) : null
   const nextSortOrder = (cards ?? []).reduce((m, c) => Math.max(m, c.sort_order), -1) + 1
   const visibleCount = visible.reduce((n, c) => n + c.quantity, 0)
@@ -314,7 +349,8 @@ export function CollectionPage(): JSX.Element {
           </button>
         )}
         <select aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
-          <option value="list">Date added</option>
+          <option value="newest">Newest first</option>
+          <option value="list">Oldest first</option>
           <option value="set">Set and number</option>
           <option value="marketDesc">Market value</option>
           <option value="priceDesc">Price: high to low</option>
@@ -436,7 +472,12 @@ export function CollectionPage(): JSX.Element {
       )}
       {cards && cards.length > 0 && visible.length === 0 && <p className="empty">No cards match these filters.</p>}
 
-      <ul className="binder">
+      {sortable && (
+        <p id="binder-order-help" className="visually-hidden">
+          Drag a card onto another card to swap them. On a touch screen, hold a card first. With the keyboard: Alt and the left or right arrow.
+        </p>
+      )}
+      <ul ref={binderRef} className={`binder${sortable ? ' is-sortable' : ''}`} aria-describedby={sortable ? 'binder-order-help' : undefined}>
         {visible.map((c) => (
           <CardTile
             key={c.id}
