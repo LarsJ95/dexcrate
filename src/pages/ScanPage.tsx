@@ -358,6 +358,7 @@ export function ScanPage(): JSX.Element {
         <CameraCapture
           wide={mode === 'multi'}
           crop={mode !== 'multi'}
+          autoCapture={mode === 'queue'}
           onCapture={(file) => (mode === 'queue' ? addToQueue(file, true) : void processPhoto(file, mode))}
           onPickFile={() => {
             setCameraOpen(false)

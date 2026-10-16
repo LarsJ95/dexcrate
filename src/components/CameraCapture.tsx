@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type JSX, type ReactNode } from 'react'
+import { SAMPLE_H, SAMPLE_W, createAutoCapture, type AutoHint } from '../lib/autoCapture'
 import { frameToSource } from '../lib/cameraCrop'
+import { toGray } from '../lib/sharpness'
 import { IconClose } from './Icons'
 
 interface Props {
@@ -13,13 +15,32 @@ interface Props {
   children?: ReactNode
   /** Alleen het kader (plus wat marge) bewaren: scherpere tekst, snellere en goedkopere herkenning. */
   crop?: boolean
+  /** Knop "Auto" tonen: zelf afdrukken zodra een (nieuwe) kaart stil in het kader ligt. */
+  autoCapture?: boolean
+}
+
+const AUTO_KEY = 'dexcrate:auto-capture'
+const AUTO_TICK_MS = 200
+const AUTO_TEXT: Record<AutoHint, string> = {
+  place: 'Place a card in the frame',
+  hold: 'Hold still…',
+  swap: 'Got it. Next card',
+  capture: 'Got it. Next card',
+}
+
+function readAuto(): boolean {
+  try {
+    return localStorage.getItem(AUTO_KEY) === '1'
+  } catch {
+    return false
+  }
 }
 
 /**
  * Camera direct in de app (getUserMedia), zodat er geen keuzemenu "Camera / Bestanden" verschijnt.
  * De browser vraagt één keer toestemming en onthoudt die voor deze site.
  */
-export function CameraCapture({ wide, onCapture, onPickFile, onClose, children, crop = false }: Props): JSX.Element {
+export function CameraCapture({ wide, onCapture, onPickFile, onClose, children, crop = false, autoCapture = false }: Props): JSX.Element {
   const videoRef = useRef<HTMLVideoElement>(null)
   const frameRef = useRef<HTMLDivElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -30,6 +51,9 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose, children, 
   const [ready, setReady] = useState(false)
   // Korte flits als bevestiging dat de foto is genomen.
   const [flash, setFlash] = useState(0)
+  const [autoOn, setAutoOn] = useState(readAuto)
+  const [autoHint, setAutoHint] = useState<AutoHint | null>(null)
+  const captureRef = useRef<() => void>(() => undefined)
 
   useEffect(() => {
     let cancelled = false
@@ -98,6 +122,44 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose, children, 
     )
   }
 
+  useEffect(() => {
+    captureRef.current = capture
+  })
+
+  // Automatisch afdrukken: elke 200 ms een klein beeld van het kader beoordelen.
+  const autoActive = autoCapture && autoOn && ready && !error
+  useEffect(() => {
+    if (!autoActive) return
+    const auto = createAutoCapture()
+    const canvas = document.createElement('canvas')
+    canvas.width = SAMPLE_W
+    canvas.height = SAMPLE_H
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    const timer = window.setInterval(() => {
+      const video = videoRef.current
+      const frame = frameRef.current
+      if (!ctx || !video || !frame || !video.videoWidth) return
+      const box = frameToSource(video.getBoundingClientRect(), frame.getBoundingClientRect(), { width: video.videoWidth, height: video.videoHeight }, 0)
+      if (box.width < 10 || box.height < 10) return
+      ctx.drawImage(video, box.x, box.y, box.width, box.height, 0, 0, SAMPLE_W, SAMPLE_H)
+      const { capture: shoot, hint } = auto.step(toGray(ctx.getImageData(0, 0, SAMPLE_W, SAMPLE_H).data, SAMPLE_W, SAMPLE_H))
+      setAutoHint(hint)
+      if (shoot) captureRef.current()
+    }, AUTO_TICK_MS)
+    return () => window.clearInterval(timer)
+  }, [autoActive])
+
+  function toggleAuto(): void {
+    const next = !autoOn
+    setAutoOn(next)
+    setAutoHint(null)
+    try {
+      localStorage.setItem(AUTO_KEY, next ? '1' : '0')
+    } catch (err) {
+      console.warn('Auto-instelling bewaren mislukt', err)
+    }
+  }
+
   return (
     <div className="camera" role="dialog" aria-modal="true" aria-label="Camera">
       <video ref={videoRef} className="camera-video" playsInline muted autoPlay onLoadedData={() => setReady(true)} />
@@ -119,12 +181,23 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose, children, 
       {flash > 0 && <div key={flash} className="camera-flash" aria-hidden="true" />}
 
       <div className="camera-bar">
+        {autoActive && autoHint && (
+          <p className="auto-status" aria-live="polite">
+            Auto: {AUTO_TEXT[autoHint]}
+          </p>
+        )}
         {children && <div className="camera-tray">{children}</div>}
         <button type="button" className="camera-files" onClick={onPickFile}>
           Files
         </button>
         <button type="button" className="camera-shutter" onClick={capture} disabled={!ready || !!error} aria-label="Take photo" />
-        <span className="camera-spacer" />
+        {autoCapture ? (
+          <button type="button" className={`camera-auto${autoOn ? ' on' : ''}`} onClick={toggleAuto} aria-pressed={autoOn} disabled={!!error}>
+            Auto
+          </button>
+        ) : (
+          <span className="camera-spacer" />
+        )}
       </div>
     </div>
   )

@@ -6726,3 +6726,38 @@ a.near-set > .set-symbol {
   color: var(--accent-line);
   font-weight: 900;
 }
+
+/* Automatisch afdrukken (snel scannen). */
+.camera-auto {
+  justify-self: end;
+  background: var(--camera-glass);
+  border: 2px solid transparent;
+  color: var(--white);
+}
+
+.camera-auto.on {
+  background: var(--yellow);
+  color: var(--on-yellow);
+}
+
+.camera-auto:hover:not(:disabled) {
+  background: var(--camera-control-hover);
+}
+
+.camera-auto.on:hover:not(:disabled) {
+  background: var(--yellow-hover);
+}
+
+.auto-status {
+  grid-column: 1 / -1;
+  margin: 0 0 var(--space-2);
+  text-align: center;
+  color: #fff;
+  font-weight: 800;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.7);
+}
+
+/* Met strook en meldingen onderin: kader hoger, zodat de onderrand van de kaart zichtbaar blijft. */
+.camera:has(.camera-tray) .camera-frame {
+  margin-bottom: 190px;
+}
