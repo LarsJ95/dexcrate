@@ -13,6 +13,8 @@ interface Props {
   /** Catalogussleutels die je al hebt. */
   owned: ReadonlySet<string>
   onPick: (hit: CatalogHit, lang: Lang) => void
+  /** Uitleg onder de kop, bv. dat een Europese taal de Engelse kaarten toont. */
+  note?: string | null
 }
 
 const PAGE = 24
@@ -21,7 +23,7 @@ const DEBOUNCE_MS = 400
 type State = { key: string; hits: CatalogHit[] | null; error: string | null }
 
 /** Kaarten uit de kaartendatabase (TCGdex) voor de zoekterm, om aan de wishlist toe te voegen. */
-export function CatalogResults({ query, lang, wished, owned, onPick }: Props): JSX.Element | null {
+export function CatalogResults({ query, lang, wished, owned, onPick, note = null }: Props): JSX.Element | null {
   const term = query.trim()
   const key = `${lang}|${term.toLowerCase()}`
   const [state, setState] = useState<State>({ key: '', hits: null, error: null })
@@ -62,6 +64,7 @@ export function CatalogResults({ query, lang, wished, owned, onPick }: Props): J
           </span>
         )}
       </div>
+      {note && <p className="muted small">{note}</p>}
       {!current && <Loading text="Searching…" />}
       {current?.error && (
         <p className="error" role="alert">

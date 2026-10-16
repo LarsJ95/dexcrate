@@ -10,7 +10,7 @@ import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import type { CatalogHit } from '../lib/catalogSearch'
 import { matchesCatalog, needsCatalog, type CatalogFilters } from '../lib/collectionFilters'
 import { listCards } from '../lib/db'
-import { getSet, lookupLang, type Lang } from '../lib/tcgdex'
+import { getSet, isLang, lookupLang, type Lang } from '../lib/tcgdex'
 import { marketValue } from '../lib/prices'
 import { matchesWords } from '../lib/search'
 import { formatEur } from '../lib/stats'
@@ -230,6 +230,10 @@ export function WishlistPage(): JSX.Element {
           wished={wishedKeys}
           owned={ownedKeys}
           onPick={(hit, lang) => void pickFromCatalog(hit, lang)}
+          note={
+            // Europese talen hebben geen eigen kaartdata (TCGdex): zelfde set en nummer als Engels.
+            language && !isLang(language) ? `No ${LANGUAGE_LABELS[language]} card data: showing English prints (same set and number).` : null
+          }
         />
       )}
 
