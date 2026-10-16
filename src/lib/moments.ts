@@ -5,7 +5,7 @@ import { getCardInfo } from './tcgdex'
 import type { Card } from './types'
 import { hasWishlist, listWishlist, ownedForWish } from './wishlist'
 
-/** Beloningsmomenten (DESIGN.md §9): één tegelijk, een nieuw moment vervangt het vorige. */
+/** Beloningsmomenten (DESIGN.md §9): één tegelijk; meerdere achter elkaar via een korte wachtrij. */
 export type Moment =
   | {
       kind: 'reveal'
@@ -25,11 +25,31 @@ export type Moment =
   | { kind: 'badge'; id: number; name: string; color: string }
   /** Hele evolutielijn in bezit (Pokédex-nummers van basis tot eindvorm). */
   | { kind: 'evolution'; id: number; path: number[] }
+  /** Nieuwe Pokémon in je Pokédex (eerste kaart van deze soort); `more` = nog zoveel andere nieuwe. */
+  | { kind: 'dex'; id: number; dexId: number; name: string; more: number }
+  /** Trainer-level omhoog. */
+  | { kind: 'level'; id: number; level: number; trainer: string }
+  /** Verborgen prestatie gehaald. */
+  | { kind: 'achievement'; id: number; name: string; how: string }
+  /** Meerdere kaarten tegelijk: als pakje openen, zeldzaamste als laatste. */
+  | { kind: 'pack'; id: number; cards: PackCard[] }
+  /** Bijna een set compleet. */
+  | { kind: 'almost'; id: number; setName: string; left: number; missing: string[] }
+  /** Wishlist-kaart onder je max. prijs. */
+  | { kind: 'deal'; id: number; name: string; market: number; max: number; tcgdexId: string | null }
+
+export interface PackCard {
+  card: Pick<Card, 'id' | 'tcgdex_id' | 'kind' | 'name' | 'image_path' | 'set_code' | 'card_number'>
+  rarity: string | null
+}
 
 type NewMoment = Moment extends infer M ? (M extends Moment ? Omit<M, 'id'> : never) : never
 
 let current: Moment | null = null
 let seq = 0
+/** Momenten die wachten tot het huidige klaar is (hoogstens een paar, anders wordt het te veel). */
+const queue: Moment[] = []
+const MAX_QUEUE = 4
 const listeners = new Set<() => void>()
 
 function emit(): void {
@@ -38,8 +58,49 @@ function emit(): void {
 
 export function showMoment(m: NewMoment): void {
   if (!motionAllowed()) return
-  current = { ...m, id: ++seq } as Moment
+  const next = { ...m, id: ++seq } as Moment
+  if (current) {
+    if (queue.length < MAX_QUEUE) queue.push(next)
+    return
+  }
+  current = next
   emit()
+}
+
+const readSet = (key: string): Set<string> | null => {
+  try {
+    const raw = localStorage.getItem(key)
+    return raw === null ? null : new Set(raw.split('|').filter(Boolean))
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Wat is nieuw sinds de vorige keer? Onthoudt de huidige ids per sleutel en geeft de nieuwe terug.
+ * Eerste keer (nog niets onthouden): alleen onthouden en niets teruggeven, zodat oude voortgang geen feest wordt.
+ */
+export function newSince(key: string, ids: readonly string[]): string[] {
+  const known = readSet(key)
+  try {
+    localStorage.setItem(key, ids.join('|'))
+  } catch (err) {
+    console.warn('Onthouden mislukt', err)
+    return []
+  }
+  return known === null ? [] : ids.filter((id) => !known.has(id))
+}
+
+/** Hoogste bereikte waarde onthouden; geeft true als die nu hoger is dan vorige keer (eerste keer: false). */
+export function risenSince(key: string, value: number): boolean {
+  let stored: string | null
+  try {
+    stored = localStorage.getItem(key)
+    localStorage.setItem(key, String(value))
+  } catch {
+    return false
+  }
+  return stored !== null && value > (Number.parseInt(stored, 10) || 0)
 }
 
 /** Mijlpalen voor kaarten in één set en voor de hele collectie. */
@@ -127,7 +188,7 @@ export function celebrateEvolutions(complete: readonly number[][]): void {
 
 export function endMoment(id: number): void {
   if (current?.id !== id) return
-  current = null
+  current = queue.shift() ?? null
   emit()
 }
 

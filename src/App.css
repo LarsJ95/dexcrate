@@ -5463,3 +5463,116 @@ a.button-link:hover {
     display: none;
   }
 }
+
+/* ---------- Dopamine-momenten: pakje, Pokédex, level, prestatie, toast (goedgekeurd 16-10-2026) ---------- */
+.moment-pack {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
+  width: min(96vw, 900px);
+  animation: moment-out 300ms ease-in forwards;
+  animation-delay: 3000ms;
+}
+
+.pack-row {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.pack-card {
+  position: relative;
+  width: clamp(64px, 13vw, 110px);
+  aspect-ratio: 63 / 88;
+  perspective: 900px;
+  animation: pack-in 300ms cubic-bezier(0.3, 1.2, 0.5, 1) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+
+.pack-card.is-best {
+  width: clamp(96px, 20vw, 170px);
+}
+
+.pack-card .moment-flip {
+  animation: moment-flip 400ms cubic-bezier(0.3, 1.4, 0.5, 1) var(--flip-at) forwards;
+}
+
+@keyframes pack-in {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.8);
+  }
+}
+
+/* Pokédex-moment: het rode apparaat met de nieuwe Pokémon. */
+.moment-dex {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  padding: var(--space-5) var(--space-6) var(--space-3);
+  border-radius: var(--radius-l);
+  border: 3px solid var(--ball-line);
+  background: linear-gradient(160deg, #e3350d, #b3200a);
+  box-shadow: var(--shadow-float);
+  animation: stamp-slam 400ms cubic-bezier(0.5, 0, 0.7, 1.4) both;
+}
+
+.moment-dex-lens {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #f3f1ec;
+  background: radial-gradient(circle at 35% 35%, #bfe6ff, #2a8be8 45%, #0d4a8f);
+}
+
+.moment-dex img {
+  height: 120px;
+  width: auto;
+  padding: var(--space-2);
+  border-radius: var(--radius-s);
+  border: 2px solid var(--ball-line);
+  background: radial-gradient(circle, #ffffff, #d7e9f7 70%);
+  image-rendering: pixelated;
+}
+
+.moment-dex-num {
+  color: #ffffff;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+}
+
+.is-level .moment-stamp {
+  border-color: var(--hp-high);
+  color: var(--hp-high);
+}
+
+.is-achievement .moment-stamp {
+  border-color: var(--rarity-gold);
+  color: var(--rarity-gold);
+  font-size: 1.5rem;
+}
+
+/* Toast-momenten (bijna compleet, deal): onderaan, laten de pagina vrij. */
+.moment-layer.is-toast {
+  place-items: end center;
+  padding-bottom: calc(var(--space-8) + env(safe-area-inset-bottom, 0px));
+}
+
+.moment-layer.is-toast .moment-caption {
+  max-width: min(92vw, 520px);
+  animation:
+    caption-in 250ms ease-out both,
+    moment-out 300ms ease-in 2300ms forwards;
+}
+
+@media (max-width: 1023px) {
+  .moment-layer.is-toast {
+    padding-bottom: calc(var(--tabbar) + var(--space-5) + env(safe-area-inset-bottom, 0px));
+  }
+}
