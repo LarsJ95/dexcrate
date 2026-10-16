@@ -183,9 +183,9 @@ async function recognize(
 /** Wanneer de duurdere tweede poging de moeite waard is. */
 function needsFallback(cards: CardFields[] | null, refused: boolean, mode: Mode): boolean {
   if (!cards || refused) return true
-  // Eén kaart: bij elke twijfel. Binderpagina: alleen als een kaart echt onleesbaar is (kosten).
+  // Alleen bij echte twijfel: naam of nummer onleesbaar. Een ontbrekende setcode lost de app zelf op via naam + nummer.
   return mode === 'single'
-    ? cards.some((c) => c.confidence !== 'high')
+    ? cards.some((c) => c.confidence === 'low' || !c.name_english.trim() || !c.card_number.trim())
     : cards.length === 0 || cards.some((c) => c.confidence === 'low')
 }
 
