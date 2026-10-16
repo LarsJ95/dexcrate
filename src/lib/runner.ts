@@ -65,6 +65,11 @@ export function registerRunner(entry: RunnerEntry): void {
   }, 2000)
 }
 
+/** Pokédex-nummers uit je collectie die de app al kent (zonder extra verzoeken). */
+export function ownedDexIds(): number[] {
+  return [...load().keys()]
+}
+
 export function isNight(date = new Date()): boolean {
   const h = date.getHours()
   return h >= 20 || h < 6

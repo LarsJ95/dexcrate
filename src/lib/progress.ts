@@ -66,7 +66,7 @@ interface Rule {
   id: string
   name: string
   how: string
-  test: (ctx: { dex: ReadonlySet<number>; dexCount: ReadonlyMap<number, number>; cards: readonly ProgressCard[] }) => boolean
+  test: (ctx: { dex: ReadonlySet<number>; dexCount: ReadonlyMap<number, number>; cards: readonly ProgressCard[]; rocketBlasts: number }) => boolean
 }
 
 const anyOf = (dex: ReadonlySet<number>, ids: readonly number[]): boolean => ids.some((d) => dex.has(d))
@@ -85,12 +85,14 @@ const RULES: readonly Rule[] = [
   { id: 'world', name: 'World Traveller', how: 'Own cards in three or more languages.', test: ({ cards }) => new Set(cards.flatMap((c) => (c.language ? [c.language] : []))).size >= 3 },
   { id: 'mew', name: 'Mythical Encounter', how: 'Own a card of Mew.', test: ({ dex }) => dex.has(151) },
   { id: 'dragons', name: 'Dragon Tamer', how: 'Own Dratini, Dragonair and Dragonite.', test: ({ dex }) => allOf(dex, [147, 148, 149]) },
+  { id: 'rocket', name: 'Blasting Off Again', how: 'Send Team Rocket blasting off ten times (tap their balloon in the sky).', test: ({ rocketBlasts }) => rocketBlasts >= 10 },
 ]
 
-export function achievements(cards: readonly ProgressCard[]): Achievement[] {
+/** `rocketBlasts`: hoe vaak je Team Rocket in de achtergrond hebt weggestuurd (per apparaat). */
+export function achievements(cards: readonly ProgressCard[], rocketBlasts = 0): Achievement[] {
   const dexCount = new Map<number, number>()
   for (const c of cards) if (c.dexId) dexCount.set(c.dexId, (dexCount.get(c.dexId) ?? 0) + c.quantity)
-  const ctx = { dex: new Set(dexCount.keys()), dexCount, cards }
+  const ctx = { dex: new Set(dexCount.keys()), dexCount, cards, rocketBlasts }
   return RULES.map((r) => ({ id: r.id, name: r.name, how: r.how, earned: r.test(ctx) }))
 }
 

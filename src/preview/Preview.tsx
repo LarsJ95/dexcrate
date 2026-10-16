@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useState, type JSX } from 'react'
 import { CardTile } from '../components/CardTile'
 import { Shell } from '../components/Shell'
+import { seedSkyForPreview } from '../lib/sky'
 import { CameraCapture } from '../components/CameraCapture'
 import { CardDialog } from '../components/CardDialog'
 import { CardImage } from '../components/CardImage'
@@ -105,6 +106,13 @@ if (params.get('runner')) {
   const dexId = Number(params.get('runner'))
   seedRunnerForPreview([{ dexId, name: params.get('runnername') ?? 'Pikachu', type: 'Lightning' }], 7000 - Number(params.get('at') ?? 2500))
 }
+
+// ?sky=star|rocket|flyer|gengar[&phase=dawn|day|dusk|night]: achtergrond-gebeurtenis direct starten.
+const skyKind = params.get('sky')
+const skyPhaseParam = params.get('phase')
+const seededKind = skyKind === 'star' || skyKind === 'rocket' || skyKind === 'flyer' || skyKind === 'gengar' ? skyKind : null
+const seededPhase = skyPhaseParam === 'dawn' || skyPhaseParam === 'day' || skyPhaseParam === 'dusk' || skyPhaseParam === 'night' ? skyPhaseParam : null
+if (seededKind || seededPhase) seedSkyForPreview(seededKind, seededPhase)
 
 // ?peek=<ms>: Pikachu kijkt na zoveel ms om een hoekje.
 if (params.get('peek')) seedPeekForPreview(Number(params.get('peek')))

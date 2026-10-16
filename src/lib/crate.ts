@@ -96,6 +96,17 @@ export async function openCratePack(cards: readonly PackPull[], pack: PackKind =
   return { points: num(o.points), freePack: o.free_pack === true, cost: num(o.cost) }
 }
 
+/** Wens bij een vallende ster (STAP13): één keer per dag +5. `gained` 0 = vandaag al gedaan. null = STAP13 ontbreekt. */
+export async function makeWish(): Promise<{ points: number; gained: number } | null> {
+  const { data, error } = await supabase.rpc('crate_wish')
+  if (error) {
+    if (missingFunction(error)) return null
+    throw new Error(`Making a wish failed: ${error.message}`)
+  }
+  const o = isRecord(data) ? data : {}
+  return { points: num(o.points), gained: num(o.gained) }
+}
+
 /** Inruilwaarde per extra exemplaar (gelijk aan de databasefunctie crate_trade_value). */
 export function tradeValue(rarity: string | null): number {
   const r = (rarity ?? '').toLowerCase()

@@ -6,6 +6,7 @@ import { Moments } from './Moments'
 import { PartnerBuddy } from './PartnerBuddy'
 import { Peek } from './Peek'
 import { Runner } from './Runner'
+import { Sky } from './Sky'
 import { SIDE_GROUPS, TAB_NAV, isActiveTab } from './nav'
 
 interface Props {
@@ -33,6 +34,7 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
 
   return (
     <div className="shell">
+      <Sky theme={theme} />
       <aside className="sidebar">
         <a className="brand" href="#/overview">
           <LogoMark />

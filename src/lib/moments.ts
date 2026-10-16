@@ -93,6 +93,17 @@ export function newSince(key: string, ids: readonly string[]): string[] {
   return known === null ? [] : ids.filter((id) => !known.has(id))
 }
 
+/** Eén id aan de onthouden lijst toevoegen (zodat hij later niet nog eens als nieuw telt). */
+export function addSeen(key: string, id: string): void {
+  const known = readSet(key) ?? new Set<string>()
+  known.add(id)
+  try {
+    localStorage.setItem(key, [...known].join('|'))
+  } catch (err) {
+    console.warn('Onthouden mislukt', err)
+  }
+}
+
 /** Hoogste bereikte waarde onthouden; geeft true als die nu hoger is dan vorige keer (eerste keer: false). */
 export function risenSince(key: string, value: number): boolean {
   let stored: string | null

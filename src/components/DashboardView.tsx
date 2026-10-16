@@ -11,6 +11,7 @@ import { rememberAutoPartner, usePartnerChoice } from '../lib/partner'
 import { badges, dominantType, hpLevel, partnerDexId, pokedexProgress, type OwnedInfo } from '../lib/trainer'
 import { celebrateProgress, rememberTrainerName, syncCratePoints, toProgressCards } from '../lib/celebrate'
 import { achievements, dailyDexId, levelFor, xpFor } from '../lib/progress'
+import { rocketBlasts } from '../lib/sky'
 import { BadgeCase } from './BadgeCase'
 import { DailyPokemon } from './DailyPanels'
 import { RecentlyAdded, SetsNearlyComplete } from './OverviewPanels'
@@ -158,7 +159,7 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
   )
   const badgesEarned = badgeList.filter((b) => b.earned).length
   const level = levelFor(xpFor(progressCards, badgesEarned))
-  const secrets = useMemo(() => achievements(progressCards), [progressCards])
+  const secrets = useMemo(() => achievements(progressCards, rocketBlasts()), [progressCards])
   const daily = dailyDexId(new Date())
   const dailyOwned = owned.reduce((n, o) => n + (o.dexId === daily ? o.quantity : 0), 0)
   useEffect(() => {
