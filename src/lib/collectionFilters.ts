@@ -14,12 +14,14 @@ export interface ExtraFilters {
   rarity: string
   type: EnergyType | ''
   suffix: string
+  /** 'unlinked' = alleen kaarten zonder koppeling met de catalogus. */
+  link: '' | 'unlinked'
 }
 
-export const NO_EXTRA_FILTERS: ExtraFilters = { language: '', variant: '', condition: '', location: '', illustrator: '', rarity: '', type: '', suffix: '' }
+export const NO_EXTRA_FILTERS: ExtraFilters = { language: '', variant: '', condition: '', location: '', illustrator: '', rarity: '', type: '', suffix: '', link: '' }
 
 export function activeFilterCount(f: ExtraFilters): number {
-  return [f.language, f.variant, f.condition, f.location, f.illustrator.trim(), f.rarity, f.type, f.suffix].filter(Boolean).length
+  return [f.language, f.variant, f.condition, f.location, f.illustrator.trim(), f.rarity, f.type, f.suffix, f.link].filter(Boolean).length
 }
 
 /** Wat de catalogusfilters van een kaart nodig hebben. */
@@ -42,6 +44,9 @@ export function matchesCatalog(info: CatalogTraits | null, f: CatalogFilters): b
   return true
 }
 
+/** Losse kaart (geen sealed product) zonder koppeling met de catalogus. */
+export const isUnlinked = (c: Pick<CardInput, 'kind' | 'tcgdex_id'>): boolean => c.kind === 'card' && !c.tcgdex_id
+
 const fieldMatches = <T extends string>(value: T | null, wanted: T | '' | 'none'): boolean =>
   wanted === '' || (wanted === 'none' ? value === null : value === wanted)
 
@@ -52,6 +57,7 @@ const fieldMatches = <T extends string>(value: T | null, wanted: T | '' | 'none'
 export function matchesExtra(c: CardInput, f: ExtraFilters, infoOf: (c: CardInput) => CatalogTraits | null | undefined): boolean {
   if (!fieldMatches(c.language, f.language) || !fieldMatches(c.variant, f.variant) || !fieldMatches(c.condition, f.condition)) return false
   if (f.location === 'none' ? c.location_id !== null : f.location !== '' && c.location_id !== f.location) return false
+  if (f.link === 'unlinked' && !isUnlinked(c)) return false
   if (!needsCatalog(f)) return true
   const info = infoOf(c)
   if (info === undefined) return true
@@ -100,6 +106,7 @@ export function parseView<S extends string, F extends string>(
         rarity: (RARITY_FILTERS as readonly string[]).includes(str(extra.rarity)) ? str(extra.rarity) : '',
         type: isEnergyType(extra.type) ? extra.type : '',
         suffix: (SUFFIX_FILTERS as readonly string[]).includes(str(extra.suffix)) ? str(extra.suffix) : '',
+        link: extra.link === 'unlinked' ? 'unlinked' : '',
       },
     }
   } catch {

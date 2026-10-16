@@ -4,7 +4,7 @@ import { BulkEditDialog, type BulkChange } from '../components/BulkEditDialog'
 import { CardTile } from '../components/CardTile'
 import { useLocations } from '../hooks/useLocations'
 import { useSchemaV2 } from '../hooks/useSchemaV2'
-import { NO_EXTRA_FILTERS, activeFilterCount, matchesExtra, needsCatalog, parseView, type ExtraFilters, type SavedView } from '../lib/collectionFilters'
+import { NO_EXTRA_FILTERS, activeFilterCount, isUnlinked, matchesExtra, needsCatalog, parseView, type ExtraFilters, type SavedView } from '../lib/collectionFilters'
 import { CatalogFilterFields } from '../components/CatalogFilterFields'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import type { CardInfo } from '../lib/tcgdex'
@@ -158,7 +158,8 @@ export function CollectionPage(): JSX.Element {
     return out
   }, [cards])
 
-  const unlinked = useMemo(() => (cards ?? []).filter((c) => c.kind === 'card' && !c.tcgdex_id).length, [cards])
+  // Alleen binnen de gekozen status (Owned, Sold …), zodat het aantal klopt met wat je ziet.
+  const unlinked = useMemo(() => (cards ?? []).filter((c) => matchesFilter(c, filter) && isUnlinked(c)).length, [cards, filter])
 
   const toggleSold = useCallback(
     async (id: string): Promise<void> => {
@@ -366,6 +367,13 @@ export function CollectionPage(): JSX.Element {
             )}
             <CatalogFilterFields value={extra} onChange={(next) => setExtra((f) => ({ ...f, ...next }))} />
             <label>
+              Linked card
+              <select value={extra.link} onChange={(e) => setExtra((f) => ({ ...f, link: e.target.value === 'unlinked' ? 'unlinked' : '' }))}>
+                <option value="">All</option>
+                <option value="unlinked">Not linked</option>
+              </select>
+            </label>
+            <label>
               Illustrator
               <input value={extra.illustrator} maxLength={60} placeholder="e.g. Arita" onChange={(e) => setExtra((f) => ({ ...f, illustrator: e.target.value }))} />
             </label>
@@ -387,10 +395,17 @@ export function CollectionPage(): JSX.Element {
         </div>
       )}
 
-      {unlinked > 0 && (
-        <p className="notice">
-          {unlinked} {unlinked === 1 ? 'card is' : 'cards are'} not linked yet. Open a card to link it.
-        </p>
+      {unlinked > 0 && extra.link !== 'unlinked' && (
+        <button
+          type="button"
+          className="notice notice-action"
+          onClick={() => {
+            setExtra((f) => ({ ...f, link: 'unlinked' }))
+            setShowFilters(true)
+          }}
+        >
+          {unlinked} {unlinked === 1 ? 'card is' : 'cards are'} not linked yet. Show {unlinked === 1 ? 'it' : 'them'}.
+        </button>
       )}
       {actionError && <p className="error" role="alert">{actionError}</p>}
       {loadError && (

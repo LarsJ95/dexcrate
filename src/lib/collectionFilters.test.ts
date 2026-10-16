@@ -16,6 +16,15 @@ describe('extra filters', () => {
     expect(matchesExtra(mew, { ...NO_EXTRA_FILTERS, location: 'none' }, none)).toBe(false)
   })
 
+  it('niet gekoppeld: alleen losse kaarten zonder catalogus-id', () => {
+    const f = { ...NO_EXTRA_FILTERS, link: 'unlinked' as const }
+    expect(matchesExtra(loose, f, none)).toBe(true)
+    expect(matchesExtra({ ...loose, tcgdex_id: 'en/sv05-1' }, f, none)).toBe(false)
+    expect(matchesExtra({ ...loose, kind: 'sealed' as const }, f, none)).toBe(false)
+    expect(activeFilterCount(f)).toBe(1)
+    expect(parseView(JSON.stringify({ extra: { link: 'unlinked' } }), ['list'], ['owned'], { query: '', filter: 'owned', sort: 'list', extra: NO_EXTRA_FILTERS }).extra.link).toBe('unlinked')
+  })
+
   it('illustrator: deelnaam; tijdens laden niet wegfilteren', () => {
     const f = { ...NO_EXTRA_FILTERS, illustrator: 'aky' }
     const by = (illustrator: string) => () => ({ illustrator, rarity: null, types: [], suffix: null })

@@ -46,6 +46,24 @@
   color: var(--ink-soft);
 }
 
+/* Melding die zelf de actie is (bv. niet-gekoppelde kaarten tonen). */
+button.notice-action {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+  text-align: left;
+  font-weight: 400;
+  border-radius: var(--radius-l);
+  border-left: 3px solid var(--accent-line);
+  background: var(--surface);
+  color: var(--ink-soft);
+}
+
+button.notice-action:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-left-color: var(--accent-line);
+}
+
 .empty {
   padding: var(--space-7) var(--space-4);
   text-align: center;
