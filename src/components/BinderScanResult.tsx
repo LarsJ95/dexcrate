@@ -3,9 +3,9 @@ import { insertCards } from '../lib/db'
 import { celebrateNewCards } from '../lib/moments'
 import { findCandidates, type Candidate } from '../lib/match'
 import { draftFromScan, type Recognition } from '../lib/scan'
-import { imageCandidatesForKey, lookupLang } from '../lib/tcgdex'
+import { lookupLang } from '../lib/tcgdex'
 import { CardFace } from './CardFace'
-import { CardPicture } from './CardPicture'
+import { CatalogKeyPicture } from './CatalogCardPicture'
 import { CONDITION_LABELS, EMPTY_CARD, LANGUAGE_LABELS, type Card, type CardInput, type Condition } from '../lib/types'
 
 interface Props {
@@ -140,17 +140,16 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
                 />
               </label>
               <span className="scan-thumb">
-                <CardPicture
-                  sources={c ? imageCandidatesForKey(c.key, c.image, 'low') : []}
-                  alt=""
-                  fallback={
+                {(() => {
+                  const face = (
                     <CardFace
                       name={c?.name ?? label}
                       detail={c ? `${c.setName} #${c.localId}` : [r.rec.setCode, r.rec.cardNumber].filter(Boolean).join(' ')}
                       loading={r.candidates === undefined}
                     />
-                  }
-                />
+                  )
+                  return c ? <CatalogKeyPicture cardKey={c.key} image={c.image} name={c.name} quality="low" alt="" fallback={face} /> : face
+                })()}
               </span>
               <div className="scan-info">
                 <p className="tile-name">

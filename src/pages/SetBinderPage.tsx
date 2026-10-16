@@ -10,12 +10,12 @@ import { formatEur } from '../lib/stats'
 import { VARIANT_LABELS, type Variant } from '../lib/types'
 import { loadGoal } from '../lib/wishlist'
 import { CardFace } from '../components/CardFace'
-import { CardPicture } from '../components/CardPicture'
+import { CatalogCardPicture } from '../components/CatalogCardPicture'
 import { GoalSheet } from '../components/GoalSheet'
 import { IconArrowLeft } from '../components/Icons'
 import { SetCardSheet } from '../components/SetCardSheet'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
-import { getCardInfo, getCardPrice, getSet, imageCandidates, isLang, setOfKey, type SetCard, type SetSummary } from '../lib/tcgdex'
+import { getCardInfo, getCardPrice, getSet, isLang, setOfKey, type SetCard, type SetSummary } from '../lib/tcgdex'
 import { Loading } from '../components/Loading'
 
 interface Props {
@@ -538,11 +538,20 @@ export function SetBinderPage({ param }: Props): JSX.Element {
                       onClick={() => setOpenCard(c)}
                       aria-label={`View ${c.name} #${c.localId}${complete ? '' : inGoal ? ' (missing)' : ' (not in goal)'}`}
                     >
-                      <CardPicture
-                        sources={isLang(lang) ? imageCandidates(lang, data.summary.id, c.localId, c.image, 'low') : []}
-                        alt={`${c.name} ${c.localId}`}
-                        fallback={<CardFace name={c.name} detail={`#${c.localId}`} />}
-                      />
+                      {isLang(lang) ? (
+                        <CatalogCardPicture
+                          lang={lang}
+                          setId={data.summary.id}
+                          localId={c.localId}
+                          image={c.image}
+                          name={c.name}
+                          quality="low"
+                          alt={`${c.name} ${c.localId}`}
+                          fallback={<CardFace name={c.name} detail={`#${c.localId}`} />}
+                        />
+                      ) : (
+                        <CardFace name={c.name} detail={`#${c.localId}`} />
+                      )}
                       <span className="slot-num">{c.localId}</span>
                       {versioned.length > 0 && (
                         <span className="slot-variants">

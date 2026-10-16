@@ -3,7 +3,7 @@ import { BinderScanResult } from '../components/BinderScanResult'
 import { CameraCapture } from '../components/CameraCapture'
 import { CardDialog } from '../components/CardDialog'
 import { CardFace } from '../components/CardFace'
-import { CardPicture } from '../components/CardPicture'
+import { CatalogKeyPicture } from '../components/CatalogCardPicture'
 import { listCards } from '../lib/db'
 import { findCandidates, type Candidate } from '../lib/match'
 import { uploadPhoto } from '../lib/photos'
@@ -19,7 +19,7 @@ import {
   type Recognition,
   type ScanMode,
 } from '../lib/scan'
-import { imageCandidatesForKey, lookupLang, type Lang } from '../lib/tcgdex'
+import { lookupLang, type Lang } from '../lib/tcgdex'
 import { LANGUAGE_LABELS, type Card, type CardInput } from '../lib/types'
 
 type Phase =
@@ -364,8 +364,11 @@ export function ScanPage(): JSX.Element {
                     className={`candidate${i === 0 ? ' selected' : ''}`}
                     onClick={() => void chooseSingle(c, phase.recognition, phase.lang)}
                   >
-                    <CardPicture
-                      sources={imageCandidatesForKey(c.key, c.image, 'low')}
+                    <CatalogKeyPicture
+                      cardKey={c.key}
+                      image={c.image}
+                      name={c.name}
+                      quality="low"
                       alt=""
                       fallback={<CardFace name={c.name} detail={`${c.setName} #${c.localId}`} />}
                     />

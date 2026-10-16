@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type JSX } from 'react'
 import { useCardInfo } from '../hooks/useCardInfo'
 import { findCandidates, type Candidate } from '../lib/match'
-import { imageCandidates, imageCandidatesForKey, lookupLang, splitKey, stripLangTag, type Lang } from '../lib/tcgdex'
+import { lookupLang, splitKey, stripLangTag, type Lang } from '../lib/tcgdex'
 import type { CardLanguage } from '../lib/types'
 import { CardFace } from './CardFace'
-import { CardPicture } from './CardPicture'
+import { CatalogCardPicture, CatalogKeyPicture } from './CatalogCardPicture'
 import { CardZoom } from './CardZoom'
 
 interface Props {
@@ -69,8 +69,14 @@ export function LinkPicker({ name, language, setCode, cardNumber, value, onSelec
           <>
             {linked && (
               <button type="button" className="zoom-trigger link-thumb" onClick={() => setZoomOpen(true)} aria-label={`Enlarge ${linked.name}`}>
-                <CardPicture
-                  sources={imageCandidates(linked.lang, linked.set.id, linked.localId, linked.image, 'low')}
+                <CatalogCardPicture
+                  lang={linked.lang}
+                  setId={linked.set.id}
+                  localId={linked.localId}
+                  image={linked.image}
+                  tcgplayerId={linked.tcgplayerId}
+                  name={linked.name}
+                  quality="low"
                   alt=""
                   fallback={null}
                 />
@@ -78,8 +84,14 @@ export function LinkPicker({ name, language, setCode, cardNumber, value, onSelec
             )}
             {linked && zoomOpen && (
               <CardZoom label={linked.name} onClose={() => setZoomOpen(false)}>
-                <CardPicture
-                  sources={imageCandidates(linked.lang, linked.set.id, linked.localId, linked.image, 'high')}
+                <CatalogCardPicture
+                  lang={linked.lang}
+                  setId={linked.set.id}
+                  localId={linked.localId}
+                  image={linked.image}
+                  tcgplayerId={linked.tcgplayerId}
+                  name={linked.name}
+                  quality="high"
                   alt={linked.name}
                   fallback={<CardFace name={linked.name} detail={`${linked.set.name} #${linked.localId}`} />}
                 />
@@ -146,8 +158,11 @@ export function LinkPicker({ name, language, setCode, cardNumber, value, onSelec
                       setOpen(false)
                     }}
                   >
-                    <CardPicture
-                      sources={imageCandidatesForKey(c.key, c.image, 'low')}
+                    <CatalogKeyPicture
+                      cardKey={c.key}
+                      image={c.image}
+                      name={c.name}
+                      quality="low"
                       alt=""
                       fallback={<CardFace name={c.name} detail={`${c.setName} #${c.localId}`} />}
                     />

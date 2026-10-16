@@ -8,6 +8,8 @@ import { readCache, writeCache, type Lang } from './tcgdex'
  */
 
 export interface PtcgImages {
+  /** Set-id bij pokemontcg.io (bv. "sv5"), voor kaartfoto's. */
+  id: string | null
   logo: string | null
   symbol: string | null
 }
@@ -15,8 +17,8 @@ export interface PtcgImages {
 /** Genormaliseerde setnaam → plaatjes van pokemontcg.io. */
 export type PtcgSets = ReadonlyMap<string, PtcgImages>
 
-const PTCG_API = 'https://api.pokemontcg.io/v2/sets?pageSize=250&select=name,images'
-const PTCG_PREFIX = 'ptcg:sets:v1:'
+const PTCG_API = 'https://api.pokemontcg.io/v2/sets?pageSize=250&select=id,name,images'
+const PTCG_PREFIX = 'ptcg:sets:v2:' // v2: met set-id
 const PTCG_TTL_MS = 7 * 24 * 60 * 60 * 1000
 const PTCG_ATTEMPTS = 5
 const LIMITLESS = 'https://s3.limitlesstcg.com/sets'
@@ -38,10 +40,10 @@ export function parsePtcgSets(data: unknown): Map<string, PtcgImages> {
   const list = typeof data === 'object' && data !== null && Array.isArray((data as { data?: unknown }).data) ? (data as { data: unknown[] }).data : []
   for (const s of list) {
     if (typeof s !== 'object' || s === null) continue
-    const { name, images } = s as { name?: unknown; images?: unknown }
+    const { id, name, images } = s as { id?: unknown; name?: unknown; images?: unknown }
     if (typeof name !== 'string' || typeof images !== 'object' || images === null) continue
     const img = images as { logo?: unknown; symbol?: unknown }
-    const entry = { logo: httpsUrl(img.logo), symbol: httpsUrl(img.symbol) }
+    const entry = { id: typeof id === 'string' && /^[a-z0-9]+$/i.test(id) ? id : null, logo: httpsUrl(img.logo), symbol: httpsUrl(img.symbol) }
     if (entry.logo || entry.symbol) out.set(normSetName(name), entry)
   }
   return out

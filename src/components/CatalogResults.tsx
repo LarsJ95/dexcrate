@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, type JSX } from 'react'
 import { searchCatalog, sortHits, type CatalogHit, type HitOrder } from '../lib/catalogSearch'
-import { imageCandidates, type Lang } from '../lib/tcgdex'
+import type { Lang } from '../lib/tcgdex'
 import { CardFace } from './CardFace'
-import { CardPicture } from './CardPicture'
+import { CatalogCardPicture } from './CatalogCardPicture'
 import { Loading } from './Loading'
 import { SetIcon } from './SetIcon'
 
@@ -90,8 +90,13 @@ export function CatalogResults({ query, lang, wished, owned, onPick, note = null
               return (
                 <li key={k}>
                   <button type="button" className="catalog-hit" onClick={() => onPick(hit, lang)}>
-                    <CardPicture
-                      sources={imageCandidates(lang, hit.setId, hit.card.localId, hit.card.image, 'low')}
+                    <CatalogCardPicture
+                      lang={lang}
+                      setId={hit.setId}
+                      localId={hit.card.localId}
+                      image={hit.card.image}
+                      name={hit.card.name}
+                      quality="low"
                       alt=""
                       fallback={<CardFace name={hit.card.name} detail={`#${hit.card.localId}`} />}
                     />
