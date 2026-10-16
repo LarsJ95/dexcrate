@@ -1,6 +1,7 @@
 import { buzz } from './haptics'
 import { findCandidates } from './match'
 import { prepareImage, recognizeCards, type PreparedImage } from './scan'
+import { BLUR_THRESHOLD, photoSharpness } from './sharpness'
 import { MAX_QUEUE, QUEUE_KEY, mergeDuplicate, newItem, parseQueue, withMatch, type QueueItem } from './scanQueue'
 import { lookupLang } from './tcgdex'
 
@@ -50,6 +51,8 @@ export interface ScanFeedback {
   text: string
   /** Ongedaan maken: regel weghalen, of bij een samengevoegde kaart het aantal met 1 verlagen. */
   undo: { kind: 'remove' | 'decrement'; id: string } | null
+  /** Wazige foto toch gebruiken. */
+  keepAnyway?: () => void
 }
 
 let feedback: ScanFeedback | null = null
@@ -99,9 +102,27 @@ function dropImage(id: string): void {
   images.delete(id)
 }
 
-/** Foto toevoegen; herkennen start op de achtergrond. */
-export async function enqueue(file: File): Promise<void> {
+/**
+ * Foto toevoegen; herkennen start op de achtergrond. Met `checkBlur` (camera) wordt een duidelijk wazige foto
+ * niet verstuurd maar gemeld, met de keuze hem toch te gebruiken. Geeft false als hij is tegengehouden.
+ */
+export async function enqueue(file: File, checkBlur = false): Promise<boolean> {
   if (queue.length >= MAX_QUEUE) throw new Error(`The scan queue is full (${MAX_QUEUE}). Add or clear cards first.`)
+  if (checkBlur) {
+    const score = await photoSharpness(file).catch((err: unknown) => {
+      console.warn('Scherpte meten mislukt', err)
+      return Number.POSITIVE_INFINITY
+    })
+    if (score < BLUR_THRESHOLD) {
+      announce({
+        ok: false,
+        text: 'Blurry photo. Hold still and take it again.',
+        undo: null,
+        keepAnyway: () => void enqueue(file, false).catch((err: unknown) => console.error('Foto toevoegen mislukt', err)),
+      })
+      return false
+    }
+  }
   const img = await prepareImage(file, 'single')
   const thumb = await makeThumb(img.blob)
   const id = crypto.randomUUID()
@@ -109,6 +130,7 @@ export async function enqueue(file: File): Promise<void> {
   // Pas na alle await's de huidige wachtrij lezen: anders gaan foto's die tegelijk binnenkomen verloren.
   set([...queue, newItem(id, thumb)])
   pump()
+  return true
 }
 
 async function process(id: string): Promise<void> {

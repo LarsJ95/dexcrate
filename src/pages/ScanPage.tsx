@@ -115,9 +115,10 @@ export function ScanPage(): JSX.Element {
     if (files[0]) void processPhoto(files[0], mode)
   }
 
-  function addToQueue(file: File): void {
+  /** `fromCamera`: wazige foto's tegenhouden (bestanden kies je bewust, die niet). */
+  function addToQueue(file: File, fromCamera = false): void {
     setQueueError(null)
-    enqueue(file).catch((err: unknown) => {
+    enqueue(file, fromCamera).catch((err: unknown) => {
       console.error('Foto toevoegen aan wachtrij mislukt', err)
       setQueueError(err instanceof Error ? err.message : 'Adding the photo failed.')
     })
@@ -336,7 +337,7 @@ export function ScanPage(): JSX.Element {
       {cameraOpen && (
         <CameraCapture
           wide={mode === 'multi'}
-          onCapture={(file) => (mode === 'queue' ? addToQueue(file) : void processPhoto(file, mode))}
+          onCapture={(file) => (mode === 'queue' ? addToQueue(file, true) : void processPhoto(file, mode))}
           onPickFile={() => {
             setCameraOpen(false)
             inputRef.current?.click()

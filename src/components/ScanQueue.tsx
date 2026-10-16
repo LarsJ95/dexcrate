@@ -45,6 +45,18 @@ function ScanToast(): JSX.Element | null {
           Undo
         </button>
       )}
+      {f.keepAnyway && (
+        <button
+          type="button"
+          className="small-btn"
+          onClick={() => {
+            f.keepAnyway?.()
+            setHidden(f.seq)
+          }}
+        >
+          Use anyway
+        </button>
+      )}
     </div>
   )
 }
@@ -52,7 +64,14 @@ function ScanToast(): JSX.Element | null {
 /** Strook onderin de camera: laatste foto's en hoeveel er klaar zijn. */
 export function QueueStrip(): JSX.Element | null {
   const queue = useScanQueue()
-  if (queue.length === 0) return <p className="queue-strip-hint">Take a photo of each card. Recognition runs in the background.</p>
+  if (queue.length === 0) {
+    return (
+      <div className="queue-strip">
+        <ScanToast />
+        <p className="queue-strip-hint">Take a photo of each card. Recognition runs in the background.</p>
+      </div>
+    )
+  }
   const s = summarize(queue)
   return (
     <div className="queue-strip" aria-live="polite">
