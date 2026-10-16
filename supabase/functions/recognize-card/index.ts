@@ -26,7 +26,7 @@ const CARD_FIELDS = {
     regulation_mark: { type: 'string', description: 'Losse letter in een kadertje linksonder (bv. "G", "H"); leeg als afwezig.' },
     variant: { type: 'string', enum: ['normal', 'holo', 'reverse', 'unknown'] },
     confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
-    notes: { type: 'string', description: 'Korte toelichting bij twijfel; anders leeg.' },
+    notes: { type: 'string', description: 'Short explanation in English when unsure; otherwise empty. Always English, never Dutch.' },
 } as const
 const CARD_REQUIRED = Object.keys(CARD_FIELDS)
 
@@ -64,7 +64,8 @@ const MULTI_SCHEMA = {
 const RULES = `- Lees naam, setafkorting en kaartnummer letterlijk van de kaart (onderrand). Gok geen setcode die je niet kunt lezen.
 - De regulation mark (losse letter in een kadertje) is geen setcode.
 - variant: "reverse" alleen als het glimmende patroon over de hele kaart behalve de illustratie loopt; "holo" als alleen de illustratie glimt; anders "normal" of "unknown".
-- confidence: "high" alleen als naam én nummer goed leesbaar zijn.`
+- confidence: "high" alleen als naam én nummer goed leesbaar zijn.
+- notes: schrijf altijd in het Engels (de app is Engelstalig), kort, en alleen bij twijfel.`
 
 const SINGLE_PROMPT = `Identificeer de Pokémon-ruilkaart op deze foto en vul de velden in.
 ${RULES}
