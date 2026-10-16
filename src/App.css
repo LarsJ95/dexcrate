@@ -1669,10 +1669,10 @@ a.stat:hover {
   border-radius: var(--radius-l);
 }
 
-/* Twee pagina's naast elkaar op brede schermen, zoals een opengeslagen map. */
+/* Pagina's naast elkaar zoals een opengeslagen map; ze vullen samen de volle breedte. */
 .binder-pages {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 540px));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr));
   gap: var(--space-4);
   align-items: start;
 }
@@ -1713,8 +1713,20 @@ a.stat:hover {
 }
 
 .slot.missing .card-img {
-  filter: grayscale(1) brightness(0.7);
-  opacity: 0.28;
+  filter: grayscale(1) brightness(0.85);
+  opacity: 0.45;
+}
+
+.slot-name {
+  display: block;
+  padding-top: var(--space-1);
+  text-align: center;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .slot-num {
@@ -1722,11 +1734,14 @@ a.stat:hover {
   text-align: center;
   font-size: var(--fs-small);
   color: var(--muted);
-  padding-top: var(--space-1);
 }
 
+.slot.have .slot-name,
 .slot.have .slot-num {
   color: var(--ink);
+}
+
+.slot.have .slot-name {
   font-weight: 700;
 }
 

@@ -552,7 +552,10 @@ export function SetBinderPage({ param }: Props): JSX.Element {
                       ) : (
                         <CardFace name={c.name} detail={`#${c.localId}`} />
                       )}
-                      <span className="slot-num">{c.localId}</span>
+                      <span className="slot-name" title={c.name}>
+                        {c.name}
+                      </span>
+                      <span className="slot-num">#{c.localId}</span>
                       {versioned.length > 0 && (
                         <span className="slot-variants">
                           {versioned.map((st) => (
