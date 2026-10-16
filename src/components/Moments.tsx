@@ -154,7 +154,7 @@ function MomentLayer({ moment }: { moment: Moment }): JSX.Element {
           )}
         </div>
         <p className="moment-caption">
-          <strong>{caught ? 'Caught!' : card.name}</strong>
+          <strong>{caught ? 'Caught!' : `You got ${card.name}!`}</strong>
           <span>
             {caught ? `${card.name}, from your wishlist` : 'Added to your collection'}
             {rarity && (

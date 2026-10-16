@@ -4388,3 +4388,57 @@ button.partner:active:not(:disabled) {
 :is(.meter-fill, .set-progress > span)[data-hp='low'] {
   background: var(--hp-low);
 }
+
+/* ---------- Gevechts-tekstvak (goedgekeurd 16-10-2026): meldingen en momenten zoals de tekstbox in de games ---------- */
+.notice,
+button.notice-action,
+.moment-caption {
+  border: 2px solid var(--line-strong);
+  border-radius: var(--radius-s);
+  /* Tweede, binnenste rand: het dubbele kader uit de games. */
+  box-shadow:
+    inset 0 0 0 3px var(--surface),
+    inset 0 0 0 4px color-mix(in oklab, var(--accent-line) 55%, var(--line-strong));
+  background: var(--surface);
+}
+
+button.notice-action:hover:not(:disabled) {
+  border-color: var(--line-strong);
+}
+
+.moment-caption {
+  box-shadow:
+    inset 0 0 0 3px var(--surface),
+    inset 0 0 0 4px color-mix(in oklab, var(--accent-line) 55%, var(--line-strong)),
+    var(--shadow-float);
+}
+
+/* Knipperend pijltje rechtsonder: "verder" (bij een melding die je kunt aantikken en bij momenten). */
+button.notice-action,
+.moment-caption {
+  position: relative;
+  padding-right: calc(var(--space-4) + var(--space-4));
+}
+
+button.notice-action::after,
+.moment-caption::after {
+  content: '';
+  position: absolute;
+  right: var(--space-3);
+  bottom: var(--space-3);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 7px solid var(--accent-line);
+}
+
+[data-motion='on'] :is(button.notice-action, .moment-caption)::after {
+  animation: textbox-arrow 900ms steps(2, jump-none) infinite;
+}
+
+@keyframes textbox-arrow {
+  50% {
+    transform: translateY(3px);
+  }
+}
