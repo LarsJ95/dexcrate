@@ -5,6 +5,7 @@ import { marketValueOf, summarizeMarket, topMovers, type Mover, type PriceMap, t
 import { speciesName } from '../lib/runner'
 import { setOfKey } from '../lib/tcgdex'
 import { badges, dominantType, hpLevel, partnerDexId, pokedexProgress, type OwnedInfo } from '../lib/trainer'
+import { BuyingChances } from './BuyingChances'
 import { Partner, PokedexPanel, TrainerCard } from './TrainerCard'
 import { computeStats, formatEur, type Bucket } from '../lib/stats'
 import { thumbPath, type Card } from '../lib/types'
@@ -140,6 +141,7 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
 
   return (
     <section className="page dashboard">
+      <div className="dash-main">
       <h1>Overview</h1>
 
       <div className="hero">
@@ -161,11 +163,6 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
           </div>
         )}
         {series && series.length >= 2 && <LineChart points={series} label="Value history" valueLabel="Value" />}
-      </div>
-
-      <div className="trainer-row">
-        <TrainerCard name={trainer} cards={cardCount} species={dex.caught} setsStarted={setsStarted} since={since} badges={badgeList} />
-        <PokedexPanel progress={dex} loading={infosLoading} />
       </div>
 
       {!pricesLoading && movers.valuable[0] && <Spotlight item={movers.valuable[0]} onOpenCard={onOpenCard} fallbackType={favourite} />}
@@ -251,6 +248,14 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
           <dd>{formatEur(stats.avgForSale)}</dd>
         </div>
       </dl>
+      </div>
+
+      {/* Trainer-zijkolom: op brede schermen rechts, anders direct onder het hoofdpaneel. */}
+      <aside className="dash-rail" aria-label="Trainer">
+        <TrainerCard name={trainer} cards={cardCount} species={dex.caught} setsStarted={setsStarted} since={since} badges={badgeList} />
+        <PokedexPanel progress={dex} loading={infosLoading} />
+        <BuyingChances />
+      </aside>
     </section>
   )
 }
