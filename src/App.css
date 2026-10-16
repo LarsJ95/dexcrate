@@ -3688,3 +3688,146 @@ button.catalog-hit:hover:not(:disabled) {
   font-weight: 700;
   overflow-wrap: anywhere;
 }
+
+/* ---------- Pokémon-sfeer: knoppen met karakter (goedgekeurd 16-10-2026) ---------- */
+/* Inveren bij indrukken. */
+[data-motion='on'] button:not(:disabled) {
+  transition: transform 150ms ease-out;
+}
+
+[data-motion='on'] button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+/* Primaire knop: holo-glans strijkt eroverheen bij hover, het icoon draait mee. */
+button.primary {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+button.primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 0.6) 50%, transparent 70%);
+  transform: translateX(-130%);
+  pointer-events: none;
+}
+
+[data-motion='on'] button.primary:hover:not(:disabled)::after {
+  transform: translateX(130%);
+  transition: transform 600ms ease-in-out;
+}
+
+button.primary svg {
+  transition: none;
+}
+
+[data-motion='on'] button.primary:hover:not(:disabled) svg {
+  transform: rotate(180deg);
+  transition: transform 300ms ease-out;
+}
+
+/* Actieve tab of filter: pokébal-stip in plaats van een streep. */
+.segmented button[aria-pressed='true'],
+.segmented button[aria-checked='true'] {
+  position: relative;
+  box-shadow: none;
+}
+
+.segmented button[aria-pressed='true']::after,
+.segmented button[aria-checked='true']::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ball-line);
+  background:
+    radial-gradient(circle, var(--ball-white) 0 1.6px, var(--ball-line) 1.7px 2.8px, transparent 2.9px),
+    linear-gradient(var(--ball-red) 0 44%, var(--ball-line) 44% 56%, var(--ball-white) 56%);
+}
+
+[data-motion='on'] .segmented button[aria-pressed='true']::after,
+[data-motion='on'] .segmented button[aria-checked='true']::after {
+  animation: dot-roll 300ms ease-out;
+}
+
+@keyframes dot-roll {
+  from {
+    transform: translateX(-10px) rotate(-180deg);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* Menu: icoon hupt bij hover; actief item krijgt een pokébal-stip. */
+[data-motion='on'] .side-nav a:hover svg,
+[data-motion='on'] .tab-bar a:hover .tab-icon svg {
+  animation: icon-hop 300ms ease-out;
+}
+
+@keyframes icon-hop {
+  40% {
+    transform: translateY(-3px);
+  }
+}
+
+.side-nav a[aria-current='page']::after {
+  content: '';
+  margin-left: auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ball-line);
+  background:
+    radial-gradient(circle, var(--ball-white) 0 1.4px, var(--ball-line) 1.5px 2.5px, transparent 2.6px),
+    linear-gradient(var(--ball-red) 0 44%, var(--ball-line) 44% 56%, var(--ball-white) 56%);
+}
+
+/* Vinkjes als pokébal: leeg = open bal, aan = gevangen. */
+input[type='checkbox'] {
+  appearance: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0;
+  display: inline-grid;
+  place-content: center;
+  flex: none;
+  margin: 0;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+input[type='checkbox']:checked {
+  border-color: var(--ball-line);
+  background: linear-gradient(var(--ball-red) 0 42%, var(--ball-line) 42% 58%, var(--ball-white) 58%);
+}
+
+input[type='checkbox']:checked::after {
+  content: '';
+  width: 0.36rem;
+  height: 0.36rem;
+  border-radius: 50%;
+  background: var(--ball-white);
+  box-shadow: 0 0 0 2px var(--ball-line);
+}
+
+[data-motion='on'] input[type='checkbox']:checked {
+  animation: ball-wobble 450ms ease-out;
+}
+
+input[type='checkbox']:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
