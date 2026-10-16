@@ -1,9 +1,10 @@
-import { memo, useEffect, type CSSProperties, type JSX } from 'react'
+import { memo, useEffect, useState, type CSSProperties, type JSX } from 'react'
 import { useCardInfo } from '../hooks/useCardInfo'
 import { foilStyleFor } from '../lib/cardTraits'
 import { energyColor } from '../lib/energy'
 import type { MarketValue } from '../lib/prices'
-import { registerRunner, speciesName } from '../lib/runner'
+import { motionAllowed } from '../lib/motion'
+import { registerRunner, speciesName, spriteUrls } from '../lib/runner'
 import { formatEur } from '../lib/stats'
 import { CONDITION_LABELS, VARIANT_LABELS, canToggleSold, statusBadge, thumbPath, type Card } from '../lib/types'
 import { CardImage } from './CardImage'
@@ -53,6 +54,8 @@ function CardTileBase({ card, market, onOpen, onToggleSold, busy, selected, sale
 
   // Pokémon die je hebt mogen langsrennen (DESIGN.md §9).
   const dexId = info?.dexId ?? null
+  const [pop, setPop] = useState(false)
+  const [popSrc, setPopSrc] = useState<string | null>(null)
   const runnerName = info ? speciesName(info.name) : ''
   const owned = card.ownership === 'owned'
   useEffect(() => {
@@ -60,7 +63,19 @@ function CardTileBase({ card, market, onOpen, onToggleSold, busy, selected, sale
   }, [dexId, owned, runnerName, type])
 
   return (
-    <li className={`tile status-${card.status}${selected ? ' is-selected' : ''}${type ? ' has-type' : ''}`} style={typeStyle}>
+    <li
+      className={`tile status-${card.status}${selected ? ' is-selected' : ''}${type ? ' has-type' : ''}`}
+      style={typeStyle}
+      onPointerEnter={(e) => {
+        // Pokémon wipt uit de bovenrand bij hover (alleen muis; sprite pas dan laden).
+        if (e.pointerType === 'mouse' && dexId && motionAllowed()) setPop(true)
+      }}
+    >
+      {pop && dexId && (
+        <span className="tile-pop" aria-hidden="true">
+          <img src={popSrc ?? spriteUrls(dexId, false)[0]} alt="" onError={() => setPopSrc(spriteUrls(dexId, false)[1])} />
+        </span>
+      )}
       {/* Naam uit de inhoud (foto-alt of getekende voorkant + badges), zodat die overeenkomt met wat je ziet. */}
       <button type="button" className="tile-open" onClick={() => onOpen(card.id)} aria-pressed={selecting ? selected : undefined}>
         <CardImage tcgdexId={card.tcgdex_id} kind={card.kind} name={card.name} photoPath={thumbPath(card)}
