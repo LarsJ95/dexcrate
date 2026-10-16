@@ -22,7 +22,6 @@ import { CONDITION_LABELS, LANGUAGE_LABELS, VARIANT_LABELS, type Card, type Card
 import { listWishlist, ownedForWish, type WishlistInput, type WishlistItem } from '../lib/wishlist'
 import {
   NO_WISH_FILTERS,
-  WISHLIST_QUERY_KEY,
   activeWishFilterCount,
   describeWishFilters,
   matchesWishFilters,
@@ -69,16 +68,7 @@ export function WishlistPage(): JSX.Element {
   const [items, setItems] = useState<WishlistItem[] | null>(null)
   const [cards, setCards] = useState<Card[]>([])
   const [error, setError] = useState<string | null>(null)
-  // Zoekterm uit een ontmoeting in het hoge gras (eenmalig).
-  const [query, setQuery] = useState(() => {
-    try {
-      const q = sessionStorage.getItem(WISHLIST_QUERY_KEY)
-      if (q) sessionStorage.removeItem(WISHLIST_QUERY_KEY)
-      return q?.slice(0, 60) ?? ''
-    } catch {
-      return '' // geen opslag: gewoon leeg beginnen
-    }
-  })
+  const [query, setQuery] = useState('')
   const [filters, setFilters] = useState<WishFilters>(NO_WISH_FILTERS)
   const setFilter = (patch: Partial<WishFilters>): void => setFilters((f) => ({ ...f, ...patch }))
   const { language } = filters

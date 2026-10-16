@@ -40,15 +40,3 @@ describe('spriteUrls', () => {
     expect(still).toMatch(/pokemon\/shiny\/6\.png$/)
   })
 })
-
-describe('wilde Pokémon', async () => {
-  const { pickEncounter } = await import('./runner')
-  it('meestal een nieuwe; altijd een geldig nummer', () => {
-    const seq = [0.1, 0.0, 0.5]
-    let i = 0
-    const rnd = (): number => seq[i++ % seq.length]
-    // 0.1 < 0.7 → nieuw gewenst; eerste trekking (0.0) = #1 is al in bezit, volgende (0.5) niet.
-    expect(pickEncounter(new Set([1]), rnd, 10)).toBe(6)
-    expect(pickEncounter(new Set(), () => 0.99, 10)).toBe(10)
-  })
-})
