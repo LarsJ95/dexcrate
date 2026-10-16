@@ -160,6 +160,12 @@ Toegestane effecten (alleen deze; uitgebreid 15-10-2026 volgens prototype "Holo 
 - Laden: wiebelende pokébal; lege kaartplekken glanzen in de typekleur.
 - Langsrenner: een Pokémon uit de eigen collectie rent onderlangs, hooguit eens per 3 minuten, niet op Scan, niet terwijl een popup of formulier open is. Tikken: springt en roept. 1 op 50 kans op shiny. 's Avonds (20–6 u) vaker Ghost-/Darkness-Pokémon.
 - Kaart licht optillen bij hover: 4 px omhoog via transform, alleen op apparaten met hover.
+- Pokémon-sfeer (goedgekeurd 16-10-2026):
+  - Knoppen veren in bij indrukken (scale 0,96, 150 ms); primaire knop: holo-glans strijkt eroverheen bij hover, icoon draait mee. Menu-icoon hupt bij hover.
+  - Pokébal-vormen (ook zonder animaties): stip onder actieve tab/filter en naast het actieve menu-item; vinkjes als pokébal (leeg = open, aan = gevangen, wiebelt).
+  - Pikachu kijkt om de rand van een kaart (eerst na 1–2 min, daarna elke 3–6 min; niet op Scan, bij popups, invoer of als de langsrenner er is; nooit over knoppen of velden). Tikken: "Pika!" en weg. 1 op 50 shiny. Scrollen: meteen weg.
+  - Who's that Pokémon?: ontbrekende Pokémon-kaarten in een set als silhouet op zachte stralen; bij hover of focus kleurt het silhouet in en verschijnt de kaart.
+  - Momenten: "Level up!" bij mijlpalen (kaarten in een set: 10, 25, 50, 100 …; collectie: 10, 25, 50, 100, 250 …; eerste bezoek alleen onthouden), "Gotcha!" bij toevoegen aan de wishlist (pokébal wiebelt en klikt dicht).
 - Popup en vergrote kaart verschijnen: opacity met schaal 0,96 → 1; op mobiel schuift de popup omhoog (translateY).
 
 Regels:
