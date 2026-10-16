@@ -3,7 +3,7 @@ import { useKeyed } from '../hooks/useKeyed'
 import { limitlessEnCardUrl, ptcgCardUrl } from '../lib/cardImages'
 import { findPcHash, pcImageUrl } from '../lib/pricecharting'
 import { getPtcgSets, ptcgImagesFor, type PtcgSets } from '../lib/setIcons'
-import { getSetAbbr, getSetList, imageCandidates, imageCandidatesForKey, setOfKey, type Lang, type SetSummary } from '../lib/tcgdex'
+import { getCardInfo, getSetAbbr, getSetList, imageCandidates, imageCandidatesForKey, setOfKey, tcgplayerImageUrl, type Lang, type SetSummary } from '../lib/tcgdex'
 import { CardPicture } from './CardPicture'
 
 interface CardRef {
@@ -49,22 +49,26 @@ const findPcHashFor = (key: string): Promise<string | null> => {
 }
 
 /**
- * Pas als de gewone bronnen niets hebben: Limitless (Engels), pokemontcg.io en ten slotte PriceCharting.
- * Zo kosten kaarten met een gewone foto geen extra verzoeken.
+ * Pas als de gewone bronnen niets hebben: TCGplayer (productnummer uit de kaartdetails), Limitless (Engels),
+ * pokemontcg.io en ten slotte PriceCharting. Zo kosten kaarten met een gewone foto geen extra verzoeken.
  */
 export function ExtraSources({ fallback, alt, className, ...card }: CardRef & { alt: string; className?: string; fallback: ReactNode }): JSX.Element {
   const en = card.lang === 'en'
+  // Kaartdetails (7 dagen bewaard): de lijst met zoekresultaten heeft geen TCGplayer-productnummer.
+  const info = useKeyed(`${card.lang}/${card.setId}-${card.localId}`, getCardInfo)
   const ptcg = useKeyed(en ? 'all' : null, loadPtcg)
   const sets = useKeyed(en ? card.lang : null, loadSetList)
   const abbr = useKeyed(en ? `${card.lang}|${card.setId}` : null, loadAbbr)
-  if (!en) return <>{fallback}</>
+  const tcgplayer = tcgplayerImageUrl(info?.tcgplayerId, card.quality)
+  if (!en) return tcgplayer ? <CardPicture sources={[tcgplayer]} alt={alt} className={className} fallback={fallback} /> : <>{fallback}</>
   const setName = sets?.get(card.setId)?.name ?? ''
-  // Elke bron doet mee zodra hij bekend is; de trage pokemontcg.io-lijst houdt Limitless niet op.
+  // Elke bron doet mee zodra hij bekend is; de trage pokemontcg.io-lijst houdt de rest niet op.
   const extras = [
+    tcgplayer,
     limitlessEnCardUrl(abbr, card.setId, card.localId, card.quality),
     ptcgCardUrl(ptcgImagesFor(ptcg, card.setId, setName)?.id, card.setId, card.localId, card.quality),
   ].filter((u): u is string => u !== null)
-  const settled = ptcg !== undefined && sets !== undefined && abbr !== undefined
+  const settled = info !== undefined && ptcg !== undefined && sets !== undefined && abbr !== undefined
   // PriceCharting pas als alle andere bronnen bekend zijn en niets hadden.
   const last = settled && setName ? <PriceChartingImage {...card} setName={setName} alt={alt} className={className} fallback={fallback} /> : fallback
   return <CardPicture sources={extras} alt={alt} className={className} fallback={last} />
