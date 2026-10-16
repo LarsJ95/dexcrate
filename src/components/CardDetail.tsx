@@ -28,6 +28,7 @@ import { HoloCard } from './HoloCard'
 import { PhotoManager } from './PhotoManager'
 import { PriceChart } from './PriceChart'
 import { EnergyIcon, RaritySymbols } from './RaritySymbols'
+import { CardSetSymbol } from './SetIcon'
 import { ValuePanel } from './ValuePanel'
 import { SaleDialog } from './SaleDialog'
 
@@ -133,6 +134,7 @@ export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props):
 
         <div className="detail-info">
           <p className="detail-set">
+            {card.kind === 'card' && <CardSetSymbol tcgdexId={card.tcgdex_id} />}
             {card.kind === 'sealed'
               ? 'Sealed product'
               : [info?.set.name ?? card.set_code, card.card_number && `#${card.card_number}`].filter(Boolean).join(' ')}

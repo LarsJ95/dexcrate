@@ -306,7 +306,7 @@ const INFO_TTL_MS = 7 * 24 * 60 * 60 * 1000 // namen/plaatjes veranderen zelden
 const PRICE_PREFIX = 'tcgdex:price:v2:' // v2: met idProduct
 const PRICE_TTL_MS = 6 * 60 * 60 * 1000 // TCGdex ververst prijzen dagelijks
 
-function readCache<T>(prefix: string, ttl: number, key: string): T | null {
+export function readCache<T>(prefix: string, ttl: number, key: string): T | null {
   try {
     const raw = localStorage.getItem(prefix + key)
     if (!raw) return null
@@ -318,7 +318,7 @@ function readCache<T>(prefix: string, ttl: number, key: string): T | null {
   }
 }
 
-function writeCache(prefix: string, key: string, v: unknown): void {
+export function writeCache(prefix: string, key: string, v: unknown): void {
   try {
     localStorage.setItem(prefix + key, JSON.stringify({ t: Date.now(), v }))
   } catch (err) {

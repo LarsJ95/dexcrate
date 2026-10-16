@@ -11,6 +11,7 @@ import { ChangeBadge } from './ChangeBadge'
 import { Foil } from './Foil'
 import { IconCheck } from './Icons'
 import { RaritySymbols } from './RaritySymbols'
+import { CardSetSymbol } from './SetIcon'
 
 interface Props {
   card: Card
@@ -86,6 +87,7 @@ function CardTileBase({ card, market, onOpen, onToggleSold, busy, selected, sale
           <RaritySymbols rarity={info?.rarity} />
         </div>
         <p className="tile-meta">
+          {card.kind === 'card' && <CardSetSymbol tcgdexId={card.tcgdex_id} />}
           {card.kind === 'sealed' ? 'Sealed product' : [setLabel, card.card_number && `#${card.card_number}`].filter(Boolean).join(' ')}
           {details.length > 0 && <span>, {details.join(', ')}</span>}
         </p>

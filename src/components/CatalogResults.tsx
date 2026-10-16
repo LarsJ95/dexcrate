@@ -4,6 +4,7 @@ import { imageCandidates, type Lang } from '../lib/tcgdex'
 import { CardFace } from './CardFace'
 import { CardPicture } from './CardPicture'
 import { Loading } from './Loading'
+import { SetIcon } from './SetIcon'
 
 interface Props {
   query: string
@@ -89,6 +90,7 @@ export function CatalogResults({ query, lang, wished, owned, onPick, note = null
                     />
                     <span className="catalog-name">{hit.card.name}</span>
                     <span className="muted small">
+                      <SetIcon kind="symbol" lang={lang} setId={hit.setId} name={hit.set?.name ?? ''} logo={hit.set?.logo ?? null} />
                       {hit.set?.name ?? hit.setId} #{hit.card.localId}
                     </span>
                     {status && <span className={`chip${status === 'Owned' ? ' status-sold' : ''}`}>{status}</span>}

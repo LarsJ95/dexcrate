@@ -1617,6 +1617,17 @@ a.stat:hover {
   object-fit: contain;
 }
 
+/* Klein setsymbool vóór de setnaam (tegels, kaartweergave, wishlist). */
+.set-symbol img {
+  display: inline-block;
+  height: 1.1em;
+  width: auto;
+  max-width: 2em;
+  margin-right: var(--space-1);
+  vertical-align: -0.2em;
+  object-fit: contain;
+}
+
 /* Tweede regel (voortgang of aantal kaarten) altijd even hoog: alle tegels gelijk, namen op één lijn. */
 .set-info {
   display: grid;

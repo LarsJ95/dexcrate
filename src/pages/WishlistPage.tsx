@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type JSX } from 'react'
 import { CardImage } from '../components/CardImage'
 import { CatalogFilterFields } from '../components/CatalogFilterFields'
 import { CatalogResults } from '../components/CatalogResults'
+import { CardSetSymbol } from '../components/SetIcon'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { IconPlus, IconSearch } from '../components/Icons'
 import { WishlistDialog } from '../components/WishlistDialog'
@@ -199,6 +200,7 @@ export function WishlistPage(): JSX.Element {
                     {PRIORITY[item.priority] && <span className="chip">{PRIORITY[item.priority]}</span>}
                   </span>
                   <span className="muted small">
+                    <CardSetSymbol tcgdexId={item.tcgdex_id} />
                     {[
                       [item.set_code, item.card_number && `#${item.card_number}`].filter(Boolean).join(' '),
                       item.variant ? VARIANT_LABELS[item.variant] : 'Any variant',
