@@ -4,7 +4,7 @@ import { burstFrom } from '../lib/fx'
 import { englishSpeciesName, isNonLatin } from '../lib/names'
 import { useMotion } from '../lib/motion'
 import { spriteUrls } from '../lib/runner'
-import type { Badge, DexProgress } from '../lib/trainer'
+import { hpLevel, type Badge, type DexProgress } from '../lib/trainer'
 
 /** Eén badge: eenvoudige achthoekige medaille in de badgekleur; nog niet verdiend = grijs met voortgang. */
 function BadgeIcon({ badge }: { badge: Badge }): JSX.Element {
@@ -101,7 +101,7 @@ export function PokedexPanel({ progress, loading }: { progress: DexProgress; loa
         aria-valuemax={progress.total}
         aria-valuenow={progress.caught}
       >
-        <span className="meter-fill" style={{ width: `${(progress.caught / progress.total) * 100}%` }} />
+        <span className="meter-fill" data-hp={hpLevel(progress.caught / progress.total)} style={{ width: `${(progress.caught / progress.total) * 100}%` }} />
       </span>
       <ol className="dex-gens" aria-label="Per generation">
         {progress.perGen.map((g) => (

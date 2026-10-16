@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type JSX } from 'react'
 import { IconSearch } from '../components/Icons'
 import { SetIcon } from '../components/SetIcon'
 import { listCards } from '../lib/db'
+import { hpLevel } from '../lib/trainer'
 import { digitalSetIds, getSetList, LANGS, setOfKey, type Lang, type SetSummary } from '../lib/tcgdex'
 import type { Card } from '../lib/types'
 import { Loading } from '../components/Loading'
@@ -205,7 +206,7 @@ export function SetsPage(): JSX.Element {
                         aria-valuenow={r.owned}
                         aria-label={`${r.summary.name}: ${r.owned} of ${total || '?'}`}
                       >
-                        <span className="meter-fill" style={{ width: `${ratio * 100}%` }} />
+                        <span className="meter-fill" data-hp={hpLevel(ratio)} style={{ width: `${ratio * 100}%` }} />
                       </span>
                     )}
                   </span>

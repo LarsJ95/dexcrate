@@ -57,6 +57,10 @@
   --accent-line: #ffcb05;
   --rarity-ink: #e9e5df;
   --rarity-gold: #e8b931;
+  /* HP-balken zoals in Pokémon-gevechten (groen > 50%, geel > 20%, rood). */
+  --hp-high: #4fd16f;
+  --hp-mid: #f2c12e;
+  --hp-low: #f0603e;
 
   /* Achtergrondgloed en energiepatroon in de typekleur (DESIGN.md §4). */
   --type-glow: 34%;
@@ -107,6 +111,9 @@
   --accent-line: #7d5b00;
   --rarity-ink: #3a3842;
   --rarity-gold: #7d5b00;
+  --hp-high: #17803d;
+  --hp-mid: #946b00;
+  --hp-low: #c23b22;
 
   --type-glow: 24%;
   --type-glow-far: 8%;

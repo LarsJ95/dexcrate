@@ -5,6 +5,7 @@ import { energyColor } from '../lib/energy'
 import { burstFrom } from '../lib/fx'
 import { SET_MILESTONES, celebrateMilestone, showMoment } from '../lib/moments'
 import { useMotion } from '../lib/motion'
+import { hpLevel } from '../lib/trainer'
 import { spriteUrls } from '../lib/runner'
 import { DEFAULT_GOAL, goalProgress, goalRequirements, type GoalSettings, type OwnedCopy, type RequirementState } from '../lib/goals'
 import { marketValue } from '../lib/prices'
@@ -427,7 +428,10 @@ export function SetBinderPage({ param }: Props): JSX.Element {
         aria-valuemax={progress.total}
         aria-valuenow={progress.done}
       >
-        <span style={{ width: `${progress.total > 0 ? (progress.done / progress.total) * 100 : 0}%` }} />
+        <span
+          data-hp={hpLevel(progress.total > 0 ? progress.done / progress.total : 0)}
+          style={{ width: `${progress.total > 0 ? (progress.done / progress.total) * 100 : 0}%` }}
+        />
       </div>
 
       {(progress.duplicates > 0 || progress.ordered > 0 || progress.unknownVariant > 0 || variantsLoading) && (

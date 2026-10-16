@@ -4359,3 +4359,32 @@ button.partner:active:not(:disabled) {
 .chart .end-ball .ball-ring {
   fill: none;
 }
+
+/* ---------- HP-balken (goedgekeurd 16-10-2026): voortgang zoals de HP-balk in Pokémon-gevechten ---------- */
+.meter,
+.set-progress {
+  height: 12px;
+  padding: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+:is(.meter-fill, .set-progress > span)[data-hp] {
+  min-width: 0;
+  border-radius: var(--radius-pill);
+  /* Glanslijn bovenin, zoals in de games. */
+  box-shadow: inset 0 2px 0 rgb(255 255 255 / 0.35);
+}
+
+:is(.meter-fill, .set-progress > span)[data-hp='high'] {
+  background: var(--hp-high);
+}
+
+:is(.meter-fill, .set-progress > span)[data-hp='mid'] {
+  background: var(--hp-mid);
+}
+
+:is(.meter-fill, .set-progress > span)[data-hp='low'] {
+  background: var(--hp-low);
+}

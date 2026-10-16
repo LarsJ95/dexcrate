@@ -116,3 +116,8 @@ export function trainerName(email: string | null | undefined): string {
   const first = (email ?? '').split('@')[0].split(/[._+-]/)[0].replace(/[^\p{L}\p{N}]/gu, '')
   return first ? first.charAt(0).toUpperCase() + first.slice(1, 20) : 'Trainer'
 }
+
+/** Kleur van een HP-balk zoals in de games: groen boven 50%, geel boven 20%, anders rood. */
+export function hpLevel(ratio: number): 'high' | 'mid' | 'low' {
+  return ratio > 0.5 ? 'high' : ratio > 0.2 ? 'mid' : 'low'
+}

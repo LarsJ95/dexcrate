@@ -4,7 +4,7 @@ import { useCountUp } from '../hooks/useCountUp'
 import { marketValueOf, summarizeMarket, topMovers, type Mover, type PriceMap, type SeriesPoint } from '../lib/prices'
 import { speciesName } from '../lib/runner'
 import { setOfKey } from '../lib/tcgdex'
-import { badges, dominantType, partnerDexId, pokedexProgress, type OwnedInfo } from '../lib/trainer'
+import { badges, dominantType, hpLevel, partnerDexId, pokedexProgress, type OwnedInfo } from '../lib/trainer'
 import { Partner, PokedexPanel, TrainerCard } from './TrainerCard'
 import { computeStats, formatEur, type Bucket } from '../lib/stats'
 import { thumbPath, type Card } from '../lib/types'
@@ -217,7 +217,7 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
             aria-valuenow={Math.round(stats.sellRatio * 1000) / 10}
             aria-valuetext={`${stats.sold.count} of ${listed} cards sold`}
           >
-            <span className="meter-fill" style={{ width: `${stats.sellRatio * 100}%` }} />
+            <span className="meter-fill" data-hp={hpLevel(stats.sellRatio)} style={{ width: `${stats.sellRatio * 100}%` }} />
           </span>
           <p className="muted small">
             {stats.sold.count} of {countLabel(listed, 'card', 'cards')} sold
