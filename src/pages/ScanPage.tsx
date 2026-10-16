@@ -168,7 +168,7 @@ export function ScanPage(): JSX.Element {
       setPhase({ kind: 'working', message: 'Looking up card…' })
       const lang = lookupLang(recognition.language)
       const candidates = await findCandidates(
-        { name: recognition.nameEnglish, set_code: recognition.setCode || null, card_number: recognition.cardNumber || null },
+        { name: recognition.nameEnglish, set_code: recognition.setCode || null, card_number: recognition.cardNumber || null, set_total: recognition.setTotal || null },
         lang,
       )
       setPhase({ kind: 'single', recognition, candidates, lang })

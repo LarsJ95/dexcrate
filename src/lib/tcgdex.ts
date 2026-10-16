@@ -252,7 +252,8 @@ const fetchSetList = memo(async (lang: string): Promise<Map<string, SetSummary>>
     for (const s of data) {
       if (isRecord(s) && typeof s.id === 'string') {
         const total = isRecord(s.cardCount) && typeof s.cardCount.total === 'number' ? s.cardCount.total : undefined
-        map.set(s.id, { id: s.id, name: typeof s.name === 'string' ? s.name : s.id, logo: optStr(s.logo), total })
+        const official = isRecord(s.cardCount) && typeof s.cardCount.official === 'number' ? s.cardCount.official : null
+        map.set(s.id, { id: s.id, name: typeof s.name === 'string' ? s.name : s.id, logo: optStr(s.logo), total, official })
       }
     }
   }

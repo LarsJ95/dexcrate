@@ -195,7 +195,7 @@ async function process(id: string): Promise<void> {
       return
     }
     patch(id, { status: 'matching', rec })
-    const candidates = await findCandidates({ name: rec.nameEnglish, set_code: rec.setCode || null, card_number: rec.cardNumber || null }, lookupLang(rec.language)).catch(
+    const candidates = await findCandidates({ name: rec.nameEnglish, set_code: rec.setCode || null, card_number: rec.cardNumber || null, set_total: rec.setTotal || null }, lookupLang(rec.language)).catch(
       (err: unknown) => {
         console.warn('Kaart opzoeken mislukt', err)
         return []

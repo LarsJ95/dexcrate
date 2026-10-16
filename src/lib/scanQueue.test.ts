@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Candidate } from './match'
 import type { Recognition } from './scanResult'
-import { mergeDuplicate, newItem, parseQueue, reviewGroups, summarize, withMatch, type QueueItem } from './scanQueue'
+import { isAmbiguous, mergeDuplicate, newItem, parseQueue, reviewGroups, scannedTwice, summarize, withMatch, type QueueItem } from './scanQueue'
 
 const rec = (over: Partial<Recognition> = {}): Recognition => ({
   position: 1,
@@ -66,5 +66,19 @@ describe('scan-wachtrij', () => {
     expect(g.good.map((q) => q.id)).toEqual(['a'])
     // Uitvinken verplaatst een regel niet.
     expect(reviewGroups([{ ...ready('a'), include: false }]).good).toHaveLength(1)
+  })
+
+  it('twijfel tussen even goede kandidaten en dubbel gescande kaarten gaan naar nakijken', () => {
+    const c = (key: string, score: number): Candidate => ({ ...cand(key), score })
+    const tie = withMatch(newItem('t', THUMB), rec(), [c('en/pop5-5', 6), c('en/sv03.5-005', 6)])
+    const clear = withMatch(newItem('k', THUMB), rec(), [c('en/sv03.5-005', 7.5), c('en/pop5-5', 6)])
+    expect(isAmbiguous(tie)).toBe(true)
+    expect(isAmbiguous(clear)).toBe(false)
+    const holo = ready('h', 'en/sv04-209', { variant: 'holo' })
+    const normal = ready('n', 'en/sv04-209', { variant: 'normal' })
+    expect([...scannedTwice([holo, normal, ready('x', 'en/sv03.5-025')])].sort()).toEqual(['h', 'n'])
+    const g = reviewGroups([tie, clear, holo, normal])
+    expect(g.check.map((q) => q.id)).toEqual(['t', 'h', 'n'])
+    expect(g.good.map((q) => q.id)).toEqual(['k'])
   })
 })

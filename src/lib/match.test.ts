@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { levenshtein, nameSimilarity, searchTerms } from './match'
+import { levenshtein, nameSimilarity, searchTerms, matchesSetTotal } from './match'
 import { isNonLatin, speciesSlug } from './names'
 
 describe('speciesSlug', () => {
@@ -52,5 +52,15 @@ describe('searchTerms', () => {
   it('maakt steeds kortere zoektermen en laat taalmarkering en suffixen weg', () => {
     expect(searchTerms('Mega Darkrai EX JAPAN')).toEqual(['Mega Darkrai EX', 'Darkrai', 'Dark'])
     expect(searchTerms('Mew')).toEqual(['Mew'])
+  })
+})
+
+describe('gedrukt settotaal', () => {
+  it('telt alleen bij precies de officiële grootte', () => {
+    expect(matchesSetTotal(165, '165')).toBe(true)
+    expect(matchesSetTotal(17, '165')).toBe(false)
+    expect(matchesSetTotal(null, '165')).toBe(false)
+    expect(matchesSetTotal(165, '')).toBe(false)
+    expect(matchesSetTotal(165, null)).toBe(false)
   })
 })

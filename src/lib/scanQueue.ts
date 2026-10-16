@@ -168,11 +168,31 @@ export function isCondition(v: string): v is Condition {
  */
 export function reviewGroups(queue: readonly QueueItem[]): { check: QueueItem[]; working: QueueItem[]; good: QueueItem[] } {
   const out = { check: [] as QueueItem[], working: [] as QueueItem[], good: [] as QueueItem[] }
+  const twice = scannedTwice(queue)
   for (const q of queue) {
     if (q.status === 'error') out.check.push(q)
     else if (q.status !== 'ready') out.working.push(q)
-    else if (q.candidates.length === 0 || q.rec?.confidence !== 'high') out.check.push(q)
+    else if (q.candidates.length === 0 || q.rec?.confidence !== 'high' || isAmbiguous(q) || twice.has(q.id)) out.check.push(q)
     else out.good.push(q)
   }
   return out
+}
+
+/** Marge waaronder twee kandidaten als 'even goed' gelden: dan kiest de app niet zelf. */
+const AMBIGUOUS_MARGIN = 0.5
+
+/** De beste match is niet duidelijk beter dan de tweede (bv. zelfde naam en nummer in twee sets). */
+export function isAmbiguous(q: Pick<QueueItem, 'candidates'>): boolean {
+  const [a, b] = q.candidates
+  return Boolean(a && b) && a.score - b.score < AMBIGUOUS_MARGIN
+}
+
+/** Regels met dezelfde gekoppelde kaart als een andere regel (bv. twee keer gefotografeerd, andere variant gelezen). */
+export function scannedTwice(queue: readonly QueueItem[]): ReadonlySet<string> {
+  const byCard = new Map<string, string[]>()
+  for (const q of queue) {
+    if (q.status !== 'ready' || !q.chosen) continue
+    byCard.set(q.chosen, [...(byCard.get(q.chosen) ?? []), q.id])
+  }
+  return new Set([...byCard.values()].filter((ids) => ids.length > 1).flat())
 }

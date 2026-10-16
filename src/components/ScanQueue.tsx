@@ -2,7 +2,7 @@ import { useEffect, useState, useSyncExternalStore, type JSX } from 'react'
 import { celebrateAdded } from '../lib/celebrate'
 import { insertCards } from '../lib/db'
 import { draftFromScan } from '../lib/scan'
-import { MAX_QTY, isCondition, reviewGroups, summarize, type QueueItem } from '../lib/scanQueue'
+import { MAX_QTY, isAmbiguous, isCondition, reviewGroups, scannedTwice, summarize, type QueueItem } from '../lib/scanQueue'
 import { canRetry, getFeedback, getQueue, removeItems, retry, subscribe, undoFeedback, updateItem } from '../lib/scanQueueStore'
 import { lookupLang } from '../lib/tcgdex'
 import { CONDITION_LABELS, EMPTY_CARD, LANGUAGE_LABELS, VARIANT_LABELS, type Card, type CardInput, type Condition, type Variant } from '../lib/types'
@@ -198,6 +198,8 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
               {q.rec.confidence !== 'high' && ' (uncertain)'}
             </p>
           )}
+          {ready && isAmbiguous(q) && <p className="queue-why small">Same name and number in more than one set: pick the right one.</p>}
+          {ready && twice.has(q.id) && <p className="queue-why small">Scanned twice: same card? Remove one, or keep both if you have two.</p>}
           {ready && (
             <div className="queue-fields">
               <select aria-label={`Match for ${label}`} value={q.chosen} onChange={(e) => updateItem(q.id, { chosen: e.target.value })}>
@@ -254,6 +256,7 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
   }
 
   const groups = reviewGroups(queue)
+  const twice = scannedTwice(queue)
 
   return (
     <section className="scan-result scan-queue" aria-labelledby="queue-title">

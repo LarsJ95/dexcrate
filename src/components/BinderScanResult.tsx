@@ -40,7 +40,7 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
     let cancelled = false
     recognitions.forEach((rec, i) => {
       findCandidates(
-        { name: rec.nameEnglish, set_code: rec.setCode || null, card_number: rec.cardNumber || null },
+        { name: rec.nameEnglish, set_code: rec.setCode || null, card_number: rec.cardNumber || null, set_total: rec.setTotal || null },
         lookupLang(rec.language),
       )
         .catch((err: unknown) => {

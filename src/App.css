@@ -7131,3 +7131,10 @@ a.near-set > .set-symbol {
 .settings-save.is-error {
   color: var(--red);
 }
+
+/* Waarom een scan bij "Check these" staat. */
+.queue-why {
+  margin: 0;
+  color: var(--accent-line);
+  font-weight: 700;
+}

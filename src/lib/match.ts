@@ -27,7 +27,18 @@ export interface MatchQuery {
   name: string
   set_code: string | null
   card_number: string | null
+  /** Getal na de schuine streep op de kaart ("165" bij 151/165): onderscheidt sets met dezelfde naam en hetzelfde nummer. */
+  set_total?: string | null
 }
+
+/** Klopt het gedrukte totaal ("165") met de officiële grootte van de set? */
+export function matchesSetTotal(official: number | null | undefined, printedTotal: string | null | undefined): boolean {
+  const n = Number.parseInt(printedTotal ?? '', 10)
+  return Number.isInteger(n) && n > 0 && official === n
+}
+
+/** Extra punten als het gedrukte totaal bij de set past: weegt minder dan een gelezen setcode (2), meer dan naamverschil. */
+const SET_TOTAL_BONUS = 1.5
 
 const MAX_CANDIDATES = 12
 /** Onder deze naamovereenkomst geldt een set+nummer-match als verdacht. */
@@ -143,8 +154,17 @@ export async function findCandidates(q: MatchQuery, lang: Lang): Promise<Candida
 
   const sets = await getSetList(lang).catch((err: unknown) => {
     console.error('Setlijst ophalen mislukt', err)
-    return new Map<string, { name: string }>()
+    return new Map<string, { name: string; official?: number | null }>()
   })
+  // Zelfde naam en nummer in meerdere sets (bv. Charmeleon #5 in 151 én POP Series 5): het gedrukte totaal beslist.
+  if (q.set_total) {
+    for (const c of byKey.values()) {
+      if (matchesSetTotal(sets.get(c.setId)?.official, q.set_total)) {
+        c.score += SET_TOTAL_BONUS
+        c.reason = c.reason === 'Name and number match, other set' ? 'Name, number and set size match' : `${c.reason}, set size matches`
+      }
+    }
+  }
   return [...byKey.values()]
     .sort((a, b) => b.score - a.score)
     .slice(0, MAX_CANDIDATES)
