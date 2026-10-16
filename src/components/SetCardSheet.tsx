@@ -11,7 +11,7 @@ import { CardmarketLink } from './CardmarketLink'
 import { CardZoom } from './CardZoom'
 import { ChangeBadge } from './ChangeBadge'
 import { HoloCard } from './HoloCard'
-import { EnergyIcon, RaritySymbols } from './RaritySymbols'
+import { RarityChip, TypeChip } from './Chips'
 import { IconClose, IconStar } from './Icons'
 import { WishlistDialog } from './WishlistDialog'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
@@ -106,18 +106,8 @@ export function SetCardSheet({ lang, card, setName, owned, setCode, onClose }: P
               </p>
               <div className="chips">
                 <span className={`chip${owned ? ' status-sold' : ''}`}>{owned ? `Owned ${owned}×` : 'Missing'}</span>
-                {info?.rarity && (
-                  <span className="chip">
-                    <RaritySymbols rarity={info.rarity} />
-                    {info.rarity}
-                  </span>
-                )}
-                {type && (
-                  <span className="chip chip-type">
-                    <EnergyIcon type={type} />
-                    {type}
-                  </span>
-                )}
+                {info?.rarity && <RarityChip rarity={info.rarity} />}
+                {type && <TypeChip type={type} />}
               </div>
 
               <dl className="detail-prices">

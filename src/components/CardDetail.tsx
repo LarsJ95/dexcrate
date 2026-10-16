@@ -34,7 +34,7 @@ import { ChangeBadge } from './ChangeBadge'
 import { HoloCard } from './HoloCard'
 import { PhotoManager } from './PhotoManager'
 import { PriceChart } from './PriceChart'
-import { EnergyIcon, RaritySymbols } from './RaritySymbols'
+import { RarityChip, TypeChip } from './Chips'
 import { CardSetSymbol } from './SetIcon'
 import { ValuePanel } from './ValuePanel'
 import { SaleDialog } from './SaleDialog'
@@ -180,18 +180,8 @@ export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props):
 
           <div className="chips">
             <span className={`chip status-${card.status}`}>{statusBadge(card) ?? 'In collection'}</span>
-            {info?.rarity && (
-              <span className="chip">
-                <RaritySymbols rarity={info.rarity} />
-                {info.rarity}
-              </span>
-            )}
-            {type && (
-              <span className="chip chip-type">
-                <EnergyIcon type={type} />
-                {type}
-              </span>
-            )}
+            {info?.rarity && <RarityChip rarity={info.rarity} />}
+            {type && <TypeChip type={type} />}
             {facts.map((f) => (
               <span key={f} className="chip">
                 {f}

@@ -143,3 +143,12 @@ export function rarityMatches(rarity: string | null | undefined, wanted: string)
   const norm = (s: string): string => (s.toLowerCase() === 'holo rare' ? 'rare holo' : s.toLowerCase())
   return norm(rarity) === norm(wanted)
 }
+
+/** Niveau van een zeldzaamheid voor de kleur van een chip: gewoon, zeldzaam, speciaal of goud. */
+export function rarityTier(rarity: string | null | undefined): 'common' | 'rare' | 'special' | 'gold' {
+  const rank = rarityRule(rarity).rank
+  if (rank >= 10) return 'gold'
+  if (rank >= 5) return 'special'
+  if (rank >= 3) return 'rare'
+  return 'common'
+}

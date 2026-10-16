@@ -7,7 +7,7 @@ import { formatEur } from '../lib/stats'
 import { thumbPath, type Card } from '../lib/types'
 import { CardImage } from './CardImage'
 import { HoloCard } from './HoloCard'
-import { EnergyIcon, RaritySymbols } from './RaritySymbols'
+import { RarityChip, TypeChip } from './Chips'
 
 /** Je waardevolste kaart groot in beeld op Overview; de app kleurt mee met zijn type. */
 export function Spotlight({
@@ -46,18 +46,8 @@ export function Spotlight({
         <h2>{card.name}</h2>
         <p className="muted">{[info?.set.name ?? card.set_code, card.card_number && `#${card.card_number}`].filter(Boolean).join(' ')}</p>
         <div className="chips">
-          {info?.rarity && (
-            <span className="chip">
-              <RaritySymbols rarity={info.rarity} />
-              {info.rarity}
-            </span>
-          )}
-          {type && (
-            <span className="chip chip-type">
-              <EnergyIcon type={type} />
-              {type}
-            </span>
-          )}
+          {info?.rarity && <RarityChip rarity={info.rarity} />}
+          {type && <TypeChip type={type} />}
         </div>
         <p className="spotlight-value">{formatEur(market.value)}</p>
       </div>

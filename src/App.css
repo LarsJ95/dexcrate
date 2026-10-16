@@ -5966,3 +5966,78 @@ button.crate-slot:hover:not(:disabled) {
     align-items: flex-start;
   }
 }
+
+/* ---------- Gekleurde chips (goedgekeurd 16-10-2026) ---------- */
+/* Type: kleur van het eigen energietype van de kaart (niet van de pagina). */
+.chip-type {
+  background: color-mix(in oklab, var(--chip, var(--type)) 22%, var(--surface-2));
+  border-color: color-mix(in oklab, var(--chip, var(--type)) 60%, transparent);
+  color: var(--ink);
+}
+
+.chip-type svg {
+  /* Iets naar de tekstkleur, zodat lichte types (Colorless) ook in het lichte thema zichtbaar blijven. */
+  color: color-mix(in oklab, var(--chip, var(--type)) 70%, var(--ink));
+}
+
+/* Zeldzaamheid per niveau. */
+.chip-rarity[data-tier='common'] {
+  background: var(--surface-2);
+}
+
+.chip-rarity[data-tier='rare'] {
+  background: color-mix(in oklab, var(--energy-water) 18%, var(--surface-2));
+  border-color: color-mix(in oklab, var(--energy-water) 50%, transparent);
+  color: var(--ink);
+}
+
+.chip-rarity[data-tier='special'] {
+  background: color-mix(in oklab, var(--energy-psychic) 20%, var(--surface-2));
+  border-color: color-mix(in oklab, var(--energy-psychic) 55%, transparent);
+  color: var(--ink);
+}
+
+.chip-rarity[data-tier='gold'] {
+  background: color-mix(in oklab, var(--rarity-gold) 24%, var(--surface-2));
+  border-color: color-mix(in oklab, var(--rarity-gold) 65%, transparent);
+  color: var(--ink);
+}
+
+/* Status: in collectie blauw (te koop geel en verkocht groen bestonden al). */
+.chip.status-collection {
+  background: color-mix(in oklab, var(--energy-water) 18%, var(--surface-2));
+  border-color: color-mix(in oklab, var(--energy-water) 45%, transparent);
+  color: var(--ink);
+}
+
+/* ---------- Pokédex-vlakken minder fel ---------- */
+.dex-strip {
+  border: 1px solid color-mix(in oklab, var(--ball-red) 45%, var(--line));
+  border-left: 4px solid var(--ball-red);
+  background: linear-gradient(100deg, color-mix(in oklab, var(--ball-red) 16%, var(--surface)), var(--surface-2) 70%);
+  color: var(--ink);
+}
+
+.dex-strip-info .muted {
+  color: var(--muted);
+}
+
+.dex-strip-num {
+  color: color-mix(in oklab, var(--ball-red) 75%, var(--ink));
+}
+
+.dex-strip-evo {
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.panel.pokedex {
+  border: 1px solid color-mix(in oklab, var(--ball-red) 45%, var(--line));
+  border-top: 4px solid var(--ball-red);
+  background: linear-gradient(170deg, color-mix(in oklab, var(--ball-red) 14%, var(--surface)), var(--surface) 60%);
+  color: var(--ink);
+}
+
+.pokedex .dex-screen {
+  border: 1px solid var(--line);
+}

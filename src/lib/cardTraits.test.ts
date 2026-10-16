@@ -50,3 +50,14 @@ describe('foilStyleFor', () => {
     expect(foilStyleFor(null, null)).toBe('none')
   })
 })
+
+describe('kleur van de zeldzaamheid-chip', async () => {
+  const { rarityTier } = await import('./cardTraits')
+  it('niveaus', () => {
+    expect(rarityTier('Common')).toBe('common')
+    expect(rarityTier('Rare Holo')).toBe('rare')
+    expect(rarityTier('Double rare')).toBe('special')
+    expect(rarityTier('Hyper rare')).toBe('gold')
+    expect(rarityTier(null)).toBe('common')
+  })
+})
