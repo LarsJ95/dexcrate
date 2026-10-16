@@ -15,6 +15,8 @@ interface Props {
   onPick: (hit: CatalogHit, lang: Lang) => void
   /** Uitleg onder de kop, bv. dat een Europese taal de Engelse kaarten toont. */
   note?: string | null
+  /** Alleen kaarten uit deze sets tonen (bv. de paar sets die in het Nederlands bestaan). */
+  onlySets?: ReadonlySet<string> | null
 }
 
 const PAGE = 24
@@ -23,9 +25,9 @@ const DEBOUNCE_MS = 400
 type State = { key: string; hits: CatalogHit[] | null; error: string | null }
 
 /** Kaarten uit de kaartendatabase (TCGdex) voor de zoekterm, om aan de wishlist toe te voegen. */
-export function CatalogResults({ query, lang, wished, owned, onPick, note = null }: Props): JSX.Element | null {
+export function CatalogResults({ query, lang, wished, owned, onPick, note = null, onlySets = null }: Props): JSX.Element | null {
   const term = query.trim()
-  const key = `${lang}|${term.toLowerCase()}`
+  const key = `${lang}|${term.toLowerCase()}|${onlySets ? [...onlySets].join(',') : ''}`
   const [state, setState] = useState<State>({ key: '', hits: null, error: null })
   const [shown, setShown] = useState({ key: '', count: PAGE })
 
@@ -35,7 +37,7 @@ export function CatalogResults({ query, lang, wished, owned, onPick, note = null
     const t = window.setTimeout(() => {
       searchCatalog(term, lang)
         .then((hits) => {
-          if (!cancelled) setState({ key, hits, error: null })
+          if (!cancelled) setState({ key, hits: onlySets ? hits.filter((h) => onlySets.has(h.setId)) : hits, error: null })
         })
         .catch((err: unknown) => {
           console.error('Zoeken in de kaartendatabase mislukt', err)
@@ -46,7 +48,7 @@ export function CatalogResults({ query, lang, wished, owned, onPick, note = null
       cancelled = true
       clearTimeout(t)
     }
-  }, [term, lang, key])
+  }, [term, lang, key, onlySets])
 
   if (term.length < 2) return null
   const current = state.key === key ? state : null

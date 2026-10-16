@@ -8,6 +8,14 @@ import { parseDexId, parseRarity, parseSuffix, parseTypes, type EnergyType } fro
 export const LANGS = ['en', 'ja', 'zh-cn', 'zh-tw', 'ko'] as const
 export type Lang = (typeof LANGS)[number]
 
+/**
+ * Sets die in een taal echt gedrukt zijn, als dat er maar een paar zijn (Engelse set-id's).
+ * Nederlands: alleen Base Set, Jungle en Fossil; daarna verscheen alles in Nederland in het Engels.
+ */
+export const PRINTED_SETS: Partial<Record<CardLanguage, ReadonlySet<string>>> = {
+  nl: new Set(['base1', 'base2', 'base3']),
+}
+
 /** Kaarttaal → TCGdex-dataset. Europese talen delen set en nummer met de Engelse versie. */
 export function lookupLang(language: CardLanguage | null): Lang {
   return language && isLang(language) ? language : 'en'

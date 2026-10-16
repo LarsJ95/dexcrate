@@ -10,7 +10,7 @@ import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import type { CatalogHit } from '../lib/catalogSearch'
 import { matchesCatalog, needsCatalog, type CatalogFilters } from '../lib/collectionFilters'
 import { listCards } from '../lib/db'
-import { getSet, isLang, lookupLang, type Lang } from '../lib/tcgdex'
+import { PRINTED_SETS, getSet, isLang, lookupLang, type Lang } from '../lib/tcgdex'
 import { marketValue } from '../lib/prices'
 import { matchesWords } from '../lib/search'
 import { formatEur } from '../lib/stats'
@@ -232,8 +232,13 @@ export function WishlistPage(): JSX.Element {
           onPick={(hit, lang) => void pickFromCatalog(hit, lang)}
           note={
             // Europese talen hebben geen eigen kaartdata (TCGdex): zelfde set en nummer als Engels.
-            language && !isLang(language) ? `No ${LANGUAGE_LABELS[language]} card data: showing English prints (same set and number).` : null
+            language === 'nl'
+              ? 'Dutch cards exist only for Base Set, Jungle and Fossil. Shown with English data (same set and number).'
+              : language && !isLang(language)
+                ? `No ${LANGUAGE_LABELS[language]} card data: showing English prints (same set and number).`
+                : null
           }
+          onlySets={language ? (PRINTED_SETS[language] ?? null) : null}
         />
       )}
 
