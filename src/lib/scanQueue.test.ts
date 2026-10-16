@@ -45,12 +45,13 @@ describe('scan-wachtrij', () => {
     expect(summarize(q)).toEqual({ total: 4, busy: 1, ready: 2, failed: 1, selected: 2 })
   })
 
-  it('bewaren en herstellen; onafgemaakte foto wordt een fout', () => {
+  it('bewaren en herstellen; onafgemaakte foto wacht weer', () => {
     const q = parseQueue(JSON.stringify([ready('a'), newItem('b', THUMB), { id: 'x', thumb: 'javascript:alert(1)' }, 'rommel']))
     expect(q.map((i) => i.id)).toEqual(['a', 'b'])
     expect(q[0]).toMatchObject({ status: 'ready', chosen: 'en/sv03.5-025', include: true })
-    expect(q[1].status).toBe('error')
-    expect(q[1].error).toMatch(/Take it again/)
+    expect(q[1].status).toBe('waiting')
+    expect(q[1].error).toBe(null)
+    expect(parseQueue(JSON.stringify([{ ...newItem('e', THUMB), status: 'error', error: 'Boom' }]))[0]).toMatchObject({ status: 'error', error: 'Boom' })
     expect(parseQueue('{kapot')).toEqual([])
     expect(parseQueue(null)).toEqual([])
   })

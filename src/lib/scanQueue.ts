@@ -121,8 +121,8 @@ function toRecognition(v: unknown): Recognition | null {
 }
 
 /**
- * Opgeslagen wachtrij inlezen. Foto's die nog niet herkend waren zijn na herstarten weg
- * (alleen de kleine thumbnail wordt bewaard): die worden een fout met de vraag opnieuw te fotograferen.
+ * Opgeslagen wachtrij inlezen. Wat nog niet herkend was, wacht weer; de foto zelf staat apart
+ * (IndexedDB, zie scanQueueStore). Ontbreekt die, dan wordt het daar een fout.
  */
 export function parseQueue(raw: string | null): QueueItem[] {
   if (!raw) return []
@@ -133,14 +133,15 @@ export function parseQueue(raw: string | null): QueueItem[] {
       if (!isRecord(r) || typeof r.id !== 'string' || typeof r.thumb !== 'string' || !r.thumb.startsWith('data:image/')) return []
       const rec = toRecognition(r.rec)
       const ready = r.status === 'ready' && rec !== null
+      const failed = r.status === 'error'
       const variant = typeof r.variant === 'string' && Object.hasOwn(VARIANT_LABELS, r.variant) ? (r.variant as Variant) : null
       const qty = typeof r.quantity === 'number' && Number.isInteger(r.quantity) ? Math.min(MAX_QTY, Math.max(1, r.quantity)) : 1
       return [
         {
           id: r.id,
           thumb: r.thumb,
-          status: ready ? 'ready' : 'error',
-          error: ready ? null : r.status === 'error' && typeof r.error === 'string' ? r.error : 'The app was closed before this photo was recognised. Take it again.',
+          status: ready ? 'ready' : failed ? 'error' : 'waiting',
+          error: failed ? (typeof r.error === 'string' ? r.error : 'Recognition failed.') : null,
           rec,
           candidates: Array.isArray(r.candidates) ? r.candidates.flatMap((c) => toCandidate(c) ?? []) : [],
           chosen: str(r.chosen),

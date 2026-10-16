@@ -51,6 +51,11 @@ export async function prepareImage(file: File, mode: ScanMode): Promise<Prepared
   return { blob, data: await blobToBase64(blob), mediaType: 'image/jpeg', previewUrl: URL.createObjectURL(blob) }
 }
 
+/** Een eerder verkleinde foto (bv. uit de lokale opslag) weer klaarmaken voor herkenning. */
+export async function preparedFromBlob(blob: Blob): Promise<PreparedImage> {
+  return { blob, data: await blobToBase64(blob), mediaType: 'image/jpeg', previewUrl: URL.createObjectURL(blob) }
+}
+
 /** Formuliervelden voor een gescande kaart; met gekozen kandidaat incl. koppeling en officiële setcode. */
 export async function draftFromScan(r: Recognition, c: Candidate | null, lang: Lang): Promise<Partial<CardInput>> {
   const base: Partial<CardInput> = {

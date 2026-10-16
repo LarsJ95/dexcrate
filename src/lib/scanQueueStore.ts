@@ -1,13 +1,15 @@
 import { buzz } from './haptics'
 import { findCandidates } from './match'
-import { prepareImage, recognizeCards, type PreparedImage } from './scan'
+import { deletePhotos, listPhotoIds, loadPhoto, savePhoto } from './photoStore'
+import { preparedFromBlob, prepareImage, recognizeCards, type PreparedImage } from './scan'
 import { BLUR_THRESHOLD, photoSharpness } from './sharpness'
 import { MAX_QUEUE, QUEUE_KEY, mergeDuplicate, newItem, parseQueue, withMatch, type QueueItem } from './scanQueue'
 import { lookupLang } from './tcgdex'
 
 /**
  * Wachtrij voor snel scannen, buiten React: herkennen loopt door als je even naar een andere pagina gaat.
- * Bewaard op dit apparaat (localStorage, zonder de grote foto's).
+ * Bewaard op dit apparaat: de lijst in localStorage, de foto's in IndexedDB tot ze herkend zijn.
+ * Zonder internet wacht hij en gaat hij verder zodra je weer online bent.
  */
 
 const PARALLEL = 3
@@ -100,6 +102,43 @@ function dropImage(id: string): void {
   const img = images.get(id)
   if (img) URL.revokeObjectURL(img.previewUrl)
   images.delete(id)
+  deletePhotos([id]).catch((err: unknown) => console.warn('Scanfoto opruimen mislukt', err))
+}
+
+let restored = false
+/** De app wordt gesloten of herladen: afgebroken verzoeken zijn dan geen echte fouten. */
+let unloading = false
+
+/** Na herstarten: bewaarde foto's terugladen en verder herkennen; losse foto's zonder regel opruimen. */
+async function restore(): Promise<void> {
+  try {
+    const stored = new Set(await listPhotoIds())
+    for (const q of queue) {
+      if (q.status === 'ready' || !stored.has(q.id)) continue
+      const blob = await loadPhoto(q.id)
+      if (blob) images.set(q.id, await preparedFromBlob(blob))
+    }
+    const known = new Set(queue.map((q) => q.id))
+    await deletePhotos([...stored].filter((id) => !known.has(id)))
+  } catch (err) {
+    console.warn('Bewaarde scanfoto laden mislukt', err)
+  }
+  const lost = queue.filter((q) => q.status === 'waiting' && !images.has(q.id))
+  if (lost.length > 0) {
+    const ids = new Set(lost.map((q) => q.id))
+    set(queue.map((q) => (ids.has(q.id) ? { ...q, status: 'error', error: 'This photo was not saved on this device. Take it again.' } : q)))
+  }
+  restored = true
+  pump()
+}
+
+if (typeof window !== 'undefined') {
+  void restore()
+  // Weer online: wachtende foto's alsnog herkennen.
+  window.addEventListener('online', () => pump())
+  window.addEventListener('pagehide', () => {
+    unloading = true
+  })
 }
 
 /**
@@ -127,6 +166,8 @@ export async function enqueue(file: File, checkBlur = false): Promise<boolean> {
   const thumb = await makeThumb(img.blob)
   const id = crypto.randomUUID()
   images.set(id, img)
+  // Ook op het apparaat bewaren, zodat de foto het afsluiten van de app overleeft.
+  await savePhoto(id, img.blob).catch((err: unknown) => console.warn('Scanfoto lokaal bewaren mislukt', err))
   // Pas na alle await's de huidige wachtrij lezen: anders gaan foto's die tegelijk binnenkomen verloren.
   set([...queue, newItem(id, thumb)])
   pump()
@@ -171,7 +212,15 @@ async function process(id: string): Promise<void> {
     })
     buzz(15)
   } catch (err) {
+    // Afgebroken door sluiten/herladen: niets opslaan, de foto wacht bij de volgende start weer.
+    if (unloading) return
     console.error('Scannen mislukt', err)
+    // Geen internet: blijven wachten; bij 'online' gaat het vanzelf verder.
+    if (!navigator.onLine && queue.some((q) => q.id === id)) {
+      patch(id, { status: 'waiting', error: null })
+      announce({ ok: false, text: 'Offline. Your photos are kept and recognised when you are back online.', undo: null })
+      return
+    }
     if (queue.some((q) => q.id === id)) {
       patch(id, { status: 'error', error: err instanceof Error ? err.message : 'Recognition failed.' })
       announce({ ok: false, text: 'Recognition failed. You can retry it in the list.', undo: null })
@@ -181,6 +230,7 @@ async function process(id: string): Promise<void> {
 
 /** Wachtende foto's starten, maximaal PARALLEL tegelijk. */
 function pump(): void {
+  if (!restored || !navigator.onLine) return
   for (const q of queue) {
     if (running.size >= PARALLEL) return
     if (q.status !== 'waiting' || running.has(q.id)) continue
