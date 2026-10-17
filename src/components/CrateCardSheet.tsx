@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type JSX } from 'react'
+import { useEffect, useState, type JSX } from 'react'
 import { foilStyleFor } from '../lib/cardTraits'
 import { tradeValue, type CrateCard } from '../lib/crate'
 import { marketValue } from '../lib/prices'
@@ -11,6 +11,7 @@ import { CardZoom } from './CardZoom'
 import { CatalogKeyPicture } from './CatalogCardPicture'
 import { RarityChip } from './Chips'
 import { HoloCard } from './HoloCard'
+import { LazyCardPrice } from './LazyCardPrice'
 import { Sheet } from './Sheet'
 
 /** Cardmarket-prijs van een catalogus-kaart; undefined = laden, null = onbekend. Alleen als `enabled`. */
@@ -36,28 +37,7 @@ function useCratePrice(tcgdexId: string, enabled = true): CardmarketPrice | null
 
 /** Prijs onder een kaart in het raster; pas ophalen als de kaart in beeld komt. */
 export function CrateTilePrice({ tcgdexId }: { tcgdexId: string }): JSX.Element {
-  const ref = useRef<HTMLSpanElement>(null)
-  // Zonder IntersectionObserver (oude browser) meteen laden.
-  const [seen, setSeen] = useState(() => typeof IntersectionObserver === 'undefined')
-  useEffect(() => {
-    const el = ref.current
-    if (!el || seen) return
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) setSeen(true)
-      },
-      { rootMargin: '200px' },
-    )
-    io.observe(el)
-    return () => io.disconnect()
-  }, [seen])
-  const price = useCratePrice(tcgdexId, seen)
-  const mv = marketValue(price, null)
-  return (
-    <span ref={ref} className="crate-tile-price">
-      {price === undefined ? '…' : mv ? formatEur(mv.value) : '–'}
-    </span>
-  )
+  return <LazyCardPrice cardKey={tcgdexId} className="crate-tile-price" />
 }
 
 interface Props {

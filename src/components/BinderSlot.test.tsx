@@ -7,6 +7,15 @@ import type { Cost } from '../lib/setBinder'
 import type { Variant } from '../lib/types'
 
 vi.mock('../lib/supabase', () => ({ supabase: {} }))
+// Met een echte taal ('en'): geen netwerk voor foto en prijs.
+vi.mock('./CatalogCardPicture', () => ({ CatalogCardPicture: () => null }))
+const priceCalls: (string | null)[] = []
+vi.mock('../hooks/useCardPrice', () => ({
+  useCardPrice: (key: string | null) => {
+    priceCalls.push(key)
+    return key ? { trend: 2.5, avg30: 2.5, idProduct: null } : null
+  },
+}))
 
 const { BinderSlot } = await import('./BinderSlot')
 
@@ -61,5 +70,18 @@ describe('BinderSlot', () => {
   it('sorteren op waarde toont de marktwaarde van de kaart', () => {
     render(<BinderSlot {...base} states={[state(null, 0)]} sort="value" values={{ prices: new Map([[card.id, 4]]) }} />)
     expect(screen.getByText('€4.00')).toBeTruthy()
+  })
+
+  it('anders onder elke kaart de Cardmarket-prijs (ook als je hem al hebt)', () => {
+    priceCalls.length = 0
+    const { container } = render(<BinderSlot {...base} lang="en" states={[state(null, 0)]} />)
+    expect(container.querySelector('.slot-price')?.textContent).toBe('€2.50')
+    expect(priceCalls).toContain('en/sv03.5-025')
+  })
+
+  it('na "kosten berekenen" blijft de prijs van wat ontbreekt staan, niet de marktprijs', () => {
+    render(<BinderSlot {...base} lang="en" states={[state(null, 2)]} cost={cost([[`${card.id}|any`, 1.1]])} />)
+    expect(screen.getByText('€2.20')).toBeTruthy()
+    expect(document.querySelectorAll('.slot-price')).toHaveLength(1)
   })
 })

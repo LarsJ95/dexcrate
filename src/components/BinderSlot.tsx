@@ -7,6 +7,7 @@ import { isLang, type SetCard } from '../lib/tcgdex'
 import { VARIANT_LABELS, type Variant } from '../lib/types'
 import { CardFace } from './CardFace'
 import { CatalogCardPicture } from './CatalogCardPicture'
+import { LazyCardPrice } from './LazyCardPrice'
 
 interface Props {
   card: SetCard
@@ -88,9 +89,15 @@ export function BinderSlot({ card: c, lang, setId, qty, states, cost, sort, valu
             ))}
           </span>
         )}
-        {isValueSort(sort)
-          ? values?.prices.has(c.id) && <span className="slot-price">{formatValue(values.prices.get(c.id) ?? null)}</span>
-          : !complete && inGoal && price !== undefined && <span className="slot-price">{price === null ? 'no price' : formatEur(price)}</span>}
+        {/* Prijs onder elke kaart: bij sorteren op waarde de geladen waarde; na "kosten berekenen" wat er van deze kaart
+            ontbreekt; anders de Cardmarket-marktprijs, opgehaald zodra de kaart in beeld komt. */}
+        {isValueSort(sort) ? (
+          values?.prices.has(c.id) && <span className="slot-price">{formatValue(values.prices.get(c.id) ?? null)}</span>
+        ) : !complete && inGoal && price !== undefined ? (
+          <span className="slot-price">{price === null ? 'no price' : formatEur(price)}</span>
+        ) : isLang(lang) ? (
+          <LazyCardPrice cardKey={`${lang}/${c.id}`} className="slot-price" />
+        ) : null}
         {qty && qty > 1 ? <span className="qty-badge">{qty}×</span> : null}
       </button>
     </li>
