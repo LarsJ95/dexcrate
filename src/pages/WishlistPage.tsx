@@ -1,28 +1,22 @@
 import { useEffect, useMemo, useState, type JSX } from 'react'
-import { CardImage } from '../components/CardImage'
-import { CatalogFilterFields } from '../components/CatalogFilterFields'
 import { FilterPanel } from '../components/FilterPanel'
-import { CardmarketLink } from '../components/CardmarketLink'
 import { CatalogResults } from '../components/CatalogResults'
 import { SetCardSheet } from '../components/SetCardSheet'
-import { SetPicker } from '../components/SetPicker'
-import { CardSetSymbol } from '../components/SetIcon'
+import { WishFilterFields } from '../components/WishFilterFields'
+import { WishRow } from '../components/WishRow'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { useCardPrices } from '../hooks/useCardPrices'
 import { useDbFeature } from '../hooks/useDbFeature'
 import { WishlistListSheet } from '../components/WishlistListSheet'
 import { IconEdit, IconPlus, IconSearch } from '../components/Icons'
 import { WishlistDialog } from '../components/WishlistDialog'
-import { useCardPrice } from '../hooks/useCardPrice'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import { catalogActive, type CatalogHit } from '../lib/catalogSearch'
 import { listCards } from '../lib/db'
 import { PRINTED_SETS, isLang, lookupLang, type Lang, type SetCard } from '../lib/tcgdex'
-import { cardLanguageOf } from '../lib/cardmarket'
 import { marketValue } from '../lib/prices'
 import { matchesWords } from '../lib/search'
-import { formatEur } from '../lib/stats'
-import { CONDITION_LABELS, LANGUAGE_LABELS, VARIANT_LABELS, type Card, type CardLanguage, type Variant } from '../lib/types'
+import { LANGUAGE_LABELS, type Card } from '../lib/types'
 import { listWishlist, ownedForWish, type WishlistInput, type WishlistItem } from '../lib/wishlist'
 import {
   NO_WISH_FILTERS,
@@ -38,32 +32,6 @@ import { hasWishlistLists, listWishlistLists, updateWishlistList, type WishlistL
 import { Loading } from '../components/Loading'
 import { closeKeyboardOnEnter } from '../lib/keyboard'
 import { errorText } from '../lib/errors'
-
-const PRIORITY: Record<1 | 2 | 3, string> = { 1: 'High priority', 2: '', 3: 'Low priority' }
-
-/** Marktprijs van de gezochte uitvoering, met "onder je maximum" als hulp. */
-function WishPrice({ item }: { item: WishlistItem }): JSX.Element | null {
-  const price = useCardPrice(item.tcgdex_id)
-  if (!item.tcgdex_id) return null
-  const market = marketValue(price, item.variant)
-  if (price === undefined) return <span className="muted small">Market …</span>
-  if (!market) return <span className="muted small">No market price</span>
-  const under = item.max_price !== null && market.value <= item.max_price
-  return <span className={under ? 'up small' : 'small'}>Market {formatEur(market.value)}{under ? ', within your max.' : ''}</span>
-}
-
-/** Cardmarket-knop naast een wens: productpagina als de kaart gekoppeld is, anders zoeken op naam en nummer. */
-function WishCardmarket({ item }: { item: WishlistItem }): JSX.Element {
-  const price = useCardPrice(item.tcgdex_id)
-  return <CardmarketLink idProduct={price?.idProduct ?? null} searchText={[item.name, item.card_number].filter(Boolean).join(' ')} language={cardLanguageOf(item.language, item.tcgdex_id)} compact />
-}
-
-/** Prijsveld → bedrag of null (leeg of ongeldig = geen filter). */
-const priceInput = (text: string): number | null => {
-  if (text.trim() === '') return null
-  const n = Number(text.replace(',', '.'))
-  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null
-}
 
 const matches = (item: WishlistItem, query: string): boolean =>
   matchesWords([item.name, item.set_code, item.card_number, item.card_number && `#${item.card_number}`, item.notes], query)
@@ -308,85 +276,7 @@ export function WishlistPage(): JSX.Element {
           </>
         }
       >
-        <label>
-          Variant
-          <select value={filters.variant} onChange={(e) => setFilter({ variant: e.target.value as Variant | '' })}>
-            <option value="">All</option>
-            {(Object.keys(VARIANT_LABELS) as Variant[]).map((v) => (
-              <option key={v} value={v}>
-                {VARIANT_LABELS[v]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Language
-          <select value={filters.language} onChange={(e) => setFilter({ language: e.target.value as CardLanguage | '' })}>
-            <option value="">All</option>
-            {(Object.keys(LANGUAGE_LABELS) as CardLanguage[]).map((l) => (
-              <option key={l} value={l}>
-                {LANGUAGE_LABELS[l]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <CatalogFilterFields value={filters} onChange={(next) => setFilter({ rarity: next.rarity, type: next.type, suffix: next.suffix })} />
-        <label>
-          Priority
-          <select
-            value={filters.priority ?? ''}
-            onChange={(e) => {
-              const p = Number(e.target.value)
-              setFilter({ priority: p === 1 || p === 2 || p === 3 ? p : null })
-            }}
-          >
-            <option value="">All</option>
-            <option value="1">High</option>
-            <option value="2">Normal</option>
-            <option value="3">Low</option>
-          </select>
-        </label>
-        <div className="span-2">
-          <SetPicker value={filters.set.trim()} lang={lookupLang(language || null)} onChange={(set) => setFilter({ set })} />
-        </div>
-        <div className="filter-field span-2" role="group" aria-labelledby="wish-market-label">
-          <span className="filter-label" id="wish-market-label">
-            Market price (€)
-          </span>
-          <div className="filter-range">
-            <input
-              type="number"
-              inputMode="decimal"
-              min={0}
-              step="0.01"
-              placeholder="from"
-              aria-label="Market price from"
-              value={filters.minPrice ?? ''}
-              onChange={(e) => setFilter({ minPrice: priceInput(e.target.value) })}
-            />
-            <span aria-hidden="true">–</span>
-            <input
-              type="number"
-              inputMode="decimal"
-              min={0}
-              step="0.01"
-              placeholder="to"
-              aria-label="Market price to"
-              value={filters.maxPrice ?? ''}
-              onChange={(e) => setFilter({ maxPrice: priceInput(e.target.value) })}
-            />
-          </div>
-        </div>
-        <div className="filter-checks">
-          <label className="check">
-            <input type="checkbox" checked={filters.underMax} onChange={(e) => setFilter({ underMax: e.target.checked })} />
-            Within my max. price
-          </label>
-          <label className="check">
-            <input type="checkbox" checked={filters.showFound} onChange={(e) => setFilter({ showFound: e.target.checked })} />
-            Show found
-          </label>
-        </div>
+        <WishFilterFields filters={filters} setFilter={setFilter} />
       </FilterPanel>
 
       {listNotice && (
@@ -413,39 +303,14 @@ export function WishlistPage(): JSX.Element {
       {visible.length > 0 && (
         <ul className="tx-list">
           {visible.map(({ item, owned, incoming, found }) => (
-            <li key={item.id} className="wish-item">
-              <button type="button" className="tx-row wish-row" onClick={() => (sheetCardOf(item) ? setViewingWish(item.id) : setEditing(item))}>
-                <span className="wish-thumb" aria-hidden="true">
-                  <CardImage tcgdexId={item.tcgdex_id} kind="card" name={item.name} detail={item.card_number ? `#${item.card_number}` : null} />
-                </span>
-                <span className="tx-main">
-                  <span className="tx-title">
-                    {item.name}
-                    {PRIORITY[item.priority] && <span className="chip">{PRIORITY[item.priority]}</span>}
-                  </span>
-                  <span className="muted small">
-                    <CardSetSymbol tcgdexId={item.tcgdex_id} />
-                    {[
-                      [item.set_code, item.card_number && `#${item.card_number}`].filter(Boolean).join(' '),
-                      item.variant ? VARIANT_LABELS[item.variant] : 'Any variant',
-                      item.language ? LANGUAGE_LABELS[item.language] : null,
-                      item.min_condition ? `${CONDITION_LABELS[item.min_condition]} or better` : null,
-                    ]
-                      .filter(Boolean)
-                      .join(', ')}
-                  </span>
-                  <WishPrice item={item} />
-                </span>
-                <span className="tx-amounts">
-                  <span className={found ? 'up' : 'tx-amount'}>
-                    {found ? 'Found' : `${owned} of ${item.wanted_qty}`}
-                  </span>
-                  {incoming > 0 && <span className="muted small">{incoming} incoming</span>}
-                  {item.max_price !== null && <span className="muted small">max. {formatEur(item.max_price)}</span>}
-                </span>
-              </button>
-              <WishCardmarket item={item} />
-            </li>
+            <WishRow
+              key={item.id}
+              item={item}
+              owned={owned}
+              incoming={incoming}
+              found={found}
+              onOpen={() => (sheetCardOf(item) ? setViewingWish(item.id) : setEditing(item))}
+            />
           ))}
         </ul>
       )}
