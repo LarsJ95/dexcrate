@@ -152,9 +152,10 @@
   border-radius: var(--radius-card);
 }
 
+/* Ontbrekend: grijzer en lichter doorzichtig, maar nog goed te herkennen (17-10-2026: was grayscale 1, brightness 0.85, opacity 0.45). */
 .slot.missing .card-img {
-  filter: grayscale(1) brightness(0.85);
-  opacity: 0.45;
+  filter: grayscale(0.75);
+  opacity: 0.75;
 }
 
 .slot-name {
