@@ -410,7 +410,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
             ))}
           </div>
         )}
-        <select aria-label="Sort" value={sort} onChange={(e) => changeSort(e.target.value as SetSort)}>
+        <select className="toolbar-sort" aria-label="Sort" value={sort} onChange={(e) => changeSort(e.target.value as SetSort)}>
           {(Object.keys(SET_SORT_LABELS) as SetSort[]).map((k) => (
             <option key={k} value={k}>
               {SET_SORT_LABELS[k]}

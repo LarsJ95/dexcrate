@@ -262,7 +262,7 @@ export function SetsPage(): JSX.Element {
             </button>
           ))}
         </div>
-        <select aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
+        <select className="toolbar-sort" aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
           <option value="newest">Newest first</option>
           <option value="oldest">Oldest first</option>
           <option value="progress">Progress</option>

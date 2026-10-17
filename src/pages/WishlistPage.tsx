@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type JSX } from 'react'
 import { CardImage } from '../components/CardImage'
 import { CatalogFilterFields } from '../components/CatalogFilterFields'
+import { FilterPanel } from '../components/FilterPanel'
 import { CardmarketLink } from '../components/CardmarketLink'
 import { CatalogResults } from '../components/CatalogResults'
 import { SetCardSheet } from '../components/SetCardSheet'
@@ -90,8 +91,6 @@ export function WishlistPage(): JSX.Element {
   const [initial, setInitial] = useState<Partial<WishlistInput> | undefined>(undefined)
   // Kaart uit de kaartendatabase bekijken, met bladeren door de zoekresultaten.
   const [browsing, setBrowsing] = useState<{ hits: readonly CatalogHit[]; index: number; lang: Lang } | null>(null)
-  // Prijs, prioriteit, set en vinkjes achter "More filters".
-  const [moreOpen, setMoreOpen] = useState(false)
 
   useEffect(() => {
     if (enabled !== true) return
@@ -179,8 +178,6 @@ export function WishlistPage(): JSX.Element {
   // Bladeren in de kaartendatabase (zonder zoekterm) alleen buiten een opgeslagen lijst.
   const searching = activeList ? query.trim().length >= 2 : catalogActive(query, filters, filters.set.trim())
   const filterCount = activeWishFilterCount(filters)
-  // Actieve filters in de inklapbare rij (ook zichtbaar als die dicht is).
-  const moreCount = [filters.minPrice !== null, filters.maxPrice !== null, filters.priority !== null, filters.set.trim() !== '', filters.underMax, filters.showFound].filter(Boolean).length
   const listChanged = activeList !== null && !sameWishFilters(filters, activeList.filters)
   const canUpdateList = listChanged
   const canSaveList = (filterCount > 0 || filters.showFound) && (listChanged || !activeList)
@@ -262,70 +259,100 @@ export function WishlistPage(): JSX.Element {
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
-        <select aria-label="Variant" value={filters.variant} onChange={(e) => setFilter({ variant: e.target.value as Variant | '' })}>
-          <option value="">All variants</option>
-          {(Object.keys(VARIANT_LABELS) as Variant[]).map((v) => (
-            <option key={v} value={v}>
-              {VARIANT_LABELS[v]}
-            </option>
-          ))}
-        </select>
-        <select aria-label="Language" value={filters.language} onChange={(e) => setFilter({ language: e.target.value as CardLanguage | '' })}>
-          <option value="">All languages</option>
-          {(Object.keys(LANGUAGE_LABELS) as CardLanguage[]).map((l) => (
-            <option key={l} value={l}>
-              {LANGUAGE_LABELS[l]}
-            </option>
-          ))}
-        </select>
-        <CatalogFilterFields value={filters} onChange={(next) => setFilter({ rarity: next.rarity, type: next.type, suffix: next.suffix })} compact />
-        <button type="button" aria-expanded={moreOpen} aria-controls="wish-more" onClick={() => setMoreOpen((o) => !o)}>
-          More filters{moreCount > 0 ? ` (${moreCount})` : ''}
-        </button>
       </div>
 
-      {moreOpen && (
-        <div className="filters wish-more" id="wish-more">
-          <label>
-            Market from (€)
+      <FilterPanel
+        activeCount={filterCount + (filters.showFound ? 1 : 0)}
+        canClear={canClear}
+        onClear={() => {
+          setFilters(NO_WISH_FILTERS)
+          setQuery('')
+        }}
+        actions={
+          <>
+            {canUpdateList && (
+              <button type="button" className="primary small-btn" onClick={() => void updateActiveList()} disabled={listBusy}>
+                Update “{activeList.name}”
+              </button>
+            )}
+            {canSaveList && (
+              <button type="button" className={listChanged ? 'small-btn' : 'primary small-btn'} onClick={saveAsList}>
+                Save as new list
+              </button>
+            )}
+          </>
+        }
+      >
+        <label>
+          Variant
+          <select value={filters.variant} onChange={(e) => setFilter({ variant: e.target.value as Variant | '' })}>
+            <option value="">All</option>
+            {(Object.keys(VARIANT_LABELS) as Variant[]).map((v) => (
+              <option key={v} value={v}>
+                {VARIANT_LABELS[v]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Language
+          <select value={filters.language} onChange={(e) => setFilter({ language: e.target.value as CardLanguage | '' })}>
+            <option value="">All</option>
+            {(Object.keys(LANGUAGE_LABELS) as CardLanguage[]).map((l) => (
+              <option key={l} value={l}>
+                {LANGUAGE_LABELS[l]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <CatalogFilterFields value={filters} onChange={(next) => setFilter({ rarity: next.rarity, type: next.type, suffix: next.suffix })} />
+        <label>
+          Priority
+          <select
+            value={filters.priority ?? ''}
+            onChange={(e) => {
+              const p = Number(e.target.value)
+              setFilter({ priority: p === 1 || p === 2 || p === 3 ? p : null })
+            }}
+          >
+            <option value="">All</option>
+            <option value="1">High</option>
+            <option value="2">Normal</option>
+            <option value="3">Low</option>
+          </select>
+        </label>
+        <div className="span-2">
+          <SetPicker value={filters.set.trim()} lang={lookupLang(language || null)} onChange={(set) => setFilter({ set })} />
+        </div>
+        <div className="filter-field span-2" role="group" aria-labelledby="wish-market-label">
+          <span className="filter-label" id="wish-market-label">
+            Market price (€)
+          </span>
+          <div className="filter-range">
             <input
               type="number"
               inputMode="decimal"
               min={0}
               step="0.01"
-              placeholder="any"
+              placeholder="from"
+              aria-label="Market price from"
               value={filters.minPrice ?? ''}
               onChange={(e) => setFilter({ minPrice: priceInput(e.target.value) })}
             />
-          </label>
-          <label>
-            Market to (€)
+            <span aria-hidden="true">–</span>
             <input
               type="number"
               inputMode="decimal"
               min={0}
               step="0.01"
-              placeholder="any"
+              placeholder="to"
+              aria-label="Market price to"
               value={filters.maxPrice ?? ''}
               onChange={(e) => setFilter({ maxPrice: priceInput(e.target.value) })}
             />
-          </label>
-          <label>
-            Priority
-            <select
-              value={filters.priority ?? ''}
-              onChange={(e) => {
-                const p = Number(e.target.value)
-                setFilter({ priority: p === 1 || p === 2 || p === 3 ? p : null })
-              }}
-            >
-              <option value="">All</option>
-              <option value="1">High</option>
-              <option value="2">Normal</option>
-              <option value="3">Low</option>
-            </select>
-          </label>
-          <SetPicker value={filters.set.trim()} lang={lookupLang(language || null)} onChange={(set) => setFilter({ set })} />
+          </div>
+        </div>
+        <div className="filter-checks">
           <label className="check">
             <input type="checkbox" checked={filters.underMax} onChange={(e) => setFilter({ underMax: e.target.checked })} />
             Within my max. price
@@ -335,34 +362,8 @@ export function WishlistPage(): JSX.Element {
             Show found
           </label>
         </div>
-      )}
+      </FilterPanel>
 
-      {(canUpdateList || canSaveList || canClear) && (
-        <div className="wish-list-actions">
-          {canUpdateList && (
-            <button type="button" className="primary small-btn" onClick={() => void updateActiveList()} disabled={listBusy}>
-              Update “{activeList.name}”
-            </button>
-          )}
-          {canSaveList && (
-            <button type="button" className={listChanged ? 'small-btn' : 'primary small-btn'} onClick={saveAsList}>
-              Save as new list
-            </button>
-          )}
-          {canClear && (
-            <button
-              type="button"
-              className="small-btn"
-              onClick={() => {
-                setFilters(NO_WISH_FILTERS)
-                setQuery('')
-              }}
-            >
-              Clear all filters
-            </button>
-          )}
-        </div>
-      )}
       {listNotice && (
         <p className="notice" role="status">
           {listNotice}

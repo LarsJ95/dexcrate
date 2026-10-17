@@ -134,6 +134,7 @@ Elk component heeft verplicht deze states: default, hover, active, focus-visible
 - Navigatie desktop: ___
 - Navigatie mobiel: ___
 - Footer: ___
+- Filters (goedgekeurd 17-10-2026, op alle pagina's gelijk): 1) tabs bovenaan als er groepen zijn (Sets: talen, Wishlist: lijsten); 2) werkbalk: zoeken links, keuzeknoppen (status), sorteren altijd rechts (`.toolbar-sort`); 3) filterpaneel (components/FilterPanel.tsx): elk veld met label erboven in een raster van gelijke kolommen (min. 180 px; set en prijsbereik 2 kolommen), vinkjes in een eigen rij, voetregel met "N filters active" links en acties + "Clear all filters" rechts. Altijd open; op de telefoon (≤480 px) achter een knop "Filters (n)". Alle velden en knoppen in werkbalk en paneel hebben dezelfde hoogte (token `--control-h`, 44 px).
 - Overige: ___
 
 

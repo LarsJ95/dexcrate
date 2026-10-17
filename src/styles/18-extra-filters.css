@@ -1,15 +1,123 @@
-/* ---------- Extra filters (Collection) ---------- */
-.extra-filters > button {
-  justify-self: start;
+/* ---------- Werkbalk en filterpaneel (alle pagina's, DESIGN.md §8, 17-10-2026) ---------- */
+/* Werkbalk: zoeken links, keuzeknoppen, sorteren altijd rechts; alles dezelfde hoogte. */
+.filters {
+  align-items: center;
 }
 
-/* Setnamen zijn lang: twee kolommen breed. */
-.extra-filters .filter-set {
+.filters :is(input, select),
+.filters > button {
+  height: var(--control-h);
+}
+
+.filters .segmented {
+  height: var(--control-h);
+  flex-wrap: nowrap;
+  align-items: stretch;
+}
+
+.filters .segmented button {
+  padding-block: 0;
+}
+
+.toolbar-sort {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+/* Filterpaneel: label boven elk veld, gelijke kolommen, acties onderaan rechts. */
+.filter-panel {
+  gap: var(--space-4);
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-3) var(--space-4);
+  align-items: end;
+}
+
+.filter-grid > * {
+  min-width: 0;
+}
+
+.filter-grid :is(select, input:not([type='checkbox']):not([type='radio'])) {
+  width: 100%;
+  height: var(--control-h);
+}
+
+.filter-grid .span-2 {
   grid-column: span 2;
 }
 
-.extra-filters-foot {
+.filter-grid .set-picker {
+  flex: none;
+  min-width: 0;
+}
+
+.filter-field {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.filter-label {
+  font-weight: 600;
+  font-size: var(--fs-label);
+  color: var(--ink-soft);
+}
+
+.filter-range {
   display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--muted);
+}
+
+.filter-range input {
+  flex: 1 1 0;
+}
+
+.filter-checks {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+}
+
+.filter-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
-  margin-top: var(--space-3);
+  gap: var(--space-2) var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.filter-foot > .muted {
+  margin-right: auto;
+}
+
+/* Alleen op de telefoon in te klappen. */
+.filter-toggle {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .filter-toggle {
+    display: inline-flex;
+    justify-self: start;
+    height: var(--control-h);
+  }
+
+  .filter-panel:not(.is-open) {
+    display: none;
+  }
+
+  .filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .toolbar-sort {
+    margin-left: 0;
+  }
 }

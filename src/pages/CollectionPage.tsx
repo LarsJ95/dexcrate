@@ -32,7 +32,6 @@ export function CollectionPage(): JSX.Element {
   const [filter, setFilter] = useState<StatusFilter>(initialView.filter)
   const [sort, setSort] = useState<SortKey>(initialView.sort)
   const [extra, setExtra] = useState<ExtraFilters>(initialView.extra)
-  const [showFilters, setShowFilters] = useState(true)
   // Kaartinfo (illustrator, zeldzaamheid, types) alleen laden als je op de catalogus filtert.
   const catalogKeys = useMemo(() => (cards ?? []).flatMap((c) => (c.tcgdex_id ? [c.tcgdex_id] : [])), [cards])
   const infos = useCatalogInfos(catalogKeys, needsCatalog(extra))
@@ -286,21 +285,7 @@ export function CollectionPage(): JSX.Element {
             </button>
           ))}
         </div>
-        <button type="button" aria-expanded={showFilters} onClick={() => setShowFilters((s) => !s)}>
-          Filters{activeFilterCount(extra) > 0 ? ` (${activeFilterCount(extra)})` : ''}
-        </button>
-        {!showFilters && (activeFilterCount(extra) > 0 || query.trim() !== '') && (
-          <button
-            type="button"
-            onClick={() => {
-              setExtra(NO_EXTRA_FILTERS)
-              setQuery('')
-            }}
-          >
-            Clear all filters
-          </button>
-        )}
-        <select aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
+        <select className="toolbar-sort" aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
           <option value="newest">Newest first</option>
           <option value="list">Oldest first</option>
           <option value="set">Set and number</option>
@@ -311,18 +296,17 @@ export function CollectionPage(): JSX.Element {
         </select>
       </div>
 
-      {showFilters && (
-        <CollectionFilterPanel
-          extra={extra}
-          setExtra={setExtra}
-          setOptions={setOptions}
-          canClear={activeFilterCount(extra) > 0 || query.trim() !== ''}
-          onClear={() => {
-            setExtra(NO_EXTRA_FILTERS)
-            setQuery('')
-          }}
-        />
-      )}
+      <CollectionFilterPanel
+        extra={extra}
+        setExtra={setExtra}
+        setOptions={setOptions}
+        activeCount={activeFilterCount(extra)}
+        canClear={activeFilterCount(extra) > 0 || query.trim() !== ''}
+        onClear={() => {
+          setExtra(NO_EXTRA_FILTERS)
+          setQuery('')
+        }}
+      />
 
       {lastBulk && (
         <div className="notice" role="status">
@@ -339,7 +323,6 @@ export function CollectionPage(): JSX.Element {
           className="notice notice-action"
           onClick={() => {
             setExtra((f) => ({ ...f, link: 'unlinked' }))
-            setShowFilters(true)
           }}
         >
           {unlinked} {unlinked === 1 ? 'card is' : 'cards are'} not linked yet. Show {unlinked === 1 ? 'it' : 'them'}.

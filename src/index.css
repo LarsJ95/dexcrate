@@ -142,6 +142,9 @@
   --space-7: 48px;
   --space-8: 64px;
 
+  /* Hoogte van velden en knoppen in werkbalken en filterpanelen (DESIGN.md §8, 17-10-2026). */
+  --control-h: 44px;
+
   /* Radius (DESIGN.md §6): badges / bediening / vlakken / statuspillen / echte kaartvorm. */
   --radius-xs: 4px;
   --radius-s: 8px;

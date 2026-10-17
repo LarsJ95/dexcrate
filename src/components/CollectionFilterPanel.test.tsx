@@ -24,6 +24,7 @@ function Harness({ onState, canClear = false, onClear = () => {} }: { onState: (
         { key: 'en/sv03.5', label: '151 (MEW)' },
         { key: 'en/swsh10', label: 'Astral Radiance (ASR)' },
       ]}
+      activeCount={0}
       canClear={canClear}
       onClear={onClear}
     />
@@ -45,7 +46,7 @@ describe('CollectionFilterPanel', () => {
   it('toont een opgeslagen set die niet meer in de lijst staat', () => {
     function Saved(): JSX.Element {
       const [extra, setExtra] = useState<ExtraFilters>({ ...NO_EXTRA_FILTERS, set: 'en/base1' })
-      return <CollectionFilterPanel extra={extra} setExtra={setExtra} setOptions={[]} canClear onClear={() => {}} />
+      return <CollectionFilterPanel extra={extra} setExtra={setExtra} setOptions={[]} activeCount={1} canClear onClear={() => {}} />
     }
     render(<Saved />)
     expect((screen.getByLabelText('Set') as HTMLSelectElement).value).toBe('en/base1')
