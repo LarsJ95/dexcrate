@@ -18,7 +18,7 @@ button.slot-open {
     radial-gradient(circle, transparent 15%, var(--surface-2) 72%),
     repeating-conic-gradient(from 0deg, color-mix(in oklab, var(--accent-line) 14%, transparent) 0deg 8deg, transparent 8deg 20deg),
     var(--surface-3);
-  transition: opacity 200ms ease-out, transform 150ms ease-out;
+  transition: opacity 150ms ease-out, transform 150ms ease-out;
 }
 
 .whos-that img {
@@ -42,15 +42,15 @@ button.slot-open:hover .whos-that {
   transform: translateY(-4px);
 }
 
-/* Hover of focus: na een korte vertraging verdwijnt het silhouet en zie je meteen de kaart (geen inkleuren; 17-10-2026). */
+/* Hover of focus: na 100 ms verdwijnt het silhouet (in 150 ms) en zie je meteen de kaart (geen inkleuren; 17-10-2026). */
 @media (hover: hover) {
   .has-silhouette button.slot-open:hover .whos-that {
     opacity: 0;
-    transition-delay: 250ms;
+    transition-delay: 100ms;
   }
 }
 
 .has-silhouette button.slot-open:focus-visible .whos-that {
   opacity: 0;
-  transition-delay: 250ms;
+  transition-delay: 100ms;
 }
