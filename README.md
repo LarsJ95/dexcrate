@@ -2,7 +2,7 @@
 
 Persoonlijke PWA voor een Pokémon-kaartencollectie: collectie, aan- en verkoop, marktwaarde (Cardmarket via TCGdex), set-voortgang, wishlist en kaarten scannen met de camera.
 
-Live: https://larsj95.github.io/dexcrate/
+Live: https://dexcrate.com (sinds 17-10-2026; het oude adres https://larsj95.github.io/dexcrate/ stuurt door). Domein bij Versio (DNS: 4× A en 4× AAAA naar GitHub Pages, CNAME `www` → `larsj95.github.io`, TXT `_github-pages-challenge-LarsJ95` voor de domeinverificatie; geen wildcard-records). Custom domain en Enforce HTTPS staan in de repo-instellingen (Pages), geen CNAME-bestand nodig bij publiceren via Actions.
 
 ## Stack
 
