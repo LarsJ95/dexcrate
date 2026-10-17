@@ -34,7 +34,7 @@ export function AppearanceSection(): JSX.Element {
         Living background: stars, falling stars, Team Rocket and more
       </Toggle>
       <Toggle checked={prefs.wallpaper} onChange={(v) => setPref('wallpaper', v)}>
-        Energy wallpaper: faint type symbols behind the page
+        Background pattern: a different one each day in the dark theme (Poké Balls, holo, energy mix, night sky)
       </Toggle>
     </Section>
   )

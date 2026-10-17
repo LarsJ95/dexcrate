@@ -9,6 +9,7 @@ import { Runner } from './Runner'
 import { Sky } from './Sky'
 import { usePrefs } from '../lib/devicePrefs'
 import { SIDE_GROUPS, TAB_NAV, isActiveTab } from './nav'
+import { useBackdrop } from '../hooks/useBackdrop'
 import { useOnline } from '../hooks/useOnline'
 import { useOfflineDataTime } from '../lib/offlineCache'
 
@@ -37,6 +38,8 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
   useEffect(() => {
     document.documentElement.dataset.wallpaper = prefs.wallpaper ? 'on' : 'off'
   }, [prefs.wallpaper])
+  // Achtergrond van de dag (donker thema); bij de sterrennacht tekent de hemel extra sterren.
+  const backdrop = useBackdrop()
   const themeLabel = theme === 'dark' ? 'Light theme' : 'Dark theme'
   const themeButton = (
     <button type="button" className="ghost icon-btn" onClick={onToggleTheme} aria-label={themeLabel} title={themeLabel}>
@@ -51,7 +54,7 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
 
   return (
     <div className="shell">
-      {prefs.sky && <Sky theme={theme} />}
+      {prefs.sky && <Sky theme={theme} night={theme === 'dark' && backdrop === 'night'} />}
       <aside className="sidebar">
         <a className="brand" href="#/overview">
           <LogoMark />

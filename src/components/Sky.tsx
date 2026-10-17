@@ -113,7 +113,8 @@ function auroraColor(): string {
   return t ? energyColor(t) : 'var(--type)'
 }
 
-export function Sky({ theme }: { theme: 'dark' | 'light' }): JSX.Element {
+/** `night`: achtergrond van de dag is de sterrennacht (styles/65-achtergronden.css): volle, extra sterren en vaker een vallende ster. */
+export function Sky({ theme, night = false }: { theme: 'dark' | 'light'; night?: boolean }): JSX.Element {
   const motion = useMotion()
   const preview = previewSky()
   const [phase, setPhase] = useState<SkyPhase>(() => preview?.phase ?? skyPhase(new Date()))
@@ -142,13 +143,13 @@ export function Sky({ theme }: { theme: 'dark' | 'light' }): JSX.Element {
     let clouds: { x: number; y: number; s: number; v: number }[] = []
     let raf = 0
     let last = 0
-    const strength = starStrength(phase, theme)
+    const strength = night ? 1 : starStrength(phase, theme)
     const cloudy = theme === 'light' && phase !== 'night'
 
     const resize = (): void => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
-      stars = makeStars(canvas.width, canvas.height)
+      stars = makeStars(canvas.width, canvas.height, Math.random, night ? 1.6 : 1)
       clouds = Array.from({ length: Math.max(3, Math.round(canvas.width / 450)) }, () => ({
         x: Math.random() * canvas.width,
         y: 30 + Math.random() * canvas.height * 0.45,
@@ -241,7 +242,7 @@ export function Sky({ theme }: { theme: 'dark' | 'light' }): JSX.Element {
       window.removeEventListener('resize', onResize)
       document.removeEventListener('visibilitychange', onVisibility)
     }
-  }, [motion, theme, phase])
+  }, [motion, theme, phase, night])
 
   // Gebeurtenissen inplannen: vallende ster, Team Rocket, vliegende Pokémon, Gengar ('s nachts).
   useEffect(() => {
@@ -252,7 +253,8 @@ export function Sky({ theme }: { theme: 'dark' | 'light' }): JSX.Element {
     }
     const star = (): void => {
       if (!document.hidden) fallingRef.current = makeFallingStar(window.innerWidth, window.innerHeight, performance.now())
-      later(between(20, 60), star)
+      // Sterrennacht: vaker een vallende ster (de wens blijft 1x per dag, zie makeWish).
+      later(night ? between(8, 25) : between(20, 60), star)
     }
     // Preview: één trage ster in het midden, om te kunnen bekijken en aantikken.
     const slowStar = (): void => {
@@ -285,7 +287,7 @@ export function Sky({ theme }: { theme: 'dark' | 'light' }): JSX.Element {
     return () => {
       for (const t of timers) window.clearTimeout(t)
     }
-  }, [motion, phase, preview?.kind])
+  }, [motion, phase, preview?.kind, night])
 
   // Gengar verdwijnt na een paar seconden, of meteen als je in de buurt komt.
   useEffect(() => {
