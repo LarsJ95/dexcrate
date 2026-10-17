@@ -1,0 +1,106 @@
+[
+ {
+  "id": "c1",
+  "name": "Oranguru V",
+  "set_code": "ASR",
+  "card_number": "133",
+  "tcgdex_id": "en/swsh10-133",
+  "status": "collection",
+  "sort_order": 1,
+  "quantity": 1,
+  "language": "en"
+ },
+ {
+  "id": "c2",
+  "name": "Voltorb",
+  "set_code": "CLC",
+  "card_number": "10",
+  "tcgdex_id": null,
+  "status": "collection",
+  "sort_order": 2,
+  "quantity": 1
+ },
+ {
+  "id": "c3",
+  "name": "Dedenne",
+  "set_code": "CSMC",
+  "card_number": "4",
+  "tcgdex_id": null,
+  "status": "collection",
+  "sort_order": 3,
+  "quantity": 1
+ },
+ {
+  "id": "c4",
+  "name": "Morpeko",
+  "set_code": "CS",
+  "card_number": "1",
+  "tcgdex_id": null,
+  "status": "sold",
+  "sort_order": 4,
+  "quantity": 1
+ },
+ {
+  "id": "c5",
+  "name": "Mudsdale",
+  "set_code": "CS",
+  "card_number": "2",
+  "tcgdex_id": null,
+  "status": "sold",
+  "sort_order": 5,
+  "quantity": 1
+ },
+ {
+  "id": "c6",
+  "name": "Temporal Forces Arbok",
+  "set_code": "TEF",
+  "card_number": "176",
+  "tcgdex_id": "en/sv05-176",
+  "status": "collection",
+  "sort_order": 6,
+  "quantity": 1
+ },
+ {
+  "id": "c7",
+  "name": "Pikachu",
+  "set_code": "SVP",
+  "card_number": "88",
+  "tcgdex_id": "en/svp-088",
+  "status": "collection",
+  "sort_order": 7,
+  "quantity": 1
+ },
+ {
+  "id": "c8",
+  "name": "Vivillon",
+  "set_code": "SV8",
+  "card_number": "107",
+  "tcgdex_id": "ja/SV8-107",
+  "status": "collection",
+  "sort_order": 8,
+  "quantity": 1,
+  "language": "ja"
+ },
+ {
+  "id": "c9",
+  "name": "Charmander",
+  "set_code": "MEW",
+  "card_number": "4",
+  "tcgdex_id": "en/sv03.5-004",
+  "status": "collection",
+  "sort_order": 9,
+  "quantity": 1,
+  "language": "en"
+ },
+ {
+  "id": "c10",
+  "name": "Charmeleon",
+  "set_code": "MEW",
+  "card_number": "5",
+  "tcgdex_id": "en/sv03.5-005",
+  "status": "collection",
+  "sort_order": 10,
+  "quantity": 1,
+  "language": "en"
+ }
+]

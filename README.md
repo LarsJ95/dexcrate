@@ -64,6 +64,10 @@ UI-werk: lees eerst `DESIGN.md`.
 
 `npm run build` en daarna `node tools/lighthouse.mjs [routes]`: mobiel (middenklasse-telefoon, trage 4G), eerst het inlogscherm bij een eerste bezoek, daarna de routes als ingelogde gebruiker. Voor echte data: `LH_EMAIL` en `LH_PASSWORD` in `.env.local` (niet in git, niet in de app). Uitleg en opties bovenin het script.
 
+## Browsertests
+
+`npm run build` en daarna `npm run test:e2e` (of `node tools/e2e/run.mjs scan-queue` voor één test): headless Chrome via het DevTools-protocol, geen extra dependency. Supabase wordt in de browser nagebootst (nep-sessie, testdata uit `tools/e2e/fixtures`); er gaat niets naar je echte database, `.env.local` is alleen nodig voor het Supabase-adres. Test nu: offline-cache (collectie/wishlist offline, gewist na uitloggen), foutlogboek en de scanlijst (IndexedDB, in stukken, grens van 250). Niet in CI: Chrome is daar niet ingericht.
+
 ## Bekende melding van npm audit
 
 `npm audit` meldt `uuid < 11.1.1` via `exceljs` (alleen gebruikt voor de Excel-import). Bewust zo gelaten (17-10-2026): het lek zit in `uuid` v3/v5/v6 met een `buf`-argument, terwijl exceljs alleen `v4()` gebruikt; bovendien laadt de app de kant-en-klare `exceljs/dist/exceljs.min.js` met een eigen kopie, dus een override zou alleen de melding stilzetten. Opnieuw bekijken als exceljs een nieuwe versie uitbrengt.
