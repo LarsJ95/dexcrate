@@ -1,0 +1,53 @@
+/* ---------- Telefoon: tikdoelen minimaal 44 px (Apple HIG 44 pt, Material 48 dp; 17-10-2026) ---------- */
+/* Alleen op touchscreens; met een muis blijft alles compact. Staat als laatste: gaat voor eerdere maten. */
+@media (pointer: coarse) {
+  :root {
+    --control-h: 48px;
+  }
+
+  button,
+  select,
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  a.button-link,
+  a.cm-button {
+    min-height: 44px;
+  }
+
+  .segmented button {
+    min-width: 44px;
+  }
+
+  button.icon-btn,
+  button.buddy,
+  a.cm-button {
+    min-width: 44px;
+  }
+
+  button.small-btn {
+    padding-inline: var(--space-3);
+  }
+
+  /* Keuzeknoppen: de knoppen zelf minstens 44 px hoog. */
+  .segmented {
+    padding: 2px;
+  }
+
+  .filters .segmented {
+    padding: 1px;
+  }
+
+  /* Vinkjes: de hele regel (label) is het tikvlak. */
+  label.check {
+    min-height: 44px;
+  }
+
+  .brand,
+  a.back {
+    min-height: 44px;
+  }
+
+  a.back {
+    display: inline-flex;
+    align-items: center;
+  }
+}
