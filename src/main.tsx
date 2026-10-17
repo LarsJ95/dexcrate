@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { UpdateBanner } from './components/UpdateBanner'
 import { initAppUpdates } from './lib/appUpdate'
 import { initMotion } from './lib/motion'
 
@@ -14,6 +15,7 @@ createRoot(document.getElementById('root')!).render(
     {/* Vangnet als ook de schil (menu, achtergrond) crasht. */}
     <ErrorBoundary>
       <App />
+      <UpdateBanner />
     </ErrorBoundary>
   </StrictMode>,
 )

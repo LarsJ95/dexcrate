@@ -1,0 +1,26 @@
+/* ---------- Melding bij een app-update (17-10-2026) ---------- */
+.update-banner {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 2 * var(--space-4));
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent-line);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: var(--shadow-float);
+  animation: sheet-in 200ms ease-out;
+}
+
+/* Telefoon en tablet: boven de onderbalk. */
+@media (max-width: 1023px) {
+  .update-banner {
+    bottom: calc(var(--tabbar) + var(--space-3) + env(safe-area-inset-bottom, 0px));
+  }
+}
