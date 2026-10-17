@@ -10,6 +10,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { supabase } from './lib/supabase'
 import './App.css'
 import { Loading } from './components/Loading'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 const BackupPage = lazy(() => import('./pages/BackupPage').then((m) => ({ default: m.BackupPage })))
 const CollectionPage = lazy(() => import('./pages/CollectionPage').then((m) => ({ default: m.CollectionPage })))
@@ -57,20 +58,22 @@ function App(): JSX.Element {
 
   return (
     <Shell route={route} email={session.user.email ?? null} theme={theme} onToggleTheme={toggle} onSignOut={() => void signOut()}>
-      <Suspense fallback={<Loading />}>
-        {route === 'overview' && <DashboardPage email={session.user.email ?? null} />}
-        {route === 'collection' && <CollectionPage />}
-        {route === 'scan' && <ScanPage />}
-        {route === 'sets' && (param ? <SetBinderPage key={param} param={param} /> : <SetsPage />)}
-        {route === 'wishlist' && <WishlistPage />}
-        {route === 'crate' && <CratePage />}
-        {route === 'transactions' && <TransactionsPage />}
-        {route === 'photos' && <PhotosPage />}
-        {route === 'import' && <ImportPage />}
-        {route === 'backup' && <BackupPage />}
-        {route === 'settings' && <SettingsPage />}
-        {route === 'more' && <MorePage />}
-      </Suspense>
+      <ErrorBoundary resetKey={`${route}/${param ?? ''}`}>
+        <Suspense fallback={<Loading />}>
+          {route === 'overview' && <DashboardPage email={session.user.email ?? null} />}
+          {route === 'collection' && <CollectionPage />}
+          {route === 'scan' && <ScanPage />}
+          {route === 'sets' && (param ? <SetBinderPage key={param} param={param} /> : <SetsPage />)}
+          {route === 'wishlist' && <WishlistPage />}
+          {route === 'crate' && <CratePage />}
+          {route === 'transactions' && <TransactionsPage />}
+          {route === 'photos' && <PhotosPage />}
+          {route === 'import' && <ImportPage />}
+          {route === 'backup' && <BackupPage />}
+          {route === 'settings' && <SettingsPage />}
+          {route === 'more' && <MorePage />}
+        </Suspense>
+      </ErrorBoundary>
     </Shell>
   )
 }
