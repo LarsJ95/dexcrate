@@ -3,6 +3,7 @@ import { CardImage } from '../components/CardImage'
 import { CatalogFilterFields } from '../components/CatalogFilterFields'
 import { CardmarketLink } from '../components/CardmarketLink'
 import { CatalogResults } from '../components/CatalogResults'
+import { SetCardSheet } from '../components/SetCardSheet'
 import { SetPicker } from '../components/SetPicker'
 import { CardSetSymbol } from '../components/SetIcon'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
@@ -15,7 +16,7 @@ import { useCardPrice } from '../hooks/useCardPrice'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import { catalogActive, type CatalogHit } from '../lib/catalogSearch'
 import { listCards } from '../lib/db'
-import { PRINTED_SETS, getSet, isLang, lookupLang, type Lang } from '../lib/tcgdex'
+import { PRINTED_SETS, isLang, lookupLang, type Lang } from '../lib/tcgdex'
 import { marketValue } from '../lib/prices'
 import { matchesWords } from '../lib/search'
 import { formatEur } from '../lib/stats'
@@ -85,8 +86,12 @@ export function WishlistPage(): JSX.Element {
   const [listBusy, setListBusy] = useState(false)
   const activeList = lists.find((l) => l.id === activeListId) ?? null
   const [editing, setEditing] = useState<WishlistItem | 'new' | null>(null)
-  // Startwaarden als je een kaart uit de kaartendatabase kiest.
+  // Startwaarden voor een nieuwe wens.
   const [initial, setInitial] = useState<Partial<WishlistInput> | undefined>(undefined)
+  // Kaart uit de kaartendatabase bekijken, met bladeren door de zoekresultaten.
+  const [browsing, setBrowsing] = useState<{ hits: readonly CatalogHit[]; index: number; lang: Lang } | null>(null)
+  // Prijs, prioriteit, set en vinkjes achter "More filters".
+  const [moreOpen, setMoreOpen] = useState(false)
 
   useEffect(() => {
     if (enabled !== true) return
@@ -165,32 +170,40 @@ export function WishlistPage(): JSX.Element {
   })
   const foundCount = rows.filter((r) => r.found).length
   const wishedKeys = useMemo(() => new Set((items ?? []).flatMap((i) => (i.tcgdex_id ? [i.tcgdex_id] : []))), [items])
-  const ownedKeys = useMemo(() => new Set(cards.flatMap((c) => (c.tcgdex_id && c.ownership === 'owned' ? [c.tcgdex_id] : []))), [cards])
+  const ownedCounts = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const c of cards) if (c.tcgdex_id && c.ownership === 'owned') map.set(c.tcgdex_id, (map.get(c.tcgdex_id) ?? 0) + c.quantity)
+    return map
+  }, [cards])
+  const ownedKeys = useMemo(() => new Set(ownedCounts.keys()), [ownedCounts])
   // Bladeren in de kaartendatabase (zonder zoekterm) alleen buiten een opgeslagen lijst.
   const searching = activeList ? query.trim().length >= 2 : catalogActive(query, filters, filters.set.trim())
   const filterCount = activeWishFilterCount(filters)
+  // Actieve filters in de inklapbare rij (ook zichtbaar als die dicht is).
+  const moreCount = [filters.minPrice !== null, filters.maxPrice !== null, filters.priority !== null, filters.set.trim() !== '', filters.underMax, filters.showFound].filter(Boolean).length
   const listChanged = activeList !== null && !sameWishFilters(filters, activeList.filters)
+  const canUpdateList = listChanged
+  const canSaveList = (filterCount > 0 || filters.showFound) && (listChanged || !activeList)
+  const canClear = (filterCount > 0 || query.trim() !== '') && !activeList
 
   function openNew(start?: Partial<WishlistInput>): void {
     setInitial(start)
     setEditing('new')
   }
 
-  async function pickFromCatalog(hit: CatalogHit, lang: Lang): Promise<void> {
-    let setCode = hit.setId
-    try {
-      setCode = (await getSet(lang, hit.setId))?.summary.abbr ?? hit.setId
-    } catch (err) {
-      console.error('Setinfo ophalen mislukt', err)
-    }
-    openNew({
-      tcgdex_id: `${lang}/${hit.card.id}`,
-      name: hit.card.name,
-      set_code: setCode.slice(0, 20),
-      card_number: /^\d+$/.test(hit.card.localId) ? String(Number.parseInt(hit.card.localId, 10)) : hit.card.localId,
-      language: language || null,
+  function addSaved(saved: WishlistItem): void {
+    setItems((list) => {
+      const next = [...(list ?? [])]
+      const i = next.findIndex((x) => x.id === saved.id)
+      if (i >= 0) next[i] = saved
+      else next.unshift(saved)
+      return next
     })
   }
+
+  const browsed = browsing?.hits[browsing.index] ?? null
+  const browsedKey = browsing && browsed ? `${browsing.lang}/${browsed.card.id}` : null
+  const goTo = (index: number): void => setBrowsing((b) => (b ? { ...b, index } : b))
 
   if (enabled === false) {
     return (
@@ -266,69 +279,77 @@ export function WishlistPage(): JSX.Element {
           ))}
         </select>
         <CatalogFilterFields value={filters} onChange={(next) => setFilter({ rarity: next.rarity, type: next.type, suffix: next.suffix })} compact />
+        <button type="button" aria-expanded={moreOpen} aria-controls="wish-more" onClick={() => setMoreOpen((o) => !o)}>
+          More filters{moreCount > 0 ? ` (${moreCount})` : ''}
+        </button>
       </div>
 
-      <div className="filters wish-more">
-        <label>
-          Market from (€)
-          <input
-            type="number"
-            inputMode="decimal"
-            min={0}
-            step="0.01"
-            placeholder="any"
-            value={filters.minPrice ?? ''}
-            onChange={(e) => setFilter({ minPrice: priceInput(e.target.value) })}
-          />
-        </label>
-        <label>
-          Market to (€)
-          <input
-            type="number"
-            inputMode="decimal"
-            min={0}
-            step="0.01"
-            placeholder="any"
-            value={filters.maxPrice ?? ''}
-            onChange={(e) => setFilter({ maxPrice: priceInput(e.target.value) })}
-          />
-        </label>
-        <label>
-          Priority
-          <select
-            value={filters.priority ?? ''}
-            onChange={(e) => {
-              const p = Number(e.target.value)
-              setFilter({ priority: p === 1 || p === 2 || p === 3 ? p : null })
-            }}
-          >
-            <option value="">All</option>
-            <option value="1">High</option>
-            <option value="2">Normal</option>
-            <option value="3">Low</option>
-          </select>
-        </label>
-        <SetPicker value={filters.set.trim()} lang={lookupLang(language || null)} onChange={(set) => setFilter({ set })} />
-        <label className="check">
-          <input type="checkbox" checked={filters.underMax} onChange={(e) => setFilter({ underMax: e.target.checked })} />
-          Within my max. price
-        </label>
-        <label className="check">
-          <input type="checkbox" checked={filters.showFound} onChange={(e) => setFilter({ showFound: e.target.checked })} />
-          Show found
-        </label>
+      {moreOpen && (
+        <div className="filters wish-more" id="wish-more">
+          <label>
+            Market from (€)
+            <input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="0.01"
+              placeholder="any"
+              value={filters.minPrice ?? ''}
+              onChange={(e) => setFilter({ minPrice: priceInput(e.target.value) })}
+            />
+          </label>
+          <label>
+            Market to (€)
+            <input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="0.01"
+              placeholder="any"
+              value={filters.maxPrice ?? ''}
+              onChange={(e) => setFilter({ maxPrice: priceInput(e.target.value) })}
+            />
+          </label>
+          <label>
+            Priority
+            <select
+              value={filters.priority ?? ''}
+              onChange={(e) => {
+                const p = Number(e.target.value)
+                setFilter({ priority: p === 1 || p === 2 || p === 3 ? p : null })
+              }}
+            >
+              <option value="">All</option>
+              <option value="1">High</option>
+              <option value="2">Normal</option>
+              <option value="3">Low</option>
+            </select>
+          </label>
+          <SetPicker value={filters.set.trim()} lang={lookupLang(language || null)} onChange={(set) => setFilter({ set })} />
+          <label className="check">
+            <input type="checkbox" checked={filters.underMax} onChange={(e) => setFilter({ underMax: e.target.checked })} />
+            Within my max. price
+          </label>
+          <label className="check">
+            <input type="checkbox" checked={filters.showFound} onChange={(e) => setFilter({ showFound: e.target.checked })} />
+            Show found
+          </label>
+        </div>
+      )}
+
+      {(canUpdateList || canSaveList || canClear) && (
         <div className="wish-list-actions">
-          {listChanged && (
+          {canUpdateList && (
             <button type="button" className="primary small-btn" onClick={() => void updateActiveList()} disabled={listBusy}>
               Update “{activeList.name}”
             </button>
           )}
-          {(filterCount > 0 || filters.showFound) && (listChanged || !activeList) && (
+          {canSaveList && (
             <button type="button" className={listChanged ? 'small-btn' : 'primary small-btn'} onClick={saveAsList}>
               Save as new list
             </button>
           )}
-          {(filterCount > 0 || query.trim() !== '') && !activeList && (
+          {canClear && (
             <button
               type="button"
               className="small-btn"
@@ -341,7 +362,7 @@ export function WishlistPage(): JSX.Element {
             </button>
           )}
         </div>
-      </div>
+      )}
       {listNotice && (
         <p className="notice" role="status">
           {listNotice}
@@ -411,7 +432,7 @@ export function WishlistPage(): JSX.Element {
           lang={lookupLang(language || null)}
           wished={wishedKeys}
           owned={ownedKeys}
-          onPick={(hit, lang) => void pickFromCatalog(hit, lang)}
+          onPick={(hits, index, lang) => setBrowsing({ hits, index, lang })}
           note={
             // Europese talen hebben geen eigen kaartdata (TCGdex): zelfde set en nummer als Engels.
             language === 'nl'
@@ -421,6 +442,26 @@ export function WishlistPage(): JSX.Element {
                 : null
           }
           onlySets={language ? (PRINTED_SETS[language] ?? null) : null}
+        />
+      )}
+
+      {browsing && browsed && browsedKey && (
+        <SetCardSheet
+          lang={browsing.lang}
+          card={browsed.card}
+          setName={browsed.set?.name ?? browsed.setId}
+          setId={browsed.setId}
+          owned={ownedCounts.get(browsedKey) ?? 0}
+          wishLanguage={language || null}
+          wished={wishedKeys.has(browsedKey)}
+          onWishSaved={addSaved}
+          nav={{
+            position: browsing.index + 1,
+            total: browsing.hits.length,
+            onPrev: browsing.index > 0 ? () => goTo(browsing.index - 1) : null,
+            onNext: browsing.index < browsing.hits.length - 1 ? () => goTo(browsing.index + 1) : null,
+          }}
+          onClose={() => setBrowsing(null)}
         />
       )}
 
@@ -450,13 +491,7 @@ export function WishlistPage(): JSX.Element {
           initial={editing === 'new' ? initial : undefined}
           onClose={() => setEditing(null)}
           onSaved={(saved) => {
-            setItems((list) => {
-              const next = [...(list ?? [])]
-              const i = next.findIndex((x) => x.id === saved.id)
-              if (i >= 0) next[i] = saved
-              else next.unshift(saved)
-              return next
-            })
+            addSaved(saved)
             setEditing(null)
           }}
           onDeleted={(id) => {

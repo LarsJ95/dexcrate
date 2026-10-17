@@ -128,6 +128,12 @@ export const IconArrowLeft = (p: IconProps): JSX.Element => (
   </Svg>
 )
 
+export const IconArrowRight = (p: IconProps): JSX.Element => (
+  <Svg {...p}>
+    <path d="M5 12h14M13 6l6 6-6 6" />
+  </Svg>
+)
+
 export const IconImage = (p: IconProps): JSX.Element => (
   <Svg {...p}>
     <rect x="3.5" y="4.5" width="17" height="15" rx="2" />

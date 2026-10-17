@@ -13,7 +13,8 @@ interface Props {
   wished: ReadonlySet<string>
   /** Catalogussleutels die je al hebt. */
   owned: ReadonlySet<string>
-  onPick: (hit: CatalogHit, lang: Lang) => void
+  /** Aangeklikte kaart: de hele (gesorteerde) lijst en de positie erin, om door te kunnen bladeren. */
+  onPick: (hits: readonly CatalogHit[], index: number, lang: Lang) => void
   /** Uitleg onder de kop, bv. dat een Europese taal de Engelse kaarten toont. */
   note?: string | null
   /** Alleen kaarten uit deze sets tonen (bv. de paar sets die in het Nederlands bestaan). */
@@ -92,12 +93,12 @@ export function CatalogResults({ query, lang, wished, owned, onPick, note = null
       {hits && hits.length > 0 && (
         <>
           <ul className="catalog-grid">
-            {hits.slice(0, count).map((hit) => {
+            {hits.slice(0, count).map((hit, index) => {
               const k = `${lang}/${hit.card.id}`
               const status = wished.has(k) ? 'On your wishlist' : owned.has(k) ? 'Owned' : null
               return (
                 <li key={k}>
-                  <button type="button" className="catalog-hit" onClick={() => onPick(hit, lang)}>
+                  <button type="button" className="catalog-hit" onClick={() => onPick(hits, index, lang)}>
                     <CatalogCardPicture
                       lang={lang}
                       setId={hit.setId}

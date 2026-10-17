@@ -317,3 +317,50 @@ label.check {
   font-weight: 500;
   color: var(--ink);
 }
+
+/* Kop met bladeren (‹ 3 of 217 ›) en sluiten. */
+.sheet-head-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+}
+
+.sheet-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.sheet-nav .muted {
+  min-width: 4.5em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Bladeren (wishlist): de kaart groot om te beoordelen; tik = schermvullend. */
+.card-sheet.is-browse .detail-top {
+  grid-template-columns: min(340px, 50%) minmax(0, 1fr);
+}
+
+@media (max-width: 480px) {
+  .card-sheet.is-browse .detail-top {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'image'
+      'set'
+      'chips'
+      'prices'
+      'bar';
+    grid-template-rows: none;
+  }
+
+  .card-sheet.is-browse .detail-image {
+    justify-self: center;
+    width: min(72vw, 300px);
+  }
+
+  .card-sheet.is-browse .sheet-head h2 {
+    font-size: 1.25rem;
+  }
+}
