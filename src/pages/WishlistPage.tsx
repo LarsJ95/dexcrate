@@ -11,13 +11,13 @@ import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { useCardPrices } from '../hooks/useCardPrices'
 import { useDbFeature } from '../hooks/useDbFeature'
 import { WishlistListSheet } from '../components/WishlistListSheet'
-import { IconPlus, IconSearch } from '../components/Icons'
+import { IconEdit, IconPlus, IconSearch } from '../components/Icons'
 import { WishlistDialog } from '../components/WishlistDialog'
 import { useCardPrice } from '../hooks/useCardPrice'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import { catalogActive, type CatalogHit } from '../lib/catalogSearch'
 import { listCards } from '../lib/db'
-import { PRINTED_SETS, isLang, lookupLang, type Lang } from '../lib/tcgdex'
+import { PRINTED_SETS, isLang, lookupLang, type Lang, type SetCard } from '../lib/tcgdex'
 import { marketValue } from '../lib/prices'
 import { matchesWords } from '../lib/search'
 import { formatEur } from '../lib/stats'
@@ -67,6 +67,17 @@ const priceInput = (text: string): number | null => {
 const matches = (item: WishlistItem, query: string): boolean =>
   matchesWords([item.name, item.set_code, item.card_number, item.card_number && `#${item.card_number}`, item.notes], query)
 
+/** Gekoppelde wens als kaart voor het kaartvenster; null zonder (bruikbare) koppeling. */
+function sheetCardOf(item: WishlistItem): { lang: Lang; key: string; card: SetCard } | null {
+  const key = item.tcgdex_id
+  const slash = key ? key.indexOf('/') : -1
+  if (!key || slash < 1) return null
+  const lang = key.slice(0, slash)
+  const id = key.slice(slash + 1)
+  if (!isLang(lang) || !id) return null
+  return { lang, key, card: { id, localId: id.slice(id.lastIndexOf('-') + 1), name: item.name, image: null } }
+}
+
 /** Wishlist: wat je zoekt, met wat je al hebt (of onderweg is) en de marktprijs. */
 export function WishlistPage(): JSX.Element {
   const enabled = useWishlistEnabled()
@@ -91,6 +102,8 @@ export function WishlistPage(): JSX.Element {
   const [editing, setEditing] = useState<WishlistItem | 'new' | null>(null)
   // Startwaarden voor een nieuwe wens.
   const [initial, setInitial] = useState<Partial<WishlistInput> | undefined>(undefined)
+  // Eigen wens bekijken als grote kaart (alleen gekoppelde wensen), met bladeren door je wensen.
+  const [viewingWish, setViewingWish] = useState<string | null>(null)
   // Kaart uit de kaartendatabase bekijken, met bladeren door de zoekresultaten.
   const [browsing, setBrowsing] = useState<{ hits: readonly CatalogHit[]; index: number; lang: Lang } | null>(null)
 
@@ -199,6 +212,12 @@ export function WishlistPage(): JSX.Element {
       return next
     })
   }
+
+  // Gekoppelde wensen zoals ze nu getoond worden: daar blader je doorheen in het kaartvenster.
+  const viewable = visible.filter((r) => sheetCardOf(r.item) !== null)
+  const wishIndex = viewingWish ? viewable.findIndex((r) => r.item.id === viewingWish) : -1
+  const viewed = wishIndex >= 0 ? viewable[wishIndex].item : null
+  const viewedCard = viewed ? sheetCardOf(viewed) : null
 
   const browsed = browsing?.hits[browsing.index] ?? null
   const browsedKey = browsing && browsed ? `${browsing.lang}/${browsed.card.id}` : null
@@ -394,7 +413,7 @@ export function WishlistPage(): JSX.Element {
         <ul className="tx-list">
           {visible.map(({ item, owned, incoming, found }) => (
             <li key={item.id} className="wish-item">
-              <button type="button" className="tx-row wish-row" onClick={() => setEditing(item)}>
+              <button type="button" className="tx-row wish-row" onClick={() => (sheetCardOf(item) ? setViewingWish(item.id) : setEditing(item))}>
                 <span className="wish-thumb" aria-hidden="true">
                   <CardImage tcgdexId={item.tcgdex_id} kind="card" name={item.name} detail={item.card_number ? `#${item.card_number}` : null} />
                 </span>
@@ -468,6 +487,28 @@ export function WishlistPage(): JSX.Element {
             onNext: browsing.index < browsing.hits.length - 1 ? () => goTo(browsing.index + 1) : null,
           }}
           onClose={() => setBrowsing(null)}
+        />
+      )}
+
+      {viewed && viewedCard && (
+        <SetCardSheet
+          lang={viewedCard.lang}
+          card={viewedCard.card}
+          owned={ownedCounts.get(viewedCard.key) ?? 0}
+          wished
+          nav={{
+            position: wishIndex + 1,
+            total: viewable.length,
+            onPrev: wishIndex > 0 ? () => setViewingWish(viewable[wishIndex - 1].item.id) : null,
+            onNext: wishIndex < viewable.length - 1 ? () => setViewingWish(viewable[wishIndex + 1].item.id) : null,
+          }}
+          actions={
+            <button type="button" className="small-btn" onClick={() => setEditing(viewed)}>
+              <IconEdit size={16} />
+              Edit wish
+            </button>
+          }
+          onClose={() => setViewingWish(null)}
         />
       )}
 

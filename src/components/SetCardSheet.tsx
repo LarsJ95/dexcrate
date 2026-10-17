@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type JSX, type KeyboardEvent, type MouseEvent, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type JSX, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode } from 'react'
 import { useCardInfo } from '../hooks/useCardInfo'
 import { useCardPrice } from '../hooks/useCardPrice'
 import { foilStyleFor } from '../lib/cardTraits'
@@ -30,7 +30,8 @@ export interface SheetNav {
 interface Props {
   lang: Lang
   card: SetCard
-  setName: string
+  /** Naam van de set; zonder wordt hij uit de kaartinfo gehaald. */
+  setName?: string
   /** Aantal in bezit; 0 = ontbreekt. */
   owned: number
   /** Setcode voor de wishlist (bv. MEW); zonder wordt hij opgezocht via setId. */
@@ -44,6 +45,8 @@ interface Props {
   onWishSaved?: (item: WishlistItem) => void
   /** Met bladeren: grotere foto, ‹ › knoppen, pijltjestoetsen en vegen. */
   nav?: SheetNav
+  /** Extra knoppen onder de prijs, bv. "Edit wish". */
+  actions?: ReactNode
   onClose: () => void
 }
 
@@ -51,7 +54,7 @@ interface Props {
 const SWIPE_PX = 60
 
 /** Kaart uit een set bekijken (ook als je hem niet hebt): foto, marktprijs en Cardmarket-link. */
-export function SetCardSheet({ lang, card, setName, owned, setCode, setId, wishLanguage = null, wished: wishedBefore = false, onWishSaved, nav, onClose }: Props): JSX.Element {
+export function SetCardSheet({ lang, card, setName, owned, setCode, setId, wishLanguage = null, wished: wishedBefore = false, onWishSaved, nav, actions, onClose }: Props): JSX.Element {
   const ref = useRef<HTMLDialogElement>(null)
   const swipe = useRef<{ x: number; y: number } | null>(null)
   const [zoomOpen, setZoomOpen] = useState(false)
@@ -188,7 +191,7 @@ export function SetCardSheet({ lang, card, setName, owned, setCode, setId, wishL
 
             <div className="detail-info">
               <p className="detail-set">
-                {setName} #{card.localId}
+                {setName ?? info?.set.name ?? ''} #{card.localId}
               </p>
               <div className="chips">
                 <span className={`chip${owned ? ' status-sold' : ''}`}>{owned ? `Owned ${owned}×` : 'Missing'}</span>
@@ -219,6 +222,7 @@ export function SetCardSheet({ lang, card, setName, owned, setCode, setId, wishL
                   {wished ? 'On your wishlist' : 'Add to wishlist'}
                 </button>
               )}
+              {actions}
             </div>
           </div>
         </div>

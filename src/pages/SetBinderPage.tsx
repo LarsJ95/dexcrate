@@ -15,7 +15,7 @@ import { BinderSlot } from '../components/BinderSlot'
 import { CostPanel, GoalStats } from '../components/SetBinderParts'
 import { GoalSheet } from '../components/GoalSheet'
 import { IconArrowLeft } from '../components/Icons'
-import { SetCardSheet } from '../components/SetCardSheet'
+import { SetCardSheet, type SheetNav } from '../components/SetCardSheet'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import { getCardInfo, getCardPrice, getSet, isLang, setOfKey, type SetCard, type SetSummary } from '../lib/tcgdex'
@@ -288,6 +288,18 @@ export function SetBinderPage({ param }: Props): JSX.Element {
     return () => clearTimeout(timer)
   }, [data, newIds, lang, setId])
 
+  // Kaartvenster: bladeren door de kaarten zoals ze nu getoond worden (filter en sortering).
+  const openIndex = openCard ? visible.findIndex((c) => c.id === openCard.id) : -1
+  const sheetNav = (i: number): SheetNav | undefined =>
+    i < 0
+      ? undefined
+      : {
+          position: i + 1,
+          total: visible.length,
+          onPrev: i > 0 ? () => setOpenCard(visible[i - 1]) : null,
+          onNext: i < visible.length - 1 ? () => setOpenCard(visible[i + 1]) : null,
+        }
+
   const isComplete = progress !== null && progress.total > 0 && progress.done >= progress.total
 
   // Set compleet: één keer vieren; niet meer compleet, dan mag het later opnieuw.
@@ -439,12 +451,12 @@ export function SetBinderPage({ param }: Props): JSX.Element {
 
       {openCard && isLang(lang) && (
         <SetCardSheet
-          key={openCard.id}
           lang={lang}
           card={openCard}
           setName={data.summary.name}
           setCode={data.summary.abbr ?? data.summary.id}
           owned={data.owned.get(openCard.id) ?? 0}
+          nav={sheetNav(openIndex)}
           onClose={() => setOpenCard(null)}
         />
       )}
