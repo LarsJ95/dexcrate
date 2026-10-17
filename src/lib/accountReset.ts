@@ -1,3 +1,4 @@
+import { clearOfflineCache } from './offlineCache'
 import { deletePhotos, listPhotoIds } from './photoStore'
 import { supabase } from './supabase'
 
@@ -5,7 +6,7 @@ import { supabase } from './supabase'
  * Account resetten (Settings): alles van jou weg, je login blijft.
  * 1. Database: één functie (STAP14) wist al je rijen in één keer (alles of niets).
  * 2. Opslag: je foto's en bonnetjes.
- * 3. Dit toestel: wachtrij, voortgang en "al gevierd"-lijsten. Uiterlijk en scaninstellingen blijven.
+ * 3. Dit toestel: wachtrij, voortgang, "al gevierd"-lijsten en offline bewaarde gegevens. Uiterlijk en scaninstellingen blijven.
  * Opnieuw uitvoeren kan altijd: wat al weg is, wordt overgeslagen.
  */
 
@@ -84,6 +85,11 @@ async function clearDevice(): Promise<void> {
     await deletePhotos(await listPhotoIds())
   } catch (err) {
     console.warn('Bewaarde scanfoto’s wissen mislukt', err)
+  }
+  try {
+    await clearOfflineCache()
+  } catch (err) {
+    console.warn('Offline bewaarde gegevens wissen mislukt', err)
   }
 }
 

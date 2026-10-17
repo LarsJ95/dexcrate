@@ -110,7 +110,7 @@ async function loadCrate(): Promise<Loaded> {
 
 /** Crate: verdien punten met je echte collectie en open er virtuele pakjes mee. */
 export function CratePage(): JSX.Element {
-  const enabled = useDbFeature(hasCrate)
+  const enabled = useDbFeature(hasCrate, 'crate')
   const [points, setPoints] = useState<number | null>(null)
   const [freePack, setFreePack] = useState(false)
   const [cards, setCards] = useState<CrateCard[] | null>(null)

@@ -81,7 +81,7 @@ export function WishlistPage(): JSX.Element {
   const infos = useCatalogInfos(wishKeys, needsWishCatalog(filters))
   const prices = useCardPrices(wishKeys, needsWishPrices(filters))
   // Slimme lijsten (STAP10): opgeslagen filters.
-  const listsEnabled = useDbFeature(hasWishlistLists)
+  const listsEnabled = useDbFeature(hasWishlistLists, 'wishlist-lists')
   const [lists, setLists] = useState<WishlistList[]>([])
   const [activeListId, setActiveListId] = useState<string | null>(null)
   const [listSheet, setListSheet] = useState<WishlistList | 'new' | null>(null)

@@ -3,5 +3,5 @@ import { useDbFeature } from './useDbFeature'
 
 /** True als STAP4 in de database staat; undefined zolang dat nog gecontroleerd wordt. */
 export function useSchemaV2(): boolean | undefined {
-  return useDbFeature(hasSchemaV2)
+  return useDbFeature(hasSchemaV2, 'schema-v2')
 }

@@ -44,7 +44,7 @@ const BASIS_LABELS = { trend: 'trend price', avg30: '30-day average (no trend pr
  */
 export function ValuePanel({ card, price }: Props): JSX.Element | null {
   const tcgp = useKeyed(card.kind === 'card' ? card.tcgdex_id : null, getTcgplayerPrice)
-  const enabled = useDbFeature(hasValuations) === true
+  const enabled = useDbFeature(hasValuations, 'valuations') === true
   const [valuations, setValuations] = useState<Valuation[] | null>(null)
   const [settings, setSettings] = useState<UserSettings>(EMPTY_SETTINGS)
   const [adding, setAdding] = useState(false)

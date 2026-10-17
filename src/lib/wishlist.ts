@@ -1,5 +1,6 @@
 import { DEFAULT_GOAL, type GoalSettings } from './goals'
 import { supabase } from './supabase'
+import { withOfflineCache } from './offlineCache'
 import type { Lang } from './tcgdex'
 import { CONDITION_LABELS, LANGUAGE_LABELS, VARIANT_LABELS, type CardInput, type CardLanguage, type Condition, type Variant } from './types'
 
@@ -113,10 +114,17 @@ function toItem(r: unknown): WishlistItem | null {
   }
 }
 
-export async function listWishlist(): Promise<WishlistItem[]> {
-  const { data, error } = await supabase.from('wishlist_items').select('*').order('priority').order('created_at', { ascending: false })
-  if (error) throw new Error(`Loading the wishlist failed: ${error.message}`)
-  return (data as unknown[]).flatMap((r) => toItem(r) ?? [])
+/** Alle wensen. Zonder internet: de laatst geladen versie van dit apparaat (zie offlineCache). */
+export function listWishlist(): Promise<WishlistItem[]> {
+  return withOfflineCache(
+    'wishlist',
+    async () => {
+      const { data, error } = await supabase.from('wishlist_items').select('*').order('priority').order('created_at', { ascending: false })
+      if (error) throw new Error(`Loading the wishlist failed: ${error.message}`)
+      return data
+    },
+    (data) => (Array.isArray(data) ? data : []).flatMap((r: unknown) => toItem(r) ?? []),
+  )
 }
 
 export async function addWishlistItem(input: WishlistInput): Promise<WishlistItem> {

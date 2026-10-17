@@ -1,5 +1,6 @@
 import type { SnapshotRow } from './prices'
 import { supabase } from './supabase'
+import { withOfflineCache } from './offlineCache'
 import {
   AVAILABILITY_LABELS,
   CONDITION_LABELS,
@@ -176,18 +177,26 @@ export function toRow(input: Partial<CardInput>, v2: boolean): Record<string, un
 const SELECT_V1 = '*'
 const SELECT_V2 = '*, card_photos(id, card_id, path, thumb_path, label, is_primary, created_at)'
 
-export async function listCards(): Promise<Card[]> {
-  const v2 = await hasSchemaV2()
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select(v2 ? SELECT_V2 : SELECT_V1)
-    .order('sort_order', { ascending: true })
-    .order('created_at', { ascending: true })
-  if (error) throw new Error(`Loading failed: ${error.message}`)
-  return (data as unknown[]).flatMap((r) => {
-    const row = toCard(r)
-    return row ? [row] : []
-  })
+/** Alle kaartregels. Zonder internet: de laatst geladen versie van dit apparaat (zie offlineCache). */
+export function listCards(): Promise<Card[]> {
+  return withOfflineCache(
+    'cards',
+    async () => {
+      const v2 = await hasSchemaV2()
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select(v2 ? SELECT_V2 : SELECT_V1)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true })
+      if (error) throw new Error(`Loading failed: ${error.message}`)
+      return data
+    },
+    (data) =>
+      (Array.isArray(data) ? data : []).flatMap((r: unknown) => {
+        const row = toCard(r)
+        return row ? [row] : []
+      }),
+  )
 }
 
 export async function countCards(): Promise<number> {

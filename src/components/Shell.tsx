@@ -10,6 +10,7 @@ import { Sky } from './Sky'
 import { usePrefs } from '../lib/devicePrefs'
 import { SIDE_GROUPS, TAB_NAV, isActiveTab } from './nav'
 import { useOnline } from '../hooks/useOnline'
+import { useOfflineDataTime } from '../lib/offlineCache'
 
 interface Props {
   route: Route
@@ -20,10 +21,18 @@ interface Props {
   children: ReactNode
 }
 
+/** "14:32" voor vandaag, anders "16 Oct, 14:32". */
+function savedTimeText(ms: number): string {
+  const d = new Date(ms)
+  const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  return d.toDateString() === new Date().toDateString() ? time : `${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}, ${time}`
+}
+
 /** App-schil: zijbalk op desktop; op mobiel een topbalk en een onderbalk met centrale scanknop. */
 export function Shell({ route, email, theme, onToggleTheme, onSignOut, children }: Props): JSX.Element {
   const prefs = usePrefs()
   const online = useOnline()
+  const savedAt = useOfflineDataTime()
   // Energiebehang aan/uit (Settings → Appearance); de CSS kijkt naar data-wallpaper op <html>.
   useEffect(() => {
     document.documentElement.dataset.wallpaper = prefs.wallpaper ? 'on' : 'off'
@@ -87,9 +96,11 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
       </header>
 
       <main className="main">
-        {!online && (
+        {(!online || savedAt !== null) && (
           <p className="notice offline-notice" role="status">
-            You’re offline. Changes need a connection; Quick scan photos are kept and recognised once you’re back online.
+            {online ? 'No connection to the server. ' : 'You’re offline. '}
+            {savedAt !== null && `Showing data saved on this device (${savedTimeText(savedAt)}). `}
+            Changes need a connection; Quick scan photos are kept and recognised once you’re back online.
           </p>
         )}
         {children}

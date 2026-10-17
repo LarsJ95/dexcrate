@@ -5,7 +5,7 @@ import { useDbFeature } from './useDbFeature'
 
 /** Standaardwaarden voor een nieuwe kaart uit je instellingen (alleen ingevulde velden). */
 export function useNewCardDefaults(): Partial<CardInput> {
-  const enabled = useDbFeature(hasValuations) === true
+  const enabled = useDbFeature(hasValuations, 'valuations') === true
   const [defaults, setDefaults] = useState<Partial<CardInput>>({})
   useEffect(() => {
     if (!enabled) return

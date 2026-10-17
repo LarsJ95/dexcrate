@@ -82,7 +82,7 @@ export function ScanPage(): JSX.Element {
   const v2 = useSchemaV2() === true
   const newCardDefaults = useNewCardDefaults()
   // Scansessie (STAP8): tussentijds bewaard, en waarschuwing bij nogmaals dezelfde kaart.
-  const sessionsOn = useDbFeature(hasScanSessions) === true
+  const sessionsOn = useDbFeature(hasScanSessions, 'scan-sessions') === true
   const [session, setSession] = useState<ScanSession | null>(null)
   const [sessionError, setSessionError] = useState<string | null>(null)
   const [dup, setDup] = useState<{ candidate: Candidate | null; recognition: Recognition; lang: Lang; earlier: ScanItem } | null>(null)

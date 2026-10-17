@@ -45,7 +45,7 @@ function validate(form: Form): { settings: UserSettings } | { error: string } {
 const SAVE_DELAY_MS = 700
 
 export function AccountSettings(): JSX.Element {
-  const enabled = useDbFeature(hasValuations)
+  const enabled = useDbFeature(hasValuations, 'valuations')
   const [form, setForm] = useState<Form | null>(null)
   const [status, setStatus] = useState<{ kind: 'saving' | 'saved' | 'error'; text: string } | null>(null)
   const [edited, setEdited] = useState(false)

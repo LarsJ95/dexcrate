@@ -29,8 +29,8 @@ const plural = (n: number, one: string, many: string): string => `${n} ${n === 1
  * plus het gerealiseerde resultaat en de waardegroei uitgesplitst. Onbekend wordt geteld, niet als 0 opgeteld.
  */
 export function ValueBreakdown({ cards, prices, pricesLoading, snapshots }: Props): JSX.Element {
-  const valuationsOn = useDbFeature(hasValuations) === true
-  const transactionsOn = useDbFeature(hasTransactions) === true
+  const valuationsOn = useDbFeature(hasValuations, 'valuations') === true
+  const transactionsOn = useDbFeature(hasTransactions, 'transactions') === true
   const [valuations, setValuations] = useState<Valuation[]>([])
   const [settings, setSettings] = useState<UserSettings>(EMPTY_SETTINGS)
   const [txs, setTxs] = useState<Transaction[] | null>(null)
