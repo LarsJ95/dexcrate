@@ -1,7 +1,26 @@
 /// <reference types="vitest/config" />
+import { existsSync } from 'node:fs'
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+
+/**
+ * Testomgeving (`--mode staging`) alleen met een eigen .env.staging.local die naar een ánder project wijst.
+ * Vite laadt .env.local (productie) in elke modus; zonder deze controle werk je ongemerkt op je echte data.
+ */
+function stagingGuard(): Plugin {
+  return {
+    name: 'dexcrate-staging-guard',
+    config(_, { mode }) {
+      if (mode !== 'staging') return
+      const url = loadEnv('staging', process.cwd(), 'VITE_').VITE_SUPABASE_URL
+      const prodUrl = loadEnv('production', process.cwd(), 'VITE_').VITE_SUPABASE_URL
+      if (!existsSync('.env.staging.local') || !url || url === prodUrl) {
+        throw new Error('Testomgeving: zet de URL en publishable key van het TESTproject in .env.staging.local (zie .env.example).')
+      }
+    },
+  }
+}
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -16,6 +35,7 @@ export default defineConfig({
     env: { VITE_SUPABASE_URL: '', VITE_SUPABASE_PUBLISHABLE_KEY: '' },
   },
   plugins: [
+    stagingGuard(),
     react(),
     VitePWA({
       // 'prompt': de app bepaalt zelf wanneer een nieuwe versie laadt (src/lib/appUpdate.ts).

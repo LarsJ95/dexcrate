@@ -20,29 +20,61 @@ npm run dev
 
 | Script | Doet |
 | --- | --- |
-| `npm run dev` | Ontwikkelserver |
+| `npm run dev` | Ontwikkelserver op **productie**-data (`.env.local`) |
+| `npm run dev:staging` | Ontwikkelserver op de **testdatabase** (`.env.staging.local`), met rood TEST-label |
 | `npm run build` | Typecheck + productiebuild in `dist/` |
+| `npm run build:staging` | Build tegen de testdatabase |
 | `npm run lint` | oxlint (`.oxlintrc.json`) |
-| `npm test` | Vitest |
+| `npm test` | Vitest (altijd zonder Supabase-sleutels, net als CI) |
+| `npm run test:e2e` | Browsertests (na `npm run build`) |
 
-Zonder sleutels start de app niet (`src/lib/supabase.ts`). De publishable key is publiek; de beveiliging loopt via RLS. Gebruik nooit de secret key in de app.
+Zonder sleutels start de app niet (`src/lib/supabase.ts`). De publishable key is publiek; de beveiliging loopt via RLS. Gebruik nooit de secret key in de app. `dev:staging` en `build:staging` weigeren te starten zonder `.env.staging.local` die naar een ánder project wijst dan `.env.local`.
 
-## Online zetten
+## Werkwijze en online zetten
 
-Elke push naar `main` draait `.github/workflows/deploy.yml`: lint → test → build → GitHub Pages. De Supabase-URL en publishable key staan als repository variables. Tests draaien daar **zonder** sleutels: een test die (indirect) `src/lib/supabase.ts` laadt, moet `vi.mock('…/supabase', …)` gebruiken plus een dynamische import (zie bv. `src/lib/model.test.ts`).
+`main` is beschermd: wijzigingen gaan via een branch en pull request.
+
+1. Branch maken, wijzigen, pushen, pull request openen.
+2. `.github/workflows/ci.yml` draait op elke pull request: lint → tests → build → browsertests (Chrome). Pas als die groen is kan de pull request erin.
+3. Samenvoegen in `main` draait `.github/workflows/deploy.yml`: lint → test → build → GitHub Pages. De Supabase-URL en publishable key staan als repository variables.
+
+Tests draaien **zonder** Supabase-sleutels: een test die (indirect) `src/lib/supabase.ts` laadt, moet `vi.mock('…/supabase', …)` gebruiken plus een dynamische import (zie bv. `src/lib/model.test.ts`).
 
 ## Database
 
-Wijzigingen gaan als SQL-bestand dat je zelf in Supabase → SQL Editor draait (alles plakken, één keer Run).
+Het schema staat in migraties: `supabase/migrations/<tijdstempel>_<naam>.sql`, toegepast met de Supabase CLI (vaste versie via `npx supabase@2.119.0`, geen Docker nodig, geen dependency).
 
-- `supabase/STAP*.sql`: de stappen zoals ze op de bestaande database zijn gedraaid, in volgorde.
-- `supabase/schema.sql`: volledig schema voor een **nieuw, leeg** project (eindstand van alle stappen). Na een nieuw STAP-bestand: voeg het toe aan `PARTS` in `supabase/build-schema.mjs` en draai `node supabase/build-schema.mjs`.
+Nieuwe databasewijziging:
+
+1. `npx supabase@2.119.0 migration new <naam>` en de SQL in het nieuwe bestand schrijven. Nooit een bestaande migratie aanpassen.
+2. Pull request openen: `.github/workflows/migrate.yml` zet de migratie automatisch op de **testdatabase**. Test met `npm run dev:staging`.
+3. Goed? Vóór het samenvoegen: Actions → *Database migreren* → Run workflow → branch van de pull request, target `production`, mode `migrate`. Daarna samenvoegen (de app gaat dan pas live).
+
+Secrets per GitHub environment (`staging`, `production`): `SUPABASE_DB_URL` = de **Session pooler**-verbinding uit Supabase → Connect (wachtwoord percent-encoded). Productie heeft daarnaast `BACKUP_PASSPHRASE`.
+
+- `supabase/migrations/20261017120000_baseline.sql`: het volledige schema na STAP16 (startpunt). Op productie alleen als toegepast gemarkeerd (eenmalig: workflow met mode `mark-baseline`); tot dan weigert de workflow productie, zodat de basismigratie daar nooit draait.
+- `supabase/legacy/`: de oude STAP-bestanden en `schema.sql` (geschiedenis; niet meer gebruiken).
+- `supabase/config.toml`: nodig voor de CLI; geldt alleen voor een lokale stack. Nooit `supabase config push` zonder het hele bestand te controleren.
+
+## Back-ups
+
+`.github/workflows/backup.yml`: elke maandag (en met de hand via Actions) een dump van de productiedatabase (rollen, schema, data), **versleuteld** met `BACKUP_PASSPHRASE` en 90 dagen bewaard als artifact. De repo is publiek: de workflow stopt als de passphrase ontbreekt. Bewaar de passphrase in je wachtwoordmanager: zonder is een back-up onbruikbaar. Foto's en bonnetjes (Supabase Storage) zitten er niet in; die staan in de back-up van de app zelf (Backup-pagina). GitHub zet geplande workflows uit na 60 dagen zonder activiteit in de repo (dan een mail; opnieuw aanzetten in Actions).
+
+Terugzetten (in een nieuw, leeg project):
+
+```sh
+gpg -d dexcrate-backup-JJJJ-MM-DD.tar.gz.gpg | tar -xzf -
+psql --single-transaction --variable ON_ERROR_STOP=1 \
+  --file dexcrate-backup/roles.sql --file dexcrate-backup/schema.sql \
+  --command 'SET session_replication_role = replica' \
+  --file dexcrate-backup/data.sql --dbname "<Session pooler-URL van het nieuwe project>"
+```
 
 ## Edge Functions
 
 In `supabase/functions/`, via de editor in het Supabase-dashboard gedeployd (controleer bij deployen het naamveld). "Verify JWT" blijft aan.
 
-- `recognize-card`: herkent kaarten op een foto met Claude. Secret: `ANTHROPIC_API_KEY`. Limiet per gebruiker (40 per minuut, 500 per 24 uur) via `scan_quota_take()` uit STAP15; zonder STAP15 werkt scannen zonder limiet.
+- `recognize-card`: herkent kaarten op een foto met Claude. Secret: `ANTHROPIC_API_KEY`. Limiet per gebruiker (40 per minuut, 500 per 24 uur) via `scan_quota_take()` (STAP15, in de basismigratie); zonder werkt scannen zonder limiet.
 - `card-image`: laatste redmiddel voor kaartfoto's via PriceCharting.
 
 ## Foutlogboek
@@ -66,7 +98,7 @@ UI-werk: lees eerst `DESIGN.md`.
 
 ## Browsertests
 
-`npm run build` en daarna `npm run test:e2e` (of `node tools/e2e/run.mjs scan-queue` voor één test): headless Chrome via het DevTools-protocol, geen extra dependency. Supabase wordt in de browser nagebootst (nep-sessie, testdata uit `tools/e2e/fixtures`); er gaat niets naar je echte database, `.env.local` is alleen nodig voor het Supabase-adres. Test nu: offline-cache (collectie/wishlist offline, gewist na uitloggen), foutlogboek en de scanlijst (IndexedDB, in stukken, grens van 250). Niet in CI: Chrome is daar niet ingericht.
+`npm run build` en daarna `npm run test:e2e` (of `node tools/e2e/run.mjs scan-queue` voor één test): headless Chrome via het DevTools-protocol, geen extra dependency. Supabase wordt in de browser nagebootst (nep-sessie, testdata uit `tools/e2e/fixtures`); er gaat niets naar je echte database, `.env.local` is alleen nodig voor het Supabase-adres. Test nu: offline-cache (collectie/wishlist offline, gewist na uitloggen), foutlogboek en de scanlijst (IndexedDB, in stukken, grens van 250). Draaien ook in CI op elke pull request (`CHROME_PATH` = Chrome van de runner).
 
 ## Bekende melding van npm audit
 

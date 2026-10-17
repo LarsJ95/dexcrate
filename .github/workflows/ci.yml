@@ -1,0 +1,35 @@
+name: CI
+
+# Controle van elke pull request vóór het samenvoegen in main (main deployt direct, zie deploy.yml).
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      # Build met een nep-Supabase-adres: de browsertests bootsen Supabase na, er gaat niets naar een echte database.
+      - name: Build voor de browsertests
+        run: |
+          printf 'VITE_SUPABASE_URL=https://e2eciproject000000000.supabase.co\nVITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_e2e_ci\n' > .env.local
+          npm run build
+      - name: Browsertests
+        run: npm run test:e2e
+        env:
+          CHROME_PATH: /usr/bin/google-chrome

@@ -1,0 +1,76 @@
+name: Database migreren
+
+# Testdatabase: automatisch bij een pull request met nieuwe migraties (en met de hand).
+# Productie: alleen met de hand (Actions → Database migreren → Run workflow → production), vóór het samenvoegen.
+# Elke omgeving (GitHub environment "staging" / "production") heeft een eigen secret SUPABASE_DB_URL:
+# de "Session pooler"-verbinding uit Supabase → Connect (GitHub-runners hebben geen IPv6 voor de directe verbinding).
+#
+# Eenmalig voor productie: mode "mark-baseline" markeert de basismigratie als toegepast (productie had dat schema
+# al via de STAP-bestanden). Tot dat gebeurd is weigert "migrate" op productie, zodat de basismigratie daar nooit draait.
+on:
+  pull_request:
+    paths: ['supabase/migrations/**']
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Welke database
+        type: choice
+        options: [staging, production]
+        default: staging
+      mode:
+        description: migrate = nieuwe migraties toepassen; mark-baseline = eenmalig, alleen productie
+        type: choice
+        options: [migrate, mark-baseline]
+        default: migrate
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migrate-${{ inputs.target || 'staging' }}
+  cancel-in-progress: false
+
+env:
+  SUPABASE_CLI: supabase@2.119.0
+  BASELINE: '20261017120000'
+  TARGET: ${{ inputs.target || 'staging' }}
+  MODE: ${{ inputs.mode || 'migrate' }}
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target || 'staging' }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Controle
+        run: test -n "$DB_URL" || { echo "Secret SUPABASE_DB_URL ontbreekt in environment '$TARGET'."; exit 1; }
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
+      - name: Basismigratie markeren als toegepast
+        if: env.MODE == 'mark-baseline'
+        run: |
+          test "$TARGET" = production || { echo "mark-baseline is alleen voor productie; een nieuw project krijgt de basismigratie via migrate."; exit 1; }
+          npx --yes "$SUPABASE_CLI" migration repair "$BASELINE" --status applied --db-url "$DB_URL"
+          npx --yes "$SUPABASE_CLI" migration list --db-url "$DB_URL"
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
+      - name: Nog niet toegepaste migraties
+        if: env.MODE == 'migrate'
+        run: |
+          npx --yes "$SUPABASE_CLI" db push --dry-run --db-url "$DB_URL" 2>&1 | tee "$RUNNER_TEMP/dry-run.txt"
+          if [ "$TARGET" = production ] && grep -q "$BASELINE" "$RUNNER_TEMP/dry-run.txt"; then
+            echo "::error::De basismigratie staat op productie nog als niet toegepast. Draai eerst deze workflow met mode mark-baseline."
+            exit 1
+          fi
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      - name: Toepassen
+        if: env.MODE == 'migrate'
+        run: npx --yes "$SUPABASE_CLI" db push --yes --db-url "$DB_URL"
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}

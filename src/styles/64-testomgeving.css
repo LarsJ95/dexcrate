@@ -1,0 +1,18 @@
+/* ---------- Testomgeving (17-10-2026): rood label bovenaan, alleen bij --mode staging ---------- */
+.env-badge {
+  position: fixed;
+  top: calc(var(--space-2) + env(safe-area-inset-top, 0px));
+  left: 50%;
+  z-index: 70;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 2px var(--space-3);
+  border-radius: var(--radius-s);
+  background: var(--red);
+  color: #fff;
+  font-size: var(--fs-small);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
