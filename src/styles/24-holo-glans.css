@@ -16,6 +16,8 @@
   transform: translateX(-45%) rotate(0.001deg);
   animation: foil-sweep 7s ease-in-out var(--foil-delay, 0s) infinite;
   mix-blend-mode: overlay;
+  /* Zachter op verzoek (17-10-2026): glans was te veel. */
+  opacity: 0.6;
   will-change: transform;
 }
 
