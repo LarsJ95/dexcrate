@@ -22,7 +22,11 @@ import { Loading } from '../components/Loading'
 import { closeKeyboardOnEnter } from '../lib/keyboard'
 import { FILTERS, VIEW_KEY, matchesFilter, readView, relevantPrice, type SortKey, type StatusFilter } from '../lib/collectionView'
 import { useSetOptions } from '../hooks/useSetOptions'
+import { useLoadMore } from '../hooks/useLoadMore'
 import { OFFLINE_TEXT, errorText, isNetworkError } from '../lib/errors'
+
+/** Zoveel kaarten per keer tonen; meer zodra je bij het einde komt. */
+const CARDS_PER_STEP = 48
 
 export function CollectionPage(): JSX.Element {
   const [cards, setCards] = useState<Card[] | null>(null)
@@ -226,6 +230,9 @@ export function CollectionPage(): JSX.Element {
   const onSwap = useCallback((fromId: string, toId: string) => void swapCards(fromId, toId), [swapCards])
   useDragSwap(binderRef, sortable, onSwap)
 
+  // Lange collecties in stukken tonen (sneller op de telefoon); opnieuw beginnen bij andere filters of sortering.
+  const { count: shownCount, sentinel: moreRef } = useLoadMore(visible.length, `${query}|${filter}|${sort}|${JSON.stringify(extra)}`, CARDS_PER_STEP)
+
   const editingCard = editing?.id ? (cards?.find((c) => c.id === editing.id) ?? null) : null
   const nextSortOrder = (cards ?? []).reduce((m, c) => Math.max(m, c.sort_order), -1) + 1
   const visibleCount = visible.reduce((n, c) => n + c.quantity, 0)
@@ -362,7 +369,7 @@ export function CollectionPage(): JSX.Element {
         </p>
       )}
       <ul ref={binderRef} className={`binder${sortable ? ' is-sortable' : ''}`} aria-describedby={sortable ? 'binder-order-help' : undefined}>
-        {visible.map((c) => (
+        {visible.slice(0, shownCount).map((c) => (
           <CardTile
             key={c.id}
             card={c}
@@ -375,6 +382,11 @@ export function CollectionPage(): JSX.Element {
           />
         ))}
       </ul>
+      {visible.length > shownCount && (
+        <div ref={moreRef} className="catalog-more">
+          <Loading text={`Loading more cards… (${visible.length - shownCount} left)`} />
+        </div>
+      )}
 
       {selected !== null && (
         <div className="select-bar" role="region" aria-label="Selection">
