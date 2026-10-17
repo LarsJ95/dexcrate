@@ -132,7 +132,7 @@ Elk component heeft verplicht deze states: default, hover, active, focus-visible
 - Formulieren: label altijd zichtbaar, foutmelding onder veld, ___
 - Kaarten: ___
 - Navigatie desktop: ___
-- Navigatie mobiel: ___
+- Navigatie mobiel (17-10-2026): onderbalk met 5 knoppen (Scan in het midden). Duimzone: de hoofdactie van een pagina (Add card, Upload photos; klasse `fab`) zweeft op telefoon en tablet rechtsonder boven de onderbalk (56 px hoog, pil, `--shadow-float`), verborgen tijdens selecteren. Tikdoelen op touchscreens minimaal 44 px, velden en knoppen in werkbalken 48 px (styles/61-telefoon-tikdoelen.css).
 - Footer: ___
 - Filters (goedgekeurd 17-10-2026, op alle pagina's gelijk): 1) tabs bovenaan als er groepen zijn (Sets: talen, Wishlist: lijsten); 2) werkbalk: zoeken links, keuzeknoppen (status), sorteren altijd rechts (`.toolbar-sort`); 3) filterpaneel (components/FilterPanel.tsx): elk veld met label erboven in een raster van gelijke kolommen (min. 180 px; set en prijsbereik 2 kolommen), vinkjes in een eigen rij, voetregel met "N filters active" links en acties + "Clear all filters" rechts. Altijd open; op de telefoon (≤480 px) achter een knop "Filters (n)" in de werkbalk. Telefoon: werkbalk in twee kolommen, zoeken en keuzeknoppen over de volle breedte, sorteren en "Filters" naast elkaar, alles even breed. Enter/zoekknop in een zoekveld sluit het toetsenbord. Alle velden en knoppen in werkbalk en paneel hebben dezelfde hoogte (token `--control-h`, 44 px).
 - Overige: ___

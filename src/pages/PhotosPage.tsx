@@ -119,7 +119,7 @@ export function PhotosPage(): JSX.Element {
             <IconCamera size={18} />
             Camera
           </button>
-          <button type="button" className="primary" onClick={() => fileRef.current?.click()}>
+          <button type="button" className="primary fab" onClick={() => fileRef.current?.click()}>
             <IconUpload size={18} />
             Upload photos
           </button>

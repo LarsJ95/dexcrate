@@ -223,7 +223,7 @@ export function WishlistPage(): JSX.Element {
             </p>
           )}
         </div>
-        <button type="button" className="primary" onClick={() => openNew()}>
+        <button type="button" className="primary fab" onClick={() => openNew()}>
           <IconPlus size={18} />
           Add card
         </button>

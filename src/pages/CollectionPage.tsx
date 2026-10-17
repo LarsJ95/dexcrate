@@ -261,7 +261,7 @@ export function CollectionPage(): JSX.Element {
               {selected === null ? 'Select' : 'Done'}
             </button>
           )}
-          <button type="button" className="primary" onClick={() => setEditing({ id: null })}>
+          <button type="button" className="primary fab" onClick={() => setEditing({ id: null })}>
             <IconPlus size={18} />
             Add card
           </button>
