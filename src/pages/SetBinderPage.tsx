@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from 'react'
+import { useEffect, useMemo, useRef, useState, type JSX } from 'react'
 import { listCards } from '../lib/db'
 import { rarityRule } from '../lib/cardTraits'
 import { burstFrom } from '../lib/fx'
@@ -7,18 +7,20 @@ import { crateForSet } from '../lib/celebrate'
 import { hpLevel } from '../lib/trainer'
 import { DEFAULT_GOAL, goalProgress, goalRequirements, type GoalSettings, type OwnedCopy, type RequirementState } from '../lib/goals'
 import { marketValue } from '../lib/prices'
-import { SET_SORT_LABELS, isValueSort, sortSetCards, type SetSort } from '../lib/setSort'
-import { VARIANT_LABELS, type Variant } from '../lib/types'
+import { isValueSort, sortSetCards, type SetSort } from '../lib/setSort'
+import { VARIANT_LABELS } from '../lib/types'
 import { loadGoal } from '../lib/wishlist'
 import { BinderSlot } from '../components/BinderSlot'
-import { CostPanel, GoalStats } from '../components/SetBinderParts'
+import { BinderToolbar, CostPanel, GoalStats, type BinderShow } from '../components/SetBinderParts'
 import { GoalSheet } from '../components/GoalSheet'
 import { IconArrowLeft } from '../components/Icons'
 import { SetCardSheet, type SheetNav } from '../components/SetCardSheet'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { useSetRarities } from '../hooks/useSetRarities'
+import { useSetValues } from '../hooks/useSetValues'
+import { useSetVariants } from '../hooks/useSetVariants'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
-import { getCardInfo, getCardPrice, getSet, isLang, setOfKey, type SetCard, type SetSummary } from '../lib/tcgdex'
+import { getCardPrice, getSet, isLang, setOfKey, type SetCard, type SetSummary } from '../lib/tcgdex'
 import { Loading } from '../components/Loading'
 import { COMPLETE_KEY, MAX_NEW, MILESTONE_KEY, PAGE_SIZE_KEY, SEEN_KEY, SPARKLE_COLORS, VARIANT_SHORT, readPageSize, readSeen, remember, stateKey, type Cost, type PageSize } from '../lib/setBinder'
 import { errorText } from '../lib/errors'
@@ -27,8 +29,6 @@ interface Props {
   /** "<taal>/<set-id>" uit de URL. */
   param: string
 }
-
-type Show = 'all' | 'owned' | 'missing'
 
 interface Loaded {
   summary: SetSummary
@@ -43,25 +43,17 @@ interface Loaded {
 export function SetBinderPage({ param }: Props): JSX.Element {
   const [data, setData] = useState<Loaded | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [show, setShow] = useState<Show>('all')
+  const [show, setShow] = useState<BinderShow>('all')
   const [pageSize, setPageSize] = useState<PageSize>(readPageSize)
   const [cost, setCost] = useState<Cost | null>(null)
   const [openCard, setOpenCard] = useState<SetCard | null>(null)
   // Elke set begint in setvolgorde; een andere sortering geldt alleen voor deze set (niet onthouden).
   const [sort, setSort] = useState<SetSort>('number')
-  // Marktwaarde per kaart-id, alleen geladen bij sorteren op waarde.
-  const [values, setValues] = useState<{ prices: ReadonlyMap<string, number | null>; done: number; total: number } | null>(null)
   const cancelCost = useRef(false)
-  // Prijzen voor sorteren op waarde: één keer per bezoek ophalen.
-  const valuesStarted = useRef(false)
   // Verzameldoel (STAP6): wat telt mee voor "compleet".
   const goalsEnabled = useWishlistEnabled() === true
   const [goal, setGoal] = useState<GoalSettings>(DEFAULT_GOAL)
   const [goalOpen, setGoalOpen] = useState(false)
-  // Uitvoeringen per kaart (TCGdex), alleen nodig bij een doel per uitvoering.
-  const [variantsByCard, setVariantsByCard] = useState<ReadonlyMap<string, Variant[] | null>>(new Map())
-  const [variantsLoading, setVariantsLoading] = useState<{ done: number; total: number } | null>(null)
-  const variantsRef = useRef<ReadonlyMap<string, Variant[] | null>>(variantsByCard)
 
   const slash = param.indexOf('/')
   const lang = param.slice(0, slash)
@@ -116,65 +108,11 @@ export function SetBinderPage({ param }: Props): JSX.Element {
     }
   }, [goalsEnabled, valid, lang, setId])
 
-  // Doel per uitvoering: uitvoeringen van elke kaart ophalen (gecachet), in blokjes bijwerken.
-  const needVariants = goal.variants.length > 0
-  useEffect(() => {
-    if (!needVariants || !data || !isLang(lang)) return
-    let cancelled = false
-    const found = new Map(variantsRef.current)
-    const todo = data.cards.filter((c) => !found.has(c.id))
-    if (todo.length === 0) return
-    let done = 0
-    const publish = (): void => {
-      variantsRef.current = new Map(found)
-      setVariantsByCard(variantsRef.current)
-      setVariantsLoading(done < todo.length ? { done, total: todo.length } : null)
-    }
-    void Promise.all(
-      todo.map(async (c) => {
-        let v: Variant[] | null = null
-        try {
-          v = (await getCardInfo(`${lang}/${c.id}`))?.variants ?? null
-        } catch (err) {
-          console.warn(`Uitvoeringen ophalen mislukt voor ${c.id}`, err)
-        }
-        if (cancelled) return
-        found.set(c.id, v)
-        done += 1
-        if (done % 10 === 0 || done === todo.length) publish()
-      }),
-    )
-    return () => {
-      cancelled = true
-    }
-  }, [needVariants, data, lang])
+  // Doel per uitvoering: uitvoeringen van elke kaart ophalen.
+  const { variantsByCard, loading: variantsLoading } = useSetVariants(lang, data?.cards ?? null, goal.variants.length > 0)
 
-  /** Sorteren op waarde: marktprijs (standaarduitvoering) van elke kaart laden; prijzen worden 6 uur gecachet. */
-  const loadValues = useCallback((): void => {
-    if (!data || !isLang(lang) || valuesStarted.current) return
-    valuesStarted.current = true
-    cancelCost.current = false
-    const prices = new Map<string, number | null>()
-    let done = 0
-    const total = data.cards.length
-    for (const c of data.cards) {
-      getCardPrice(`${lang}/${c.id}`)
-        .then((p) => prices.set(c.id, marketValue(p, null)?.value ?? null))
-        .catch((err: unknown) => {
-          console.warn(`Prijs ophalen mislukt voor ${c.id}`, err)
-          prices.set(c.id, null)
-        })
-        .finally(() => {
-          done += 1
-          if (!cancelCost.current && (done % 10 === 0 || done === total)) setValues({ prices: new Map(prices), done, total })
-        })
-    }
-  }, [data, lang])
-
-  // Sorteren op waarde (ook als die keuze bewaard was): prijzen laden zodra de set er is.
-  useEffect(() => {
-    if (isValueSort(sort)) loadValues()
-  }, [sort, loadValues])
+  // Sorteren op waarde: marktprijs van elke kaart, geladen zodra je die sortering kiest.
+  const values = useSetValues(lang, data?.cards ?? null, isValueSort(sort))
 
   // Sorteren op zeldzaamheid: kaartinfo (7 dagen gecachet).
   const cardKeys = useMemo(() => (data && isLang(lang) ? data.cards.map((c) => `${lang}/${c.id}`) : []), [data, lang])
@@ -407,35 +345,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
         <CostPanel missingCount={missingCount} unit={unit} cost={cost} costSummary={costSummary} onCalculate={() => void calculateCost()} />
       )}
 
-      <div className="filters">
-        <div className="segmented" role="group" aria-label="Show">
-          {(
-            [
-              ['all', 'All'],
-              ['owned', 'Complete'],
-              ['missing', 'Missing'],
-            ] as const
-          ).map(([key, label]) => (
-            <button key={key} type="button" aria-pressed={show === key} onClick={() => setShow(key)}>
-              {label}
-            </button>
-          ))}
-        </div>
-        <div className="segmented" role="group" aria-label="Pockets per page">
-          {([6, 9] as const).map((size) => (
-            <button key={size} type="button" aria-pressed={pageSize === size} onClick={() => changePageSize(size)}>
-              {size} per page
-            </button>
-          ))}
-        </div>
-        <select className="toolbar-sort" aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as SetSort)}>
-          {(Object.keys(SET_SORT_LABELS) as SetSort[]).map((k) => (
-            <option key={k} value={k}>
-              {SET_SORT_LABELS[k]}
-            </option>
-          ))}
-        </select>
-      </div>
+      <BinderToolbar show={show} onShow={setShow} pageSize={pageSize} onPageSize={changePageSize} sort={sort} onSort={setSort} />
       {isValueSort(sort) && values && values.done < values.total && (
         <p className="muted small" aria-live="polite">
           Loading prices… {values.done} of {values.total}

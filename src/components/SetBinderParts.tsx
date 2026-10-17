@@ -1,7 +1,54 @@
 import type { JSX } from 'react'
 import type { GoalProgress } from '../lib/goals'
-import type { Cost } from '../lib/setBinder'
+import type { Cost, PageSize } from '../lib/setBinder'
+import { SET_SORT_LABELS, type SetSort } from '../lib/setSort'
 import { formatEur } from '../lib/stats'
+
+export type BinderShow = 'all' | 'owned' | 'missing'
+
+interface BinderToolbarProps {
+  show: BinderShow
+  onShow: (show: BinderShow) => void
+  pageSize: PageSize
+  onPageSize: (size: PageSize) => void
+  sort: SetSort
+  onSort: (sort: SetSort) => void
+}
+
+/** Tonen (alles/compleet/ontbrekend), vakken per pagina en sortering van de setbinder. */
+export function BinderToolbar({ show, onShow, pageSize, onPageSize, sort, onSort }: BinderToolbarProps): JSX.Element {
+  return (
+    <div className="filters">
+      <div className="segmented" role="group" aria-label="Show">
+        {(
+          [
+            ['all', 'All'],
+            ['owned', 'Complete'],
+            ['missing', 'Missing'],
+          ] as const
+        ).map(([key, label]) => (
+          <button key={key} type="button" aria-pressed={show === key} onClick={() => onShow(key)}>
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="segmented" role="group" aria-label="Pockets per page">
+        {([6, 9] as const).map((size) => (
+          <button key={size} type="button" aria-pressed={pageSize === size} onClick={() => onPageSize(size)}>
+            {size} per page
+          </button>
+        ))}
+      </div>
+      <select className="toolbar-sort" aria-label="Sort" value={sort} onChange={(e) => onSort(e.target.value as SetSort)}>
+        {(Object.keys(SET_SORT_LABELS) as SetSort[]).map((k) => (
+          <option key={k} value={k}>
+            {SET_SORT_LABELS[k]}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+}
 
 /** Dubbelen, onderweg, onbekende uitvoering en het ophalen van uitvoeringen; niets te melden = niets tonen. */
 export function GoalStats({ progress, variantsLoading }: { progress: GoalProgress; variantsLoading: { done: number; total: number } | null }): JSX.Element | null {
