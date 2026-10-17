@@ -1,7 +1,7 @@
 import type { CSSProperties, JSX } from 'react'
 import type { RequirementState } from '../lib/goals'
 import { VARIANT_SHORT, formatValue, stateKey, type Cost } from '../lib/setBinder'
-import type { SetSort } from '../lib/setSort'
+import { isValueSort, type SetSort } from '../lib/setSort'
 import { formatEur } from '../lib/stats'
 import { isLang, type SetCard } from '../lib/tcgdex'
 import { VARIANT_LABELS, type Variant } from '../lib/types'
@@ -88,7 +88,7 @@ export function BinderSlot({ card: c, lang, setId, qty, states, cost, sort, valu
             ))}
           </span>
         )}
-        {sort === 'value'
+        {isValueSort(sort)
           ? values?.prices.has(c.id) && <span className="slot-price">{formatValue(values.prices.get(c.id) ?? null)}</span>
           : !complete && inGoal && price !== undefined && <span className="slot-price">{price === null ? 'no price' : formatEur(price)}</span>}
         {qty && qty > 1 ? <span className="qty-badge">{qty}×</span> : null}

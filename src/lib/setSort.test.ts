@@ -30,6 +30,9 @@ describe('sorteren binnen een set', () => {
     expect(ids(sortSetCards(cards, 'value', data))).toEqual(['s-3', 's-1', 's-2', 's-4'])
     expect(ids(sortSetCards(cards, 'rarity', data))).toEqual(['s-3', 's-1', 's-4', 's-2'])
   })
+  it('waarde oplopend: goedkoopste eerst, onbekend toch achteraan', () => {
+    expect(ids(sortSetCards(cards, 'valueAsc', data))).toEqual(['s-1', 's-3', 's-2', 's-4'])
+  })
   it('naam, in bezit eerst, ontbrekend eerst', () => {
     expect(ids(sortSetCards(cards, 'name', data))).toEqual(['s-4', 's-2', 's-3', 's-1'])
     expect(ids(sortSetCards(cards, 'owned', data))).toEqual(['s-2', 's-4', 's-1', 's-3'])

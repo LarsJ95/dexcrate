@@ -7,7 +7,7 @@ import { crateForSet } from '../lib/celebrate'
 import { hpLevel } from '../lib/trainer'
 import { DEFAULT_GOAL, goalProgress, goalRequirements, type GoalSettings, type OwnedCopy, type RequirementState } from '../lib/goals'
 import { marketValue } from '../lib/prices'
-import { SET_SORT_LABELS, sortSetCards, type SetSort } from '../lib/setSort'
+import { SET_SORT_LABELS, isValueSort, sortSetCards, type SetSort } from '../lib/setSort'
 import { VARIANT_LABELS, type Variant } from '../lib/types'
 import { loadGoal } from '../lib/wishlist'
 import { BinderSlot } from '../components/BinderSlot'
@@ -174,7 +174,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
 
   // Sorteren op waarde (ook als die keuze bewaard was): prijzen laden zodra de set er is.
   useEffect(() => {
-    if (sort === 'value') loadValues()
+    if (isValueSort(sort)) loadValues()
   }, [sort, loadValues])
 
   // Sorteren op zeldzaamheid: kaartinfo (7 dagen gecachet).
@@ -254,7 +254,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
           ? data.cards.filter((c) => statesByCard.has(c.id) && !complete(c.id))
           : data.cards
     // Op waarde of zeldzaamheid pas sorteren als alles binnen is; anders springen kaarten tijdens het laden.
-    const ready = sort === 'value' ? values !== null && values.done >= values.total : sort === 'rarity' ? infos.size >= data.cards.length : true
+    const ready = isValueSort(sort) ? values !== null && values.done >= values.total : sort === 'rarity' ? infos.size >= data.cards.length : true
     return sortSetCards(shown, ready ? sort : 'number', { complete, value: values?.prices ?? new Map(), rank: ranks })
   }, [data, show, statesByCard, sort, values, ranks, infos])
 
@@ -434,7 +434,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
           ))}
         </select>
       </div>
-      {sort === 'value' && values && values.done < values.total && (
+      {isValueSort(sort) && values && values.done < values.total && (
         <p className="muted small" aria-live="polite">
           Loading prices… {values.done} of {values.total}
         </p>
