@@ -1,6 +1,7 @@
 // Supabase Edge Function: herkent een Pokémon-kaart op een foto met Claude.
 // Eerst Claude Haiku 5.5 (goedkoop); bij twijfel of weigering opnieuw met Claude Sonnet 5.5.
 // Vereist secret ANTHROPIC_API_KEY (Dashboard → Edge Functions → Secrets).
+// Scanlimiet per gebruiker via STAP15 (scan_quota_take).
 import Anthropic from 'npm:@anthropic-ai/sdk@0.130.0'
 
 const ALLOWED_ORIGINS = ['https://larsj95.github.io', 'http://localhost:5173', 'http://localhost:4173']
@@ -119,6 +120,32 @@ async function isSignedIn(req: Request): Promise<boolean> {
   return typeof user === 'object' && user !== null && typeof (user as { id?: unknown }).id === 'string'
 }
 
+type Quota = { ok: true } | { ok: false; message: string; retryAfter: number }
+
+/**
+ * Scanlimiet per gebruiker (STAP15, scan_quota_take): telt deze foto mee of weigert hem.
+ * Bestaat de databasefunctie nog niet (STAP15 niet gedraaid), dan zonder limiet verder.
+ */
+async function takeQuota(req: Request): Promise<Quota> {
+  const url = Deno.env.get('SUPABASE_URL')
+  const res = await fetch(`${url}/rest/v1/rpc/scan_quota_take`, {
+    method: 'POST',
+    headers: { Authorization: req.headers.get('Authorization') ?? '', apikey: req.headers.get('apikey') ?? '', 'Content-Type': 'application/json' },
+    body: '{}',
+  })
+  const body: unknown = await res.json().catch(() => null)
+  if (res.status === 404 && isRecord(body) && body.code === 'PGRST202') {
+    console.warn('recognize-card: scan_quota_take ontbreekt (STAP15 niet gedraaid), scan zonder limiet')
+    return { ok: true }
+  }
+  if (!res.ok || !isRecord(body) || typeof body.ok !== 'boolean') throw new Error(`Scan limit check failed (${res.status})`)
+  if (body.ok) return { ok: true }
+  const retryAfter = typeof body.retry_after === 'number' ? body.retry_after : 60
+  return body.reason === 'day'
+    ? { ok: false, message: `Daily scan limit reached. Try again in about ${Math.max(1, Math.round(retryAfter / 3600))} hours.`, retryAfter }
+    : { ok: false, message: 'Too many scans in one minute. Wait a moment and retry.', retryAfter }
+}
+
 type Mode = 'single' | 'multi'
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null
@@ -208,6 +235,14 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     const apiKey = Deno.env.get('ANTHROPIC_API_KEY')
     if (!apiKey) return json({ error: 'ANTHROPIC_API_KEY is missing from the Edge Function secrets.' }, 500, origin)
+
+    // Pas na een geldige foto tellen, zodat een fout verzoek je limiet niet opmaakt.
+    const quota = await takeQuota(req)
+    if (!quota.ok) {
+      const res = json({ error: quota.message }, 429, origin)
+      res.headers.set('Retry-After', String(quota.retryAfter))
+      return res
+    }
     const client = new Anthropic({ apiKey })
 
     let model: string = PRIMARY_MODEL

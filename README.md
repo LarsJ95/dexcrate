@@ -42,7 +42,7 @@ Wijzigingen gaan als SQL-bestand dat je zelf in Supabase → SQL Editor draait (
 
 In `supabase/functions/`, via de editor in het Supabase-dashboard gedeployd (controleer bij deployen het naamveld). "Verify JWT" blijft aan.
 
-- `recognize-card`: herkent kaarten op een foto met Claude. Secret: `ANTHROPIC_API_KEY`.
+- `recognize-card`: herkent kaarten op een foto met Claude. Secret: `ANTHROPIC_API_KEY`. Limiet per gebruiker (40 per minuut, 500 per 24 uur) via `scan_quota_take()` uit STAP15; zonder STAP15 werkt scannen zonder limiet.
 - `card-image`: laatste redmiddel voor kaartfoto's via PriceCharting.
 
 ## Code
