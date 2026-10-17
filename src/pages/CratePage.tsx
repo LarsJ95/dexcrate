@@ -14,8 +14,10 @@ import { burstFrom } from '../lib/fx'
 import { buzz } from '../lib/haptics'
 import { useMotion } from '../lib/motion'
 import { errorText } from '../lib/errors'
+import { useStoredChoice } from '../hooks/useStoredChoice'
 
 type Sort = 'newest' | 'rarity' | 'name'
+const SORTS: readonly Sort[] = ['newest', 'rarity', 'name']
 type View = 'cards' | 'overview'
 const PACK_KINDS = Object.keys(PACKS) as PackKind[]
 
@@ -117,7 +119,7 @@ export function CratePage(): JSX.Element {
   const [pulls, setPulls] = useState<PackPull[] | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [sort, setSort] = useState<Sort>('newest')
+  const [sort, setSort] = useStoredChoice<Sort>('dexcrate:crate-sort', SORTS, 'newest')
   const [view, setView] = useState<View>('cards')
   const [opened, setOpened] = useState<CrateCard | null>(null)
   const [confirmAll, setConfirmAll] = useState(false)

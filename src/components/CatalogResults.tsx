@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type JSX } from 'react'
 import { useCardPrices } from '../hooks/useCardPrices'
+import { useStoredChoice } from '../hooks/useStoredChoice'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { rarityRule } from '../lib/cardTraits'
 import { HIT_ORDER_LABELS, catalogActive, needsHitPrices, needsHitRarity, searchCatalog, sortHits, type CatalogHit, type HitOrder } from '../lib/catalogSearch'
@@ -40,6 +41,7 @@ type State = { key: string; hits: CatalogHit[] | null; error: string | null }
 
 /** Kaarten uit de kaartendatabase (TCGdex) voor de zoekterm, om aan de wishlist toe te voegen. */
 const NO_FILTERS: CardQueryFilters = {}
+const HIT_ORDERS = Object.keys(HIT_ORDER_LABELS) as HitOrder[]
 
 export function CatalogResults({ query, lang, wished, owned, onPick, note = null, onlySets = null, filters = NO_FILTERS, setId = '' }: Props): JSX.Element | null {
   const term = query.trim()
@@ -48,7 +50,7 @@ export function CatalogResults({ query, lang, wished, owned, onPick, note = null
   const key = `${lang}|${term.toLowerCase()}|${onlySets ? [...onlySets].join(',') : ''}|${rarity}|${type}|${suffix}|${setId}`
   const [state, setState] = useState<State>({ key: '', hits: null, error: null })
   const [shown, setShown] = useState({ key: '', count: PAGE })
-  const [order, setOrder] = useState<HitOrder>('newest')
+  const [order, setOrder] = useStoredChoice<HitOrder>('dexcrate:catalog-sort', HIT_ORDERS, 'newest')
 
   useEffect(() => {
     if (!active) return

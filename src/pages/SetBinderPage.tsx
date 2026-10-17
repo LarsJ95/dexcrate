@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type JSX } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from 'react'
 import { listCards } from '../lib/db'
 import { rarityRule } from '../lib/cardTraits'
 import { burstFrom } from '../lib/fx'
@@ -22,6 +22,9 @@ import { getCardInfo, getCardPrice, getSet, isLang, setOfKey, type SetCard, type
 import { Loading } from '../components/Loading'
 import { COMPLETE_KEY, MAX_NEW, MILESTONE_KEY, PAGE_SIZE_KEY, SEEN_KEY, SPARKLE_COLORS, VARIANT_SHORT, readPageSize, readSeen, remember, stateKey, type Cost, type PageSize } from '../lib/setBinder'
 import { errorText } from '../lib/errors'
+import { useStoredChoice } from '../hooks/useStoredChoice'
+
+const SET_SORTS = Object.keys(SET_SORT_LABELS) as SetSort[]
 
 interface Props {
   /** "<taal>/<set-id>" uit de URL. */
@@ -47,10 +50,12 @@ export function SetBinderPage({ param }: Props): JSX.Element {
   const [pageSize, setPageSize] = useState<PageSize>(readPageSize)
   const [cost, setCost] = useState<Cost | null>(null)
   const [openCard, setOpenCard] = useState<SetCard | null>(null)
-  const [sort, setSort] = useState<SetSort>('number')
+  const [sort, setSort] = useStoredChoice<SetSort>('dexcrate:binder-sort', SET_SORTS, 'number')
   // Marktwaarde per kaart-id, alleen geladen bij sorteren op waarde.
   const [values, setValues] = useState<{ prices: ReadonlyMap<string, number | null>; done: number; total: number } | null>(null)
   const cancelCost = useRef(false)
+  // Prijzen voor sorteren op waarde: één keer per bezoek ophalen.
+  const valuesStarted = useRef(false)
   // Verzameldoel (STAP6): wat telt mee voor "compleet".
   const goalsEnabled = useWishlistEnabled() === true
   const [goal, setGoal] = useState<GoalSettings>(DEFAULT_GOAL)
@@ -147,13 +152,13 @@ export function SetBinderPage({ param }: Props): JSX.Element {
   }, [needVariants, data, lang])
 
   /** Sorteren op waarde: marktprijs (standaarduitvoering) van elke kaart laden; prijzen worden 6 uur gecachet. */
-  function loadValues(): void {
-    if (!data || !isLang(lang) || values) return
+  const loadValues = useCallback((): void => {
+    if (!data || !isLang(lang) || valuesStarted.current) return
+    valuesStarted.current = true
     cancelCost.current = false
     const prices = new Map<string, number | null>()
     let done = 0
     const total = data.cards.length
-    setValues({ prices, done, total })
     for (const c of data.cards) {
       getCardPrice(`${lang}/${c.id}`)
         .then((p) => prices.set(c.id, marketValue(p, null)?.value ?? null))
@@ -166,12 +171,12 @@ export function SetBinderPage({ param }: Props): JSX.Element {
           if (!cancelCost.current && (done % 10 === 0 || done === total)) setValues({ prices: new Map(prices), done, total })
         })
     }
-  }
+  }, [data, lang])
 
-  function changeSort(next: SetSort): void {
-    setSort(next)
-    if (next === 'value') loadValues()
-  }
+  // Sorteren op waarde (ook als die keuze bewaard was): prijzen laden zodra de set er is.
+  useEffect(() => {
+    if (sort === 'value') loadValues()
+  }, [sort, loadValues])
 
   // Sorteren op zeldzaamheid: kaartinfo (7 dagen gecachet).
   const cardKeys = useMemo(() => (data && isLang(lang) ? data.cards.map((c) => `${lang}/${c.id}`) : []), [data, lang])
@@ -426,7 +431,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
             ))}
           </div>
         )}
-        <select className="toolbar-sort" aria-label="Sort" value={sort} onChange={(e) => changeSort(e.target.value as SetSort)}>
+        <select className="toolbar-sort" aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as SetSort)}>
           {(Object.keys(SET_SORT_LABELS) as SetSort[]).map((k) => (
             <option key={k} value={k}>
               {SET_SORT_LABELS[k]}

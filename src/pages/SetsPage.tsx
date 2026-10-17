@@ -8,9 +8,11 @@ import { digitalSetIds, getSetList, LANGS, resolveSetId, setOfKey, type Lang, ty
 import type { Card } from '../lib/types'
 import { Loading } from '../components/Loading'
 import { closeKeyboardOnEnter } from '../lib/keyboard'
+import { useStoredChoice } from '../hooks/useStoredChoice'
 import { errorText } from '../lib/errors'
 
 type SortKey = 'newest' | 'oldest' | 'progress' | 'name'
+const SORT_KEYS: readonly SortKey[] = ['newest', 'oldest', 'progress', 'name']
 type Scope = 'all' | 'owned' | 'almost' | 'complete'
 
 interface Row {
@@ -56,7 +58,7 @@ export function SetsPage(): JSX.Element {
   const [error, setError] = useState<string | null>(null)
   const [cardsError, setCardsError] = useState<string | null>(null)
   const [scope, setScope] = useState<Scope>('all')
-  const [sort, setSort] = useState<SortKey>('newest')
+  const [sort, setSort] = useStoredChoice<SortKey>('dexcrate:sets-sort', SORT_KEYS, 'newest')
   const [query, setQuery] = useState('')
   const [suggestOpen, setSuggestOpen] = useState(false)
   const [active, setActive] = useState(0)
