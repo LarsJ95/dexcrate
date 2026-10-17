@@ -1,0 +1,87 @@
+/* ---------- Achtergrond van de dag, donker thema (17-10-2026, op verzoek; DESIGN.md §9) ----------
+   Elke dag een andere (src/lib/backdrop.ts): pokéballen, holo-glans, energie-mix of sterrennacht.
+   Alles op body::before (dat de schakelaar in Settings → Appearance kan verbergen) en, bij de nacht, de pagina-achtergrond.
+   Het lichte thema houdt het energiepatroon in de typekleur. */
+
+/* Pokéballen: zelfde vage laag als het energiepatroon (typekleur), ander symbool. */
+:root:not([data-theme='light'])[data-backdrop='pokeballs'] body::before {
+  -webkit-mask: var(--pokeball-glyph) 0 0 / 64px 64px repeat;
+  mask: var(--pokeball-glyph) 0 0 / 64px 64px repeat;
+  opacity: 0.06;
+}
+
+:root {
+  --pokeball-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-6 -6 36 36'%3E%3Cg fill='none' stroke='black' stroke-width='1.8'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M3 12h5.8M15.2 12H21'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Holo-glans: zacht regenboogverloop dat heel langzaam verschuift (alleen transform: zuinig op de telefoon). */
+:root:not([data-theme='light'])[data-backdrop='holo'] body::before {
+  inset: -35%;
+  -webkit-mask: none;
+  mask: none;
+  background: repeating-linear-gradient(
+    115deg,
+    rgb(255 92 138 / 0.55) 0%,
+    rgb(255 196 64 / 0.5) 8%,
+    rgb(94 214 143 / 0.5) 16%,
+    rgb(77 166 255 / 0.55) 24%,
+    rgb(176 92 200 / 0.55) 32%,
+    rgb(255 92 138 / 0.55) 40%
+  );
+  opacity: 0.16;
+  will-change: transform;
+  animation: holo-drift 60s ease-in-out infinite alternate;
+}
+
+@keyframes holo-drift {
+  from {
+    transform: rotate(-12deg) translate3d(-6%, -3%, 0);
+  }
+  to {
+    transform: rotate(-12deg) translate3d(6%, 3%, 0);
+  }
+}
+
+[data-motion='off'][data-backdrop='holo'] body::before {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-backdrop='holo'] body::before {
+    animation: none;
+  }
+}
+
+/* Energie-mix: alle energiesymbolen in hun eigen kleur (tegel via --energy-mix, gezet in Shell). */
+:root:not([data-theme='light'])[data-backdrop='energy'] body::before {
+  -webkit-mask: none;
+  mask: none;
+  background: var(--energy-mix) 0 0 / 280px 112px repeat;
+  opacity: 0.075;
+}
+
+/* Sterrennacht: diepblauwe lucht met een vage melkweg; de sterren en vallende sterren tekent de hemel (Sky). */
+:root:not([data-theme='light'])[data-backdrop='night'] {
+  background:
+    radial-gradient(120% 60% at 50% -10%, rgb(48 62 140 / 0.45), transparent 70%),
+    radial-gradient(90% 50% at 100% 110%, rgb(92 52 140 / 0.28), transparent 70%),
+    #090a14;
+  background-attachment: fixed;
+}
+
+:root:not([data-theme='light'])[data-backdrop='night'] body::before {
+  /* Groot genoeg dat de gedraaide laag ook de hoeken dekt (anders een harde rand). */
+  inset: -60%;
+  -webkit-mask: none;
+  mask: none;
+  background: linear-gradient(
+    180deg,
+    transparent 30%,
+    rgb(120 135 255 / 0.05) 44%,
+    rgb(210 190 255 / 0.08) 50%,
+    rgb(120 135 255 / 0.05) 56%,
+    transparent 70%
+  );
+  opacity: 1;
+  transform: rotate(-28deg);
+}

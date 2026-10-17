@@ -32,9 +32,9 @@ export interface Star {
   speed: number
 }
 
-/** Ongeveer één ster per 9.000 px², maximaal 600. */
-export function makeStars(width: number, height: number, random: () => number = Math.random): Star[] {
-  const count = Math.min(600, Math.round((width * height) / 9000))
+/** Ongeveer één ster per 9.000 px², maximaal 600; `density` > 1 voor de sterrennacht (maximaal 900). */
+export function makeStars(width: number, height: number, random: () => number = Math.random, density = 1): Star[] {
+  const count = Math.min(density > 1 ? 900 : 600, Math.round(((width * height) / 9000) * density))
   return Array.from({ length: count }, () => ({
     x: random() * width,
     y: random() * height,
