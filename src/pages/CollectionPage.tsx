@@ -19,6 +19,7 @@ import { matchesSearch } from '../lib/search'
 import { formatEur } from '../lib/stats'
 import { canToggleSold, statusFields, type Card, type CardInput, type CardStatus } from '../lib/types'
 import { Loading } from '../components/Loading'
+import { closeKeyboardOnEnter } from '../lib/keyboard'
 import { FILTERS, VIEW_KEY, matchesFilter, readView, relevantPrice, type SortKey, type StatusFilter } from '../lib/collectionView'
 import { useSetOptions } from '../hooks/useSetOptions'
 
@@ -267,36 +268,39 @@ export function CollectionPage(): JSX.Element {
         </div>
       </div>
 
-      <div className="filters">
-        <div className="search">
-          <IconSearch size={18} />
-          <input
-            type="search"
-            placeholder="Search name, set or number"
-            aria-label="Search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
-        <div className="segmented" role="group" aria-label="Status">
-          {FILTERS.map(([key, label]) => (
-            <button key={key} type="button" aria-pressed={filter === key} onClick={() => setFilter(key)}>
-              {label} <span className="count">{counts[key]}</span>
-            </button>
-          ))}
-        </div>
-        <select className="toolbar-sort" aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
-          <option value="newest">Newest first</option>
-          <option value="list">Oldest first</option>
-          <option value="set">Set and number</option>
-          <option value="marketDesc">Market value</option>
-          <option value="priceDesc">Price: high to low</option>
-          <option value="priceAsc">Price: low to high</option>
-          <option value="name">Name A–Z</option>
-        </select>
-      </div>
-
       <CollectionFilterPanel
+        toolbar={
+          <>
+            <div className="search">
+              <IconSearch size={18} />
+              <input
+                type="search"
+                placeholder="Search name, set or number"
+                aria-label="Search"
+                enterKeyHint="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={closeKeyboardOnEnter}
+              />
+            </div>
+            <div className="segmented" role="group" aria-label="Status">
+              {FILTERS.map(([key, label]) => (
+                <button key={key} type="button" aria-pressed={filter === key} onClick={() => setFilter(key)}>
+                  {label} <span className="count">{counts[key]}</span>
+                </button>
+              ))}
+            </div>
+            <select className="toolbar-sort" aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
+              <option value="newest">Newest first</option>
+              <option value="list">Oldest first</option>
+              <option value="set">Set and number</option>
+              <option value="marketDesc">Market value</option>
+              <option value="priceDesc">Price: high to low</option>
+              <option value="priceAsc">Price: low to high</option>
+              <option value="name">Name A–Z</option>
+            </select>
+          </>
+        }
         extra={extra}
         setExtra={setExtra}
         setOptions={setOptions}

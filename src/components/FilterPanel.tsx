@@ -6,6 +6,8 @@ interface Props {
   /** Er staat iets aan dat "Clear all filters" kan wissen (filters of zoekterm). */
   canClear: boolean
   onClear: () => void
+  /** Werkbalk erboven: zoeken, keuzeknoppen, sorteren; de telefoonknop "Filters" komt erachter. */
+  toolbar: ReactNode
   /** Extra knoppen in de voetregel vóór "Clear all filters", bv. "Save as new list". */
   actions?: ReactNode
   /** De filtervelden: elk een <label> met veld, of een element met klasse filter-field. */
@@ -16,14 +18,17 @@ interface Props {
  * Filterpaneel, overal gelijk (DESIGN.md §8): velden met label erboven in een raster, vinkjes in
  * hetzelfde raster, onderaan rechts de acties. Groot scherm altijd open; op de telefoon in te klappen.
  */
-export function FilterPanel({ activeCount, canClear, onClear, actions, children }: Props): JSX.Element {
+export function FilterPanel({ toolbar, activeCount, canClear, onClear, actions, children }: Props): JSX.Element {
   const id = useId()
   const [open, setOpen] = useState(false)
   return (
     <>
-      <button type="button" className="filter-toggle" aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)}>
-        Filters{activeCount > 0 ? ` (${activeCount})` : ''}
-      </button>
+      <div className="filters">
+        {toolbar}
+        <button type="button" className="filter-toggle" aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)}>
+          Filters{activeCount > 0 ? ` (${activeCount})` : ''}
+        </button>
+      </div>
       <section id={id} className={`panel filter-panel${open ? ' is-open' : ''}`} aria-label="Filters">
         <div className="filter-grid">{children}</div>
         <div className="filter-foot">

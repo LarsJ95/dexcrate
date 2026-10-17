@@ -177,7 +177,10 @@ export function SetBinderPage({ param }: Props): JSX.Element {
   const infos = useCatalogInfos(cardKeys, sort === 'rarity')
   // Who's that Pokémon? Silhouet van ontbrekende Pokémon-kaarten (Pokédex-nummer uit de kaartinfo).
   const motion = useMotion()
-  const silhouetteInfos = useCatalogInfos(cardKeys, motion)
+  // Alleen met een muis (hover): op de telefoon zie je ontbrekende kaarten meteen, zonder silhouet.
+  const [canHover] = useState(() => typeof matchMedia === 'function' && matchMedia('(hover: hover)').matches)
+  const silhouettes = motion && canHover
+  const silhouetteInfos = useCatalogInfos(cardKeys, silhouettes)
   const ranks = useMemo(() => {
     const map = new Map<string, number>()
     for (const [key, info] of infos) if (info) map.set(key.slice(key.indexOf('/') + 1), rarityRule(info.rarity).rank)
@@ -491,7 +494,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
                   sort={sort}
                   values={values}
                   newIndex={newIds.has(c.id) ? [...newIds].indexOf(c.id) : null}
-                  silhouette={motion ? (silhouetteInfos.get(`${lang}/${c.id}`)?.dexId ?? null) : null}
+                  silhouette={silhouettes ? (silhouetteInfos.get(`${lang}/${c.id}`)?.dexId ?? null) : null}
                   onOpen={setOpenCard}
                 />
               ))}

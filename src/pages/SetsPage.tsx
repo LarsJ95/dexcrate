@@ -7,6 +7,7 @@ import { looksLikeAbbr, suggestSets } from '../lib/setSearch'
 import { digitalSetIds, getSetList, LANGS, resolveSetId, setOfKey, type Lang, type SetSummary } from '../lib/tcgdex'
 import type { Card } from '../lib/types'
 import { Loading } from '../components/Loading'
+import { closeKeyboardOnEnter } from '../lib/keyboard'
 
 type SortKey = 'newest' | 'oldest' | 'progress' | 'name'
 type Scope = 'all' | 'owned' | 'almost' | 'complete'
@@ -158,6 +159,10 @@ export function SetsPage(): JSX.Element {
       setSuggestOpen(false)
       return
     }
+    if (e.key === 'Enter' && !showSuggest) {
+      closeKeyboardOnEnter(e)
+      return
+    }
     if (suggestions.length === 0) return
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
@@ -166,7 +171,7 @@ export function SetsPage(): JSX.Element {
       setActive((i) => (Math.min(i, suggestions.length - 1) + step + suggestions.length) % suggestions.length)
     }
     if (e.key === 'Enter' && showSuggest) {
-      e.preventDefault()
+      closeKeyboardOnEnter(e)
       window.location.hash = hrefOf(suggestions[Math.min(active, suggestions.length - 1)].setId)
     }
   }
@@ -207,6 +212,7 @@ export function SetsPage(): JSX.Element {
             type="search"
             placeholder="Search sets, e.g. 151 or MEW"
             aria-label="Search sets"
+            enterKeyHint="search"
             role="combobox"
             aria-autocomplete="list"
             aria-expanded={showSuggest}

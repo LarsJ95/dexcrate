@@ -35,6 +35,7 @@ import {
 } from '../lib/wishFilters'
 import { hasWishlistLists, listWishlistLists, updateWishlistList, type WishlistList } from '../lib/wishlistLists'
 import { Loading } from '../components/Loading'
+import { closeKeyboardOnEnter } from '../lib/keyboard'
 
 const PRIORITY: Record<1 | 2 | 3, string> = { 1: 'High priority', 2: '', 3: 'Low priority' }
 
@@ -248,20 +249,23 @@ export function WishlistPage(): JSX.Element {
         </div>
       )}
 
-      <div className="filters">
-        <div className="search">
-          <IconSearch size={18} />
-          <input
-            type="search"
-            placeholder="Search a Pokémon or card"
-            aria-label="Search your wishlist and the card database"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
-      </div>
-
       <FilterPanel
+        toolbar={
+          <>
+            <div className="search">
+              <IconSearch size={18} />
+              <input
+                type="search"
+                placeholder="Search a Pokémon or card"
+                aria-label="Search your wishlist and the card database"
+                enterKeyHint="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={closeKeyboardOnEnter}
+              />
+            </div>
+          </>
+        }
         activeCount={filterCount + (filters.showFound ? 1 : 0)}
         canClear={canClear}
         onClear={() => {

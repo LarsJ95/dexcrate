@@ -103,9 +103,31 @@
 }
 
 @media (max-width: 480px) {
+  /* Telefoon: twee kolommen. Zoeken en keuzeknoppen over de volle breedte; sorteren en "Filters"
+     naast elkaar; staat er maar één van, dan ook over de volle breedte. Alles even breed. */
+  .filters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+
+  .filters > .search,
+  .filters > .segmented,
+  .filters > .toolbar-sort:last-child,
+  .filters > .search + .filter-toggle {
+    grid-column: 1 / -1;
+  }
+
+  .filters > :is(select, button) {
+    width: 100%;
+  }
+
+  .filters .segmented button {
+    flex: 1 0 auto;
+  }
+
   .filter-toggle {
     display: inline-flex;
-    justify-self: start;
     height: var(--control-h);
   }
 

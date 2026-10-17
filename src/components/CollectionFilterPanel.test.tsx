@@ -18,6 +18,7 @@ function Harness({ onState, canClear = false, onClear = () => {} }: { onState: (
   onState(extra)
   return (
     <CollectionFilterPanel
+      toolbar={null}
       extra={extra}
       setExtra={setExtra}
       setOptions={[
@@ -46,7 +47,7 @@ describe('CollectionFilterPanel', () => {
   it('toont een opgeslagen set die niet meer in de lijst staat', () => {
     function Saved(): JSX.Element {
       const [extra, setExtra] = useState<ExtraFilters>({ ...NO_EXTRA_FILTERS, set: 'en/base1' })
-      return <CollectionFilterPanel extra={extra} setExtra={setExtra} setOptions={[]} activeCount={1} canClear onClear={() => {}} />
+      return <CollectionFilterPanel toolbar={null} extra={extra} setExtra={setExtra} setOptions={[]} activeCount={1} canClear onClear={() => {}} />
     }
     render(<Saved />)
     expect((screen.getByLabelText('Set') as HTMLSelectElement).value).toBe('en/base1')

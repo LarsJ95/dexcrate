@@ -1,4 +1,4 @@
-import type { Dispatch, JSX, SetStateAction } from 'react'
+import type { Dispatch, JSX, ReactNode, SetStateAction } from 'react'
 import type { SetOption } from '../hooks/useSetOptions'
 import type { ExtraFilters } from '../lib/collectionFilters'
 import { CONDITION_LABELS, LANGUAGE_LABELS, VARIANT_LABELS } from '../lib/types'
@@ -6,6 +6,8 @@ import { CatalogFilterFields } from './CatalogFilterFields'
 import { FilterPanel } from './FilterPanel'
 
 interface Props {
+  /** Zoeken, status en sorteren (de werkbalk boven het paneel). */
+  toolbar: ReactNode
   extra: ExtraFilters
   setExtra: Dispatch<SetStateAction<ExtraFilters>>
   setOptions: readonly SetOption[]
@@ -16,9 +18,9 @@ interface Props {
 }
 
 /** Extra filters in Collection: set, taal, uitvoering, conditie, catalogus, koppeling en illustrator. */
-export function CollectionFilterPanel({ extra, setExtra, setOptions, activeCount, canClear, onClear }: Props): JSX.Element {
+export function CollectionFilterPanel({ toolbar, extra, setExtra, setOptions, activeCount, canClear, onClear }: Props): JSX.Element {
   return (
-    <FilterPanel activeCount={activeCount} canClear={canClear} onClear={onClear}>
+    <FilterPanel toolbar={toolbar} activeCount={activeCount} canClear={canClear} onClear={onClear}>
       <label className="span-2">
         Set
         <select value={extra.set} onChange={(e) => setExtra((f) => ({ ...f, set: e.target.value }))}>
