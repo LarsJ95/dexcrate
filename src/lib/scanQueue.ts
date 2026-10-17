@@ -26,7 +26,7 @@ export interface QueueItem {
   at: string
 }
 
-export const MAX_QUEUE = 100
+export const MAX_QUEUE = 250
 export const MAX_QTY = 99
 
 export function newItem(id: string, thumb: string, at = new Date().toISOString()): QueueItem {

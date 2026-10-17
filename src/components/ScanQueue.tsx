@@ -10,6 +10,8 @@ import { CardFace } from './CardFace'
 import { CatalogKeyPicture } from './CatalogCardPicture'
 import { IconClose } from './Icons'
 import { errorText } from '../lib/errors'
+import { useLoadMore } from '../hooks/useLoadMore'
+import { Loading } from './Loading'
 
 const STATUS_TEXT: Record<QueueItem['status'], string> = {
   waiting: 'Waiting…',
@@ -105,6 +107,9 @@ interface Props {
 }
 
 /** Wachtrij nakijken en in één keer toevoegen. */
+/** Zoveel gescande kaarten per keer tonen; meer zodra je bij het einde komt. */
+const ROWS_PER_STEP = 30
+
 export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded, onEdit, wished }: Props): JSX.Element | null {
   const queue = useScanQueue()
   const [condition, setCondition] = useState<Condition | ''>(defaultCondition ?? '')
@@ -112,6 +117,8 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
   const [error, setError] = useState<string | null>(null)
   const [confirmClear, setConfirmClear] = useState(false)
   const [done, setDone] = useState<string | null>(null)
+  // Lange lijst in stukken tonen (tot 250 foto's); groepen in volgorde: eerst wat je moet nakijken.
+  const { count: shownCount, sentinel: moreRef } = useLoadMore(queue.length, 'scan-queue', ROWS_PER_STEP)
   if (queue.length === 0) {
     return done ? (
       <p className="success" role="status">
@@ -258,6 +265,8 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
 
   const groups = reviewGroups(queue)
   const twice = scannedTwice(queue)
+  // Hoeveel regels per groep in beeld: de stukken vullen eerst "Check these", dan "Still working", dan "Looks good".
+  const budget = { check: shownCount, working: Math.max(0, shownCount - groups.check.length), good: Math.max(0, shownCount - groups.check.length - groups.working.length) }
 
   return (
     <section className="scan-result scan-queue" aria-labelledby="queue-title">
@@ -283,9 +292,14 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
               <h3 className="queue-group-title">
                 {title} <span className="muted small">{list.length}</span>
               </h3>
-              <ul className="binder-scan">{list.map(row)}</ul>
+              <ul className="binder-scan">{list.slice(0, budget[key]).map(row)}</ul>
             </div>
           ),
+      )}
+      {queue.length > shownCount && (
+        <div ref={moreRef} className="catalog-more">
+          <Loading text={`Loading more scans… (${queue.length - shownCount} left)`} />
+        </div>
       )}
 
       <div className="scan-bulk">

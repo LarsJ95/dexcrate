@@ -56,6 +56,13 @@ describe('scan-wachtrij', () => {
     expect(parseQueue(null)).toEqual([])
   })
 
+  it('bewaart tot 250 foto’s (sinds de lijst in IndexedDB staat), niet meer', () => {
+    const many = Array.from({ length: 260 }, (_, i) => newItem(`id-${i}`, THUMB))
+    const q = parseQueue(JSON.stringify(many))
+    expect(q).toHaveLength(250)
+    expect(q.at(-1)?.id).toBe('id-249')
+  })
+
   it('nakijken: mislukt en twijfel eerst, dan bezig, dan goed', () => {
     const err = { ...newItem('e', THUMB), status: 'error' as const }
     const unsure = withMatch(newItem('u', THUMB), rec({ confidence: 'medium' }), [cand('x')])

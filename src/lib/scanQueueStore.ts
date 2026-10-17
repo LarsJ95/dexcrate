@@ -1,6 +1,6 @@
 import { buzz } from './haptics'
 import { findCandidates } from './match'
-import { deletePhotos, listPhotoIds, loadPhoto, savePhoto } from './photoStore'
+import { deletePhotos, listPhotoIds, loadPhoto, loadQueueData, savePhoto, saveQueueData } from './photoStore'
 import { preparedFromBlob, prepareImage, recognizeCards, type PreparedImage } from './scan'
 import { BLUR_THRESHOLD, photoSharpness } from './sharpness'
 import { MAX_QUEUE, QUEUE_KEY, mergeDuplicate, newItem, parseQueue, withMatch, type QueueItem } from './scanQueue'
@@ -9,34 +9,78 @@ import { errorText } from './errors'
 
 /**
  * Wachtrij voor snel scannen, buiten React: herkennen loopt door als je even naar een andere pagina gaat.
- * Bewaard op dit apparaat: de lijst in localStorage, de foto's in IndexedDB tot ze herkend zijn.
+ * Bewaard op dit apparaat in IndexedDB: de lijst en de foto's (tot ze herkend zijn). Eerder stond de lijst in
+ * localStorage (±5 MB voor de hele app); die wordt één keer overgezet.
  * Zonder internet wacht hij en gaat hij verder zodra je weer online bent.
  */
 
 const PARALLEL = 3
 const THUMB_EDGE = 220
 
-let queue: QueueItem[] = load()
+/** Wegschrijven met een korte vertraging: bij 250 foto's is de lijst een paar MB, en de status wijzigt vaak. */
+const SAVE_DELAY_MS = 400
+
+let queue: QueueItem[] = []
 const listeners = new Set<() => void>()
 /** Foto's die nog herkend moeten worden (of opnieuw kunnen), alleen in het geheugen. */
 const images = new Map<string, PreparedImage>()
 const running = new Set<string>()
 
-function load(): QueueItem[] {
+/** Pas na het laden opslaan: anders overschrijft een lege lijst de bewaarde. */
+let loaded = false
+let saveTimer: number | null = null
+
+async function flush(): Promise<boolean> {
+  if (saveTimer !== null) {
+    window.clearTimeout(saveTimer)
+    saveTimer = null
+  }
   try {
-    return parseQueue(localStorage.getItem(QUEUE_KEY))
-  } catch {
-    return [] // geen opslag beschikbaar
+    await saveQueueData(JSON.stringify(queue))
+    return true
+  } catch (err) {
+    console.warn('Scan-wachtrij bewaren mislukt', err)
+    return false
   }
 }
 
 function persist(): void {
+  if (!loaded || saveTimer !== null) return
+  saveTimer = window.setTimeout(() => void flush(), SAVE_DELAY_MS)
+}
+
+/** Bewaarde lijst laden; een oude lijst uit localStorage één keer overzetten en daarna daar weghalen. */
+async function loadQueue(): Promise<void> {
+  let stored: string | null = null
   try {
-    localStorage.setItem(QUEUE_KEY, JSON.stringify(queue))
+    stored = await loadQueueData()
   } catch (err) {
-    console.warn('Scan-wachtrij bewaren mislukt', err)
+    console.warn('Scan-wachtrij laden mislukt', err)
+  }
+  let legacy: string | null = null
+  try {
+    legacy = localStorage.getItem(QUEUE_KEY)
+  } catch {
+    legacy = null // geen opslag beschikbaar
+  }
+  loaded = true
+  const fromStore = parseQueue(stored)
+  const fromLegacy = parseQueue(legacy)
+  // Oude lijst alleen overnemen als er in IndexedDB nog niets staat.
+  const migrate = fromStore.length === 0 && fromLegacy.length > 0
+  const items = migrate ? fromLegacy : fromStore
+  if (items.length > 0 || queue.length > 0) set([...items, ...queue])
+  if (legacy === null) return
+  // Oude sleutel weg; bij overzetten pas nadat de lijst echt in IndexedDB staat.
+  if (migrate && !(await flush())) return
+  try {
+    localStorage.removeItem(QUEUE_KEY)
+  } catch (err) {
+    console.warn('Oude scan-wachtrij opruimen mislukt', err)
   }
 }
+
+const queueLoaded: Promise<void> = typeof window === 'undefined' ? Promise.resolve() : loadQueue()
 
 function set(next: QueueItem[]): void {
   queue = next
@@ -118,6 +162,7 @@ let unloading = false
 
 /** Na herstarten: bewaarde foto's terugladen en verder herkennen; losse foto's zonder regel opruimen. */
 async function restore(): Promise<void> {
+  await queueLoaded
   try {
     const stored = new Set(await listPhotoIds())
     for (const q of queue) {
@@ -145,6 +190,11 @@ if (typeof window !== 'undefined') {
   window.addEventListener('online', () => pump())
   window.addEventListener('pagehide', () => {
     unloading = true
+    if (saveTimer !== null) void flush()
+  })
+  // Telefoon: een app op de achtergrond kan zonder waarschuwing worden afgesloten.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && saveTimer !== null) void flush()
   })
 }
 
@@ -153,6 +203,7 @@ if (typeof window !== 'undefined') {
  * niet verstuurd maar gemeld, met de keuze hem toch te gebruiken. Geeft false als hij is tegengehouden.
  */
 export async function enqueue(file: File, checkBlur = false): Promise<boolean> {
+  await queueLoaded
   if (queue.length >= MAX_QUEUE) throw new Error(`The scan queue is full (${MAX_QUEUE}). Add or clear cards first.`)
   if (checkBlur) {
     const score = await photoSharpness(file).catch((err: unknown) => {

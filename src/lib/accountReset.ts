@@ -1,5 +1,5 @@
 import { clearOfflineCache } from './offlineCache'
-import { deletePhotos, listPhotoIds } from './photoStore'
+import { clearQueueData, deletePhotos, listPhotoIds } from './photoStore'
 import { supabase } from './supabase'
 
 /**
@@ -83,8 +83,9 @@ async function clearDevice(): Promise<void> {
   }
   try {
     await deletePhotos(await listPhotoIds())
+    await clearQueueData()
   } catch (err) {
-    console.warn('Bewaarde scanfoto’s wissen mislukt', err)
+    console.warn('Bewaarde scanfoto’s en scanlijst wissen mislukt', err)
   }
   try {
     await clearOfflineCache()
