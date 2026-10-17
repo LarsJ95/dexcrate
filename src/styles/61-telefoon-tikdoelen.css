@@ -42,11 +42,13 @@
   }
 
   .brand,
-  a.back {
+  a.back,
+  a.external-link {
     min-height: 44px;
   }
 
-  a.back {
+  a.back,
+  a.external-link {
     display: inline-flex;
     align-items: center;
   }
