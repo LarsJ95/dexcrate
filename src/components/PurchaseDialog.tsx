@@ -5,6 +5,7 @@ import { formatEur } from '../lib/stats'
 import { recordPurchase } from '../lib/transactions'
 import type { Card } from '../lib/types'
 import { Sheet } from './Sheet'
+import { errorText } from '../lib/errors'
 
 interface Props {
   /** Kaartregels die bij deze aankoop horen (hele regels). */
@@ -96,7 +97,7 @@ export function PurchaseDialog({ cards, onClose, onSaved }: Props): JSX.Element 
       })
       onSaved()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Saving the purchase failed.')
+      setError(errorText(err, 'Saving the purchase failed.'))
       setBusy(false)
     }
   }

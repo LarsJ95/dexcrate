@@ -11,6 +11,7 @@ import { listCards } from '../lib/db'
 import { deletePhoto, listInboxPhotos, setPrimaryPhoto, updatePhoto, uploadPhoto } from '../lib/photos'
 import { PHOTO_LABELS, type Card, type CardPhoto, type PhotoLabel } from '../lib/types'
 import { Loading } from '../components/Loading'
+import { errorText } from '../lib/errors'
 
 /** Foto-inbox: foto's uploaden zonder dat de kaart al bekend is, en later koppelen. */
 export function PhotosPage(): JSX.Element {
@@ -37,7 +38,7 @@ export function PhotosPage(): JSX.Element {
         setCards(c)
       })
       .catch((err: unknown) => {
-        if (!cancelled) setLoadError(err instanceof Error ? err.message : 'Loading photos failed.')
+        if (!cancelled) setLoadError(errorText(err, 'Loading photos failed.'))
       })
     return () => {
       cancelled = true
@@ -63,7 +64,7 @@ export function PhotosPage(): JSX.Element {
     try {
       await action()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Updating the photo failed.')
+      setError(errorText(err, 'Updating the photo failed.'))
     } finally {
       setBusyId(null)
     }

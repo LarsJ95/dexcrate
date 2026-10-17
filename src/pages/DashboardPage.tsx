@@ -9,6 +9,7 @@ import type { Card } from '../lib/types'
 import { Loading } from '../components/Loading'
 import { COLLECTION_MILESTONES, celebrateMilestone } from '../lib/moments'
 import { trainerName } from '../lib/trainer'
+import { errorText } from '../lib/errors'
 
 const COLLECTION_MILESTONE_KEY = 'dexcrate:collection-milestone'
 
@@ -37,7 +38,7 @@ export function DashboardPage({ email = null }: { email?: string | null }): JSX.
           })
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Loading failed.')
+        if (!cancelled) setError(errorText(err, 'Loading failed.'))
       })
     return () => {
       cancelled = true

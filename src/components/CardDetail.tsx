@@ -36,6 +36,7 @@ import { RarityChip, TypeChip } from './Chips'
 import { CardSetSymbol } from './SetIcon'
 import { ValuePanel } from './ValuePanel'
 import { SaleDialog } from './SaleDialog'
+import { errorText } from '../lib/errors'
 
 interface Props {
   card: Card
@@ -134,7 +135,7 @@ export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props):
     try {
       onSaved([await updateCard(card.id, { ...statusFields('sold'), sale_date: new Date().toLocaleDateString('sv-SE') })])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Update failed.')
+      setError(errorText(err, 'Update failed.'))
       setBusy(false)
     }
   }

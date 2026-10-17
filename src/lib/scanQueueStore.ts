@@ -5,6 +5,7 @@ import { preparedFromBlob, prepareImage, recognizeCards, type PreparedImage } fr
 import { BLUR_THRESHOLD, photoSharpness } from './sharpness'
 import { MAX_QUEUE, QUEUE_KEY, mergeDuplicate, newItem, parseQueue, withMatch, type QueueItem } from './scanQueue'
 import { lookupLang } from './tcgdex'
+import { errorText } from './errors'
 
 /**
  * Wachtrij voor snel scannen, buiten React: herkennen loopt door als je even naar een andere pagina gaat.
@@ -229,7 +230,7 @@ async function process(id: string): Promise<void> {
       return
     }
     if (queue.some((q) => q.id === id)) {
-      patch(id, { status: 'error', error: err instanceof Error ? err.message : 'Recognition failed.' })
+      patch(id, { status: 'error', error: errorText(err, 'Recognition failed.') })
       announce({ ok: false, text: 'Recognition failed. You can retry it in the list.', undo: null })
     }
   }

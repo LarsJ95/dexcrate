@@ -13,6 +13,7 @@ import {
   type Variant,
 } from '../lib/types'
 import { Sheet } from './Sheet'
+import { errorText } from '../lib/errors'
 
 /** Eén wijziging met de oude waarden, om ongedaan te kunnen maken. */
 export interface BulkChange {
@@ -66,7 +67,7 @@ export function BulkEditDialog({ cards, onClose, onApplied }: Props): JSX.Elemen
         rows.push(await updateCard(c.id, full))
         changes.push({ id: c.id, before })
       } catch (err) {
-        error = `${c.name}: ${err instanceof Error ? err.message : 'saving failed'}. ${changes.length} of ${cards.length} cards were changed.`
+        error = `${c.name}: ${errorText(err, 'saving failed')}. ${changes.length} of ${cards.length} cards were changed.`
         break
       }
     }

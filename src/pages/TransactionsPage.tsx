@@ -8,6 +8,7 @@ import { TX_KIND_LABELS, TX_STATUS_LABELS, isVoid, type Transaction } from '../l
 import { listTransactions } from '../lib/transactions'
 import type { Card } from '../lib/types'
 import { Loading } from '../components/Loading'
+import { errorText } from '../lib/errors'
 
 type KindFilter = 'all' | 'sale' | 'purchase'
 const FILTERS: [KindFilter, string][] = [
@@ -50,7 +51,7 @@ export function TransactionsPage(): JSX.Element {
         setCards(c)
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Loading transactions failed.')
+        if (!cancelled) setError(errorText(err, 'Loading transactions failed.'))
       })
     return () => {
       cancelled = true

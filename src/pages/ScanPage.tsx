@@ -27,6 +27,7 @@ import {
 } from '../lib/scan'
 import { lookupLang, type Lang } from '../lib/tcgdex'
 import type { Card, CardInput } from '../lib/types'
+import { errorText } from '../lib/errors'
 
 type Phase =
   | { kind: 'idle' }
@@ -140,7 +141,7 @@ export function ScanPage(): JSX.Element {
     setQueueError(null)
     enqueue(file, fromCamera && getPrefs().blurCheck).catch((err: unknown) => {
       console.error('Foto toevoegen aan wachtrij mislukt', err)
-      setQueueError(err instanceof Error ? err.message : 'Adding the photo failed.')
+      setQueueError(errorText(err, 'Adding the photo failed.'))
     })
   }
 
@@ -173,7 +174,7 @@ export function ScanPage(): JSX.Element {
       setPhase({ kind: 'single', recognition, candidates, lang })
     } catch (err) {
       console.error(err)
-      setPhase({ kind: 'error', message: err instanceof Error ? err.message : 'Scan failed.' })
+      setPhase({ kind: 'error', message: errorText(err, 'Scan failed.') })
     }
   }
 
@@ -208,7 +209,7 @@ export function ScanPage(): JSX.Element {
       setSession({ ...s, items })
       setSessionError(null)
     } catch (err) {
-      setSessionError(err instanceof Error ? err.message : 'Saving the scan session failed.')
+      setSessionError(errorText(err, 'Saving the scan session failed.'))
     }
   }
 
@@ -219,7 +220,7 @@ export function ScanPage(): JSX.Element {
       setSession(null)
       setAdded([])
     } catch (err) {
-      setSessionError(err instanceof Error ? err.message : 'Closing the scan session failed.')
+      setSessionError(errorText(err, 'Closing the scan session failed.'))
     }
   }
 
@@ -407,7 +408,7 @@ export function ScanPage(): JSX.Element {
                   .then((saved) => setCards((list) => list.map((c) => (c.id === row.id ? { ...c, photos: [...c.photos, saved] } : c))))
                   .catch((err: unknown) => {
                     console.warn('Scanfoto bewaren mislukt', err)
-                    setPhotoError(err instanceof Error ? err.message : 'Saving the scan photo failed.')
+                    setPhotoError(errorText(err, 'Saving the scan photo failed.'))
                   })
               }
             }

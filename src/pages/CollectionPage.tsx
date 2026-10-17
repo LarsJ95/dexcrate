@@ -22,6 +22,7 @@ import { Loading } from '../components/Loading'
 import { closeKeyboardOnEnter } from '../lib/keyboard'
 import { FILTERS, VIEW_KEY, matchesFilter, readView, relevantPrice, type SortKey, type StatusFilter } from '../lib/collectionView'
 import { useSetOptions } from '../hooks/useSetOptions'
+import { OFFLINE_TEXT, errorText, isNetworkError } from '../lib/errors'
 
 export function CollectionPage(): JSX.Element {
   const [cards, setCards] = useState<Card[] | null>(null)
@@ -74,7 +75,7 @@ export function CollectionPage(): JSX.Element {
         if (!cancelled) setCards(rows)
       })
       .catch((err: unknown) => {
-        if (!cancelled) setLoadError(err instanceof Error ? err.message : 'Loading failed.')
+        if (!cancelled) setLoadError(errorText(err, 'Loading failed.'))
       })
     return () => {
       cancelled = true
@@ -140,7 +141,7 @@ export function CollectionPage(): JSX.Element {
         await updateCard(id, patch)
       } catch (err) {
         setCards((list) => list?.map((c) => (c.id === id ? current : c)) ?? null)
-        setActionError(err instanceof Error ? err.message : 'Update failed.')
+        setActionError(errorText(err, 'Update failed.'))
       } finally {
         setPending((p) => {
           const n = new Set(p)
@@ -182,7 +183,7 @@ export function CollectionPage(): JSX.Element {
       for (const ch of changes) restored.push(await updateCard(ch.id, ch.before))
       setCards((list) => list?.map((c) => restored.find((r) => r.id === c.id) ?? c) ?? null)
     } catch (err) {
-      setActionError(err instanceof Error ? `Undo failed: ${err.message}` : 'Undo failed.')
+      setActionError(isNetworkError(err) ? OFFLINE_TEXT : err instanceof Error ? `Undo failed: ${err.message}` : 'Undo failed.')
     }
   }
 
@@ -214,7 +215,7 @@ export function CollectionPage(): JSX.Element {
       try {
         for (const [id, v] of changes) await updateCard(id, { sort_order: v })
       } catch (err) {
-        setActionError(err instanceof Error ? `Saving the new order failed: ${err.message}` : 'Saving the new order failed.')
+        setActionError(isNetworkError(err) ? OFFLINE_TEXT : err instanceof Error ? `Saving the new order failed: ${err.message}` : 'Saving the new order failed.')
         setReloadKey((k) => k + 1) // terug naar wat er echt is opgeslagen
       } finally {
         savingOrder.current = false

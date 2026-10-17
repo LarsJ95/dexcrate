@@ -7,6 +7,7 @@ import { lookupLang } from '../lib/tcgdex'
 import { CardFace } from './CardFace'
 import { CatalogKeyPicture } from './CatalogCardPicture'
 import { CONDITION_LABELS, EMPTY_CARD, LANGUAGE_LABELS, type Card, type CardInput, type Condition } from '../lib/types'
+import { errorText } from '../lib/errors'
 
 interface Props {
   recognitions: Recognition[]
@@ -104,7 +105,7 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
       void celebrateAdded(rows)
       setAdded((s) => new Set([...s, ...selected.map((r) => r.rec.position)]))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Adding failed.')
+      setError(errorText(err, 'Adding failed.'))
     } finally {
       setBusy(false)
     }

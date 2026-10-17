@@ -8,6 +8,7 @@ import { getTcgplayerPrice, type CardmarketPrice } from '../lib/tcgdex'
 import { CONDITION_LABELS, type Card } from '../lib/types'
 import { EMPTY_SETTINGS, TCGP_KEY_LABELS, conditionEstimate, tcgplayerFor, type UserSettings } from '../lib/valuation'
 import { addValuation, deleteValuation, hasValuations, listValuations, loadSettings, type Valuation } from '../lib/valuationDb'
+import { errorText } from '../lib/errors'
 
 interface Props {
   card: Card
@@ -99,7 +100,7 @@ export function ValuePanel({ card, price }: Props): JSX.Element | null {
       setAmount('')
       setNote('')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Saving failed.')
+      setError(errorText(err, 'Saving failed.'))
     } finally {
       setBusy(false)
     }
@@ -112,7 +113,7 @@ export function ValuePanel({ card, price }: Props): JSX.Element | null {
       await deleteValuation(v.id)
       setValuations((list) => list?.filter((x) => x.id !== v.id) ?? null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Deleting failed.')
+      setError(errorText(err, 'Deleting failed.'))
     } finally {
       setBusy(false)
     }

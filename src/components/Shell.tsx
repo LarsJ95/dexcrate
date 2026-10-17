@@ -9,6 +9,7 @@ import { Runner } from './Runner'
 import { Sky } from './Sky'
 import { usePrefs } from '../lib/devicePrefs'
 import { SIDE_GROUPS, TAB_NAV, isActiveTab } from './nav'
+import { useOnline } from '../hooks/useOnline'
 
 interface Props {
   route: Route
@@ -22,6 +23,7 @@ interface Props {
 /** App-schil: zijbalk op desktop; op mobiel een topbalk en een onderbalk met centrale scanknop. */
 export function Shell({ route, email, theme, onToggleTheme, onSignOut, children }: Props): JSX.Element {
   const prefs = usePrefs()
+  const online = useOnline()
   // Energiebehang aan/uit (Settings → Appearance); de CSS kijkt naar data-wallpaper op <html>.
   useEffect(() => {
     document.documentElement.dataset.wallpaper = prefs.wallpaper ? 'on' : 'off'
@@ -84,7 +86,14 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
         </div>
       </header>
 
-      <main className="main">{children}</main>
+      <main className="main">
+        {!online && (
+          <p className="notice offline-notice" role="status">
+            You’re offline. Changes need a connection; Quick scan photos are kept and recognised once you’re back online.
+          </p>
+        )}
+        {children}
+      </main>
       <Moments />
       <Runner paused={route === 'scan'} />
       <Peek paused={route === 'scan'} />

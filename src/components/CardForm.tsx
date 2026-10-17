@@ -28,6 +28,7 @@ import { useSchemaV2 } from '../hooks/useSchemaV2'
 import { useTransactionsEnabled } from '../hooks/useTransactionsEnabled'
 import { LinkPicker } from './LinkPicker'
 import { MAX_QTY, initialState, today, validate, type FormState } from '../lib/cardForm'
+import { errorText } from '../lib/errors'
 
 interface Props {
   /** Bestaande regel, of null voor een nieuwe. */
@@ -188,7 +189,7 @@ export function CardForm({
         void celebrateAdded([created])
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Saving failed.')
+      setError(errorText(err, 'Saving failed.'))
       setBusy(false)
     }
   }
@@ -204,7 +205,7 @@ export function CardForm({
       await deleteCard(card.id)
       onDeleted(card.id)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Deleting failed.')
+      setError(errorText(err, 'Deleting failed.'))
       setBusy(false)
     }
   }

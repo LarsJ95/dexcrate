@@ -13,6 +13,7 @@ import { PACKS, canAfford, drawPack, hasCrate, listCrateCards, openCratePack, sy
 import { burstFrom } from '../lib/fx'
 import { buzz } from '../lib/haptics'
 import { useMotion } from '../lib/motion'
+import { errorText } from '../lib/errors'
 
 type Sort = 'newest' | 'rarity' | 'name'
 type View = 'cards' | 'overview'
@@ -130,7 +131,7 @@ export function CratePage(): JSX.Element {
   const reload = useCallback((): void => {
     loadCrate()
       .then(apply)
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Loading the Crate failed.'))
+      .catch((err: unknown) => setError(errorText(err, 'Loading the Crate failed.')))
   }, [apply])
 
   useEffect(() => {
@@ -141,7 +142,7 @@ export function CratePage(): JSX.Element {
         if (!cancelled) apply(d)
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Loading the Crate failed.')
+        if (!cancelled) setError(errorText(err, 'Loading the Crate failed.'))
       })
     return () => {
       cancelled = true
@@ -159,7 +160,7 @@ export function CratePage(): JSX.Element {
       setFreePack(result.freePack)
       setPulls(drawn)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Opening the pack failed.')
+      setError(errorText(err, 'Opening the pack failed.'))
     } finally {
       setBusy(false)
     }
@@ -175,7 +176,7 @@ export function CratePage(): JSX.Element {
       setCards((list) => list?.map((c) => (c.tcgdexId === card.tcgdexId ? { ...c, quantity: 1 } : c)) ?? null)
       setOpened((o) => (o?.tcgdexId === card.tcgdexId ? { ...o, quantity: 1 } : o))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Trading in failed.')
+      setError(errorText(err, 'Trading in failed.'))
     } finally {
       setBusy(false)
     }
@@ -191,7 +192,7 @@ export function CratePage(): JSX.Element {
       setPoints(r.points)
       buzz([20])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Trading in failed.')
+      setError(errorText(err, 'Trading in failed.'))
     } finally {
       // Altijd opnieuw laden: bij een fout halverwege klopt de lijst dan met de database.
       setBusy(false)

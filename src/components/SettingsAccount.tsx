@@ -3,6 +3,7 @@ import { resetAccount } from '../lib/accountReset'
 import { checkForUpdate } from '../lib/appUpdate'
 import { supabase } from '../lib/supabase'
 import { Section } from './SettingsControls'
+import { OFFLINE_TEXT, errorText, isNetworkError } from '../lib/errors'
 
 // --- Account en gegevens ---
 
@@ -60,7 +61,7 @@ export function AccountSection(): JSX.Element {
       setPw({ next: '', again: '' })
       setPwState({ ok: true, text: 'Password changed.' })
     } catch (err) {
-      setPwState({ ok: false, text: err instanceof Error ? `Changing the password failed: ${err.message}` : 'Changing the password failed.' })
+      setPwState({ ok: false, text: isNetworkError(err) ? OFFLINE_TEXT : err instanceof Error ? `Changing the password failed: ${err.message}` : 'Changing the password failed.' })
     } finally {
       setPwBusy(false)
     }
@@ -77,7 +78,7 @@ export function AccountSection(): JSX.Element {
       const r = await checkForUpdate()
       setUpdate(r === 'updating' ? 'A new version is loading…' : r === 'latest' ? 'You have the latest version.' : 'Updates are not available here.')
     } catch (err) {
-      setUpdate(err instanceof Error ? `Checking failed: ${err.message}` : 'Checking failed.')
+      setUpdate(isNetworkError(err) ? OFFLINE_TEXT : err instanceof Error ? `Checking failed: ${err.message}` : 'Checking failed.')
     }
   }
 
@@ -193,7 +194,7 @@ export function ResetSection(): JSX.Element {
         window.location.reload()
       }, 2000)
     } catch (err) {
-      setState({ ok: false, text: err instanceof Error ? err.message : 'Resetting failed. Nothing was deleted.' })
+      setState({ ok: false, text: errorText(err, 'Resetting failed. Nothing was deleted.') })
     } finally {
       setBusy(false)
     }

@@ -36,6 +36,7 @@ import {
 import { hasWishlistLists, listWishlistLists, updateWishlistList, type WishlistList } from '../lib/wishlistLists'
 import { Loading } from '../components/Loading'
 import { closeKeyboardOnEnter } from '../lib/keyboard'
+import { errorText } from '../lib/errors'
 
 const PRIORITY: Record<1 | 2 | 3, string> = { 1: 'High priority', 2: '', 3: 'Low priority' }
 
@@ -103,7 +104,7 @@ export function WishlistPage(): JSX.Element {
         setCards(c)
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Loading the wishlist failed.')
+        if (!cancelled) setError(errorText(err, 'Loading the wishlist failed.'))
       })
     return () => {
       cancelled = true
@@ -118,7 +119,7 @@ export function WishlistPage(): JSX.Element {
         if (!cancelled) setLists(l)
       })
       .catch((err: unknown) => {
-        if (!cancelled) setListNotice(err instanceof Error ? err.message : 'Loading your lists failed.')
+        if (!cancelled) setListNotice(errorText(err, 'Loading your lists failed.'))
       })
     return () => {
       cancelled = true
@@ -147,7 +148,7 @@ export function WishlistPage(): JSX.Element {
       const saved = await updateWishlistList(activeList.id, { filters })
       setLists((l) => l.map((x) => (x.id === saved.id ? saved : x)))
     } catch (err) {
-      setListNotice(err instanceof Error ? err.message : 'Saving the list failed.')
+      setListNotice(errorText(err, 'Saving the list failed.'))
     } finally {
       setListBusy(false)
     }

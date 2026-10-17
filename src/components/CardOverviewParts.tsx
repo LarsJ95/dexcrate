@@ -8,6 +8,7 @@ import { getSet, type Lang } from '../lib/tcgdex'
 import { regionOf } from '../lib/trainer'
 import { VARIANT_LABELS, type Card, type Variant } from '../lib/types'
 import { EvolutionRow } from './EvolutionRow'
+import { errorText } from '../lib/errors'
 
 const loadPaths = (key: string): Promise<number[][]> => getEvolutionPaths(Number(key))
 const loadSetTotal = async (key: string): Promise<number | null> => {
@@ -78,7 +79,7 @@ export function VariantQuestion({ card, options, onChanged }: { card: Card; opti
     try {
       onChanged(await updateCard(card.id, { variant }))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Saving failed.')
+      setError(errorText(err, 'Saving failed.'))
     } finally {
       setBusy(false)
     }

@@ -2,6 +2,7 @@ import { useRef, useState, type ChangeEvent, type JSX } from 'react'
 import { compareTables, parseBackup, toCsv, type Backup, type Row } from '../lib/backup'
 import { createBackup, downloadFile, fetchAllTables, restoreBackup } from '../lib/backupDb'
 import { today } from '../lib/money'
+import { errorText } from '../lib/errors'
 
 const CARD_COLUMNS = [
   'id',
@@ -68,7 +69,7 @@ export function BackupPage(): JSX.Element {
     try {
       setMessage({ ok: true, text: await action() })
     } catch (err) {
-      setMessage({ ok: false, text: err instanceof Error ? err.message : 'Something went wrong.' })
+      setMessage({ ok: false, text: errorText(err, 'Something went wrong.') })
     } finally {
       setBusy(false)
       setProgress(null)

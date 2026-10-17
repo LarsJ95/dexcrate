@@ -1,3 +1,4 @@
+import { errorText } from '../lib/errors'
 import { useState, type FormEvent, type JSX } from 'react'
 import { useCardInfo } from '../hooks/useCardInfo'
 import { useCardPrice } from '../hooks/useCardPrice'
@@ -119,7 +120,7 @@ export function WishlistDialog({ item, initial, onClose, onSaved, onDeleted }: P
         showMoment({ kind: 'gotcha', name: added.name })
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Saving failed.')
+      setError(errorText(err, 'Saving failed.'))
       setBusy(false)
     }
   }
@@ -135,7 +136,7 @@ export function WishlistDialog({ item, initial, onClose, onSaved, onDeleted }: P
       await deleteWishlistItem(item.id)
       onDeleted?.(item.id)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Removing failed.')
+      setError(errorText(err, 'Removing failed.'))
       setBusy(false)
     }
   }

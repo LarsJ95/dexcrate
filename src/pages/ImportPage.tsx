@@ -5,6 +5,7 @@ import { parseWorkbook } from '../lib/excel'
 import { resolveTcgdexIds } from '../lib/match'
 import { computeStats, formatEur } from '../lib/stats'
 import type { CardInput } from '../lib/types'
+import { errorText } from '../lib/errors'
 
 interface Preview {
   cards: CardInput[]
@@ -32,7 +33,7 @@ export function ImportPage(): JSX.Element {
         if (!cancelled) setExisting(n)
       })
       .catch((err: unknown) => {
-        if (!cancelled) setStatus({ kind: 'error', message: err instanceof Error ? err.message : String(err) })
+        if (!cancelled) setStatus({ kind: 'error', message: errorText(err, String(err)) })
       })
     return () => {
       cancelled = true
@@ -56,7 +57,7 @@ export function ImportPage(): JSX.Element {
       setStatus({ kind: 'idle' })
     } catch (err) {
       console.error(err)
-      setStatus({ kind: 'error', message: err instanceof Error ? err.message : 'Reading failed.' })
+      setStatus({ kind: 'error', message: errorText(err, 'Reading failed.') })
     }
   }
 
@@ -66,7 +67,7 @@ export function ImportPage(): JSX.Element {
     try {
       await insertCards(preview.cards)
     } catch (err) {
-      setStatus({ kind: 'error', message: err instanceof Error ? err.message : 'Saving failed.' })
+      setStatus({ kind: 'error', message: errorText(err, 'Saving failed.') })
       return
     }
     setPreview(null)

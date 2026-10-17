@@ -4,6 +4,7 @@ import type { Lang } from '../lib/tcgdex'
 import { LANGUAGE_LABELS, VARIANT_LABELS, type CardLanguage, type Variant } from '../lib/types'
 import { saveGoal } from '../lib/wishlist'
 import { Sheet } from './Sheet'
+import { errorText } from '../lib/errors'
 
 interface Props {
   lang: Lang
@@ -40,7 +41,7 @@ export function GoalSheet({ lang, setId, setName, goal, onClose, onSaved }: Prop
       await saveGoal(lang, setId, next)
       onSaved(next)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Saving the goal failed.')
+      setError(errorText(err, 'Saving the goal failed.'))
       setBusy(false)
     }
   }

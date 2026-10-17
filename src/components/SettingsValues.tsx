@@ -5,6 +5,7 @@ import type { NewCardDefaults, UserSettings } from '../lib/valuation'
 import { hasValuations, loadSettings, saveSettings } from '../lib/valuationDb'
 import { Loading } from './Loading'
 import { Section } from './SettingsControls'
+import { errorText } from '../lib/errors'
 
 // --- Instellingen in je account (Supabase), automatisch bewaard ---
 
@@ -57,7 +58,7 @@ export function AccountSettings(): JSX.Element {
         if (!cancelled) setForm(toForm(s))
       })
       .catch((err: unknown) => {
-        if (!cancelled) setStatus({ kind: 'error', text: err instanceof Error ? err.message : 'Loading settings failed.' })
+        if (!cancelled) setStatus({ kind: 'error', text: errorText(err, 'Loading settings failed.') })
       })
     return () => {
       cancelled = true
@@ -73,7 +74,7 @@ export function AccountSettings(): JSX.Element {
       setStatus({ kind: 'saving', text: 'Saving…' })
       saveSettings(result.settings)
         .then(() => setStatus({ kind: 'saved', text: 'Saved' }))
-        .catch((err: unknown) => setStatus({ kind: 'error', text: err instanceof Error ? err.message : 'Saving failed.' }))
+        .catch((err: unknown) => setStatus({ kind: 'error', text: errorText(err, 'Saving failed.') }))
     }, SAVE_DELAY_MS)
     return () => window.clearTimeout(timer)
   }, [form, edited])

@@ -6,6 +6,7 @@ import { TX_STATUS_LABELS, type Transaction, type TxStatus } from '../lib/transa
 import { listTransactions, recordSale } from '../lib/transactions'
 import type { Card } from '../lib/types'
 import { Sheet } from './Sheet'
+import { errorText } from '../lib/errors'
 
 interface Props {
   /** Kaartregels die je verkoopt (alleen in bezit). */
@@ -145,7 +146,7 @@ export function SaleDialog({ cards, onClose, onSaved }: Props): JSX.Element {
       })
       onSaved()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Saving the sale failed.')
+      setError(errorText(err, 'Saving the sale failed.'))
       setBusy(false)
     }
   }

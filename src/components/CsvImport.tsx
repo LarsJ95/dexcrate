@@ -7,6 +7,7 @@ import { createBatch, deleteBatch, fileHash, listBatches, undoBatch, type Import
 import { findCandidates, nameSimilarity, type Candidate } from '../lib/match'
 import { findExact, lookupLang, stripLangTag } from '../lib/tcgdex'
 import type { CardInput, LinkStatus } from '../lib/types'
+import { errorText } from '../lib/errors'
 
 const MAX_BYTES = 5 * 1024 * 1024
 const MAX_ROWS = 2000
@@ -97,7 +98,7 @@ export function CsvImport(): JSX.Element {
       setPrevious(batches.filter((b) => b.file_hash === hash && !b.reverted_at))
     } catch (err) {
       setFile(null)
-      setMessage({ ok: false, text: err instanceof Error ? err.message : 'Reading the file failed.' })
+      setMessage({ ok: false, text: errorText(err, 'Reading the file failed.') })
     }
   }
 
@@ -145,7 +146,7 @@ export function CsvImport(): JSX.Element {
       refreshBatches()
     } catch (err) {
       if (batch) await deleteBatch(batch.id)
-      setMessage({ ok: false, text: err instanceof Error ? err.message : 'Import failed.' })
+      setMessage({ ok: false, text: errorText(err, 'Import failed.') })
     } finally {
       setBusy(false)
     }
@@ -169,7 +170,7 @@ export function CsvImport(): JSX.Element {
       })
       refreshBatches()
     } catch (err) {
-      setMessage({ ok: false, text: err instanceof Error ? err.message : 'Undo failed.' })
+      setMessage({ ok: false, text: errorText(err, 'Undo failed.') })
     } finally {
       setBusy(false)
     }

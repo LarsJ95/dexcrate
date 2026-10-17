@@ -2,6 +2,7 @@ import { useState, type FormEvent, type JSX } from 'react'
 import { describeWishFilters, type WishFilters } from '../lib/wishFilters'
 import { MAX_LIST_NAME, addWishlistList, deleteWishlistList, listNameError, updateWishlistList, type WishlistList } from '../lib/wishlistLists'
 import { Sheet } from './Sheet'
+import { errorText } from '../lib/errors'
 
 interface Props {
   /** Bestaande lijst (hernoemen/verwijderen) of null (nieuwe lijst met de huidige filters). */
@@ -33,7 +34,7 @@ export function WishlistListSheet({ list, filters, existing, onClose, onSaved, o
     try {
       onSaved(list ? await updateWishlistList(list.id, { name }) : await addWishlistList(name, filters, existing.length))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Saving the list failed.')
+      setError(errorText(err, 'Saving the list failed.'))
       setBusy(false)
     }
   }
@@ -50,7 +51,7 @@ export function WishlistListSheet({ list, filters, existing, onClose, onSaved, o
       await deleteWishlistList(list.id)
       onDeleted(list.id)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Removing the list failed.')
+      setError(errorText(err, 'Removing the list failed.'))
       setBusy(false)
     }
   }

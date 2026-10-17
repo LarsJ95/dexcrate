@@ -14,6 +14,7 @@ import {
 } from '../lib/transactions'
 import type { Card } from '../lib/types'
 import { Sheet } from './Sheet'
+import { errorText } from '../lib/errors'
 
 interface Props {
   tx: Transaction
@@ -80,7 +81,7 @@ export function TransactionDialog({ tx, cards, purchases, onClose, onChanged }: 
     try {
       await action()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Saving failed.')
+      setError(errorText(err, 'Saving failed.'))
     } finally {
       setBusy(false)
     }

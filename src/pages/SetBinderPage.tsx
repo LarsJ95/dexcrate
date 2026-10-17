@@ -21,6 +21,7 @@ import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import { getCardInfo, getCardPrice, getSet, isLang, setOfKey, type SetCard, type SetSummary } from '../lib/tcgdex'
 import { Loading } from '../components/Loading'
 import { COMPLETE_KEY, MAX_NEW, MILESTONE_KEY, PAGE_SIZE_KEY, SEEN_KEY, SPARKLE_COLORS, VARIANT_SHORT, readPageSize, readSeen, remember, stateKey, type Cost, type PageSize } from '../lib/setBinder'
+import { errorText } from '../lib/errors'
 
 interface Props {
   /** "<taal>/<set-id>" uit de URL. */
@@ -91,7 +92,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
         setData({ summary: set.summary, cards: set.cards, owned, copies })
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Loading failed.')
+        if (!cancelled) setError(errorText(err, 'Loading failed.'))
       })
     return () => {
       cancelled = true

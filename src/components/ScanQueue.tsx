@@ -9,6 +9,7 @@ import { CONDITION_LABELS, EMPTY_CARD, LANGUAGE_LABELS, VARIANT_LABELS, type Car
 import { CardFace } from './CardFace'
 import { CatalogKeyPicture } from './CatalogCardPicture'
 import { IconClose } from './Icons'
+import { errorText } from '../lib/errors'
 
 const STATUS_TEXT: Record<QueueItem['status'], string> = {
   waiting: 'Waiting…',
@@ -149,7 +150,7 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
       onAdded(rows)
       void celebrateAdded(rows)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Adding failed.')
+      setError(errorText(err, 'Adding failed.'))
     } finally {
       setBusy(false)
     }

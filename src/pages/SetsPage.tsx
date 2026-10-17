@@ -8,6 +8,7 @@ import { digitalSetIds, getSetList, LANGS, resolveSetId, setOfKey, type Lang, ty
 import type { Card } from '../lib/types'
 import { Loading } from '../components/Loading'
 import { closeKeyboardOnEnter } from '../lib/keyboard'
+import { errorText } from '../lib/errors'
 
 type SortKey = 'newest' | 'oldest' | 'progress' | 'name'
 type Scope = 'all' | 'owned' | 'almost' | 'complete'
@@ -70,7 +71,7 @@ export function SetsPage(): JSX.Element {
       })
       .catch((err: unknown) => {
         // Sets blijven bekijkbaar; alleen de voortgang ontbreekt.
-        if (!cancelled) setCardsError(err instanceof Error ? err.message : 'Loading your cards failed.')
+        if (!cancelled) setCardsError(errorText(err, 'Loading your cards failed.'))
       })
     return () => {
       cancelled = true
@@ -84,7 +85,7 @@ export function SetsPage(): JSX.Element {
         if (!cancelled) setSets({ lang, list, digital })
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Loading sets failed.')
+        if (!cancelled) setError(errorText(err, 'Loading sets failed.'))
       })
     return () => {
       cancelled = true

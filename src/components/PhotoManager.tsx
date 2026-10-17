@@ -7,6 +7,7 @@ import { CardZoom } from './CardZoom'
 import { IconCamera, IconUpload } from './Icons'
 import { PhotoLarge, PhotoThumb } from './PhotoThumb'
 import { UploadQueueList } from './UploadQueueList'
+import { errorText } from '../lib/errors'
 
 interface Props {
   card: Card
@@ -61,7 +62,7 @@ export function PhotoManager({ card, onChange }: Props): JSX.Element {
       const photos = await action()
       onChange({ ...latest.current, photos })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Updating the photo failed.')
+      setError(errorText(err, 'Updating the photo failed.'))
     } finally {
       setBusyId(null)
     }
