@@ -1,26 +1,28 @@
-import { useEffect, useState, type JSX } from 'react'
+import { lazy, Suspense, useEffect, useState, type JSX } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { Login } from './components/Login'
 import { Shell } from './components/Shell'
 import { ROUTES } from './lib/routes'
 import { useHashRoute } from './hooks/useHashRoute'
 import { useTheme } from './hooks/useTheme'
-import { BackupPage } from './pages/BackupPage'
-import { CollectionPage } from './pages/CollectionPage'
+// Startpagina direct mee; de rest pas laden als je de pagina opent.
 import { DashboardPage } from './pages/DashboardPage'
-import { ImportPage } from './pages/ImportPage'
-import { MorePage } from './pages/MorePage'
-import { PhotosPage } from './pages/PhotosPage'
-import { SettingsPage } from './pages/SettingsPage'
-import { TransactionsPage } from './pages/TransactionsPage'
-import { WishlistPage } from './pages/WishlistPage'
-import { CratePage } from './pages/CratePage'
-import { ScanPage } from './pages/ScanPage'
-import { SetBinderPage } from './pages/SetBinderPage'
-import { SetsPage } from './pages/SetsPage'
 import { supabase } from './lib/supabase'
 import './App.css'
 import { Loading } from './components/Loading'
+
+const BackupPage = lazy(() => import('./pages/BackupPage').then((m) => ({ default: m.BackupPage })))
+const CollectionPage = lazy(() => import('./pages/CollectionPage').then((m) => ({ default: m.CollectionPage })))
+const ImportPage = lazy(() => import('./pages/ImportPage').then((m) => ({ default: m.ImportPage })))
+const MorePage = lazy(() => import('./pages/MorePage').then((m) => ({ default: m.MorePage })))
+const PhotosPage = lazy(() => import('./pages/PhotosPage').then((m) => ({ default: m.PhotosPage })))
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })))
+const TransactionsPage = lazy(() => import('./pages/TransactionsPage').then((m) => ({ default: m.TransactionsPage })))
+const WishlistPage = lazy(() => import('./pages/WishlistPage').then((m) => ({ default: m.WishlistPage })))
+const CratePage = lazy(() => import('./pages/CratePage').then((m) => ({ default: m.CratePage })))
+const ScanPage = lazy(() => import('./pages/ScanPage').then((m) => ({ default: m.ScanPage })))
+const SetBinderPage = lazy(() => import('./pages/SetBinderPage').then((m) => ({ default: m.SetBinderPage })))
+const SetsPage = lazy(() => import('./pages/SetsPage').then((m) => ({ default: m.SetsPage })))
 
 function App(): JSX.Element {
   const [session, setSession] = useState<Session | null>(null)
@@ -55,18 +57,20 @@ function App(): JSX.Element {
 
   return (
     <Shell route={route} email={session.user.email ?? null} theme={theme} onToggleTheme={toggle} onSignOut={() => void signOut()}>
-      {route === 'overview' && <DashboardPage email={session.user.email ?? null} />}
-      {route === 'collection' && <CollectionPage />}
-      {route === 'scan' && <ScanPage />}
-      {route === 'sets' && (param ? <SetBinderPage key={param} param={param} /> : <SetsPage />)}
-      {route === 'wishlist' && <WishlistPage />}
-      {route === 'crate' && <CratePage />}
-      {route === 'transactions' && <TransactionsPage />}
-      {route === 'photos' && <PhotosPage />}
-      {route === 'import' && <ImportPage />}
-      {route === 'backup' && <BackupPage />}
-      {route === 'settings' && <SettingsPage />}
-      {route === 'more' && <MorePage />}
+      <Suspense fallback={<Loading />}>
+        {route === 'overview' && <DashboardPage email={session.user.email ?? null} />}
+        {route === 'collection' && <CollectionPage />}
+        {route === 'scan' && <ScanPage />}
+        {route === 'sets' && (param ? <SetBinderPage key={param} param={param} /> : <SetsPage />)}
+        {route === 'wishlist' && <WishlistPage />}
+        {route === 'crate' && <CratePage />}
+        {route === 'transactions' && <TransactionsPage />}
+        {route === 'photos' && <PhotosPage />}
+        {route === 'import' && <ImportPage />}
+        {route === 'backup' && <BackupPage />}
+        {route === 'settings' && <SettingsPage />}
+        {route === 'more' && <MorePage />}
+      </Suspense>
     </Shell>
   )
 }
