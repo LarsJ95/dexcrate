@@ -354,6 +354,46 @@ export function writeCache(prefix: string, key: string, v: unknown): void {
   }
 }
 
+const GRAPHQL = 'https://api.tcgdex.net/v2/graphql'
+const RARITY_PREFIX = 'tcgdex:set-rarity:v1:'
+const RARITY_PAGE = 100 // TCGdex geeft maximaal 100 kaarten per pagina
+
+/** Zeldzaamheid van alle kaarten van een (Engelse) set: kaart-id → zeldzaamheid. Een paar verzoeken i.p.v. één per kaart. */
+const fetchSetRarities = memo(async (setId: string): Promise<Record<string, string | null>> => {
+  const cached = readCache<Record<string, string | null>>(RARITY_PREFIX, INFO_TTL_MS, setId)
+  if (cached) return cached
+  const prefix = `${setId}-`
+  const out: Record<string, string | null> = {}
+  for (let page = 1; page <= 20; page++) {
+    const res = await fetch(GRAPHQL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: 'query ($id: ID, $page: Int!) { cards(filters: { id: $id }, pagination: { page: $page, count: 100 }) { id rarity } }',
+        variables: { id: prefix, page },
+      }),
+    })
+    if (!res.ok) throw new Error(`TCGdex GraphQL ${res.status}`)
+    const json: unknown = await res.json()
+    const list = isRecord(json) && isRecord(json.data) ? json.data.cards : null
+    if (!Array.isArray(list)) throw new Error('TCGdex GraphQL: unexpected answer')
+    // Het id-filter zoekt op tekst: alleen kaarten die echt met "<set-id>-" beginnen.
+    for (const c of list) if (isRecord(c) && typeof c.id === 'string' && c.id.startsWith(prefix)) out[c.id] = optStr(c.rarity)
+    if (list.length < RARITY_PAGE) break
+  }
+  writeCache(RARITY_PREFIX, setId, out)
+  return out
+})
+
+/**
+ * Zeldzaamheid per kaart-id voor een hele set in één keer (7 dagen bewaard). Alleen Engels: de GraphQL-API van
+ * TCGdex kent geen andere talen; dan null en haalt de aanroeper de kaartinfo per kaart op.
+ */
+export async function getSetRarities(lang: Lang, setId: string): Promise<ReadonlyMap<string, string | null> | null> {
+  if (lang !== 'en') return null
+  return new Map(Object.entries(await fetchSetRarities(setId)))
+}
+
 const ABBR_PREFIX = 'tcgdex:abbr:v1:'
 const ABBR_TTL_MS = 30 * 24 * 60 * 60 * 1000 // afkortingen veranderen niet
 

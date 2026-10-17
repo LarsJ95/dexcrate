@@ -16,14 +16,12 @@ import { GoalSheet } from '../components/GoalSheet'
 import { IconArrowLeft } from '../components/Icons'
 import { SetCardSheet, type SheetNav } from '../components/SetCardSheet'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
+import { useSetRarities } from '../hooks/useSetRarities'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import { getCardInfo, getCardPrice, getSet, isLang, setOfKey, type SetCard, type SetSummary } from '../lib/tcgdex'
 import { Loading } from '../components/Loading'
 import { COMPLETE_KEY, MAX_NEW, MILESTONE_KEY, PAGE_SIZE_KEY, SEEN_KEY, SPARKLE_COLORS, VARIANT_SHORT, readPageSize, readSeen, remember, stateKey, type Cost, type PageSize } from '../lib/setBinder'
 import { errorText } from '../lib/errors'
-import { useStoredChoice } from '../hooks/useStoredChoice'
-
-const SET_SORTS = Object.keys(SET_SORT_LABELS) as SetSort[]
 
 interface Props {
   /** "<taal>/<set-id>" uit de URL. */
@@ -49,7 +47,8 @@ export function SetBinderPage({ param }: Props): JSX.Element {
   const [pageSize, setPageSize] = useState<PageSize>(readPageSize)
   const [cost, setCost] = useState<Cost | null>(null)
   const [openCard, setOpenCard] = useState<SetCard | null>(null)
-  const [sort, setSort] = useStoredChoice<SetSort>('dexcrate:binder-sort', SET_SORTS, 'number')
+  // Elke set begint in setvolgorde; een andere sortering geldt alleen voor deze set (niet onthouden).
+  const [sort, setSort] = useState<SetSort>('number')
   // Marktwaarde per kaart-id, alleen geladen bij sorteren op waarde.
   const [values, setValues] = useState<{ prices: ReadonlyMap<string, number | null>; done: number; total: number } | null>(null)
   const cancelCost = useRef(false)
@@ -179,12 +178,18 @@ export function SetBinderPage({ param }: Props): JSX.Element {
 
   // Sorteren op zeldzaamheid: kaartinfo (7 dagen gecachet).
   const cardKeys = useMemo(() => (data && isLang(lang) ? data.cards.map((c) => `${lang}/${c.id}`) : []), [data, lang])
-  const infos = useCatalogInfos(cardKeys, sort === 'rarity')
+  const setRarities = useSetRarities(lang, data?.summary.id ?? null, sort === 'rarity')
+  const infos = useCatalogInfos(cardKeys, sort === 'rarity' && setRarities === null)
+  const raritiesReady = setRarities ? true : setRarities === null ? infos.size >= cardKeys.length : false
   const ranks = useMemo(() => {
     const map = new Map<string, number>()
+    if (setRarities) {
+      for (const [id, rarity] of setRarities) if (rarity) map.set(id, rarityRule(rarity).rank)
+      return map
+    }
     for (const [key, info] of infos) if (info) map.set(key.slice(key.indexOf('/') + 1), rarityRule(info.rarity).rank)
     return map
-  }, [infos])
+  }, [infos, setRarities])
 
   // Lopende kostenberekening stoppen bij verlaten van de pagina.
   useEffect(
@@ -254,9 +259,9 @@ export function SetBinderPage({ param }: Props): JSX.Element {
           ? data.cards.filter((c) => statesByCard.has(c.id) && !complete(c.id))
           : data.cards
     // Op waarde of zeldzaamheid pas sorteren als alles binnen is; anders springen kaarten tijdens het laden.
-    const ready = isValueSort(sort) ? values !== null && values.done >= values.total : sort === 'rarity' ? infos.size >= data.cards.length : true
+    const ready = isValueSort(sort) ? values !== null && values.done >= values.total : sort === 'rarity' ? raritiesReady : true
     return sortSetCards(shown, ready ? sort : 'number', { complete, value: values?.prices ?? new Map(), rank: ranks })
-  }, [data, show, statesByCard, sort, values, ranks, infos])
+  }, [data, show, statesByCard, sort, values, ranks, raritiesReady])
 
   // Altijd binderpagina's van 6 of 9, ook gesorteerd (dan in de gekozen volgorde).
   const pages = useMemo(() => {
@@ -436,9 +441,9 @@ export function SetBinderPage({ param }: Props): JSX.Element {
           Loading prices… {values.done} of {values.total}
         </p>
       )}
-      {sort === 'rarity' && infos.size < cardKeys.length && (
+      {sort === 'rarity' && !raritiesReady && (
         <p className="muted small" aria-live="polite">
-          Loading rarities… {infos.size} of {cardKeys.length}
+          Loading rarities…{setRarities === null ? ` ${infos.size} of ${cardKeys.length}` : ''}
         </p>
       )}
 
