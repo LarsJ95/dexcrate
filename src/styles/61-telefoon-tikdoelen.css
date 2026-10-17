@@ -51,3 +51,21 @@
     align-items: center;
   }
 }
+
+/* Telefoon: knoppenrijen scrollen horizontaal en knippen alles wat eronder uitsteekt af. De pokébal-stip
+   van de actieve knop staat daarom binnen de knop, onderaan; de tekst schuift iets omhoog. */
+@media (max-width: 480px) {
+  .segmented > :is(button, [role='tab']) {
+    padding-top: 0;
+    padding-bottom: 12px;
+  }
+
+  .segmented button[aria-pressed='true']::after,
+  .segmented button[aria-checked='true']::after,
+  .segmented [role='tab'][aria-selected='true']::after {
+    bottom: 2px;
+    width: 10px;
+    height: 10px;
+    margin-left: -5px;
+  }
+}
