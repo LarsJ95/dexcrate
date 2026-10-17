@@ -40,7 +40,7 @@ export default defineConfig({
     VitePWA({
       // 'prompt': de app bepaalt zelf wanneer een nieuwe versie laadt (src/lib/appUpdate.ts).
       registerType: 'prompt',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon.png'],
       manifest: {
         name: 'Dexcrate',
         short_name: 'Dexcrate',
