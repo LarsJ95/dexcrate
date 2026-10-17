@@ -9,8 +9,12 @@ export default defineConfig({
   base: './',
   // Bouwmoment, als versie-aanduiding in Settings.
   define: { __APP_BUILD__: JSON.stringify(new Date().toISOString()) },
-  // Getransformeerde modules bewaren tussen testruns (sneller opstarten).
-  test: { fsModuleCache: true },
+  test: {
+    // Getransformeerde modules bewaren tussen testruns (sneller opstarten).
+    fsModuleCache: true,
+    // Tests zoals in CI: zonder Supabase-sleutels, ook als .env.local lokaal bestaat.
+    env: { VITE_SUPABASE_URL: '', VITE_SUPABASE_PUBLISHABLE_KEY: '' },
+  },
   plugins: [
     react(),
     VitePWA({
