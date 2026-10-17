@@ -23,8 +23,9 @@ const data: SortData = {
 const ids = (list: { id: string }[]): string[] => list.map((c) => c.id)
 
 describe('sorteren binnen een set', () => {
-  it('nummer = setvolgorde', () => {
+  it('nummer = setvolgorde; aflopend andersom', () => {
     expect(ids(sortSetCards(cards, 'number', data))).toEqual(['s-1', 's-2', 's-3', 's-4'])
+    expect(ids(sortSetCards(cards, 'numberDesc', data))).toEqual(['s-4', 's-3', 's-2', 's-1'])
   })
   it('waarde en zeldzaamheid aflopend, onbekend achteraan, gelijk in setvolgorde', () => {
     expect(ids(sortSetCards(cards, 'value', data))).toEqual(['s-3', 's-1', 's-2', 's-4'])

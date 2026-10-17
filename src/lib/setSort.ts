@@ -1,8 +1,9 @@
 /** Sorteren van de kaarten op een setpagina. 'number' = binder-volgorde (zoals de set is genummerd). */
-export type SetSort = 'number' | 'value' | 'valueAsc' | 'rarity' | 'name' | 'owned' | 'missing'
+export type SetSort = 'number' | 'numberDesc' | 'value' | 'valueAsc' | 'rarity' | 'name' | 'owned' | 'missing'
 
 export const SET_SORT_LABELS: Record<SetSort, string> = {
-  number: 'Number',
+  number: 'Number: low to high',
+  numberDesc: 'Number: high to low',
   value: 'Value: high to low',
   valueAsc: 'Value: low to high',
   rarity: 'Rarity: rarest first',
@@ -32,6 +33,7 @@ export function sortSetCards<T extends { id: string; name: string }>(cards: read
   const desc = (x: number | null | undefined, y: number | null | undefined): number => (y ?? -Infinity) - (x ?? -Infinity)
   const asc = (x: number | null | undefined, y: number | null | undefined): number => (x ?? Infinity) - (y ?? Infinity)
   const compare: Record<Exclude<SetSort, 'number'>, (a: T, b: T) => number> = {
+    numberDesc: (a, b) => byOrder(b, a),
     value: (a, b) => desc(data.value.get(a.id), data.value.get(b.id)),
     valueAsc: (a, b) => asc(data.value.get(a.id), data.value.get(b.id)),
     rarity: (a, b) => desc(data.rank.get(a.id), data.rank.get(b.id)),
