@@ -4,7 +4,8 @@
 // Scanlimiet per gebruiker via STAP15 (scan_quota_take).
 import Anthropic from 'npm:@anthropic-ai/sdk@0.130.0'
 
-const ALLOWED_ORIGINS = ['https://larsj95.github.io', 'http://localhost:5173', 'http://localhost:4173']
+// dexcrate.com sinds 17-10-2026; het oude GitHub-adres blijft tot de verhuizing klaar is.
+const ALLOWED_ORIGINS = ['https://dexcrate.com', 'https://www.dexcrate.com', 'https://larsj95.github.io', 'http://localhost:5173', 'http://localhost:4173']
 const MAX_BASE64_CHARS = 4_000_000 // ~3 MB afbeelding; de app stuurt ±200 KB (kaart) tot ±1 MB (binderpagina)
 const MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const
 type MediaType = (typeof MEDIA_TYPES)[number]

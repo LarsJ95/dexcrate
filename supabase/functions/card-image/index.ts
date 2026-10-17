@@ -3,7 +3,8 @@
 // Laatste redmiddel voor kaartfoto's die TCGdex, Limitless en pokemontcg.io niet hebben.
 // PriceCharting stuurt geen CORS-headers mee, daarom loopt dit via de server. Geen secrets nodig.
 
-const ALLOWED_ORIGINS = ['https://larsj95.github.io', 'http://localhost:5173', 'http://localhost:4173']
+// dexcrate.com sinds 17-10-2026; het oude GitHub-adres blijft tot de verhuizing klaar is.
+const ALLOWED_ORIGINS = ['https://dexcrate.com', 'https://www.dexcrate.com', 'https://larsj95.github.io', 'http://localhost:5173', 'http://localhost:4173']
 const SEARCH = 'https://www.pricecharting.com/search-products?type=prices&q='
 const USER_AGENT = 'Mozilla/5.0 (compatible; Dexcrate card-image lookup)'
 const MAX_QUERY = 120
