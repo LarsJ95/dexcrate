@@ -4,7 +4,7 @@ import { foilStyleFor, type EnergyType } from '../lib/cardTraits'
 import { applyPageType } from '../lib/energy'
 import type { Mover } from '../lib/prices'
 import { formatEur } from '../lib/stats'
-import type { CardmarketPrice } from '../lib/tcgdex'
+import { cardLanguageOf, type CardmarketPrice } from '../lib/tcgdex'
 import { thumbPath, type Card } from '../lib/types'
 import { CardImage } from './CardImage'
 import { CardmarketLink } from './CardmarketLink'
@@ -127,7 +127,7 @@ export function Spotlight({
             </div>
           )}
         </dl>
-        {card.tcgdex_id && <CardmarketLink idProduct={price?.idProduct ?? card.cardmarket_id ?? null} searchText={`${card.name} ${info?.set.name ?? card.set_code ?? ''}`} button />}
+        {card.tcgdex_id && <CardmarketLink idProduct={price?.idProduct ?? card.cardmarket_id ?? null} searchText={`${card.name} ${info?.set.name ?? card.set_code ?? ''}`} language={cardLanguageOf(card.language, card.tcgdex_id)} button />}
       </div>
       <RunnersUp items={others} onOpenCard={onOpenCard} />
     </div>

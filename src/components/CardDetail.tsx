@@ -11,7 +11,7 @@ import { updateCard } from '../lib/db'
 import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
 import { speciesName } from '../lib/runner'
-import { setOfKey } from '../lib/tcgdex'
+import { cardLanguageOf, setOfKey } from '../lib/tcgdex'
 import {
   CONDITION_LABELS,
   LANGUAGE_LABELS,
@@ -318,7 +318,7 @@ export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props):
           Edit
         </button>
         {card.kind === 'card' && (
-          <CardmarketLink idProduct={price?.idProduct ?? null} searchText={[card.name, card.card_number].filter(Boolean).join(' ')} button />
+          <CardmarketLink idProduct={price?.idProduct ?? null} searchText={[card.name, card.card_number].filter(Boolean).join(' ')} language={cardLanguageOf(card.language, card.tcgdex_id)} button />
         )}
         <span className="spacer" />
         {card.status === 'collection' && (

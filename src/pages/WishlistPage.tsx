@@ -17,7 +17,7 @@ import { useCardPrice } from '../hooks/useCardPrice'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import { catalogActive, type CatalogHit } from '../lib/catalogSearch'
 import { listCards } from '../lib/db'
-import { PRINTED_SETS, isLang, lookupLang, type Lang, type SetCard } from '../lib/tcgdex'
+import { PRINTED_SETS, cardLanguageOf, isLang, lookupLang, type Lang, type SetCard } from '../lib/tcgdex'
 import { marketValue } from '../lib/prices'
 import { matchesWords } from '../lib/search'
 import { formatEur } from '../lib/stats'
@@ -54,7 +54,7 @@ function WishPrice({ item }: { item: WishlistItem }): JSX.Element | null {
 /** Cardmarket-knop naast een wens: productpagina als de kaart gekoppeld is, anders zoeken op naam en nummer. */
 function WishCardmarket({ item }: { item: WishlistItem }): JSX.Element {
   const price = useCardPrice(item.tcgdex_id)
-  return <CardmarketLink idProduct={price?.idProduct ?? null} searchText={[item.name, item.card_number].filter(Boolean).join(' ')} compact />
+  return <CardmarketLink idProduct={price?.idProduct ?? null} searchText={[item.name, item.card_number].filter(Boolean).join(' ')} language={cardLanguageOf(item.language, item.tcgdex_id)} compact />
 }
 
 /** Prijsveld → bedrag of null (leeg of ongeldig = geen filter). */

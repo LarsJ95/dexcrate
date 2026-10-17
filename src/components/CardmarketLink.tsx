@@ -4,6 +4,8 @@ import { cardmarketUrl } from '../lib/tcgdex'
 interface Props {
   idProduct: number | null
   searchText: string
+  /** Taal van de kaart (zie cardLanguageOf); alleen Engels of onbekend krijgt de Engelse taalfilter. */
+  language?: string | null
   /** Korte vorm ("Cardmarket") als knop, bv. in een lijstregel. */
   compact?: boolean
   /** Als gewone knop (actiebalk). */
@@ -11,12 +13,12 @@ interface Props {
 }
 
 /** Link naar de Cardmarket-productpagina, of een zoekopdracht als het product-id onbekend is. */
-export function CardmarketLink({ idProduct, searchText, compact = false, button = false }: Props): JSX.Element {
+export function CardmarketLink({ idProduct, searchText, language = null, compact = false, button = false }: Props): JSX.Element {
   const label = idProduct ? 'View on Cardmarket' : 'Search on Cardmarket'
   return (
     <a
       className={button ? 'external-link button-link' : compact ? 'external-link cm-button' : 'external-link'}
-      href={cardmarketUrl(idProduct, searchText)}
+      href={cardmarketUrl(idProduct, searchText, language)}
       target="_blank"
       rel="noopener noreferrer"
       aria-label={compact || button ? `${label} (opens in a new tab)` : undefined}

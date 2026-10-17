@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { normalizeChannel, parsePrice, parseQuantity, splitLanguage } from './excel'
 import {
+  cardLanguageOf,
   cardmarketUrl,
   findTcgplayerId,
   imageCandidates,
@@ -92,6 +93,21 @@ describe('parseCardmarket', () => {
     expect(cardmarketUrl(null, ' Mew ex 151 ')).toBe(
       `https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=Mew%20ex%20151&${filters}`,
     )
+    expect(cardmarketUrl(733746, 'Mew ex', 'en')).toBe(`https://www.cardmarket.com/en/Pokemon/Products?idProduct=733746&${filters}`)
+  })
+
+  it('cardmarketUrl: geen taalfilter bij niet-Engelse kaarten, overige filters blijven', () => {
+    expect(cardmarketUrl(733746, 'Mew ex', 'ja')).toBe(
+      'https://www.cardmarket.com/en/Pokemon/Products?idProduct=733746&sellerCountry=23&sellerType=0,1,2&sellerReputation=2&minCondition=3',
+    )
+    expect(cardmarketUrl(null, 'Pikachu', 'nl')).not.toContain('language=')
+  })
+
+  it('cardLanguageOf: eigen taalveld, anders uit de sleutel', () => {
+    expect(cardLanguageOf('nl', 'en/sv03.5-025')).toBe('nl')
+    expect(cardLanguageOf(null, 'ja/SV2a-025')).toBe('ja')
+    expect(cardLanguageOf(null, null)).toBeNull()
+    expect(cardLanguageOf(null, 'rommel')).toBeNull()
   })
 
   it('geen of andere valuta → null', () => {

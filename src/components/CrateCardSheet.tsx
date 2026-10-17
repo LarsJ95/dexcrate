@@ -3,7 +3,7 @@ import { foilStyleFor } from '../lib/cardTraits'
 import { tradeValue, type CrateCard } from '../lib/crate'
 import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
-import { getCardPrice, type CardmarketPrice } from '../lib/tcgdex'
+import { cardLanguageOf, getCardPrice, type CardmarketPrice } from '../lib/tcgdex'
 import { CardFace } from './CardFace'
 import { CardmarketLink } from './CardmarketLink'
 import { CardZoom } from './CardZoom'
@@ -108,7 +108,7 @@ export function CrateCardSheet({ card, busy, onTrade, onClose }: Props): JSX.Ele
             )}
           </dl>
           <div className="crate-sheet-actions">
-            <CardmarketLink idProduct={price?.idProduct ?? null} searchText={`${card.name} ${card.setName ?? ''}`} button />
+            <CardmarketLink idProduct={price?.idProduct ?? null} searchText={`${card.name} ${card.setName ?? ''}`} language={cardLanguageOf(null, card.tcgdexId)} button />
             {extra > 0 && (
               <button type="button" onClick={() => onTrade(card)} disabled={busy}>
                 Trade {extra} for {extra * tradeValue(card.rarity)} pts

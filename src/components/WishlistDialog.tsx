@@ -7,7 +7,7 @@ import { showMoment } from '../lib/moments'
 import { moneyText, parseMoney } from '../lib/money'
 import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
-import { getSet, lookupLang, type Lang } from '../lib/tcgdex'
+import { cardLanguageOf, getSet, lookupLang, type Lang } from '../lib/tcgdex'
 import { CONDITION_LABELS, LANGUAGE_LABELS, VARIANT_LABELS, type CardLanguage, type Condition, type Variant } from '../lib/types'
 import { addWishlistItem, deleteWishlistItem, updateWishlistItem, type WishlistInput, type WishlistItem } from '../lib/wishlist'
 import { CardmarketLink } from './CardmarketLink'
@@ -27,14 +27,14 @@ interface Props {
 const PRIORITY_LABELS: Record<'1' | '2' | '3', string> = { '1': 'High', '2': 'Normal', '3': 'Low' }
 
 /** Marktprijs en Cardmarket-link van de gekoppelde kaart (zonder koppeling: zoeken op naam en nummer). */
-function WishMarket({ tcgdexId, variant, searchText }: { tcgdexId: string | null; variant: Variant | null; searchText: string }): JSX.Element | null {
+function WishMarket({ tcgdexId, variant, searchText, language }: { tcgdexId: string | null; variant: Variant | null; searchText: string; language: string | null }): JSX.Element | null {
   const price = useCardPrice(tcgdexId)
   if (!tcgdexId && !searchText.trim()) return null
   const market = marketValue(price, variant)
   return (
     <p className="wish-market">
       {tcgdexId && <span className="muted small">{price === undefined ? 'Market …' : market ? `Market ${formatEur(market.value)}` : 'No market price'}</span>}
-      <CardmarketLink idProduct={price?.idProduct ?? null} searchText={searchText} />
+      <CardmarketLink idProduct={price?.idProduct ?? null} searchText={searchText} language={cardLanguageOf(language, tcgdexId)} />
     </p>
   )
 }
@@ -221,7 +221,7 @@ export function WishlistDialog({ item, initial, onClose, onSaved, onDeleted }: P
             onSelect={(c, lang) => void onPick(c, lang)}
             onClear={() => setTcgdexId(null)}
           />
-          <WishMarket tcgdexId={tcgdexId} variant={variant || null} searchText={[name, number].filter(Boolean).join(' ')} />
+          <WishMarket tcgdexId={tcgdexId} variant={variant || null} searchText={[name, number].filter(Boolean).join(' ')} language={language || null} />
         </fieldset>
 
         <label>

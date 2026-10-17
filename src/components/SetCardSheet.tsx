@@ -215,7 +215,7 @@ export function SetCardSheet({ lang, card, setName, owned, setCode, setId, wishL
                 )}
               </dl>
 
-              <CardmarketLink idProduct={price?.idProduct ?? null} searchText={`${card.name} ${card.localId}`} />
+              <CardmarketLink idProduct={price?.idProduct ?? null} searchText={`${card.name} ${card.localId}`} language={wishLanguage ?? lang} />
               {wishlist && (
                 <button type="button" className="small-btn wish-add" onClick={() => void openWish()} disabled={wished}>
                   <IconStar size={16} />
