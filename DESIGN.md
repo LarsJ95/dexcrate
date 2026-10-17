@@ -150,7 +150,7 @@ Elk component heeft verplicht deze states: default, hover, active, focus-visible
 
 Toegestane effecten (alleen deze; uitgebreid 15-10-2026 volgens prototype "Holo Lab"):
 - Holo-glans op tegels: één lichtstreep per ±7 s, per kaart verschoven; alleen op holo, reverse holo en zeldzaamheid vanaf Double rare.
-- Holo-kanteling in kaartweergave en vergrote kaart: kaart kantelt mee met vinger/muis (max. 16°), glans per zeldzaamheid (Double rare regenboogstrepen, Illustration rare zachte regenboog met lijntjes, Special illustration rare felle regenboog met glinsters, Hyper rare goud). Alleen op de kaart die bekeken wordt. Stilstaand (kaartvenster) is de glans zacht (±1/3); de volle glans alleen tijdens kantelen in de vergrote kaart (gewijzigd 17-10-2026 op verzoek: was te veel).
+- Holo-kanteling in kaartweergave en vergrote kaart: kaart kantelt mee met vinger/muis (max. 16°), glans per zeldzaamheid (Double rare regenboogstrepen, Illustration rare zachte regenboog met lijntjes, Special illustration rare felle regenboog met glinsters, Hyper rare goud). Alleen op de kaart die bekeken wordt. Stilstaand (kaartvenster) is de glans zacht (1/4); tijdens kantelen in de vergrote kaart iets sterker (0,55, niet vol) (gewijzigd 17-10-2026 op verzoek, twee keer: was te veel).
 - Achtergrondgloed volgt het energietype (`--type`), overgang 700 ms.
 - Momenten (elk ≤ 1,5 s, nooit blokkerend, bediening blijft werken):
   - Kaart toegevoegd of gescand: kaart draait van achterkant naar voorkant, vonken; stralen vanaf Double rare.

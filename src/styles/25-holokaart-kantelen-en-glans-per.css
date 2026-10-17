@@ -5,8 +5,8 @@
   --mx: 50%;
   --my: 42%;
   --hyp: 0.3;
-  /* Stilstaand zacht; volle glans alleen tijdens kantelen in de vergrote kaart (17-10-2026, op verzoek). */
-  --foil-strength: 0.33;
+  /* Stilstaand zacht; sterkere (niet volle) glans alleen tijdens kantelen in de vergrote kaart (17-10-2026, op verzoek twee keer verlaagd). */
+  --foil-strength: 0.25;
   position: relative;
   border-radius: var(--radius-card);
   transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));
@@ -18,7 +18,7 @@
 }
 
 .holo-card.is-tilting {
-  --foil-strength: 1;
+  --foil-strength: 0.55;
 }
 
 .holo-card.is-interactive {
