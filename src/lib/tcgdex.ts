@@ -467,12 +467,16 @@ const fetchCardPrice = memo(async (key: string): Promise<CardmarketPrice | null>
  * Link naar Cardmarket: de productpagina als het product-id bekend is, anders een zoekopdracht.
  * Formaat gebruikt door andere tools; door Cardmarkets botbescherming niet automatisch te controleren.
  */
-/** Cardmarket-conditiefilter: 3 = Excellent of beter (MT 1, NM 2, EX 3, GD 4, LP 5, PL 6, PO 7). */
-const MIN_CONDITION = 3
+/**
+ * Vaste Cardmarket-filters, overgenomen uit de eigen zoekinstellingen van de gebruiker (17-10-2026):
+ * verkoper uit land 23, alle verkopertypes, reputatie 2 of beter, taal 1 (Engels),
+ * conditie 3 = Excellent of beter (MT 1, NM 2, EX 3, GD 4, LP 5, PL 6, PO 7).
+ */
+const CARDMARKET_FILTERS = 'sellerCountry=23&sellerType=0,1,2&sellerReputation=2&language=1&minCondition=3'
 
 export function cardmarketUrl(idProduct: number | null, searchText: string): string {
-  if (idProduct) return `https://www.cardmarket.com/en/Pokemon/Products?idProduct=${idProduct}&minCondition=${MIN_CONDITION}`
-  return `https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=${encodeURIComponent(searchText.trim())}&minCondition=${MIN_CONDITION}`
+  if (idProduct) return `https://www.cardmarket.com/en/Pokemon/Products?idProduct=${idProduct}&${CARDMARKET_FILTERS}`
+  return `https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=${encodeURIComponent(searchText.trim())}&${CARDMARKET_FILTERS}`
 }
 
 export function getCardPrice(key: string): Promise<CardmarketPrice | null> {
