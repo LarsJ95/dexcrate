@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- Oude links naar de app (dexcrate.com/#/collection) gaan naar de app op /app/. -->
+    <script>
+      if (location.hash.indexOf('#/') === 0) location.replace('./app/' + location.hash)
+    </script>
+    <title>Dexcrate – Pokémon card collection tracker with Cardmarket prices</title>
+    <meta
+      name="description"
+      content="Track your Pokémon TCG collection, set binders and market value. Scan cards with your camera, see the Cardmarket price of every card, keep a wishlist and record purchases and sales. Works on your phone, also offline."
+    />
+    <link rel="canonical" href="https://dexcrate.com/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#0e0d12" />
+    <link rel="icon" href="./favicon.ico" sizes="16x16 32x32 48x48" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="preload" href="./fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin />
+
+    <!-- Delen (WhatsApp, Discord, sociale media) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Dexcrate" />
+    <meta property="og:url" content="https://dexcrate.com/" />
+    <meta property="og:title" content="Dexcrate – your Pokémon card collection, binder and market value" />
+    <meta
+      property="og:description"
+      content="Scan your cards, follow every set like a binder and see the Cardmarket price of each card. Built for collectors, works on your phone."
+    />
+    <meta property="og:image" content="https://dexcrate.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Dexcrate logo with the text: your Pokémon card collection, binder and market value in one place" />
+    <meta property="og:locale" content="en_GB" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Dexcrate – your Pokémon card collection, binder and market value" />
+    <meta name="twitter:description" content="Scan your cards, follow every set like a binder and see the Cardmarket price of each card." />
+    <meta name="twitter:image" content="https://dexcrate.com/og-image.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://dexcrate.com/#website",
+            "url": "https://dexcrate.com/",
+            "name": "Dexcrate",
+            "inLanguage": "en"
+          },
+          {
+            "@type": "WebApplication",
+            "@id": "https://dexcrate.com/#app",
+            "name": "Dexcrate",
+            "url": "https://dexcrate.com/app/",
+            "description": "Pokémon TCG collection tracker: card scanning, set binders with Cardmarket prices, wishlist, purchases and sales, collection value.",
+            "applicationCategory": "LifestyleApplication",
+            "operatingSystem": "Web browser, Android, iOS",
+            "browserRequirements": "Requires JavaScript",
+            "image": "https://dexcrate.com/og-image.png",
+            "featureList": [
+              "Scan Pokémon cards with your camera",
+              "Set binders with owned and missing cards",
+              "Cardmarket market price for every card",
+              "Wishlist with smart lists",
+              "Purchases, sales and profit",
+              "Installable app that works offline"
+            ]
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "https://dexcrate.com/#faq",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "What is Dexcrate?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Dexcrate is a web app for Pokémon TCG collectors. It keeps your collection, shows every set as a binder with what you own and what is missing, and shows the Cardmarket market price of each card and of your whole collection." }
+              },
+              {
+                "@type": "Question",
+                "name": "Which Pokémon cards does Dexcrate support?",
+                "acceptedAnswer": { "@type": "Answer", "text": "English sets and Asian sets (Japanese, Chinese and Korean) from the TCGdex card database, including promos. Cards that are not in the database can still be added by hand." }
+              },
+              {
+                "@type": "Question",
+                "name": "Where do the card prices come from?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Market prices in euros come from Cardmarket via TCGdex and are refreshed daily. Every card has a direct link to its Cardmarket page." }
+              },
+              {
+                "@type": "Question",
+                "name": "Can I scan my cards?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Yes. Take a photo of a single card, a whole binder page or a quick series of cards, and Dexcrate recognises the name, set and number. You check the result before anything is added." }
+              },
+              {
+                "@type": "Question",
+                "name": "Does Dexcrate work on my phone?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Yes. Dexcrate runs in the browser and can be installed on your home screen like an app. Your collection stays viewable when you are offline." }
+              },
+              {
+                "@type": "Question",
+                "name": "Can I sign up?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Not yet. Dexcrate is in a private beta and new sign-ups are closed for now." }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+
+    <style>
+      @font-face {
+        font-family: 'Archivo';
+        font-style: normal;
+        font-weight: 400 900;
+        font-stretch: 62% 125%;
+        font-display: swap;
+        src: url('./fonts/archivo-latin.woff2') format('woff2');
+      }
+      :root {
+        color-scheme: dark;
+        --bg: #0e0d12;
+        --surface: #17161d;
+        --surface-2: #1f1e26;
+        --line: #2f2e38;
+        --ink: #f6f3ee;
+        --ink-soft: #d3cfd8;
+        --muted: #a19ba9;
+        --yellow: #ffcb05;
+        --on-yellow: #1a1300;
+        --red: #e3350d;
+        --radius: 16px;
+        font-family: 'Archivo', system-ui, 'Segoe UI', Roboto, sans-serif;
+        line-height: 1.55;
+        color: var(--ink);
+        background:
+          radial-gradient(120% 60% at 50% -10%, rgb(255 203 5 / 0.16), transparent 70%),
+          radial-gradient(80% 40% at 100% 100%, rgb(176 92 200 / 0.12), transparent 70%),
+          var(--bg);
+        background-attachment: fixed;
+        -webkit-font-smoothing: antialiased;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; }
+      a { color: var(--yellow); }
+      .wrap { width: min(1120px, 100% - 32px); margin-inline: auto; }
+      .skip { position: absolute; left: -999px; top: 8px; background: var(--yellow); color: var(--on-yellow); padding: 8px 12px; border-radius: 8px; }
+      .skip:focus { left: 8px; }
+      :focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
+
+      header.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 0; }
+      .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font-weight: 800; font-size: 1.25rem; font-stretch: 118%; }
+      .brand svg { width: 32px; height: 32px; }
+
+      .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 22px; border-radius: 999px; font-weight: 700; text-decoration: none; border: 1px solid transparent; }
+      .btn-primary { background: var(--yellow); color: var(--on-yellow); }
+      .btn-primary:hover { background: #ffd83d; }
+      .btn-ghost { color: var(--ink); border-color: var(--line); background: rgb(255 255 255 / 0.03); }
+      .btn-ghost:hover { border-color: #42404d; }
+
+      .hero { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 48px; align-items: center; padding: 48px 0 72px; }
+      h1, h2, h3 { line-height: 1.1; margin: 0; font-weight: 800; letter-spacing: -0.005em; }
+      h1 { font-size: clamp(2.1rem, 5vw, 3.4rem); font-stretch: 118%; }
+      h1 .accent { color: var(--yellow); }
+      .lead { font-size: 1.15rem; color: var(--ink-soft); margin: 20px 0 28px; max-width: 34em; }
+      .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+      .note { margin-top: 16px; color: var(--muted); font-size: 0.95rem; }
+
+      .fan { position: relative; height: 340px; }
+      .fan .card { position: absolute; top: 20px; left: 50%; width: 190px; aspect-ratio: 63 / 88; border-radius: 14px; border: 1px solid rgb(255 255 255 / 0.14); background: linear-gradient(160deg, #2a2933, #17161d); box-shadow: 0 24px 60px rgb(0 0 0 / 0.5); }
+      .fan .card:nth-child(1) { transform: translateX(-110%) rotate(-12deg); }
+      .fan .card:nth-child(3) { transform: translateX(10%) rotate(12deg); }
+      .fan .card:nth-child(2) { transform: translateX(-50%) translateY(-12px); z-index: 1; background: linear-gradient(160deg, rgb(255 203 5 / 0.95), rgb(240 97 47 / 0.9) 55%, rgb(176 92 200 / 0.9)); }
+      .fan .card:nth-child(2)::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(115deg, transparent 30%, rgb(255 255 255 / 0.45) 45%, transparent 60%); }
+      .fan .price { position: absolute; z-index: 2; left: 50%; bottom: 18px; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; font-weight: 700; white-space: nowrap; box-shadow: 0 12px 32px rgb(0 0 0 / 0.45); }
+      .fan .price span { color: var(--muted); font-weight: 600; margin-right: 8px; }
+
+      section { padding: 56px 0; }
+      .section-head { max-width: 40em; margin-bottom: 32px; }
+      .section-head p { color: var(--ink-soft); margin: 12px 0 0; }
+      h2 { font-size: clamp(1.6rem, 3.4vw, 2.2rem); font-stretch: 112%; }
+
+      .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; list-style: none; margin: 0; padding: 0; }
+      .feature { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
+      .feature h3 { font-size: 1.15rem; margin: 14px 0 8px; }
+      .feature p { margin: 0; color: var(--ink-soft); }
+      .icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: rgb(255 203 5 / 0.12); color: var(--yellow); }
+      .icon svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+      .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; list-style: none; margin: 0; padding: 0; counter-reset: step; }
+      .steps li { counter-increment: step; padding: 24px; border-radius: var(--radius); background: var(--surface-2); }
+      .steps li::before { content: counter(step); display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--yellow); color: var(--on-yellow); font-weight: 800; margin-bottom: 12px; }
+      .steps h3 { font-size: 1.1rem; margin-bottom: 6px; }
+      .steps p { margin: 0; color: var(--ink-soft); }
+
+      .faq { display: grid; gap: 12px; max-width: 48em; }
+      .faq details { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 0 20px; }
+      .faq summary { cursor: pointer; padding: 18px 0; font-weight: 700; list-style: none; display: flex; justify-content: space-between; gap: 16px; min-height: 48px; }
+      .faq summary::-webkit-details-marker { display: none; }
+      .faq summary::after { content: '+'; color: var(--yellow); font-size: 1.3rem; line-height: 1; }
+      .faq details[open] summary::after { content: '–'; }
+      .faq details p { margin: 0 0 18px; color: var(--ink-soft); }
+
+      .cta { text-align: center; background: var(--surface); border: 1px solid var(--line); border-radius: 24px; padding: 48px 24px; }
+      .cta p { color: var(--ink-soft); margin: 12px auto 24px; max-width: 32em; }
+
+      footer { padding: 40px 0 56px; color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--line); margin-top: 32px; }
+      footer p { margin: 0 0 8px; max-width: 60em; }
+
+      @media (max-width: 860px) {
+        .hero { grid-template-columns: 1fr; padding-top: 24px; gap: 24px; }
+        .fan { height: 300px; order: -1; }
+        .fan .card { width: 150px; }
+        .features, .steps { grid-template-columns: 1fr; }
+        section { padding: 40px 0; }
+      }
+      @media (min-width: 861px) and (max-width: 1060px) {
+        .features { grid-template-columns: repeat(2, 1fr); }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <div class="wrap">
+      <header class="top">
+        <a class="brand" href="./" aria-label="Dexcrate home">
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <circle cx="16" cy="16" r="15" fill="#17161c" />
+            <path d="M3 16a13 13 0 0 1 26 0z" fill="#e3350d" />
+            <path d="M3 16a13 13 0 0 0 26 0z" fill="#f6f3ee" />
+            <rect x="3" y="14.3" width="26" height="3.4" fill="#17161c" />
+            <circle cx="16" cy="16" r="5.6" fill="#17161c" />
+            <circle cx="16" cy="16" r="3.2" fill="#f6f3ee" />
+          </svg>
+          Dexcrate
+        </a>
+        <a class="btn btn-ghost" href="./app/">Sign in</a>
+      </header>
+    </div>
+
+    <main id="main">
+      <div class="wrap">
+        <div class="hero">
+          <div>
+            <h1>Your Pokémon card collection, binder and <span class="accent">market value</span> in one place.</h1>
+            <p class="lead">
+              Dexcrate is a collection tracker for the Pokémon Trading Card Game. Scan your cards, follow every set like a binder and see the
+              Cardmarket price of each card, on your phone or computer.
+            </p>
+            <div class="actions">
+              <a class="btn btn-primary" href="./app/">Open Dexcrate</a>
+              <a class="btn btn-ghost" href="#features">See what it does</a>
+            </div>
+            <p class="note">Private beta: new sign-ups are closed for now.</p>
+          </div>
+          <div class="fan" aria-hidden="true">
+            <div class="card"></div>
+            <div class="card"></div>
+            <div class="card"></div>
+            <p class="price"><span>Market value</span>€ 1,284.50</p>
+          </div>
+        </div>
+      </div>
+
+      <section id="features" aria-labelledby="features-title">
+        <div class="wrap">
+          <div class="section-head">
+            <h2 id="features-title">Everything a card collector needs</h2>
+            <p>From the first scan to the last missing card in a set: Dexcrate keeps track, so you can enjoy collecting.</p>
+          </div>
+          <ul class="features">
+            <li class="feature">
+              <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg></div>
+              <h3>Scan cards with your camera</h3>
+              <p>Photograph a single card, a whole binder page or a quick series. Dexcrate reads the name, set and number; you confirm before anything is added.</p>
+            </li>
+            <li class="feature">
+              <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="8" height="16" rx="1.5" /><rect x="13" y="4" width="8" height="16" rx="1.5" /><path d="M5.5 8h3M15.5 8h3M5.5 12h3M15.5 12h3" /></svg></div>
+              <h3>Every set as a binder</h3>
+              <p>See which cards you own and which are missing, page by page in 6- or 9-pocket view, with your progress and the cost to complete the set.</p>
+            </li>
+            <li class="feature">
+              <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18l5-6 4 3 7-9" /><path d="M15 6h5v5" /></svg></div>
+              <h3>Cardmarket prices</h3>
+              <p>The market price of every card and the value of your whole collection, with price history and a direct link to the card on Cardmarket.</p>
+            </li>
+            <li class="feature">
+              <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" /></svg></div>
+              <h3>Wishlist and smart lists</h3>
+              <p>Keep the cards you are hunting for, filter by price, rarity, type and set, and save filters as lists you can open with one tap.</p>
+            </li>
+            <li class="feature">
+              <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v12H4z" /><path d="M8 7V5h8v2M8 13h8" /></svg></div>
+              <h3>Purchases and sales</h3>
+              <p>Record what you paid and what you sold for, including shipping and fees, and see your profit or loss per card and overall.</p>
+            </li>
+            <li class="feature">
+              <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2" /><path d="M11 18h2" /></svg></div>
+              <h3>Works like an app</h3>
+              <p>Install Dexcrate on your home screen. Your collection stays viewable offline, with a light and a dark theme and backups you can download.</p>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section aria-labelledby="how-title">
+        <div class="wrap">
+          <div class="section-head">
+            <h2 id="how-title">How it works</h2>
+          </div>
+          <ol class="steps">
+            <li>
+              <h3>Add your cards</h3>
+              <p>Scan them, search the card database or import your existing spreadsheet.</p>
+            </li>
+            <li>
+              <h3>Follow your sets</h3>
+              <p>Every set becomes a binder that fills up as your collection grows.</p>
+            </li>
+            <li>
+              <h3>Know what it is worth</h3>
+              <p>Daily Cardmarket prices show the value of each card and of everything you own.</p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section aria-labelledby="faq-title">
+        <div class="wrap">
+          <div class="section-head">
+            <h2 id="faq-title">Frequently asked questions</h2>
+          </div>
+          <div class="faq">
+            <details>
+              <summary>What is Dexcrate?</summary>
+              <p>Dexcrate is a web app for Pokémon TCG collectors. It keeps your collection, shows every set as a binder with what you own and what is missing, and shows the Cardmarket market price of each card and of your whole collection.</p>
+            </details>
+            <details>
+              <summary>Which Pokémon cards does Dexcrate support?</summary>
+              <p>English sets and Asian sets (Japanese, Chinese and Korean) from the TCGdex card database, including promos. Cards that are not in the database can still be added by hand.</p>
+            </details>
+            <details>
+              <summary>Where do the card prices come from?</summary>
+              <p>Market prices in euros come from Cardmarket via TCGdex and are refreshed daily. Every card has a direct link to its Cardmarket page.</p>
+            </details>
+            <details>
+              <summary>Can I scan my cards?</summary>
+              <p>Yes. Take a photo of a single card, a whole binder page or a quick series of cards, and Dexcrate recognises the name, set and number. You check the result before anything is added.</p>
+            </details>
+            <details>
+              <summary>Does Dexcrate work on my phone?</summary>
+              <p>Yes. Dexcrate runs in the browser and can be installed on your home screen like an app. Your collection stays viewable when you are offline.</p>
+            </details>
+            <details>
+              <summary>Can I sign up?</summary>
+              <p>Not yet. Dexcrate is in a private beta and new sign-ups are closed for now.</p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="cta-title">
+        <div class="wrap">
+          <div class="cta">
+            <h2 id="cta-title">Already have an account?</h2>
+            <p>Open Dexcrate in your browser, or install it on your phone from the app's menu.</p>
+            <a class="btn btn-primary" href="./app/">Open Dexcrate</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <p>© 2026 Dexcrate</p>
+        <p>
+          Dexcrate is an independent fan project and is not affiliated with, endorsed or sponsored by Nintendo, The Pokémon Company, Creatures,
+          GAME FREAK or Cardmarket. Pokémon and Pokémon character names are trademarks of Nintendo. Card data and prices via TCGdex.
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
