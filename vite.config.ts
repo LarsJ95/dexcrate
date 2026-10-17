@@ -24,8 +24,10 @@ function stagingGuard(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
-  // Relatieve paden: werkt op elke host/submap (bv. GitHub Pages /<repo>/) dankzij hash-routing.
+  // Relatieve paden: werkt op elke host/submap dankzij hash-routing.
   base: './',
+  // Sinds 17-10-2026 staat de app op dexcrate.com/app/; de hoofdmap is de landingspagina (landing/, tools/build-landing.mjs).
+  build: { outDir: 'dist/app' },
   // Bouwmoment, als versie-aanduiding in Settings.
   define: { __APP_BUILD__: JSON.stringify(new Date().toISOString()) },
   test: {

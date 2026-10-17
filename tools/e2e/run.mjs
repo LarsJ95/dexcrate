@@ -20,7 +20,8 @@ const files = readdirSync(join('tools', 'e2e', 'tests'))
   .filter((f) => f.endsWith('.mjs'))
   .filter((f) => wanted.length === 0 || wanted.includes(f.replace(/\.mjs$/, '')))
 if (files.length === 0) throw new Error(`Geen tests gevonden voor: ${wanted.join(', ')}`)
-if (!existsSync('dist/index.html')) throw new Error('Geen build: draai eerst npm run build.')
+// De app staat sinds 17-10-2026 in dist/app; `vite preview` serveert die map als hoofdmap.
+if (!existsSync('dist/app/index.html')) throw new Error('Geen build: draai eerst npm run build.')
 
 const tests = await Promise.all(files.map(async (f) => ({ file: f, ...(await import(pathToFileURL(join('tools', 'e2e', 'tests', f)).href)) })))
 const VITE = join('node_modules', 'vite', 'bin', 'vite.js')

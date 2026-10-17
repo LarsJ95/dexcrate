@@ -2,7 +2,7 @@
 
 Persoonlijke PWA voor een Pokémon-kaartencollectie: collectie, aan- en verkoop, marktwaarde (Cardmarket via TCGdex), set-voortgang, wishlist en kaarten scannen met de camera.
 
-Live: https://dexcrate.com (sinds 17-10-2026; het oude adres https://larsj95.github.io/dexcrate/ stuurt door). Domein bij Versio (DNS: 4× A en 4× AAAA naar GitHub Pages, CNAME `www` → `larsj95.github.io`, TXT `_github-pages-challenge-LarsJ95` voor de domeinverificatie; geen wildcard-records). Custom domain en Enforce HTTPS staan in de repo-instellingen (Pages), geen CNAME-bestand nodig bij publiceren via Actions.
+Live: https://dexcrate.com (landingspagina) en https://dexcrate.com/app/ (de app) (sinds 17-10-2026; het oude adres https://larsj95.github.io/dexcrate/ stuurt door). Domein bij Versio (DNS: 4× A en 4× AAAA naar GitHub Pages, CNAME `www` → `larsj95.github.io`, TXT `_github-pages-challenge-LarsJ95` voor de domeinverificatie; geen wildcard-records). Custom domain en Enforce HTTPS staan in de repo-instellingen (Pages), geen CNAME-bestand nodig bij publiceren via Actions.
 
 ## Stack
 
@@ -80,6 +80,17 @@ In `supabase/functions/`, via de editor in het Supabase-dashboard gedeployd (con
 ## Foutlogboek
 
 Crashes en onafgevangen fouten (geen netwerkfouten) gaan naar de tabel `app_errors` (STAP16, alleen eigen regels): Supabase → Table Editor → `app_errors`. Zie `src/lib/errorLog.ts`.
+
+## Landingspagina en SEO
+
+Sinds 17-10-2026: dexcrate.com is een statische landingspagina (`landing/`), de app staat op dexcrate.com/app/.
+
+- `npm run build` bouwt de app in `dist/app/` (Vite, `build.outDir`) en zet daarna met `tools/build-landing.mjs` de landingspagina in `dist/`: `index.html`, `404.html`, `robots.txt`, `sitemap.xml` (lastmod = bouwdatum), `og-image.png`, favicons en het lettertype.
+- De landingspagina is gewone HTML/CSS (geen JavaScript nodig): titel, beschrijving, canonical, Open Graph/Twitter-preview en structured data (WebSite, WebApplication, FAQPage). FAQ-tekst staat twee keer (zichtbaar en in de JSON-LD): bij aanpassen beide wijzigen.
+- De app heeft `noindex`. Oude links `dexcrate.com/#/…` sturen door naar `/app/#/…`. `landing/sw.js` ruimt de service worker op die de app vóór de verhuizing op de hoofdmap had (alleen de precache van `/`, niet die van `/app/`).
+- Deelafbeelding opnieuw maken: `node tools/og-image.mjs` (schrijft `landing/og-image.png`).
+- Lighthouse op de landingspagina (17-10-2026, mobiel): prestaties, toegankelijkheid, best practices en SEO allemaal 100.
+- Merkdisclaimer (niet gelieerd aan Nintendo/The Pokémon Company e.d.) staat in de footer; geen kaartplaatjes op de landingspagina.
 
 ## Code
 
