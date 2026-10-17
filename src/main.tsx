@@ -5,10 +5,12 @@ import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { UpdateBanner } from './components/UpdateBanner'
 import { initAppUpdates } from './lib/appUpdate'
+import { initErrorLog } from './lib/errorLog'
 import { initMotion } from './lib/motion'
 
 initMotion()
 initAppUpdates()
+initErrorLog()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

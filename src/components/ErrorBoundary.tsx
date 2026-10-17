@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type JSX, type ReactNode } from 'react'
+import { logError } from '../lib/errorLog'
 
 interface Props {
   children: ReactNode
@@ -30,6 +31,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
     console.error('Onderdeel van de app gecrasht', error, info.componentStack)
+    logError(error, 'render')
   }
 
   render(): ReactNode {

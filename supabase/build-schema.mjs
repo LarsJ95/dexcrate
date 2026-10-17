@@ -17,6 +17,7 @@ const PARTS = [
   'STAP13_crate_wens.sql',
   'STAP14_account_reset.sql',
   'STAP15_scanlimiet.sql',
+  'STAP16_foutlog.sql',
 ]
 
 const header = `-- Dexcrate: volledig databaseschema voor een NIEUW, leeg Supabase-project (eindstand van alle STAP-bestanden).

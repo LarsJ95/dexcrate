@@ -45,6 +45,10 @@ In `supabase/functions/`, via de editor in het Supabase-dashboard gedeployd (con
 - `recognize-card`: herkent kaarten op een foto met Claude. Secret: `ANTHROPIC_API_KEY`. Limiet per gebruiker (40 per minuut, 500 per 24 uur) via `scan_quota_take()` uit STAP15; zonder STAP15 werkt scannen zonder limiet.
 - `card-image`: laatste redmiddel voor kaartfoto's via PriceCharting.
 
+## Foutlogboek
+
+Crashes en onafgevangen fouten (geen netwerkfouten) gaan naar de tabel `app_errors` (STAP16, alleen eigen regels): Supabase → Table Editor → `app_errors`. Zie `src/lib/errorLog.ts`.
+
 ## Code
 
 - `src/pages/`: één bestand per route (lazy geladen in `src/App.tsx`, behalve Overview)
