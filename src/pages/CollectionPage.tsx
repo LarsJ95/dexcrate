@@ -2,10 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from 'rea
 import { CardDialog } from '../components/CardDialog'
 import { BulkEditDialog, type BulkChange } from '../components/BulkEditDialog'
 import { CardTile } from '../components/CardTile'
-import { NO_EXTRA_FILTERS, activeFilterCount, isUnlinked, matchesExtra, needsCatalog, parseView, setKeyOf, type ExtraFilters, type SavedView } from '../lib/collectionFilters'
-import { CatalogFilterFields } from '../components/CatalogFilterFields'
+import { NO_EXTRA_FILTERS, activeFilterCount, isUnlinked, matchesExtra, needsCatalog, type ExtraFilters } from '../lib/collectionFilters'
+import { CollectionFilterPanel } from '../components/CollectionFilterPanel'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
-import { getSetList, isLang, type CardInfo } from '../lib/tcgdex'
+import type { CardInfo } from '../lib/tcgdex'
 import { PurchaseDialog } from '../components/PurchaseDialog'
 import { SaleDialog } from '../components/SaleDialog'
 import { useNewCardDefaults } from '../hooks/useNewCardDefaults'
@@ -17,102 +17,10 @@ import { compareOrder, swapOrder, useDragSwap } from '../lib/dragSwap'
 import { marketValueOf, type MarketValue } from '../lib/prices'
 import { matchesSearch } from '../lib/search'
 import { formatEur } from '../lib/stats'
-import {
-  CONDITION_LABELS,
-  LANGUAGE_LABELS,
-  STATUS_LABELS,
-  VARIANT_LABELS,
-  canToggleSold,
-  statusFields,
-  type Card,
-  type CardInput,
-  type CardStatus,
-} from '../lib/types'
+import { canToggleSold, statusFields, type Card, type CardInput, type CardStatus } from '../lib/types'
 import { Loading } from '../components/Loading'
-
-type StatusFilter = 'all' | 'owned' | CardStatus
-/** 'list' = eigen volgorde oud → nieuw, 'newest' = dezelfde volgorde omgekeerd; in beide kun je slepen. */
-type SortKey = 'list' | 'newest' | 'priceDesc' | 'priceAsc' | 'marketDesc' | 'name' | 'set'
-const SORTS: readonly SortKey[] = ['list', 'newest', 'priceDesc', 'priceAsc', 'marketDesc', 'name', 'set']
-const STATUS_FILTERS: readonly StatusFilter[] = ['all', 'owned', 'collection', 'for_sale', 'sold']
-
-/** Weergave (zoeken, filters, sortering) per apparaat onthouden. */
-const VIEW_KEY = 'dexcrate:collection-view'
-const DEFAULT_VIEW: SavedView<SortKey, StatusFilter> = { query: '', filter: 'owned', sort: 'list', extra: NO_EXTRA_FILTERS }
-
-function readView(): SavedView<SortKey, StatusFilter> {
-  try {
-    return parseView(localStorage.getItem(VIEW_KEY), SORTS, STATUS_FILTERS, DEFAULT_VIEW)
-  } catch {
-    return DEFAULT_VIEW // geen opslag: standaardweergave
-  }
-}
-
-const FILTERS: [StatusFilter, string][] = [
-  ['owned', 'Owned'],
-  ['collection', STATUS_LABELS.collection],
-  ['for_sale', STATUS_LABELS.for_sale],
-  ['sold', STATUS_LABELS.sold],
-  ['all', 'All'],
-]
-
-/** Prijs die bij de status hoort, voor sorteren en totalen. */
-function relevantPrice(c: Card): number {
-  return (c.status === 'collection' ? c.purchase_price : c.sale_price) ?? 0
-}
-
-function matchesFilter(c: Card, f: StatusFilter): boolean {
-  if (f === 'all') return true
-  if (f === 'owned') return c.status !== 'sold'
-  return c.status === f
-}
-
-interface SetOption {
-  key: string
-  label: string
-}
-
-/** Sets waar je (binnen de gekozen status) kaarten van hebt, met naam en afkorting: "151 (MEW)". */
-function useSetOptions(cards: readonly Card[] | null, filter: StatusFilter): SetOption[] {
-  const [names, setNames] = useState<ReadonlyMap<string, string>>(new Map())
-  // Afkorting uit de kaarten zelf (setcode bij toevoegen), zodat er niets extra opgehaald hoeft te worden.
-  const groups = useMemo(() => {
-    const out = new Map<string, string | null>()
-    for (const c of cards ?? []) {
-      if (!matchesFilter(c, filter)) continue
-      const key = setKeyOf(c)
-      if (key && !out.get(key)) out.set(key, c.set_code?.trim().toUpperCase() || null)
-    }
-    return out
-  }, [cards, filter])
-  const langs = useMemo(() => [...new Set([...groups.keys()].map((k) => k.split('/')[0]).filter(isLang))].sort(), [groups])
-
-  useEffect(() => {
-    let cancelled = false
-    Promise.all(langs.map(async (l) => [l, await getSetList(l)] as const))
-      .then((lists) => {
-        if (cancelled) return
-        const map = new Map<string, string>()
-        for (const [l, list] of lists) for (const [id, s] of list) map.set(`${l}/${id}`, s.name)
-        setNames(map)
-      })
-      .catch((err: unknown) => console.warn('Setnamen ophalen mislukt', err))
-    return () => {
-      cancelled = true
-    }
-  }, [langs])
-
-  return useMemo(() => {
-    const out: SetOption[] = []
-    for (const [key, code] of groups) {
-      const lang = key.split('/')[0]
-      const name = key.startsWith('code:') ? null : (names.get(key) ?? key.slice(key.indexOf('/') + 1))
-      const label = name ? `${name}${code && code !== name.toUpperCase() ? ` (${code})` : ''}${lang !== 'en' ? `, ${lang}` : ''}` : key.slice(5)
-      out.push({ key, label })
-    }
-    return out.sort((a, b) => a.label.localeCompare(b.label, 'en', { numeric: true }))
-  }, [groups, names])
-}
+import { FILTERS, VIEW_KEY, matchesFilter, readView, relevantPrice, type SortKey, type StatusFilter } from '../lib/collectionView'
+import { useSetOptions } from '../hooks/useSetOptions'
 
 export function CollectionPage(): JSX.Element {
   const [cards, setCards] = useState<Card[] | null>(null)
@@ -404,82 +312,16 @@ export function CollectionPage(): JSX.Element {
       </div>
 
       {showFilters && (
-        <div className="panel extra-filters">
-          <div className="form-grid">
-            <label className="filter-set">
-              Set
-              <select value={extra.set} onChange={(e) => setExtra((f) => ({ ...f, set: e.target.value }))}>
-                <option value="">All</option>
-                {extra.set && !setOptions.some((o) => o.key === extra.set) && <option value={extra.set}>{extra.set}</option>}
-                {setOptions.map((o) => (
-                  <option key={o.key} value={o.key}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Language
-              <select value={extra.language} onChange={(e) => setExtra((f) => ({ ...f, language: e.target.value as ExtraFilters['language'] }))}>
-                <option value="">All</option>
-                <option value="none">Unknown</option>
-                {Object.entries(LANGUAGE_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>
-                    {v}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Variant
-              <select value={extra.variant} onChange={(e) => setExtra((f) => ({ ...f, variant: e.target.value as ExtraFilters['variant'] }))}>
-                <option value="">All</option>
-                <option value="none">Unknown</option>
-                {Object.entries(VARIANT_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>
-                    {v}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Condition
-              <select value={extra.condition} onChange={(e) => setExtra((f) => ({ ...f, condition: e.target.value as ExtraFilters['condition'] }))}>
-                <option value="">All</option>
-                <option value="none">Unknown</option>
-                {Object.entries(CONDITION_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>
-                    {v}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <CatalogFilterFields value={extra} onChange={(next) => setExtra((f) => ({ ...f, ...next }))} />
-            <label>
-              Linked card
-              <select value={extra.link} onChange={(e) => setExtra((f) => ({ ...f, link: e.target.value === 'unlinked' ? 'unlinked' : '' }))}>
-                <option value="">All</option>
-                <option value="unlinked">Not linked</option>
-              </select>
-            </label>
-            <label>
-              Illustrator
-              <input value={extra.illustrator} maxLength={60} placeholder="e.g. Arita" onChange={(e) => setExtra((f) => ({ ...f, illustrator: e.target.value }))} />
-            </label>
-          </div>
-          <div className="extra-filters-foot">
-            <button
-              type="button"
-              disabled={activeFilterCount(extra) === 0 && query.trim() === ''}
-              onClick={() => {
-                setExtra(NO_EXTRA_FILTERS)
-                setQuery('')
-              }}
-            >
-              Clear all filters
-            </button>
-          </div>
-        </div>
+        <CollectionFilterPanel
+          extra={extra}
+          setExtra={setExtra}
+          setOptions={setOptions}
+          canClear={activeFilterCount(extra) > 0 || query.trim() !== ''}
+          onClear={() => {
+            setExtra(NO_EXTRA_FILTERS)
+            setQuery('')
+          }}
+        />
       )}
 
       {lastBulk && (

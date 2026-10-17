@@ -1,0 +1,45 @@
+import type { JSX, ReactNode } from 'react'
+
+type Scope = 'device' | 'account'
+
+/** Eén blok instellingen; rechtsboven waar het bewaard wordt. */
+export function Section({ title, scope, children, intro }: { title: string; scope: Scope; children: ReactNode; intro?: string }): JSX.Element {
+  return (
+    <section className="panel settings-section" aria-labelledby={`settings-${title}`}>
+      <header className="settings-head">
+        <h2 id={`settings-${title}`}>{title}</h2>
+        <span className={`settings-scope scope-${scope}`}>{scope === 'device' ? 'This device' : 'Your account'}</span>
+      </header>
+      {intro && <p className="muted small">{intro}</p>}
+      {children}
+    </section>
+  )
+}
+
+/** Keuze uit een paar opties als knoppenrij. */
+export function Choice<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: readonly [T, string][]; onChange: (v: T) => void }): JSX.Element {
+  return (
+    <div className="settings-row">
+      <span className="settings-label">{label}</span>
+      <div className="segmented" role="group" aria-label={label}>
+        {options.map(([v, text]) => (
+          <button key={v} type="button" aria-pressed={value === v} onClick={() => onChange(v)}>
+            {text}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function Toggle({ checked, onChange, children, hint }: { checked: boolean; onChange: (v: boolean) => void; children: ReactNode; hint?: string }): JSX.Element {
+  return (
+    <div className="settings-toggle">
+      <label className="check">
+        <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+        {children}
+      </label>
+      {hint && <p className="muted small">{hint}</p>}
+    </div>
+  )
+}

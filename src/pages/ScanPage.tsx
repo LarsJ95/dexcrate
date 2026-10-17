@@ -2,8 +2,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type Change
 import { BinderScanResult } from '../components/BinderScanResult'
 import { CameraCapture } from '../components/CameraCapture'
 import { CardDialog } from '../components/CardDialog'
-import { CardFace } from '../components/CardFace'
-import { CatalogKeyPicture } from '../components/CatalogCardPicture'
+import { ScanSessionSummary, SingleScanResult } from '../components/ScanParts'
 import { QueueStrip, ScanQueue } from '../components/ScanQueue'
 import { listCards } from '../lib/db'
 import { findCandidates, type Candidate } from '../lib/match'
@@ -27,7 +26,7 @@ import {
   type ScanMode,
 } from '../lib/scan'
 import { lookupLang, type Lang } from '../lib/tcgdex'
-import { LANGUAGE_LABELS, type Card, type CardInput } from '../lib/types'
+import type { Card, CardInput } from '../lib/types'
 
 type Phase =
   | { kind: 'idle' }
@@ -276,32 +275,7 @@ export function ScanPage(): JSX.Element {
         aria-hidden="true"
       />
 
-      {session && session.items.length > 0 ? (
-        <div className="panel scan-session">
-          <div className="sheet-foot">
-            <span className="stat-label">
-              This session: {session.items.reduce((n, i) => n + i.quantity, 0)} cards, saved
-            </span>
-            <span className="spacer" />
-            <button type="button" className="ghost small-btn" onClick={() => void endSession()}>
-              End session
-            </button>
-          </div>
-          <p className="small">
-            {session.items
-              .slice(-8)
-              .map((i) => `${i.quantity > 1 ? `${i.quantity}× ` : ''}${i.name}`)
-              .join(', ')}
-            {session.items.length > 8 ? ` and ${session.items.length - 8} more` : ''}
-          </p>
-        </div>
-      ) : (
-        added.length > 0 && (
-          <p className="success" role="status">
-            Added: {added.join(', ')}
-          </p>
-        )
-      )}
+      <ScanSessionSummary session={session} added={added} onEnd={() => void endSession()} />
       {sessionError && (
         <p className="error" role="alert">
           {sessionError}
@@ -396,82 +370,17 @@ export function ScanPage(): JSX.Element {
       )}
 
       {phase.kind === 'single' && (
-        <div className="scan-result">
-          <div className="panel">
-            <span className="stat-label">Recognised</span>
-            <p className="scan-name">{phase.recognition.nameEnglish || phase.recognition.namePrinted}</p>
-            <p className="muted small">
-              {[
-                phase.recognition.setCode,
-                phase.recognition.cardNumber &&
-                  `${phase.recognition.cardNumber}${phase.recognition.setTotal ? `/${phase.recognition.setTotal}` : ''}`,
-                phase.recognition.language ? LANGUAGE_LABELS[phase.recognition.language] : null,
-              ]
-                .filter(Boolean)
-                .join(', ')}
-              {phase.recognition.confidence !== 'high' && ' (uncertain, please check)'}
-            </p>
-            {phase.recognition.notes && <p className="muted small">{phase.recognition.notes}</p>}
-          </div>
-
-          {dup && (
-            <div className="notice" role="alert">
-              <p>
-                You already added {dup.earlier.name}
-                {dup.earlier.card_number ? ` #${dup.earlier.card_number}` : ''} in this session
-                {dup.earlier.at ? ` at ${new Date(dup.earlier.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : ''}. Is this another copy?
-              </p>
-              <div className="sheet-foot">
-                <button type="button" className="primary" onClick={() => void chooseSingle(dup.candidate, dup.recognition, dup.lang, true)}>
-                  Add another copy
-                </button>
-                <button type="button" className="ghost" onClick={reset}>
-                  Skip, it’s the same card
-                </button>
-              </div>
-            </div>
-          )}
-
-          <h2>Pick the right card</h2>
-          {phase.candidates.length === 0 && (
-            <p className="muted">No match found. You can add it without a link.</p>
-          )}
-          <ul className="candidates">
-            {phase.candidates.map((c, i) => {
-              const owned = ownedByKey.get(c.key)
-              return (
-                <li key={c.key}>
-                  <button
-                    type="button"
-                    className={`candidate${i === 0 ? ' selected' : ''}`}
-                    onClick={() => void chooseSingle(c, phase.recognition, phase.lang)}
-                  >
-                    <CatalogKeyPicture
-                      cardKey={c.key}
-                      image={c.image}
-                      name={c.name}
-                      quality="low"
-                      alt=""
-                      fallback={<CardFace name={c.name} detail={`${c.setName} #${c.localId}`} />}
-                    />
-                    <span className="cand-name">{c.name}</span>
-                    <span className="muted small">{c.setName} {c.localId}</span>
-                    <span className="cand-reason small">{i === 0 ? 'Best match' : c.reason}</span>
-                    {owned && <span className="small">Owned {owned}×</span>}
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-          <div className="scan-foot">
-            <button type="button" className="ghost" onClick={() => void chooseSingle(null, phase.recognition, phase.lang)}>
-              Add without link
-            </button>
-            <button type="button" className="ghost" onClick={reset}>
-              Discard
-            </button>
-          </div>
-        </div>
+        <SingleScanResult
+          recognition={phase.recognition}
+          candidates={phase.candidates}
+          ownedByKey={ownedByKey}
+          earlier={dup?.earlier ?? null}
+          onChoose={(c) => void chooseSingle(c, phase.recognition, phase.lang)}
+          onAddAnotherCopy={() => {
+            if (dup) void chooseSingle(dup.candidate, dup.recognition, dup.lang, true)
+          }}
+          onReset={reset}
+        />
       )}
 
       {draft && (

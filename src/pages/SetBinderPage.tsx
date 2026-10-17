@@ -1,21 +1,18 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type JSX } from 'react'
+import { useEffect, useMemo, useRef, useState, type JSX } from 'react'
 import { listCards } from '../lib/db'
-import { ENERGY_TYPES, rarityRule } from '../lib/cardTraits'
-import { energyColor } from '../lib/energy'
+import { rarityRule } from '../lib/cardTraits'
 import { burstFrom } from '../lib/fx'
 import { SET_MILESTONES, celebrateMilestone, showMoment } from '../lib/moments'
 import { crateForSet } from '../lib/celebrate'
 import { useMotion } from '../lib/motion'
 import { hpLevel } from '../lib/trainer'
-import { spriteUrls } from '../lib/runner'
 import { DEFAULT_GOAL, goalProgress, goalRequirements, type GoalSettings, type OwnedCopy, type RequirementState } from '../lib/goals'
 import { marketValue } from '../lib/prices'
 import { SET_SORT_LABELS, sortSetCards, type SetSort } from '../lib/setSort'
-import { formatEur } from '../lib/stats'
 import { VARIANT_LABELS, type Variant } from '../lib/types'
 import { loadGoal } from '../lib/wishlist'
-import { CardFace } from '../components/CardFace'
-import { CatalogCardPicture } from '../components/CatalogCardPicture'
+import { BinderSlot } from '../components/BinderSlot'
+import { CostPanel, GoalStats } from '../components/SetBinderParts'
 import { GoalSheet } from '../components/GoalSheet'
 import { IconArrowLeft } from '../components/Icons'
 import { SetCardSheet } from '../components/SetCardSheet'
@@ -23,6 +20,7 @@ import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import { getCardInfo, getCardPrice, getSet, isLang, setOfKey, type SetCard, type SetSummary } from '../lib/tcgdex'
 import { Loading } from '../components/Loading'
+import { COMPLETE_KEY, MAX_NEW, MILESTONE_KEY, PAGE_SIZE_KEY, SEEN_KEY, SPARKLE_COLORS, VARIANT_SHORT, readPageSize, readSeen, remember, stateKey, type Cost, type PageSize } from '../lib/setBinder'
 
 interface Props {
   /** "<taal>/<set-id>" uit de URL. */
@@ -30,7 +28,6 @@ interface Props {
 }
 
 type Show = 'all' | 'owned' | 'missing'
-type PageSize = 9 | 12
 
 interface Loaded {
   summary: SetSummary
@@ -41,58 +38,6 @@ interface Loaded {
   copies: OwnedCopy[]
 }
 
-interface Cost {
-  done: number
-  total: number
-  /** "<kaart-id>|<uitvoering>" → marktprijs per stuk (null = onbekend) */
-  prices: Map<string, number | null>
-  running: boolean
-}
-
-/** Korte aanduiding van een uitvoering in een binder-vak. */
-const VARIANT_SHORT: Record<Variant, string> = { normal: 'N', holo: 'H', reverse: 'R', firstEdition: '1st' }
-
-const formatValue = (v: number | null): string => (v === null ? 'no price' : formatEur(v))
-
-const stateKey = (s: RequirementState): string => `${s.req.cardId}|${s.req.variant ?? 'any'}`
-
-const PAGE_SIZE_KEY = 'dexcrate:binder-page-size'
-/** Kaarten in bezit bij het vorige bezoek, om nieuwe in hun vak te laten springen. */
-const SEEN_KEY = 'dexcrate:binder-seen:'
-/** Set al gevierd als compleet; weer weg als de set niet meer compleet is. */
-const COMPLETE_KEY = 'dexcrate:set-complete:'
-/** Hoogste gevierde mijlpaal per set. */
-const MILESTONE_KEY = 'dexcrate:set-milestone:'
-const MAX_NEW = 12
-const SPARKLE_COLORS = ENERGY_TYPES.filter((t) => t !== 'Colorless').map(energyColor)
-
-function readSeen(key: string): Set<string> | null {
-  try {
-    const raw = localStorage.getItem(key)
-    const parsed: unknown = raw ? JSON.parse(raw) : null
-    return Array.isArray(parsed) ? new Set(parsed.filter((x): x is string => typeof x === 'string')) : null
-  } catch {
-    return null // geen opslag of kapotte waarde: als eerste bezoek behandelen
-  }
-}
-
-function remember(key: string, value: string | null): void {
-  try {
-    if (value === null) localStorage.removeItem(key)
-    else localStorage.setItem(key, value)
-  } catch (err) {
-    console.warn('Binderstatus onthouden mislukt', err)
-  }
-}
-const OLD_PAGE_SIZE_KEY = 'binderline:binder-page-size'
-
-function readPageSize(): PageSize {
-  try {
-    return (localStorage.getItem(PAGE_SIZE_KEY) ?? localStorage.getItem(OLD_PAGE_SIZE_KEY)) === '12' ? 12 : 9
-  } catch {
-    return 9 // geen opslag: standaard 9-pocket
-  }
-}
 
 export function SetBinderPage({ param }: Props): JSX.Element {
   const [data, setData] = useState<Loaded | null>(null)
@@ -436,68 +381,10 @@ export function SetBinderPage({ param }: Props): JSX.Element {
         />
       </div>
 
-      {(progress.duplicates > 0 || progress.ordered > 0 || progress.unknownVariant > 0 || variantsLoading) && (
-        <div className="stat-row">
-          {progress.duplicates > 0 && (
-            <div className="stat">
-              <span className="stat-label">Duplicates</span>
-              <span className="stat-value">{progress.duplicates}</span>
-              <span className="stat-sub">More than you need for this goal</span>
-            </div>
-          )}
-          {progress.ordered > 0 && (
-            <div className="stat">
-              <span className="stat-label">Incoming</span>
-              <span className="stat-value">{progress.ordered}</span>
-              <span className="stat-sub">Ordered, not counted yet</span>
-            </div>
-          )}
-          {progress.unknownVariant > 0 && (
-            <div className="stat">
-              <span className="stat-label">Version unknown</span>
-              <span className="stat-value">{progress.unknownVariant}</span>
-              <span className="stat-sub">Set the variant on these cards to count them</span>
-            </div>
-          )}
-          {variantsLoading && (
-            <div className="stat">
-              <span className="stat-label">Checking versions</span>
-              <span className="stat-value">
-                {variantsLoading.done} of {variantsLoading.total}
-              </span>
-              <span className="stat-sub">Which versions exist per card</span>
-            </div>
-          )}
-        </div>
-      )}
+      <GoalStats progress={progress} variantsLoading={variantsLoading} />
 
       {missingCount > 0 && data.cards.length > 0 && (
-        <div className="panel cost-panel">
-          <div>
-            <span className="stat-label">Cost to complete</span>
-            {costSummary && cost ? (
-              <>
-                <p className="meter-value">
-                  {cost.running ? `${formatEur(costSummary.amount)}…` : formatEur(costSummary.amount)}
-                </p>
-                <p className="muted small">
-                  {cost.running
-                    ? `Fetching prices: ${cost.done} of ${cost.total}`
-                    : `${missingCount} missing ${unit}${costSummary.unknown > 0 ? `, ${costSummary.unknown} without price (not included)` : ''}`}
-                </p>
-              </>
-            ) : (
-              <p className="muted small">
-                Market price of your {missingCount} missing {unit} (indicative).
-              </p>
-            )}
-          </div>
-          {!cost?.running && (
-            <button type="button" className="primary" onClick={() => void calculateCost()}>
-              {cost ? 'Recalculate' : 'Calculate'}
-            </button>
-          )}
-        </div>
+        <CostPanel missingCount={missingCount} unit={unit} cost={cost} costSummary={costSummary} onCalculate={() => void calculateCost()} />
       )}
 
       <div className="filters">
@@ -592,86 +479,22 @@ export function SetBinderPage({ param }: Props): JSX.Element {
           <section key={i} className="binder-page" aria-label={sort === 'number' ? `Page ${i + 1}` : `Cards sorted by ${SET_SORT_LABELS[sort].toLowerCase()}`}>
             {sort === 'number' && <p className="binder-page-label">Page {i + 1}</p>}
             <ul className="binder set-binder" style={sort === 'number' ? { ['--binder-cols' as string]: pageSize === 9 ? 3 : 4 } : undefined}>
-              {page.map((c) => {
-                const qty = data.owned.get(c.id)
-                const states = statesByCard.get(c.id) ?? []
-                const inGoal = states.length > 0
-                const complete = inGoal && states.every((st) => st.missing === 0)
-                // Prijs van wat er van deze kaart nog ontbreekt (alleen als alle prijzen bekend zijn).
-                // undefined = (nog) niet berekend, null = minstens één prijs onbekend.
-                let price: number | null | undefined
-                if (cost && !complete) {
-                  let cents = 0
-                  let fetched = true
-                  let unknown = false
-                  for (const st of states) {
-                    if (st.missing === 0) continue
-                    const v = cost.prices.get(stateKey(st))
-                    if (v === undefined) fetched = false
-                    else if (v === null) unknown = true
-                    else cents += st.missing * Math.round(v * 100)
-                  }
-                  price = !fetched ? undefined : unknown ? null : cents / 100
-                }
-                const versioned = states.filter((st) => st.req.variant !== null)
-                const dexId = motion && !complete ? (silhouetteInfos.get(`${lang}/${c.id}`)?.dexId ?? null) : null
-                return (
-                  <li
-                    key={c.id}
-                    className={`slot${complete ? ' have' : ' missing'}${inGoal ? '' : ' outside'}${newIds.has(c.id) ? ' is-new' : ''}${dexId ? ' has-silhouette' : ''}`}
-                    style={newIds.has(c.id) ? ({ '--pop-delay': `${[...newIds].indexOf(c.id) * 120}ms` } as CSSProperties) : undefined}
-                  >
-                    <button
-                      type="button"
-                      className="slot-open"
-                      onClick={() => setOpenCard(c)}
-                      aria-label={`View ${c.name} #${c.localId}${complete ? '' : inGoal ? ' (missing)' : ' (not in goal)'}`}
-                    >
-                      {isLang(lang) ? (
-                        <CatalogCardPicture
-                          lang={lang}
-                          setId={data.summary.id}
-                          localId={c.localId}
-                          image={c.image}
-                          name={c.name}
-                          quality="low"
-                          alt={`${c.name} ${c.localId}`}
-                          fallback={<CardFace name={c.name} detail={`#${c.localId}`} />}
-                        />
-                      ) : (
-                        <CardFace name={c.name} detail={`#${c.localId}`} />
-                      )}
-                      {dexId && (
-                        <span className="whos-that" aria-hidden="true">
-                          <img className="whos-that-dark" src={spriteUrls(dexId, false)[1]} alt="" loading="lazy" />
-                          <img className="whos-that-color" src={spriteUrls(dexId, false)[1]} alt="" loading="lazy" />
-                        </span>
-                      )}
-                      <span className="slot-name" title={c.name}>
-                        {c.name}
-                      </span>
-                      <span className="slot-num">#{c.localId}</span>
-                      {versioned.length > 0 && (
-                        <span className="slot-variants">
-                          {versioned.map((st) => (
-                            <span
-                              key={st.req.variant}
-                              className={st.missing === 0 ? 'ok' : 'miss'}
-                              title={`${VARIANT_LABELS[st.req.variant as Variant]}: ${st.missing === 0 ? 'owned' : 'missing'}`}
-                            >
-                              {VARIANT_SHORT[st.req.variant as Variant]}
-                            </span>
-                          ))}
-                        </span>
-                      )}
-                      {sort === 'value'
-                        ? values?.prices.has(c.id) && <span className="slot-price">{formatValue(values.prices.get(c.id) ?? null)}</span>
-                        : !complete && inGoal && price !== undefined && <span className="slot-price">{price === null ? 'no price' : formatEur(price)}</span>}
-                      {qty && qty > 1 ? <span className="qty-badge">{qty}×</span> : null}
-                    </button>
-                  </li>
-                )
-              })}
+              {page.map((c) => (
+                <BinderSlot
+                  key={c.id}
+                  card={c}
+                  lang={lang}
+                  setId={data.summary.id}
+                  qty={data.owned.get(c.id)}
+                  states={statesByCard.get(c.id) ?? []}
+                  cost={cost}
+                  sort={sort}
+                  values={values}
+                  newIndex={newIds.has(c.id) ? [...newIds].indexOf(c.id) : null}
+                  silhouette={motion ? (silhouetteInfos.get(`${lang}/${c.id}`)?.dexId ?? null) : null}
+                  onOpen={setOpenCard}
+                />
+              ))}
             </ul>
           </section>
         ))}
