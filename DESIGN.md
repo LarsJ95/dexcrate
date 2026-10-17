@@ -81,12 +81,12 @@ Standaardthema is donker (tokens in `src/index.css`):
 - Succes: #5fd68f
 - Waarschuwing: #ffb547
 - Fout: #ff6b5e
-- Licht thema als eigen palet (17-10-2026 iets donkerder gemaakt op verzoek): achtergrond #e8e6ec, oppervlak #f7f6f9 (verhoogd #e5e3e9, #dfdce4), tekst primair #17161c (zacht #3a3842), secundair #625e6b (≥ 4,5:1 op alle vlakken), rand #d3d0d9 (sterk #bcb7c4), accent #ffcb05 alleen als vlak met donkere tekst, accent als lijn/markering #7d5b00 (`--accent-line`), focusring #17161c (`--focus`), succes #08703f, waarschuwing #8a5000, fout #b52f26.
+- Licht thema als eigen palet (17-10-2026 twee keer donkerder gemaakt op verzoek): achtergrond #dcdae1, oppervlak #efedf2 (verhoogd #dbd8e0, #d4d1da), tekst primair #17161c (zacht #3a3842), secundair #595562, rand #c9c6cf (sterk #b0abb8), accent #ffcb05 alleen als vlak met donkere tekst, accent als lijn/markering #6f5100 (`--accent-line`), focusring #17161c (`--focus`), succes #066238, waarschuwing #7a4700, fout #a1281f. Alle tekstkleuren ≥ 4,5:1 op elk vlak (laagste 4,8).
   In het donkere thema zijn `--focus` en `--accent-line` gelijk aan het accent.
 
 Typekleur (token `--type`): de kleur van het energietype van de kaart in beeld. Gebruikt voor de achtergrondgloed, het vage patroon van energiesymbolen en de typestreep op tegels. Nooit voor tekst. Standaard (geen kaart in beeld): Lightning.
 - Energietypes (`--energy-*`): Grass #4fb84a, Fire #f0612f, Water #3d8fe0, Lightning #f5c518, Psychic #b05cc8, Fighting #c5683a, Darkness #4a6b70, Metal #8e9aa4, Dragon #c9a227, Fairy #e47fb8, Colorless #cfcabf.
-- Zeldzaamheidssymbolen: gewone sterren/cirkel in tekstkleur, gouden sterren `--rarity-gold` #e8b931 (licht thema #7d5b00).
+- Zeldzaamheidssymbolen: gewone sterren/cirkel in tekstkleur, gouden sterren `--rarity-gold` #e8b931 (licht thema #6f5100).
 - Pokébal: rood `--ball-red` #e3350d, lijn #1b1b1f, wit #f3f1ec (gelijk in beide thema's).
 
 Regels:

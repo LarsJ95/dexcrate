@@ -87,31 +87,32 @@
 :root[data-theme='light'] {
   color-scheme: light;
 
-  /* Iets donkerder (17-10-2026, op verzoek); grijze tekst blijft overal ≥ 4,5:1. */
-  --bg: #e8e6ec;
-  --surface: #f7f6f9;
-  --surface-2: #e5e3e9;
-  --surface-3: #dfdce4;
-  --line: #d3d0d9;
-  --line-strong: #bcb7c4;
+  /* Twee keer donkerder gemaakt (17-10-2026, op verzoek); tekstkleuren mee verdonkerd zodat
+     grijze, rode, groene en gouden tekst op elk vlak ≥ 4,5:1 blijft (laagste: 4,8 op surface-3). */
+  --bg: #dcdae1;
+  --surface: #efedf2;
+  --surface-2: #dbd8e0;
+  --surface-3: #d4d1da;
+  --line: #c9c6cf;
+  --line-strong: #b0abb8;
   --ink: #17161c;
   --ink-soft: #3a3842;
-  --muted: #625e6b;
+  --muted: #595562;
 
-  --link: #7d5b00;
-  --red: #b52f26;
-  --green: #08703f;
-  --amber: #8a5000;
+  --link: #6f5100;
+  --red: #a1281f;
+  --green: #066238;
+  --amber: #7a4700;
 
-  --green-bg: rgb(8 112 63 / 0.1);
+  --green-bg: rgb(6 98 56 / 0.1);
   --amber-bg: rgb(255 181 71 / 0.22);
-  --red-bg: rgb(181 47 38 / 0.1);
+  --red-bg: rgb(161 40 31 / 0.1);
 
-  --chart-line: #7d5b00;
+  --chart-line: #6f5100;
   --focus: #17161c;
-  --accent-line: #7d5b00;
+  --accent-line: #6f5100;
   --rarity-ink: #3a3842;
-  --rarity-gold: #7d5b00;
+  --rarity-gold: #6f5100;
   --hp-high: #17803d;
   --hp-mid: #946b00;
   --hp-low: #c23b22;
