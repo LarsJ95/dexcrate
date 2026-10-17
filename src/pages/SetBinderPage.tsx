@@ -260,8 +260,10 @@ export function SetBinderPage({ param }: Props): JSX.Element {
         : show === 'missing'
           ? data.cards.filter((c) => statesByCard.has(c.id) && !complete(c.id))
           : data.cards
-    return sortSetCards(shown, sort, { complete, value: values?.prices ?? new Map(), rank: ranks })
-  }, [data, show, statesByCard, sort, values, ranks])
+    // Op waarde of zeldzaamheid pas sorteren als alles binnen is; anders springen kaarten tijdens het laden.
+    const ready = sort === 'value' ? values !== null && values.done >= values.total : sort === 'rarity' ? infos.size >= data.cards.length : true
+    return sortSetCards(shown, ready ? sort : 'number', { complete, value: values?.prices ?? new Map(), rank: ranks })
+  }, [data, show, statesByCard, sort, values, ranks, infos])
 
   // Binderpagina's alleen in setvolgorde; gesorteerd is het één doorlopend raster.
   const pages = useMemo(() => {

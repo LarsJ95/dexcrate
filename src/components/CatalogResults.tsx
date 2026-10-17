@@ -84,7 +84,9 @@ export function CatalogResults({ query, lang, wished, owned, onPick, note = null
     for (const [k, info] of infos) if (info?.rarity) rank.set(k.slice(k.indexOf('/') + 1), rarityRule(info.rarity).rank)
     return { price, rank }
   }, [prices, infos])
-  const hits = useMemo(() => (currentHits ? sortHits(currentHits, order, sortData) : null), [currentHits, order, sortData])
+  // Pas op prijs of zeldzaamheid sorteren als alles binnen is; anders springen kaarten tijdens het laden.
+  const sortReady = needsHitPrices(order) ? prices.size >= hitKeys.length : needsHitRarity(order) ? infos.size >= hitKeys.length : true
+  const hits = useMemo(() => (currentHits ? sortHits(currentHits, sortReady ? order : 'newest', sortData) : null), [currentHits, order, sortData, sortReady])
   const count = shown.key === key ? shown.count : PAGE
   const total = hits?.length ?? 0
 
