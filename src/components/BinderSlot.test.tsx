@@ -23,7 +23,7 @@ const state = (variant: Variant | null, missing: number): RequirementState => ({
 const cost = (prices: [string, number | null][]): Cost => ({ done: prices.length, total: prices.length, prices: new Map(prices), running: false })
 
 // Taal 'xx' bestaat niet in de catalogus: het vak toont de getekende voorkant (geen netwerk).
-const base = { card, lang: 'xx', setId: 'sv03.5', qty: undefined, cost: null, sort: 'number' as const, values: null, newIndex: null, silhouette: null, onOpen: () => {} }
+const base = { card, lang: 'xx', setId: 'sv03.5', qty: undefined, cost: null, sort: 'number' as const, values: null, newIndex: null, onOpen: () => {} }
 
 describe('BinderSlot', () => {
   it('ontbrekende kaart: label, uitvoeringen en prijs van wat ontbreekt', () => {
@@ -42,18 +42,17 @@ describe('BinderSlot', () => {
     expect(screen.queryByText('no price')).toBeNull()
   })
 
-  it('complete kaart: geen silhouet, geen prijs, wel aantal', () => {
-    const { container } = render(<BinderSlot {...base} states={[state(null, 0)]} qty={3} silhouette={25} cost={cost([])} />)
+  it('complete kaart: geen prijs, wel aantal', () => {
+    const { container } = render(<BinderSlot {...base} states={[state(null, 0)]} qty={3} cost={cost([])} />)
     expect(container.querySelector('li')?.className).toBe('slot have')
-    expect(container.querySelector('.whos-that')).toBeNull()
     expect(screen.getByText('3×')).toBeTruthy()
   })
 
-  it('buiten het doel, nieuw en met silhouet; tikken opent de kaart', async () => {
+  it('buiten het doel en nieuw; tikken opent de kaart', async () => {
     const onOpen = vi.fn()
-    const { container } = render(<BinderSlot {...base} states={[]} newIndex={2} silhouette={25} onOpen={onOpen} />)
+    const { container } = render(<BinderSlot {...base} states={[]} newIndex={2} onOpen={onOpen} />)
     const li = container.querySelector('li')
-    expect(li?.className).toBe('slot missing outside is-new has-silhouette')
+    expect(li?.className).toBe('slot missing outside is-new')
     expect(li?.style.getPropertyValue('--pop-delay')).toBe('240ms')
     await userEvent.click(screen.getByRole('button', { name: 'View Pikachu #025 (not in goal)' }))
     expect(onOpen).toHaveBeenCalledWith(card)

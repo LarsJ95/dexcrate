@@ -4,7 +4,6 @@ import { rarityRule } from '../lib/cardTraits'
 import { burstFrom } from '../lib/fx'
 import { SET_MILESTONES, celebrateMilestone, showMoment } from '../lib/moments'
 import { crateForSet } from '../lib/celebrate'
-import { useMotion } from '../lib/motion'
 import { hpLevel } from '../lib/trainer'
 import { DEFAULT_GOAL, goalProgress, goalRequirements, type GoalSettings, type OwnedCopy, type RequirementState } from '../lib/goals'
 import { marketValue } from '../lib/prices'
@@ -181,12 +180,6 @@ export function SetBinderPage({ param }: Props): JSX.Element {
   // Sorteren op zeldzaamheid: kaartinfo (7 dagen gecachet).
   const cardKeys = useMemo(() => (data && isLang(lang) ? data.cards.map((c) => `${lang}/${c.id}`) : []), [data, lang])
   const infos = useCatalogInfos(cardKeys, sort === 'rarity')
-  // Who's that Pokémon? Silhouet van ontbrekende Pokémon-kaarten (Pokédex-nummer uit de kaartinfo).
-  const motion = useMotion()
-  // Alleen met een muis (hover): op de telefoon zie je ontbrekende kaarten meteen, zonder silhouet.
-  const [canHover] = useState(() => typeof matchMedia === 'function' && matchMedia('(hover: hover)').matches)
-  const silhouettes = motion && canHover
-  const silhouetteInfos = useCatalogInfos(cardKeys, silhouettes)
   const ranks = useMemo(() => {
     const map = new Map<string, number>()
     for (const [key, info] of infos) if (info) map.set(key.slice(key.indexOf('/') + 1), rarityRule(info.rarity).rank)
@@ -514,7 +507,6 @@ export function SetBinderPage({ param }: Props): JSX.Element {
                   sort={sort}
                   values={values}
                   newIndex={newIds.has(c.id) ? [...newIds].indexOf(c.id) : null}
-                  silhouette={silhouettes ? (silhouetteInfos.get(`${lang}/${c.id}`)?.dexId ?? null) : null}
                   onOpen={setOpenCard}
                 />
               ))}

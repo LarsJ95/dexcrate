@@ -1,6 +1,5 @@
 import type { CSSProperties, JSX } from 'react'
 import type { RequirementState } from '../lib/goals'
-import { spriteUrls } from '../lib/runner'
 import { VARIANT_SHORT, formatValue, stateKey, type Cost } from '../lib/setBinder'
 import type { SetSort } from '../lib/setSort'
 import { formatEur } from '../lib/stats'
@@ -22,13 +21,11 @@ interface Props {
   values: { prices: ReadonlyMap<string, number | null> } | null
   /** Nieuw sinds het vorige bezoek: springt in zijn vak; index = volgorde van springen. */
   newIndex: number | null
-  /** Pokédex-nummer voor het silhouet (Who's that Pokémon?), of null; alleen getoond zolang de kaart niet compleet is. */
-  silhouette: number | null
   onOpen: (card: SetCard) => void
 }
 
 /** Eén vak in de setbinder. */
-export function BinderSlot({ card: c, lang, setId, qty, states, cost, sort, values, newIndex, silhouette, onOpen }: Props): JSX.Element {
+export function BinderSlot({ card: c, lang, setId, qty, states, cost, sort, values, newIndex, onOpen }: Props): JSX.Element {
   const inGoal = states.length > 0
   const complete = inGoal && states.every((st) => st.missing === 0)
   // Prijs van wat er van deze kaart nog ontbreekt (alleen als alle prijzen bekend zijn).
@@ -48,11 +45,10 @@ export function BinderSlot({ card: c, lang, setId, qty, states, cost, sort, valu
     price = !fetched ? undefined : unknown ? null : cents / 100
   }
   const versioned = states.filter((st) => st.req.variant !== null)
-  const dexId = complete ? null : silhouette
   const isNew = newIndex !== null
   return (
     <li
-      className={`slot${complete ? ' have' : ' missing'}${inGoal ? '' : ' outside'}${isNew ? ' is-new' : ''}${dexId ? ' has-silhouette' : ''}`}
+      className={`slot${complete ? ' have' : ' missing'}${inGoal ? '' : ' outside'}${isNew ? ' is-new' : ''}`}
       style={isNew ? ({ '--pop-delay': `${newIndex * 120}ms` } as CSSProperties) : undefined}
     >
       <button
@@ -74,11 +70,6 @@ export function BinderSlot({ card: c, lang, setId, qty, states, cost, sort, valu
           />
         ) : (
           <CardFace name={c.name} detail={`#${c.localId}`} />
-        )}
-        {dexId && (
-          <span className="whos-that" aria-hidden="true">
-            <img className="whos-that-dark" src={spriteUrls(dexId, false)[1]} alt="" loading="lazy" />
-          </span>
         )}
         <span className="slot-name" title={c.name}>
           {c.name}
