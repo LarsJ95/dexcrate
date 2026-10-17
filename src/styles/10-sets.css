@@ -152,10 +152,10 @@
   border-radius: var(--radius-card);
 }
 
-/* Ontbrekend: grijzer en lichter doorzichtig, maar nog goed te herkennen (17-10-2026: was grayscale 1, brightness 0.85, opacity 0.45). */
+/* Ontbrekend: grijs en gedimd, maar goed te herkennen (17-10-2026, tussen eerdere 0.45 = te donker en 0.75 = te licht). */
 .slot.missing .card-img {
-  filter: grayscale(0.75);
-  opacity: 0.75;
+  filter: grayscale(0.85) brightness(0.92);
+  opacity: 0.6;
 }
 
 .slot-name {
