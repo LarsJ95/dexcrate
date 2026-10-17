@@ -25,16 +25,11 @@ button.slot-open {
   grid-area: 1 / 1;
   width: 80%;
   image-rendering: pixelated;
-  transition: opacity 300ms ease-out;
 }
 
 .whos-that-dark {
   filter: brightness(0);
   opacity: 0.9;
-}
-
-.whos-that-color {
-  opacity: 0;
 }
 
 /* Achter het silhouet ligt de kaart al in kleur klaar voor de onthulling. */
@@ -47,22 +42,15 @@ button.slot-open:hover .whos-that {
   transform: translateY(-4px);
 }
 
+/* Hover of focus: na een korte vertraging verdwijnt het silhouet en zie je meteen de kaart (geen inkleuren; 17-10-2026). */
 @media (hover: hover) {
-  .has-silhouette button.slot-open:hover .whos-that-color {
-    opacity: 1;
-  }
-
   .has-silhouette button.slot-open:hover .whos-that {
     opacity: 0;
-    transition-delay: 450ms;
+    transition-delay: 250ms;
   }
-}
-
-.has-silhouette button.slot-open:focus-visible .whos-that-color {
-  opacity: 1;
 }
 
 .has-silhouette button.slot-open:focus-visible .whos-that {
   opacity: 0;
-  transition-delay: 450ms;
+  transition-delay: 250ms;
 }

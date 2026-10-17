@@ -78,7 +78,6 @@ export function BinderSlot({ card: c, lang, setId, qty, states, cost, sort, valu
         {dexId && (
           <span className="whos-that" aria-hidden="true">
             <img className="whos-that-dark" src={spriteUrls(dexId, false)[1]} alt="" loading="lazy" />
-            <img className="whos-that-color" src={spriteUrls(dexId, false)[1]} alt="" loading="lazy" />
           </span>
         )}
         <span className="slot-name" title={c.name}>
