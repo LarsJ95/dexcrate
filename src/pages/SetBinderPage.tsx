@@ -258,13 +258,12 @@ export function SetBinderPage({ param }: Props): JSX.Element {
     return sortSetCards(shown, ready ? sort : 'number', { complete, value: values?.prices ?? new Map(), rank: ranks })
   }, [data, show, statesByCard, sort, values, ranks, infos])
 
-  // Binderpagina's alleen in setvolgorde; gesorteerd is het één doorlopend raster.
+  // Altijd binderpagina's van 6 of 9, ook gesorteerd (dan in de gekozen volgorde).
   const pages = useMemo(() => {
-    if (sort !== 'number') return [visible]
     const out: SetCard[][] = []
     for (let i = 0; i < visible.length; i += pageSize) out.push(visible.slice(i, i + pageSize))
     return out
-  }, [visible, pageSize, sort])
+  }, [visible, pageSize])
 
   // Nieuw sinds het vorige bezoek (eerste bezoek: niets); daarna onthouden wat je nu hebt.
   const newIds = useMemo<ReadonlySet<string>>(() => {
@@ -417,15 +416,13 @@ export function SetBinderPage({ param }: Props): JSX.Element {
             </button>
           ))}
         </div>
-        {sort === 'number' && (
-          <div className="segmented" role="group" aria-label="Pockets per page">
-            {([6, 9] as const).map((size) => (
-              <button key={size} type="button" aria-pressed={pageSize === size} onClick={() => changePageSize(size)}>
-                {size} per page
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="segmented" role="group" aria-label="Pockets per page">
+          {([6, 9] as const).map((size) => (
+            <button key={size} type="button" aria-pressed={pageSize === size} onClick={() => changePageSize(size)}>
+              {size} per page
+            </button>
+          ))}
+        </div>
         <select className="toolbar-sort" aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as SetSort)}>
           {(Object.keys(SET_SORT_LABELS) as SetSort[]).map((k) => (
             <option key={k} value={k}>
@@ -490,11 +487,11 @@ export function SetBinderPage({ param }: Props): JSX.Element {
         </div>
       )}
 
-      <div className={sort === 'number' ? 'binder-pages' : 'binder-sorted'}>
+      <div className="binder-pages">
         {pages.map((page, i) => (
-          <section key={i} className="binder-page" aria-label={sort === 'number' ? `Page ${i + 1}` : `Cards sorted by ${SET_SORT_LABELS[sort].toLowerCase()}`}>
-            {sort === 'number' && <p className="binder-page-label">Page {i + 1}</p>}
-            <ul className="binder set-binder" style={sort === 'number' ? { ['--binder-cols' as string]: pageSize === 6 ? 2 : 3 } : undefined}>
+          <section key={i} className="binder-page" aria-label={`Page ${i + 1}`}>
+            <p className="binder-page-label">Page {i + 1}</p>
+            <ul className="binder set-binder" style={{ ['--binder-cols' as string]: pageSize === 6 ? 2 : 3 }}>
               {page.map((c) => (
                 <BinderSlot
                   key={c.id}
