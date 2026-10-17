@@ -87,15 +87,16 @@
 }
 
 @media (max-width: 480px) {
-  /* Eén regel die je kunt vegen, in plaats van afbreken. */
-  .filters .segmented {
+  /* Eén regel die je kunt vegen, in plaats van afbreken (ook taal- en lijsttabs: anders verspringt de
+     pagina zodra de aantallen binnenkomen). */
+  .segmented {
     flex-wrap: nowrap;
     overflow-x: auto;
     max-width: 100%;
     scrollbar-width: none;
   }
 
-  .filters .segmented button {
+  .segmented > * {
     flex: 0 0 auto;
   }
 }

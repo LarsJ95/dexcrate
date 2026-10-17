@@ -1,17 +1,17 @@
 import { lazy, Suspense, useEffect, useState, type JSX } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { Login } from './components/Login'
-import { Shell } from './components/Shell'
 import { ROUTES } from './lib/routes'
 import { useHashRoute } from './hooks/useHashRoute'
 import { useTheme } from './hooks/useTheme'
-// Startpagina direct mee; de rest pas laden als je de pagina opent.
-import { DashboardPage } from './pages/DashboardPage'
 import { supabase } from './lib/supabase'
 import './App.css'
 import { Loading } from './components/Loading'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
+// Alles na het inloggen pas laden als het nodig is: het inlogscherm (eerste bezoek) blijft klein.
+const Shell = lazy(() => import('./components/Shell').then((m) => ({ default: m.Shell })))
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })))
 const BackupPage = lazy(() => import('./pages/BackupPage').then((m) => ({ default: m.BackupPage })))
 const CollectionPage = lazy(() => import('./pages/CollectionPage').then((m) => ({ default: m.CollectionPage })))
 const ImportPage = lazy(() => import('./pages/ImportPage').then((m) => ({ default: m.ImportPage })))
@@ -57,24 +57,26 @@ function App(): JSX.Element {
   if (!session) return <Login />
 
   return (
-    <Shell route={route} email={session.user.email ?? null} theme={theme} onToggleTheme={toggle} onSignOut={() => void signOut()}>
-      <ErrorBoundary resetKey={`${route}/${param ?? ''}`}>
-        <Suspense fallback={<Loading />}>
-          {route === 'overview' && <DashboardPage email={session.user.email ?? null} />}
-          {route === 'collection' && <CollectionPage />}
-          {route === 'scan' && <ScanPage />}
-          {route === 'sets' && (param ? <SetBinderPage key={param} param={param} /> : <SetsPage />)}
-          {route === 'wishlist' && <WishlistPage />}
-          {route === 'crate' && <CratePage />}
-          {route === 'transactions' && <TransactionsPage />}
-          {route === 'photos' && <PhotosPage />}
-          {route === 'import' && <ImportPage />}
-          {route === 'backup' && <BackupPage />}
-          {route === 'settings' && <SettingsPage />}
-          {route === 'more' && <MorePage />}
-        </Suspense>
-      </ErrorBoundary>
-    </Shell>
+    <Suspense fallback={<Loading center />}>
+      <Shell route={route} email={session.user.email ?? null} theme={theme} onToggleTheme={toggle} onSignOut={() => void signOut()}>
+        <ErrorBoundary resetKey={`${route}/${param ?? ''}`}>
+          <Suspense fallback={<Loading />}>
+            {route === 'overview' && <DashboardPage email={session.user.email ?? null} />}
+            {route === 'collection' && <CollectionPage />}
+            {route === 'scan' && <ScanPage />}
+            {route === 'sets' && (param ? <SetBinderPage key={param} param={param} /> : <SetsPage />)}
+            {route === 'wishlist' && <WishlistPage />}
+            {route === 'crate' && <CratePage />}
+            {route === 'transactions' && <TransactionsPage />}
+            {route === 'photos' && <PhotosPage />}
+            {route === 'import' && <ImportPage />}
+            {route === 'backup' && <BackupPage />}
+            {route === 'settings' && <SettingsPage />}
+            {route === 'more' && <MorePage />}
+          </Suspense>
+        </ErrorBoundary>
+      </Shell>
+    </Suspense>
   )
 }
 
