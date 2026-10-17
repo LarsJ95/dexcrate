@@ -51,7 +51,7 @@ Crashes en onafgevangen fouten (geen netwerkfouten) gaan naar de tabel `app_erro
 
 ## Code
 
-- `src/pages/`: één bestand per route (lazy geladen in `src/App.tsx`, behalve Overview)
+- `src/pages/`: één bestand per route; alle pagina's en de app-schil worden pas na het inloggen geladen (lazy, `src/App.tsx`)
 - `src/components/`: onderdelen; `*Parts.tsx` bundelt kleine stukken van één pagina
 - `src/lib/`: logica zonder React (getest met `*.test.ts`)
 - `src/hooks/`: gedeelde React-hooks
@@ -59,6 +59,10 @@ Crashes en onafgevangen fouten (geen netwerkfouten) gaan naar de tabel `app_erro
 - Componenttests: `*.test.tsx` met `// @vitest-environment jsdom` bovenaan en Testing Library
 
 UI-werk: lees eerst `DESIGN.md`.
+
+## Bekende melding van npm audit
+
+`npm audit` meldt `uuid < 11.1.1` via `exceljs` (alleen gebruikt voor de Excel-import). Bewust zo gelaten (17-10-2026): het lek zit in `uuid` v3/v5/v6 met een `buf`-argument, terwijl exceljs alleen `v4()` gebruikt; bovendien laadt de app de kant-en-klare `exceljs/dist/exceljs.min.js` met een eigen kopie, dus een override zou alleen de melding stilzetten. Opnieuw bekijken als exceljs een nieuwe versie uitbrengt.
 
 ## Visueel controleren
 
