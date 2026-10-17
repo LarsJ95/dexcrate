@@ -53,7 +53,10 @@ let nextPort = 9350
  */
 export async function openBrowser({ width = 412, height = 900 } = {}) {
   const port = nextPort++
-  const proc = spawn(chromePath(), [`--remote-debugging-port=${port}`, `--user-data-dir=${mkdtempSync(join(tmpdir(), 'dexcrate-e2e-'))}`, `--window-size=${width},${height}`, 'about:blank'], { stdio: 'ignore' })
+  // Gewone Chrome (CHROME_PATH, bv. in CI) moet expliciet headless; de headless-shell is dat altijd.
+  // In CI (GitHub Actions, Ubuntu) start Chrome niet met zijn sandbox.
+  const extra = [...(process.env.CHROME_PATH ? ['--headless=new'] : []), ...(process.env.CI ? ['--no-sandbox'] : [])]
+  const proc = spawn(chromePath(), [...extra, `--remote-debugging-port=${port}`, `--user-data-dir=${mkdtempSync(join(tmpdir(), 'dexcrate-e2e-'))}`, `--window-size=${width},${height}`, 'about:blank'], { stdio: 'ignore' })
   let target
   for (let i = 0; i < 75 && !target; i++) {
     await sleep(200)
