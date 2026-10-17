@@ -1,0 +1,63 @@
+name: Back-up database
+
+# Wekelijkse back-up van de productiedatabase (rollen, schema, data), VERSLEUTELD bewaard als artifact (90 dagen).
+# De repo is publiek: zonder BACKUP_PASSPHRASE stopt de workflow vóór er iets wordt opgeslagen.
+# Niet in de back-up: bestanden in Supabase Storage (foto's, bonnetjes); daarvoor de back-uppagina in de app.
+# Terugzetten: zie README, "Back-ups".
+on:
+  schedule:
+    - cron: '17 3 * * 1' # maandag 03:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+env:
+  SUPABASE_CLI: supabase@2.119.0
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Controle
+        run: |
+          test -n "$DB_URL" || { echo "Secret SUPABASE_DB_URL ontbreekt in environment 'production'."; exit 1; }
+          test -n "$PASSPHRASE" || { echo "Secret BACKUP_PASSPHRASE ontbreekt: zonder versleuteling geen back-up."; exit 1; }
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      - name: Dump
+        run: |
+          mkdir -p "$RUNNER_TEMP/dexcrate-backup"
+          cd "$RUNNER_TEMP/dexcrate-backup"
+          npx --yes "$SUPABASE_CLI" db dump --workdir "$GITHUB_WORKSPACE" --db-url "$DB_URL" --role-only -f roles.sql
+          npx --yes "$SUPABASE_CLI" db dump --workdir "$GITHUB_WORKSPACE" --db-url "$DB_URL" -f schema.sql
+          npx --yes "$SUPABASE_CLI" db dump --workdir "$GITHUB_WORKSPACE" --db-url "$DB_URL" --data-only --use-copy -f data.sql
+          ls -la
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      - name: Versleutelen
+        run: |
+          name="dexcrate-backup-$(date -u +%Y-%m-%d)"
+          tar -C "$RUNNER_TEMP" -czf - dexcrate-backup \
+            | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 3 --symmetric --cipher-algo AES256 -o "$RUNNER_TEMP/$name.tar.gz.gpg" 3<<<"$PASSPHRASE"
+          rm -r "$RUNNER_TEMP/dexcrate-backup"
+          echo "BACKUP_FILE=$RUNNER_TEMP/$name.tar.gz.gpg" >> "$GITHUB_ENV"
+          echo "BACKUP_NAME=$name" >> "$GITHUB_ENV"
+        env:
+          PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.BACKUP_NAME }}
+          path: ${{ env.BACKUP_FILE }}
+          retention-days: 90
+          if-no-files-found: error
