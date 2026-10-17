@@ -1,21 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { normalizeChannel, parsePrice, parseQuantity, splitLanguage } from './excel'
-import {
-  cardLanguageOf,
-  cardmarketUrl,
-  findTcgplayerId,
-  imageCandidates,
-  imageCandidatesForKey,
-  langFromName,
-  limitlessJpUrl,
-  lookupLang,
-  parseCardmarket,
-  parseVariants,
-  setOfKey,
-  splitKey,
-  stripLangTag,
-  tcgplayerImageUrl,
-} from './tcgdex'
+import { findTcgplayerId, langFromName, lookupLang, parseCardmarket, parseVariants, setOfKey, splitKey, stripLangTag } from './tcgdex'
+import { imageCandidates, imageCandidatesForKey, limitlessJpUrl, tcgplayerImageUrl } from './cardImages'
+import { cardLanguageOf, cardmarketUrl } from './cardmarket'
 
 describe('Excel-velden', () => {
   it('parseQuantity: "3x", "3", spaties; ongeldig → null', () => {

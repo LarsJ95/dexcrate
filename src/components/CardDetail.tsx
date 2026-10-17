@@ -11,7 +11,8 @@ import { updateCard } from '../lib/db'
 import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
 import { speciesName } from '../lib/runner'
-import { cardLanguageOf, setOfKey } from '../lib/tcgdex'
+import { setOfKey } from '../lib/tcgdex'
+import { cardLanguageOf } from '../lib/cardmarket'
 import {
   CONDITION_LABELS,
   LANGUAGE_LABELS,

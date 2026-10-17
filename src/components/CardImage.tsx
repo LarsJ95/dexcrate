@@ -1,7 +1,7 @@
 import { useMemo, type JSX } from 'react'
 import { useCardInfo } from '../hooks/useCardInfo'
 import { usePhotoUrl } from '../hooks/usePhotoUrl'
-import { imageCandidates } from '../lib/tcgdex'
+import { imageCandidates } from '../lib/cardImages'
 import type { ItemKind } from '../lib/types'
 import { CardFace } from './CardFace'
 import { ExtraSources } from './CatalogCardPicture'

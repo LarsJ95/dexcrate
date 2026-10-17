@@ -3,7 +3,8 @@ import { useKeyed } from '../hooks/useKeyed'
 import { limitlessEnCardUrl, ptcgCardUrl } from '../lib/cardImages'
 import { findPcHash, pcImageUrl } from '../lib/pricecharting'
 import { getPtcgSets, ptcgImagesFor, type PtcgSets } from '../lib/setIcons'
-import { getCardInfo, getSetAbbr, getSetList, imageCandidates, imageCandidatesForKey, setOfKey, tcgplayerImageUrl, type Lang, type SetSummary } from '../lib/tcgdex'
+import { getCardInfo, getSetAbbr, getSetList, setOfKey, type Lang, type SetSummary } from '../lib/tcgdex'
+import { imageCandidates, imageCandidatesForKey, tcgplayerImageUrl } from '../lib/cardImages'
 import { CardPicture } from './CardPicture'
 
 interface CardRef {

@@ -1,5 +1,5 @@
 import type { JSX } from 'react'
-import { cardmarketUrl } from '../lib/tcgdex'
+import { cardmarketUrl } from '../lib/cardmarket'
 
 interface Props {
   idProduct: number | null
