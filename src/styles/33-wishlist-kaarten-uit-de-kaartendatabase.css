@@ -61,6 +61,11 @@ button.catalog-hit:hover:not(:disabled) {
   }
 }
 
+.catalog-more {
+  display: flex;
+  justify-content: center;
+}
+
 .catalog-name {
   font-weight: 700;
   overflow-wrap: anywhere;

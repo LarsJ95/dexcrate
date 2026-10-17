@@ -32,6 +32,11 @@ export function HoloCard({ foil, children, interactive = false, className }: Pro
     let moved = 0
     let start: [number, number] | null = null
     const cur = { rx: 0, ry: 0, mx: 50, my: 50 }
+    // Volle glans alleen tijdens kantelen in de vergrote kaart; stilstaand is hij zacht (CSS: .is-tilting).
+    const setActive = (v: boolean): void => {
+      active = v
+      el.classList.toggle('is-tilting', v && interactive)
+    }
     const target = { ...cur }
 
     const aim = (px: number, py: number): void => {
@@ -63,20 +68,20 @@ export function HoloCard({ foil, children, interactive = false, className }: Pro
 
     const onDown = (e: PointerEvent): void => {
       if (!interactive && e.pointerType !== 'mouse') return
-      active = true
+      setActive(true)
       moved = 0
       start = [e.clientX, e.clientY]
       if (interactive) el.setPointerCapture(e.pointerId)
       fromPointer(e)
     }
     const onMove = (e: PointerEvent): void => {
-      if (e.pointerType === 'mouse') active = true
+      if (e.pointerType === 'mouse' && !active) setActive(true)
       if (!active) return
       if (start) moved = Math.max(moved, Math.hypot(e.clientX - start[0], e.clientY - start[1]))
       fromPointer(e)
     }
     const onUp = (): void => {
-      active = false
+      setActive(false)
       start = null
     }
     // Na slepen geen tik doorgeven (de vergrote kaart sluit bij een tik).
@@ -96,6 +101,7 @@ export function HoloCard({ foil, children, interactive = false, className }: Pro
     el.addEventListener('click', onClick, true)
     return () => {
       cancelAnimationFrame(frame)
+      el.classList.remove('is-tilting')
       el.removeEventListener('pointerdown', onDown)
       el.removeEventListener('pointermove', onMove)
       el.removeEventListener('pointerup', onUp)

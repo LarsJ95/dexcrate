@@ -5,6 +5,8 @@
   --mx: 50%;
   --my: 42%;
   --hyp: 0.3;
+  /* Stilstaand zacht; volle glans alleen tijdens kantelen in de vergrote kaart (17-10-2026, op verzoek). */
+  --foil-strength: 0.33;
   position: relative;
   border-radius: var(--radius-card);
   transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));
@@ -13,6 +15,10 @@
 
 .holo-card .card-img {
   border-radius: var(--radius-card);
+}
+
+.holo-card.is-tilting {
+  --foil-strength: 1;
 }
 
 .holo-card.is-interactive {
@@ -26,6 +32,7 @@
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
+  transition: opacity 200ms ease-out;
 }
 
 .holo-glare {
@@ -36,7 +43,7 @@
     var(--glare-3) 92%
   );
   mix-blend-mode: overlay;
-  opacity: calc(0.35 + var(--hyp) * 0.5);
+  opacity: calc((0.35 + var(--hyp) * 0.5) * var(--foil-strength));
 }
 
 .holo-foil {
@@ -46,13 +53,13 @@
 }
 
 [data-foil='holo'] .holo-foil {
-  opacity: 0.42;
+  opacity: calc(0.42 * var(--foil-strength));
   filter: brightness(0.7) contrast(1.6) saturate(1.3);
   background-image: repeating-linear-gradient(115deg, var(--holo-a) 0%, var(--holo-b) 6%, var(--holo-c) 12%, var(--holo-d) 18%, var(--holo-e) 24%, var(--holo-a) 30%);
 }
 
 [data-foil='illustration'] .holo-foil {
-  opacity: 0.32;
+  opacity: calc(0.32 * var(--foil-strength));
   filter: brightness(0.75) contrast(1.4);
   background-image:
     repeating-linear-gradient(125deg, var(--holo-a) 0%, var(--holo-b) 8%, var(--holo-c) 16%, var(--holo-d) 24%, var(--holo-a) 32%),
@@ -60,7 +67,7 @@
 }
 
 [data-foil='special'] .holo-foil {
-  opacity: 0.6;
+  opacity: calc(0.6 * var(--foil-strength));
   filter: brightness(0.8) contrast(1.7) saturate(1.5);
   background-image:
     repeating-linear-gradient(110deg, var(--holo-a) 0%, var(--holo-b) 5%, var(--holo-c) 10%, var(--holo-d) 15%, var(--holo-e) 20%, var(--holo-a) 25%),
@@ -71,7 +78,7 @@
 }
 
 [data-foil='gold'] .holo-foil {
-  opacity: 0.7;
+  opacity: calc(0.7 * var(--foil-strength));
   filter: brightness(0.85) contrast(1.4);
   background-image:
     linear-gradient(115deg, transparent 18%, var(--gold-a) 38%, var(--gold-b) 48%, var(--gold-c) 56%, var(--gold-d) 66%, transparent 84%),
