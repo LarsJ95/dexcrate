@@ -1,32 +1,61 @@
-# React + TypeScript + Vite
+# Dexcrate
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Persoonlijke PWA voor een Pokémon-kaartencollectie: collectie, aan- en verkoop, marktwaarde (Cardmarket via TCGdex), set-voortgang, wishlist en kaarten scannen met de camera.
 
-Currently, two official plugins are available:
+Live: https://larsj95.github.io/dexcrate/
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Stack
 
-## React Compiler
+- React 19 + TypeScript + Vite (PWA via `vite-plugin-pwa`, hash-routing)
+- Supabase: database met Row Level Security, opslag (foto's, bonnetjes), Edge Functions
+- Kaartdata en prijzen: TCGdex; extra beeldbronnen in `src/lib/cardImages.ts` en `src/lib/setIcons.ts`
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Starten
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```sh
+npm install
+cp .env.example .env.local   # vul VITE_SUPABASE_URL en VITE_SUPABASE_PUBLISHABLE_KEY in
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+| Script | Doet |
+| --- | --- |
+| `npm run dev` | Ontwikkelserver |
+| `npm run build` | Typecheck + productiebuild in `dist/` |
+| `npm run lint` | oxlint (`.oxlintrc.json`) |
+| `npm test` | Vitest |
+
+Zonder sleutels start de app niet (`src/lib/supabase.ts`). De publishable key is publiek; de beveiliging loopt via RLS. Gebruik nooit de secret key in de app.
+
+## Online zetten
+
+Elke push naar `main` draait `.github/workflows/deploy.yml`: lint → test → build → GitHub Pages. De Supabase-URL en publishable key staan als repository variables. Tests draaien daar **zonder** sleutels: een test die (indirect) `src/lib/supabase.ts` laadt, moet `vi.mock('…/supabase', …)` gebruiken plus een dynamische import (zie bv. `src/lib/model.test.ts`).
+
+## Database
+
+Wijzigingen gaan als SQL-bestand dat je zelf in Supabase → SQL Editor draait (alles plakken, één keer Run).
+
+- `supabase/STAP*.sql`: de stappen zoals ze op de bestaande database zijn gedraaid, in volgorde.
+- `supabase/schema.sql`: volledig schema voor een **nieuw, leeg** project (eindstand van alle stappen). Na een nieuw STAP-bestand: voeg het toe aan `PARTS` in `supabase/build-schema.mjs` en draai `node supabase/build-schema.mjs`.
+
+## Edge Functions
+
+In `supabase/functions/`, via de editor in het Supabase-dashboard gedeployd (controleer bij deployen het naamveld). "Verify JWT" blijft aan.
+
+- `recognize-card`: herkent kaarten op een foto met Claude. Secret: `ANTHROPIC_API_KEY`.
+- `card-image`: laatste redmiddel voor kaartfoto's via PriceCharting.
+
+## Code
+
+- `src/pages/`: één bestand per route (lazy geladen in `src/App.tsx`, behalve Overview)
+- `src/components/`: onderdelen; `*Parts.tsx` bundelt kleine stukken van één pagina
+- `src/lib/`: logica zonder React (getest met `*.test.ts`)
+- `src/hooks/`: gedeelde React-hooks
+- `src/styles/`: CSS per onderdeel; de volgorde in `src/App.css` is de cascade
+- Componenttests: `*.test.tsx` met `// @vitest-environment jsdom` bovenaan en Testing Library
+
+UI-werk: lees eerst `DESIGN.md`.
+
+## Visueel controleren
+
+`preview.html` (alleen in de ontwikkelserver) toont pagina's met voorbeelddata, bv. `/preview.html?page=collectionpage`, `?page=binder&set=en/sv03.5`, `?page=settings&theme=light`. Zie `src/preview/Preview.tsx` voor alle opties.
