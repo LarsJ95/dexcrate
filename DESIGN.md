@@ -81,7 +81,7 @@ Standaardthema is donker (tokens in `src/index.css`):
 - Succes: #5fd68f
 - Waarschuwing: #ffb547
 - Fout: #ff6b5e
-- Licht thema als eigen palet: achtergrond #f4f3f6, oppervlak #ffffff (verhoogd #efedf2, #e5e3ea), tekst primair #17161c (zacht #3a3842), secundair #625e6b, rand #dddae2 (sterk #c6c2cd), accent #ffcb05 alleen als vlak met donkere tekst, accent als lijn/markering #7d5b00 (`--accent-line`), focusring #17161c (`--focus`), succes #08703f, waarschuwing #8a5000, fout #b52f26.
+- Licht thema als eigen palet (17-10-2026 iets donkerder gemaakt op verzoek): achtergrond #e8e6ec, oppervlak #f7f6f9 (verhoogd #e5e3e9, #dfdce4), tekst primair #17161c (zacht #3a3842), secundair #625e6b (≥ 4,5:1 op alle vlakken), rand #d3d0d9 (sterk #bcb7c4), accent #ffcb05 alleen als vlak met donkere tekst, accent als lijn/markering #7d5b00 (`--accent-line`), focusring #17161c (`--focus`), succes #08703f, waarschuwing #8a5000, fout #b52f26.
   In het donkere thema zijn `--focus` en `--accent-line` gelijk aan het accent.
 
 Typekleur (token `--type`): de kleur van het energietype van de kaart in beeld. Gebruikt voor de achtergrondgloed, het vage patroon van energiesymbolen en de typestreep op tegels. Nooit voor tekst. Standaard (geen kaart in beeld): Lightning.
