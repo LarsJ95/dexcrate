@@ -60,6 +60,10 @@ Crashes en onafgevangen fouten (geen netwerkfouten) gaan naar de tabel `app_erro
 
 UI-werk: lees eerst `DESIGN.md`.
 
+## Snelheid meten (Lighthouse)
+
+`npm run build` en daarna `node tools/lighthouse.mjs [routes]`: mobiel (middenklasse-telefoon, trage 4G), eerst het inlogscherm bij een eerste bezoek, daarna de routes als ingelogde gebruiker. Voor echte data: `LH_EMAIL` en `LH_PASSWORD` in `.env.local` (niet in git, niet in de app). Uitleg en opties bovenin het script.
+
 ## Bekende melding van npm audit
 
 `npm audit` meldt `uuid < 11.1.1` via `exceljs` (alleen gebruikt voor de Excel-import). Bewust zo gelaten (17-10-2026): het lek zit in `uuid` v3/v5/v6 met een `buf`-argument, terwijl exceljs alleen `v4()` gebruikt; bovendien laadt de app de kant-en-klare `exceljs/dist/exceljs.min.js` met een eigen kopie, dus een override zou alleen de melding stilzetten. Opnieuw bekijken als exceljs een nieuwe versie uitbrengt.
