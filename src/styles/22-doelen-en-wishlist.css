@@ -1,0 +1,126 @@
+/* ---------- Doelen en wishlist ---------- */
+.check-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--space-2) var(--space-3);
+}
+
+/* Kaart buiten het doel (bv. secret rare uitgezet): zichtbaar maar teruggeschaald. */
+.slot.outside {
+  opacity: 0.5;
+}
+
+.slot-variants {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding-top: var(--space-1);
+}
+
+.slot-variants span {
+  min-width: 24px;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-xs);
+  font-size: var(--fs-small);
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.variant-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.legend-item .slot-variants {
+  padding-top: 0;
+}
+
+.slot-variants .ok {
+  background: var(--green-bg);
+  color: var(--green);
+}
+
+.slot-variants .miss {
+  border: 1px dashed var(--line-strong);
+  color: var(--muted);
+}
+
+button.wish-row {
+  justify-content: flex-start;
+}
+
+.wish-row .tx-main {
+  flex: 1;
+}
+
+.wish-thumb {
+  flex: none;
+  width: 48px;
+}
+
+.wish-thumb .card-img {
+  border-radius: var(--radius-card);
+}
+
+.wish-thumb .card-face {
+  padding: 8%;
+}
+
+.wish-thumb .card-face-name,
+.wish-thumb .card-face-detail {
+  display: none;
+}
+
+button.wish-add {
+  justify-self: start;
+}
+
+/* "More" (mobiel): lijst met overige pagina's. */
+.more-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.more-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.more-link:hover {
+  border-color: var(--line-strong);
+}
+
+.photo-zoom {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100dvh - 96px);
+  margin: 0 auto;
+  border-radius: var(--radius-s);
+  box-shadow: var(--shadow-float);
+}
+
+button.small-btn {
+  font-size: var(--fs-small);
+  padding: var(--space-1) var(--space-2);
+}

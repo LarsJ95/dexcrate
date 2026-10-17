@@ -1,0 +1,235 @@
+/* ---------- Overzicht ---------- */
+.dashboard {
+  gap: var(--gap-section);
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  gap: var(--space-1);
+  padding: clamp(var(--space-4), 3vw, var(--space-6));
+  border-radius: var(--radius-l);
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(600px 300px at 100% 0%, var(--accent-glow), transparent 60%),
+    linear-gradient(140deg, var(--surface-3), var(--surface));
+}
+
+/* Subtiele vangbal-ring als watermerk. */
+.hero::after {
+  content: '';
+  position: absolute;
+  right: -70px;
+  bottom: -70px;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  border: 22px solid var(--watermark);
+  background: linear-gradient(transparent 46%, var(--watermark) 46% 54%, transparent 54%);
+  pointer-events: none;
+}
+
+.hero-value {
+  font-size: clamp(2.8rem, 9vw, 4.75rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.hero-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  color: var(--ink-soft);
+}
+
+/* Bedrag met teken nooit over twee regels. */
+.hero-sub strong {
+  white-space: nowrap;
+}
+
+.stat-label {
+  font-size: var(--fs-label);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--space-3);
+}
+
+.stat {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--pad-panel);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  color: inherit;
+  text-decoration: none;
+}
+
+a.stat:hover {
+  border-color: var(--line-strong);
+}
+
+.stat-value {
+  font-size: var(--fs-stat);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.stat-sub {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.panel {
+  display: grid;
+  gap: var(--gap-inner);
+  align-content: start;
+}
+
+.meter-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.meter-value {
+  font-size: var(--fs-stat);
+  font-weight: 800;
+}
+
+.meter {
+  display: block;
+  height: 10px;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  background: color-mix(in oklab, var(--accent-line) 16%, var(--surface-2));
+}
+
+.meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--accent-line);
+}
+
+.averages {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.averages div {
+  padding: var(--pad-panel);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+}
+
+.averages dt {
+  font-size: var(--fs-label);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.averages dd {
+  margin: var(--space-1) 0 0;
+  font-size: var(--fs-stat);
+  font-weight: 800;
+}
+
+.market {
+  gap: var(--space-4);
+}
+
+.market-main {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.section-title {
+  font-size: var(--fs-h2);
+  margin-top: var(--space-2);
+}
+
+.panel-title {
+  font-size: 1rem;
+}
+
+.split-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-3);
+}
+
+.stat-value.up {
+  color: var(--green);
+}
+
+.stat-value.down {
+  color: var(--red);
+}
+
+.hero .chart {
+  margin-top: var(--space-3);
+}
+
+.movers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-3);
+}
+
+.mover-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.mover {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: inherit;
+  font-weight: inherit;
+  text-align: left;
+}
+
+.mover:hover:not(:disabled) {
+  background: var(--surface-2);
+  border: 0;
+}
+
+.mover img,
+.mover .card-img {
+  width: 38px;
+  border-radius: var(--radius-card);
+}
+
+.mover-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mover-price {
+  display: grid;
+  justify-items: end;
+  font-weight: 700;
+}

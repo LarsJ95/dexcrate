@@ -1,0 +1,30 @@
+/* ---------- Sets: taal en lege sets ---------- */
+.lang-switch {
+  justify-self: start;
+  max-width: 100%;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.lang-switch button {
+  flex: 0 0 auto;
+}
+
+.set-code {
+  max-width: 88px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+}
+
+.set-row.set-empty .set-name {
+  font-weight: 600;
+  color: var(--ink-soft);
+}

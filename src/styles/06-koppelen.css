@@ -1,0 +1,92 @@
+/* ---------- Koppelen ---------- */
+.link-picker {
+  display: grid;
+  gap: var(--gap-inner);
+}
+
+.link-current {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.link-thumb {
+  width: 46px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-card);
+}
+
+button.zoom-trigger.link-thumb {
+  width: 46px;
+  overflow: hidden;
+}
+
+.link-title {
+  font-weight: 700;
+}
+
+.link-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.link-search {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.link-search-row {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.link-search-row input {
+  flex: 1 1 200px;
+}
+
+.candidates {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+  gap: var(--space-3);
+}
+
+.candidate {
+  width: 100%;
+  display: grid;
+  justify-items: start;
+  gap: var(--space-1);
+  text-align: left;
+  padding: var(--space-2);
+  font-weight: 400;
+  background: var(--surface-2);
+  border-radius: var(--radius-l);
+}
+
+.candidate img,
+.candidate .card-img {
+  width: 100%;
+  aspect-ratio: 63 / 88;
+  object-fit: contain;
+  border-radius: var(--radius-card);
+}
+
+.candidate.selected {
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 1px var(--accent-line);
+}
+
+.cand-name {
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.cand-reason {
+  color: var(--green);
+  font-weight: 600;
+}

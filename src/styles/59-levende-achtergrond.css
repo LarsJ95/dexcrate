@@ -1,0 +1,325 @@
+/* ---------- Levende achtergrond (16-10-2026, DESIGN.md §9) ---------- */
+/* Achter alles (ook achter het energiebehang op body::before); klikken gaat er dwars doorheen. */
+.sky {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sky-tint,
+.sky-aurora,
+.sky-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.sky-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* Hemel volgens de tijd van de dag. */
+.sky-tint {
+  transition: background 3s ease;
+}
+
+.sky-dark[data-phase='night'] .sky-tint {
+  background: radial-gradient(120% 70% at 50% 0%, rgb(40 60 150 / 0.22), transparent 70%);
+}
+
+.sky-dark[data-phase='dawn'] .sky-tint {
+  background:
+    radial-gradient(90% 50% at 80% 100%, rgb(255 150 110 / 0.14), transparent 70%),
+    radial-gradient(120% 60% at 50% 0%, rgb(90 80 170 / 0.16), transparent 70%);
+}
+
+.sky-dark[data-phase='day'] .sky-tint {
+  background: radial-gradient(120% 60% at 50% 0%, rgb(70 130 230 / 0.12), transparent 70%);
+}
+
+.sky-dark[data-phase='dusk'] .sky-tint {
+  background:
+    radial-gradient(90% 50% at 20% 100%, rgb(240 120 70 / 0.14), transparent 70%),
+    radial-gradient(120% 60% at 50% 0%, rgb(130 60 160 / 0.2), transparent 70%);
+}
+
+.sky-light[data-phase='night'] .sky-tint {
+  background: linear-gradient(180deg, rgb(70 80 150 / 0.16), transparent 60%);
+}
+
+.sky-light[data-phase='dawn'] .sky-tint {
+  background: linear-gradient(180deg, rgb(255 190 150 / 0.22), transparent 60%);
+}
+
+.sky-light[data-phase='day'] .sky-tint {
+  background: linear-gradient(180deg, rgb(130 185 255 / 0.22), transparent 60%);
+}
+
+.sky-light[data-phase='dusk'] .sky-tint {
+  background: linear-gradient(180deg, rgb(200 140 220 / 0.22), rgb(255 170 120 / 0.08) 40%, transparent 65%);
+}
+
+/* Noorderlicht in de kleur van het type dat je het meest verzamelt. */
+.sky-aurora {
+  bottom: auto;
+  height: 55%;
+  background: linear-gradient(
+    100deg,
+    transparent 8%,
+    color-mix(in oklab, var(--aurora) 32%, transparent) 28%,
+    transparent 46%,
+    color-mix(in oklab, var(--aurora) 22%, transparent) 66%,
+    transparent 86%
+  );
+  background-size: 220% 100%;
+  filter: blur(48px);
+  opacity: 0.22;
+  -webkit-mask-image: linear-gradient(180deg, #000, transparent);
+  mask-image: linear-gradient(180deg, #000, transparent);
+}
+
+.sky-dark[data-phase='night'] .sky-aurora {
+  opacity: 0.38;
+}
+
+.sky-light .sky-aurora {
+  opacity: 0.14;
+}
+
+[data-motion='on'] .sky-aurora {
+  animation: sky-aurora 60s ease-in-out infinite alternate;
+}
+
+@keyframes sky-aurora {
+  from {
+    background-position: 0% 0;
+  }
+
+  to {
+    background-position: 100% 0;
+  }
+}
+
+/* Vliegende Pokémon: donker silhouet in de verte. */
+.sky-flyer {
+  position: absolute;
+  left: 0;
+  width: 130px;
+  height: auto;
+  filter: brightness(0);
+  opacity: 0.16;
+  animation: sky-fly-rtl 18s linear forwards;
+}
+
+.sky-light .sky-flyer {
+  opacity: 0.1;
+}
+
+.sky-flyer.from-left {
+  animation-name: sky-fly-ltr;
+}
+
+@keyframes sky-fly-rtl {
+  from {
+    transform: translate(calc(100vw + 40px), 0) scaleX(1);
+  }
+
+  50% {
+    transform: translate(calc(50vw - 65px), -24px) scaleX(1);
+  }
+
+  to {
+    transform: translate(-180px, 0) scaleX(1);
+  }
+}
+
+/* Artwork kijkt naar links; van links komend dus spiegelen. */
+@keyframes sky-fly-ltr {
+  from {
+    transform: translate(-180px, 0) scaleX(-1);
+  }
+
+  50% {
+    transform: translate(calc(50vw - 65px), -24px) scaleX(-1);
+  }
+
+  to {
+    transform: translate(calc(100vw + 40px), 0) scaleX(-1);
+  }
+}
+
+/* Team Rocket-ballon. */
+.sky-rocket {
+  position: absolute;
+  left: 0;
+  opacity: 0.92;
+  animation: sky-rocket-rtl 26s linear forwards;
+}
+
+.sky-rocket.from-left {
+  animation-name: sky-rocket-ltr;
+}
+
+.sky-rocket-bob {
+  display: block;
+  animation: sky-bob 3.2s ease-in-out infinite;
+}
+
+@keyframes sky-rocket-rtl {
+  from {
+    transform: translateX(calc(100vw + 20px));
+  }
+
+  to {
+    transform: translateX(-140px);
+  }
+}
+
+@keyframes sky-rocket-ltr {
+  from {
+    transform: translateX(-140px);
+  }
+
+  to {
+    transform: translateX(calc(100vw + 20px));
+  }
+}
+
+@keyframes sky-bob {
+  50% {
+    transform: translateY(-10px) rotate(-2deg);
+  }
+}
+
+/* Weggeschoten: draaiend omhoog en weg, met een twinkelend sterretje. */
+.sky-rocket.blast {
+  animation: sky-blast 1.3s cubic-bezier(0.5, 0, 0.9, 0.4) forwards;
+}
+
+@keyframes sky-blast {
+  from {
+    transform: translate(0, 0) rotate(0) scale(1);
+    opacity: 1;
+  }
+
+  to {
+    transform: translate(40vw, -60vh) rotate(720deg) scale(0.1);
+    opacity: 0;
+  }
+}
+
+/* Gengar kijkt 's nachts om de hoek (boven de inhoud, maar je kunt er gewoon doorheen klikken). */
+.sky-gengar {
+  position: fixed;
+  z-index: 40;
+  pointer-events: none;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 12px rgb(120 60 200 / 0.6));
+}
+
+/* Desktop: van achter de zijbalk vandaan, niet eroverheen. */
+.sky-gengar.left {
+  left: var(--sidebar);
+  transform-origin: left center;
+  animation: sky-peek-left 900ms ease-out forwards;
+}
+
+.sky-gengar.right {
+  right: 0;
+  animation: sky-peek-right 900ms ease-out forwards;
+}
+
+.sky-gengar.left.flee {
+  animation: sky-flee-left 350ms ease-in forwards;
+}
+
+.sky-gengar.right.flee {
+  animation: sky-flee-right 350ms ease-in forwards;
+}
+
+.sky-gengar.left svg {
+  transform: rotate(90deg) translateY(20px);
+}
+
+.sky-gengar.right svg {
+  transform: rotate(-90deg) translateY(20px);
+}
+
+/* Ver genoeg naar binnen dat ogen en grijns zichtbaar zijn; de rest blijft achter de rand. */
+@media (max-width: 1023px) {
+  .sky-gengar.left {
+    left: 0;
+  }
+}
+
+@keyframes sky-peek-left {
+  from {
+    translate: -110px 0;
+  }
+
+  to {
+    translate: -4px 0;
+  }
+}
+
+@keyframes sky-peek-right {
+  from {
+    translate: 110px 0;
+  }
+
+  to {
+    translate: 4px 0;
+  }
+}
+
+@keyframes sky-flee-left {
+  to {
+    translate: -130px 0;
+    opacity: 0;
+  }
+}
+
+@keyframes sky-flee-right {
+  to {
+    translate: 130px 0;
+    opacity: 0;
+  }
+}
+
+/* Tekstje bij een wens of Team Rocket. */
+.sky-note {
+  position: fixed;
+  z-index: 60;
+  margin: 0;
+  padding: var(--space-1) var(--space-3);
+  translate: -50% -140%;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  border: 1px solid var(--yellow);
+  box-shadow: var(--shadow-float);
+  font-size: var(--fs-small);
+  font-weight: 800;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: sky-note 2.8s ease-out forwards;
+}
+
+@keyframes sky-note {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  12%,
+  80% {
+    opacity: 1;
+    transform: none;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}

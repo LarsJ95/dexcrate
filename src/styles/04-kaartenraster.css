@@ -1,0 +1,241 @@
+/* ---------- Kaartenraster ---------- */
+.binder {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+  gap: var(--space-4) var(--space-4);
+}
+
+.binder:empty {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .binder {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tile-open {
+  position: relative;
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-card);
+  background: none;
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform 150ms ease-out;
+}
+
+.tile-open:hover:not(:disabled) {
+  background: none;
+  border: 0;
+}
+
+/* Kaart licht optillen bij hover: laat zien dat hij aantikbaar is (DESIGN.md §9). */
+@media (hover: hover) {
+  .tile-open:hover,
+  .tile-open:focus-visible {
+    transform: translateY(-4px);
+  }
+}
+
+.card-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 63 / 88;
+  object-fit: contain;
+  background: var(--surface-2);
+}
+
+.card-img.placeholder {
+  display: grid;
+  place-items: center;
+  padding: var(--space-3);
+  text-align: center;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--muted);
+  background:
+    radial-gradient(circle at 50% 50%, transparent 22%, var(--line) 23%, var(--line) 25%, transparent 26%),
+    linear-gradient(var(--surface-2), var(--surface-2));
+  border: 1px dashed var(--line-strong);
+  border-radius: inherit;
+}
+
+.card-img.placeholder.sealed {
+  background: linear-gradient(160deg, var(--surface-3), var(--surface));
+  color: var(--ink-soft);
+  border-style: solid;
+}
+
+.status-badge,
+.qty-badge,
+.grade-badge {
+  position: absolute;
+  z-index: 2;
+  font-size: var(--fs-small);
+  font-weight: 800;
+  line-height: 1;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+}
+
+.status-badge {
+  top: var(--space-2);
+  left: var(--space-2);
+}
+
+/* Onderweg: neutrale badge. */
+.status-badge.collection {
+  background: var(--badge-bg);
+  color: var(--white);
+}
+
+.status-badge.for_sale {
+  background: var(--yellow);
+  color: var(--on-yellow);
+}
+
+.status-badge.sold {
+  background: var(--badge-bg);
+  color: var(--green);
+}
+
+.qty-badge {
+  top: var(--space-2);
+  right: var(--space-2);
+  background: var(--badge-bg);
+  color: var(--white);
+}
+
+.grade-badge {
+  left: var(--space-2);
+  bottom: var(--space-2);
+  background: var(--grade-bg);
+  color: var(--on-grade);
+  border-radius: var(--radius-xs);
+}
+
+.tile.status-sold .card-img {
+  filter: grayscale(0.7) brightness(0.8);
+}
+
+.tile-body {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-1) 0;
+  min-width: 0;
+}
+
+.tile-name {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tile-meta {
+  font-size: var(--fs-small);
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tile-prices {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+}
+
+.tile-prices div {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+}
+
+.tile-prices dt {
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: none;
+}
+
+.tile-prices dd {
+  margin: 0;
+  font-weight: 700;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.tile-market {
+  text-align: right;
+  justify-items: end;
+}
+
+/* Beweging altijd op een eigen regel onder de marktprijs: gelijke tegelhoogte, geen onverwachte afbreking. */
+.tile-market dd {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+}
+
+.change {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--fs-small);
+  font-weight: 700;
+}
+
+.change svg {
+  flex: none;
+}
+
+.change.up {
+  color: var(--green);
+}
+
+.change.down {
+  color: var(--red);
+}
+
+.change.flat {
+  color: var(--muted);
+}
+
+.status-toggle {
+  margin-top: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--fs-small);
+  gap: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--amber-bg);
+  border-color: transparent;
+  color: var(--amber);
+  justify-self: start;
+}
+
+.status-toggle.on {
+  background: var(--green-bg);
+  color: var(--green);
+}
+
+.status-toggle:hover:not(:disabled) {
+  border-color: currentColor;
+  background: var(--surface-2);
+}

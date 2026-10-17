@@ -1,0 +1,35 @@
+/* ---------- Locaties ---------- */
+a.tx-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+a.tx-row:hover {
+  border-color: var(--line-strong);
+}
+
+span.tx-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+}
+
+.slot.moving {
+  outline: 3px solid var(--accent-line);
+  outline-offset: 2px;
+}
+
+li.outside {
+  opacity: 0.5;
+}

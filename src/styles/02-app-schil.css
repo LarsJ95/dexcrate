@@ -1,0 +1,203 @@
+/* ---------- App-schil ---------- */
+.shell {
+  min-height: 100vh;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 800;
+  font-size: 1.35rem;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.brand-lg {
+  font-size: 1.5rem;
+}
+
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: var(--sidebar);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: calc(var(--space-4) + env(safe-area-inset-top, 0px)) var(--space-4) var(--space-4);
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  z-index: 20;
+  /* Veel menu-items: op lage schermen scrollen in plaats van afsnijden. */
+  overflow-y: auto;
+}
+
+.sidebar .brand {
+  padding: 0 var(--space-2);
+}
+
+.side-nav {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.side-group {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.side-group + .side-group {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--line);
+}
+
+.more-nav {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.side-nav a {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-3);
+  border-radius: var(--radius-s);
+  color: var(--muted);
+  font-weight: 600;
+  text-decoration: none;
+  position: relative;
+}
+
+.side-nav a:hover {
+  color: var(--ink);
+  background: var(--surface-2);
+}
+
+.side-nav a[aria-current='page'] {
+  color: var(--ink);
+  background: var(--surface-2);
+}
+
+.side-nav a[aria-current='page']::before {
+  content: '';
+  position: absolute;
+  left: calc(-1 * var(--space-4));
+  top: var(--space-2);
+  bottom: var(--space-2);
+  width: 3px;
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+  background: var(--accent-line);
+}
+
+.side-nav a[aria-current='page'] svg {
+  color: var(--accent-line);
+}
+
+.side-foot {
+  margin-top: auto;
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-2) 0;
+  border-top: 1px solid var(--line);
+}
+
+.side-user {
+  font-size: var(--fs-small);
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.side-actions {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.main {
+  margin-left: var(--sidebar);
+  padding: var(--space-6) clamp(var(--space-4), 3vw, var(--space-6)) var(--space-8);
+}
+
+.mobile-bar,
+.tab-bar {
+  display: none;
+}
+
+/* Zijbalk vanaf 1024 px; daaronder topbalk + onderbalk (DESIGN.md §5). */
+@media (max-width: 1023px) {
+  .sidebar {
+    display: none;
+  }
+
+  .main {
+    margin-left: 0;
+    padding: var(--space-4) var(--space-4) calc(var(--tabbar) + var(--space-6) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .mobile-bar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: calc(var(--space-2) + env(safe-area-inset-top, 0px)) var(--space-3) var(--space-2) var(--space-4);
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .mobile-bar .brand {
+    font-size: 1.2rem;
+  }
+
+  .tab-bar {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    align-items: end;
+    height: calc(var(--tabbar) + env(safe-area-inset-bottom, 0px));
+    padding: 0 var(--space-1) env(safe-area-inset-bottom, 0px);
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+  }
+
+  .tab-bar a {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-1) var(--space-2);
+    font-size: var(--fs-small);
+    font-weight: 600;
+    color: var(--muted);
+    text-decoration: none;
+  }
+
+  .tab-bar a[aria-current='page'] {
+    color: var(--ink);
+  }
+
+  .tab-bar a[aria-current='page'] .tab-icon {
+    color: var(--accent-line);
+  }
+
+  /* Scannen als ronde hoofdknop in het midden. */
+  .tab-bar a.tab-scan .tab-icon {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    margin-top: -22px;
+    border-radius: 50%;
+    background: var(--yellow);
+    color: var(--on-yellow);
+    box-shadow: 0 0 0 var(--space-1) var(--bg);
+  }
+
+  .tab-bar a.tab-scan[aria-current='page'] .tab-icon {
+    color: var(--on-yellow);
+  }
+}

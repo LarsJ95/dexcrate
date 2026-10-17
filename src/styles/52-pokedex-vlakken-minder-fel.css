@@ -1,0 +1,31 @@
+/* ---------- Pokédex-vlakken minder fel ---------- */
+.dex-strip {
+  border: 1px solid color-mix(in oklab, var(--ball-red) 45%, var(--line));
+  border-left: 4px solid var(--ball-red);
+  background: linear-gradient(100deg, color-mix(in oklab, var(--ball-red) 16%, var(--surface)), var(--surface-2) 70%);
+  color: var(--ink);
+}
+
+.dex-strip-info .muted {
+  color: var(--muted);
+}
+
+.dex-strip-num {
+  color: color-mix(in oklab, var(--ball-red) 75%, var(--ink));
+}
+
+.dex-strip-evo {
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.panel.pokedex {
+  border: 1px solid color-mix(in oklab, var(--ball-red) 45%, var(--line));
+  border-top: 4px solid var(--ball-red);
+  background: linear-gradient(170deg, color-mix(in oklab, var(--ball-red) 14%, var(--surface)), var(--surface) 60%);
+  color: var(--ink);
+}
+
+.pokedex .dex-screen {
+  border: 1px solid var(--line);
+}

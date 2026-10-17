@@ -1,0 +1,15 @@
+/* ---------- Extra filters (Collection) ---------- */
+.extra-filters > button {
+  justify-self: start;
+}
+
+/* Setnamen zijn lang: twee kolommen breed. */
+.extra-filters .filter-set {
+  grid-column: span 2;
+}
+
+.extra-filters-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-3);
+}

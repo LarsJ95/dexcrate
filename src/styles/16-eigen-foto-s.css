@@ -1,0 +1,146 @@
+/* ---------- Eigen foto's ---------- */
+.photo-manager {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.photo-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.photo-add {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.photo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: var(--space-3);
+}
+
+.photo-item {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+}
+
+button.photo-thumb {
+  display: block;
+  width: 100%;
+  padding: 0;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+  cursor: zoom-in;
+}
+
+button.photo-thumb:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+}
+
+.photo-item.is-main button.photo-thumb {
+  border: 2px solid var(--accent-line);
+}
+
+.photo-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-thumb-empty {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--surface-2);
+}
+
+.photo-item select {
+  width: 100%;
+  padding: var(--space-1) var(--space-2);
+}
+
+.photo-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.upload-queue {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.upload-queue li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+}
+
+.upload-queue li.error {
+  border-color: var(--red);
+}
+
+.upload-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* Inbox: iets bredere vakken, ruimte voor de kaartzoeker. */
+.photo-list.inbox {
+  grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+}
+
+.card-picker {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.card-picker .search {
+  flex: none;
+}
+
+.picker-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.picker-results button {
+  width: 100%;
+  display: grid;
+  justify-items: start;
+  gap: 0;
+  text-align: left;
+  padding: var(--space-2);
+  font-weight: 400;
+}
+
+.picker-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}

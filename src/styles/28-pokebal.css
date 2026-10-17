@@ -1,0 +1,53 @@
+/* ---------- Pokébal (laden, vangen, kaartachterkant) ---------- */
+.pokeball {
+  --s: 56px;
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  background: linear-gradient(var(--ball-red) 0 45%, var(--ball-line) 45% 55%, var(--ball-white) 55%);
+  border: calc(var(--s) * 0.055) solid var(--ball-line);
+}
+
+.pokeball::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 34%;
+  height: 34%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--ball-white);
+  border: calc(var(--s) * 0.055) solid var(--ball-line);
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  color: var(--ink-soft);
+}
+
+.loading:not(.center) {
+  justify-content: flex-start;
+}
+
+.loading .pokeball {
+  --s: 28px;
+  animation: ball-rock 1.1s ease-in-out infinite;
+  transform-origin: 50% 85%;
+}
+
+@keyframes ball-rock {
+  0%,
+  100% {
+    transform: rotate(-14deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(14deg);
+  }
+}

@@ -1,0 +1,33 @@
+/* ---------- Collectie: kaarten verslepen om te wisselen (16-10-2026) ---------- */
+.binder.is-sortable .tile {
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+.binder.is-sortable .tile-open {
+  cursor: grab;
+}
+
+.binder.is-sorting,
+.binder.is-sorting .tile-open {
+  cursor: grabbing;
+}
+
+.tile.is-dragging {
+  z-index: 20;
+  pointer-events: none;
+  opacity: 0.85;
+  scale: 1.04;
+  filter: drop-shadow(0 12px 24px rgb(0 0 0 / 45%));
+}
+
+/* Alleen de kaart zelf meeslepen, niet de tekst eronder. */
+.tile.is-dragging .tile-body {
+  visibility: hidden;
+}
+
+.tile.is-drop-target .tile-open {
+  outline: 3px solid var(--yellow);
+  outline-offset: 3px;
+  border-radius: var(--radius-card);
+}

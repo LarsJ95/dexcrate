@@ -1,0 +1,87 @@
+/* ---------- Inloggen ---------- */
+.login {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  min-height: 100vh;
+}
+
+.login-brand {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  align-content: end;
+  padding: var(--space-7);
+  background:
+    radial-gradient(700px 400px at 30% 30%, var(--brand-panel-glow), transparent 60%),
+    linear-gradient(160deg, var(--brand-panel-top), var(--brand-panel-bottom));
+}
+
+.login-fan {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.login-fan span {
+  position: absolute;
+  width: 180px;
+  aspect-ratio: 63 / 88;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--brand-card-line);
+  background: linear-gradient(150deg, var(--brand-card-from), var(--brand-card-to));
+}
+
+.login-fan span:nth-child(1) {
+  transform: translate(-90px, 10px) rotate(-14deg);
+}
+
+.login-fan span:nth-child(2) {
+  transform: translate(0, -20px);
+  background: linear-gradient(150deg, var(--brand-card-accent-from), var(--brand-card-accent-to));
+}
+
+.login-fan span:nth-child(3) {
+  transform: translate(90px, 10px) rotate(14deg);
+}
+
+.login-tagline {
+  position: relative;
+  max-width: 22ch;
+  font-size: clamp(1.4rem, 2.6vw, 2.1rem);
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--brand-panel-ink);
+}
+
+.login-panel {
+  display: grid;
+  place-items: center;
+  padding: var(--space-6) var(--space-4);
+}
+
+.login-panel form {
+  display: grid;
+  gap: var(--space-4);
+  width: min(100%, 360px);
+}
+
+.login-panel h1 {
+  font-size: 1.8rem;
+  margin-top: var(--space-3);
+}
+
+@media (max-width: 767px) {
+  .login {
+    grid-template-columns: 1fr;
+  }
+
+  .login-brand {
+    min-height: 220px;
+    padding: var(--space-5);
+  }
+
+  .login-fan span {
+    width: 110px;
+  }
+}

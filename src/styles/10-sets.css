@@ -1,0 +1,204 @@
+/* ---------- Sets ---------- */
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  justify-self: start;
+  color: var(--muted);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.back:hover {
+  color: var(--ink);
+}
+
+.set-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-3);
+}
+
+@media (max-width: 480px) {
+  .set-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+.set-row {
+  display: grid;
+  grid-template-columns: 88px 1fr auto;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  color: inherit;
+  text-decoration: none;
+}
+
+.set-row:hover {
+  border-color: var(--line-strong);
+}
+
+.set-logo {
+  height: 44px;
+  display: grid;
+  place-items: center;
+}
+
+.set-logo img {
+  max-height: 44px;
+  max-width: 88px;
+  object-fit: contain;
+}
+
+/* Klein setsymbool vóór de setnaam (tegels, kaartweergave, wishlist). */
+.set-symbol img {
+  display: inline-block;
+  height: 1.1em;
+  width: auto;
+  max-width: 2em;
+  margin-right: var(--space-1);
+  vertical-align: -0.2em;
+  object-fit: contain;
+}
+
+/* Tweede regel (voortgang of aantal kaarten) altijd even hoog: alle tegels gelijk, namen op één lijn. */
+.set-info {
+  display: grid;
+  grid-template-rows: auto var(--space-5);
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.set-name {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.set-count {
+  text-align: right;
+  white-space: nowrap;
+  display: grid;
+}
+
+.set-count strong {
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.set-complete .meter-fill {
+  background: var(--green);
+}
+
+.set-binder {
+  grid-template-columns: repeat(var(--binder-cols, 3), minmax(0, 1fr));
+  max-width: calc(var(--binder-cols, 3) * 210px);
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+}
+
+/* Pagina's naast elkaar zoals een opengeslagen map; ze vullen samen de volle breedte. */
+.binder-pages {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.binder-page {
+  display: grid;
+  gap: var(--space-2);
+}
+
+/* Gesorteerd (niet op nummer): één doorlopend raster over de volle breedte. */
+.binder-sorted .set-binder {
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+
+@media (max-width: 480px) {
+  .binder-sorted .set-binder {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.binder-page-label {
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.set-binder {
+  max-width: none;
+}
+
+.cost-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.slot {
+  position: relative;
+  border-radius: var(--radius-s);
+  padding: var(--space-1);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.slot .card-img {
+  border-radius: var(--radius-card);
+}
+
+.slot.missing .card-img {
+  filter: grayscale(1) brightness(0.85);
+  opacity: 0.45;
+}
+
+.slot-name {
+  display: block;
+  padding-top: var(--space-1);
+  text-align: center;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slot-num {
+  display: block;
+  text-align: center;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+
+.slot.have .slot-name,
+.slot.have .slot-num {
+  color: var(--ink);
+}
+
+.slot.have .slot-name {
+  font-weight: 700;
+}
+
+.slot-price {
+  display: block;
+  text-align: center;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}

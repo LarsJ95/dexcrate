@@ -1,0 +1,198 @@
+/* ---------- Crate: pakjes, kaartvenster, overzicht (16-10-2026) ---------- */
+/* Punten links, pakjes ernaast; op smallere schermen onder elkaar. */
+.crate-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.crate-top .crate-wallet {
+  flex: 0 0 auto;
+  min-width: 220px;
+  max-width: 100%;
+}
+
+.crate-packs {
+  flex: 1 1 960px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: var(--space-4);
+}
+
+.crate-packs .crate-shop {
+  align-items: flex-start;
+}
+
+/* Duurdere pakjes: andere kleur en een gouden rand. */
+.pack-great .crate-pack-art {
+  background: conic-gradient(from 30deg, #1d4f9a, #3b82f6, #93c5fd, #3b82f6, #1d4f9a);
+}
+
+.pack-master .crate-pack-art {
+  border-color: var(--gold-b);
+  background: conic-gradient(from 30deg, #4c1d95, #a855f7, var(--gold-a), #a855f7, #4c1d95);
+}
+
+.pack-master {
+  border-color: color-mix(in oklab, var(--gold-b) 55%, var(--line));
+}
+
+button.crate-card-open {
+  position: relative;
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
+button.crate-card-open:hover:not(:disabled) {
+  background: none;
+}
+
+.crate-tile-price {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.crate-trade-all {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.crate-sheet {
+  display: grid;
+  grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+button.crate-sheet-image {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
+button.crate-sheet-image:hover:not(:disabled) {
+  background: none;
+}
+
+.crate-sheet-info {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+}
+
+.crate-sheet-facts {
+  display: grid;
+  width: 100%;
+  margin: 0;
+}
+
+.crate-sheet-facts div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.crate-sheet-facts dd {
+  margin: 0;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.crate-sheet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+@media (max-width: 560px) {
+  .crate-sheet {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  button.crate-sheet-image {
+    width: min(100%, 240px);
+  }
+}
+
+.crate-overview {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.crate-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: var(--space-3);
+}
+
+.crate-stats .panel {
+  display: grid;
+  gap: var(--space-1);
+  align-content: start;
+  justify-items: start;
+}
+
+.crate-stats strong {
+  font-size: 1.5rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.crate-table-wrap {
+  overflow-x: auto;
+}
+
+.crate-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.crate-table th,
+.crate-table td {
+  text-align: left;
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.crate-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.crate-table th {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+button.th-sort {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  min-height: 0;
+}
+
+button.th-sort:hover:not(:disabled) {
+  background: none;
+  color: var(--ink);
+}
+
+.crate-table tbody tr:hover {
+  background: var(--surface-2);
+}

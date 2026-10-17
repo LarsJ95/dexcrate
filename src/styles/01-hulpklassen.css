@@ -1,0 +1,89 @@
+/* ---------- Hulpklassen ---------- */
+.center {
+  text-align: center;
+  padding: var(--space-8) var(--space-4);
+  color: var(--muted);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: var(--fs-small);
+}
+
+.error {
+  color: var(--red);
+}
+
+.success {
+  color: var(--green);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.notice {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-l);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent-line);
+  background: var(--surface);
+  color: var(--ink-soft);
+}
+
+/* Melding die zelf de actie is (bv. niet-gekoppelde kaarten tonen). */
+button.notice-action {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+  text-align: left;
+  font-weight: 400;
+  border-radius: var(--radius-l);
+  border-left: 3px solid var(--accent-line);
+  background: var(--surface);
+  color: var(--ink-soft);
+}
+
+button.notice-action:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-left-color: var(--accent-line);
+}
+
+.empty {
+  padding: var(--space-7) var(--space-4);
+  text-align: center;
+  color: var(--muted);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-l);
+}
+
+.panel,
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  padding: var(--pad-panel);
+}
+
+.external-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.external-link:hover {
+  text-decoration: underline;
+}

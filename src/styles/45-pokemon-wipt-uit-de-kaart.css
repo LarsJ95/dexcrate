@@ -1,0 +1,39 @@
+/* ---------- Pokémon wipt uit de kaart bij hover (goedgekeurd 16-10-2026) ---------- */
+.tile {
+  position: relative;
+}
+
+/* Venster boven de kaart; de sprite komt van achter de bovenrand omhoog. */
+.tile-pop {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% - var(--space-2));
+  width: 96px;
+  height: 64px;
+  margin-left: -48px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.tile-pop img {
+  position: absolute;
+  left: 50%;
+  bottom: -40px;
+  height: 96px;
+  width: auto;
+  transform: translate(-50%, 100%);
+  image-rendering: pixelated;
+}
+
+@media (hover: hover) {
+  [data-motion='on'] .tile:hover .tile-pop img {
+    animation: tile-pop-up 260ms cubic-bezier(0.3, 1.4, 0.5, 1) forwards;
+  }
+}
+
+@keyframes tile-pop-up {
+  to {
+    transform: translate(-50%, 0);
+  }
+}

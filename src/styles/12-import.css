@@ -1,0 +1,17 @@
+/* ---------- Import ---------- */
+.file {
+  margin: var(--space-4) 0;
+  max-width: 420px;
+}
+
+.preview table {
+  border-collapse: collapse;
+  margin-bottom: var(--space-4);
+}
+
+.preview th,
+.preview td {
+  text-align: left;
+  padding: var(--space-1) var(--space-5) var(--space-1) 0;
+  font-variant-numeric: tabular-nums;
+}

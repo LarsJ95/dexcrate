@@ -1,0 +1,50 @@
+/* ---------- Compacte popup en formulier ---------- */
+.sheet-body {
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-4) var(--space-4);
+}
+
+.sheet-head h2 {
+  font-size: 1.3rem;
+}
+
+.card-form,
+.card-detail {
+  gap: var(--space-4);
+}
+
+.form-group {
+  gap: var(--gap-inner);
+  padding-top: var(--space-3);
+}
+
+.form-group legend {
+  font-size: 0.95rem;
+}
+
+.form-grid {
+  gap: var(--gap-inner);
+}
+
+.card-form label {
+  gap: var(--space-1);
+}
+
+.card-form input,
+.card-form select {
+  padding: var(--space-2) var(--space-2);
+}
+
+.card-form .split {
+  padding: var(--space-2) var(--space-3);
+}
+
+@media (max-width: 480px) {
+  .sheet-body {
+    padding: var(--space-4) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

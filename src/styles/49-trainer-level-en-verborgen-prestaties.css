@@ -1,0 +1,69 @@
+/* ---------- Trainer-level en verborgen prestaties (goedgekeurd 16-10-2026) ---------- */
+.trainer-level {
+  font-size: 0.75em;
+  color: var(--accent-line);
+  white-space: nowrap;
+}
+
+.xp {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.xp-head {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 800;
+  color: #3fa9f5;
+}
+
+.xp-bar {
+  height: 8px;
+  padding: 1px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.xp-bar span {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, #3fa9f5, #7fd0ff);
+  transition: width 600ms ease-out;
+}
+
+.secret-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: var(--space-2);
+}
+
+.secret-list li {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+}
+
+.secret-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.secret-list li.is-earned .secret-icon {
+  background: var(--rarity-gold);
+  color: var(--on-yellow);
+}

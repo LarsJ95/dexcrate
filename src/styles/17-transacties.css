@@ -1,0 +1,210 @@
+/* ---------- Transacties ---------- */
+/* Losse knoppen in een formuliergroep: niet over de volle breedte. */
+.form-group > button {
+  justify-self: start;
+}
+
+.head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Link die eruitziet als een gewone knop. */
+a.button-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+a.button-link:hover {
+  background: var(--surface-3);
+  border-color: var(--line-strong);
+}
+
+.sale-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.sale-lines li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.sale-lines label {
+  width: 8rem;
+}
+
+.sale-line-name {
+  flex: 1 1 12rem;
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.result-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+}
+
+.result-preview dt {
+  font-size: var(--fs-label);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.result-preview dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.inline-field {
+  display: inline-grid;
+  width: 9rem;
+}
+
+.doc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.doc-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tx-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+button.tx-row {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  font-weight: 400;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+}
+
+button.tx-row:hover:not(:disabled) {
+  background: var(--surface);
+  border-color: var(--line-strong);
+}
+
+button.tx-row.void {
+  opacity: 0.6;
+}
+
+.tx-main {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.tx-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 700;
+}
+
+.tx-cards {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tx-amounts {
+  display: grid;
+  justify-items: end;
+  white-space: nowrap;
+}
+
+.tx-amount {
+  font-weight: 700;
+}
+
+/* Selecteren in Collection */
+.tile.is-selected .tile-open {
+  outline: 3px solid var(--accent-line);
+  outline-offset: 2px;
+}
+
+.select-count {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.select-bar button {
+  gap: var(--space-1);
+  white-space: nowrap;
+}
+
+.select-badge {
+  position: absolute;
+  z-index: 2;
+  right: var(--space-2);
+  bottom: var(--space-2);
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background: var(--yellow);
+  color: var(--on-yellow);
+}
+
+.select-bar {
+  position: sticky;
+  bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-float);
+}
+
+@media (max-width: 1023px) {
+  .select-bar {
+    bottom: calc(var(--tabbar) + var(--space-3) + env(safe-area-inset-bottom, 0px));
+  }
+}

@@ -1,0 +1,33 @@
+/* ---------- Overview: evolutielijnen (goedgekeurd 16-10-2026) ---------- */
+
+.evo-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.evo-mon {
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+}
+
+.evo-mon.is-missing {
+  filter: brightness(0);
+  opacity: 0.35;
+}
+
+.evo-arrow {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+@keyframes evo-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4) translateY(20px);
+    filter: brightness(4);
+  }
+}

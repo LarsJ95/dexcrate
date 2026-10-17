@@ -1,0 +1,45 @@
+/* ---------- Set kiezen: typen of bladeren (16-10-2026) ---------- */
+.set-picker {
+  display: grid;
+  gap: var(--space-1);
+  flex: 0 1 260px;
+  min-width: 200px;
+}
+
+.set-picker > label {
+  font-weight: 600;
+  font-size: var(--fs-label);
+  color: var(--ink-soft);
+}
+
+.set-picker-field {
+  position: relative;
+}
+
+.set-picker-field input {
+  width: 100%;
+  padding-right: 40px;
+}
+
+/* De gekozen set staat als placeholder in het veld: dan als echte tekst tonen. */
+.set-picker-field input.has-value::placeholder {
+  color: var(--ink);
+  opacity: 1;
+}
+
+button.set-picker-clear {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.set-picker-list {
+  max-height: min(360px, 50vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.set-picker-list li.is-chosen .set-suggestion-name {
+  color: var(--accent-line);
+}

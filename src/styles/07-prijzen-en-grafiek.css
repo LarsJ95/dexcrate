@@ -1,0 +1,134 @@
+/* ---------- Prijzen & grafiek ---------- */
+.price-history {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.price-facts,
+.market-facts {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.price-facts {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+.market-facts {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.price-facts div {
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-2);
+  border-radius: var(--radius-s);
+}
+
+.price-facts dt,
+.market-facts dt {
+  font-size: var(--fs-label);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.price-facts dd,
+.market-facts dd {
+  margin: var(--space-1) 0 0;
+  font-weight: 700;
+}
+
+.up {
+  color: var(--green);
+}
+
+.down {
+  color: var(--red);
+}
+
+.chart {
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.chart-box {
+  position: relative;
+}
+
+.chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: pan-y;
+}
+
+.chart .grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.chart .axis {
+  fill: var(--muted);
+  font-size: var(--fs-small);
+  font-family: inherit;
+}
+
+.chart .line {
+  fill: none;
+  stroke: var(--chart-line);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.chart .crosshair {
+  stroke: var(--muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.chart .dot {
+  fill: var(--chart-line);
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+
+.chart-tip {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 10px));
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-2);
+  background: var(--surface-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-s);
+  font-size: var(--fs-small);
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: var(--shadow-float);
+}
+
+.chart details summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+
+.table-scroll {
+  max-height: 240px;
+  overflow: auto;
+}
+
+.table-scroll table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.88rem;
+}
+
+.table-scroll th,
+.table-scroll td {
+  text-align: left;
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--line);
+}
