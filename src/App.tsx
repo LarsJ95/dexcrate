@@ -5,6 +5,7 @@ import { ROUTES } from './lib/routes'
 import { useHashRoute } from './hooks/useHashRoute'
 import { useTheme } from './hooks/useTheme'
 import { supabase } from './lib/supabase'
+import { clearOfflineCache } from './lib/offlineCache'
 import './App.css'
 import { Loading } from './components/Loading'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -39,7 +40,11 @@ function App(): JSX.Element {
         setSession(data.session)
       })
       .finally(() => setLoading(false))
-    const { data } = supabase.auth.onAuthStateChange((_event, s) => setSession(s))
+    const { data } = supabase.auth.onAuthStateChange((event, s) => {
+      setSession(s)
+      // Uitloggen: offline bewaarde gegevens van deze gebruiker horen niet op het apparaat te blijven staan.
+      if (event === 'SIGNED_OUT') clearOfflineCache().catch((err: unknown) => console.warn('Offline cache wissen mislukt', err))
+    })
     return () => data.subscription.unsubscribe()
   }, [])
 

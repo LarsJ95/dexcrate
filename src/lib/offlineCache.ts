@@ -122,8 +122,3 @@ async function readCached<T>(key: string, parse: (raw: unknown) => T): Promise<T
   emit()
   return parse(entry.value)
 }
-
-// Uitloggen: bewaarde gegevens van deze gebruiker horen niet op het apparaat te blijven staan.
-supabase.auth.onAuthStateChange((event) => {
-  if (event === 'SIGNED_OUT') clearOfflineCache().catch((err: unknown) => console.warn('Offline cache wissen mislukt', err))
-})
