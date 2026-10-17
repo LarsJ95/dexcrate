@@ -426,9 +426,9 @@ export function SetBinderPage({ param }: Props): JSX.Element {
         </div>
         {sort === 'number' && (
           <div className="segmented" role="group" aria-label="Pockets per page">
-            {([9, 12] as const).map((size) => (
+            {([6, 9] as const).map((size) => (
               <button key={size} type="button" aria-pressed={pageSize === size} onClick={() => changePageSize(size)}>
-                {size === 9 ? '9 per page' : '12 per page'}
+                {size} per page
               </button>
             ))}
           </div>
@@ -501,7 +501,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
         {pages.map((page, i) => (
           <section key={i} className="binder-page" aria-label={sort === 'number' ? `Page ${i + 1}` : `Cards sorted by ${SET_SORT_LABELS[sort].toLowerCase()}`}>
             {sort === 'number' && <p className="binder-page-label">Page {i + 1}</p>}
-            <ul className="binder set-binder" style={sort === 'number' ? { ['--binder-cols' as string]: pageSize === 9 ? 3 : 4 } : undefined}>
+            <ul className="binder set-binder" style={sort === 'number' ? { ['--binder-cols' as string]: pageSize === 6 ? 2 : 3 } : undefined}>
               {page.map((c) => (
                 <BinderSlot
                   key={c.id}

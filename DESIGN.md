@@ -40,7 +40,7 @@ Per referentie: wat precies overnemen, niet de hele site kopiëren.
 
 - Collectr (app, geen URL; screenshots in `/design/referenties/collectr/`): portfolio-overzicht (totale collectiewaarde als hoofdcijfer met beweging), waardegrafiek, stijgers/dalers-lijst. Niet de kaartweergave.
 - TCG Collector (https://www.tcgcollector.com/): set-voortgang, sets sorteren en filteren, kosten om een set af te maken.
-- Dex (https://dextcg.com/): binder-weergave met instelbaar paginaformaat (9/12 vakken), kaartfoto's centraal.
+- Dex (https://dextcg.com/): binder-weergave met instelbaar paginaformaat (6 vakken = 2 kolommen, of 9 = 3 kolommen; gewijzigd 17-10-2026, was 9/12), kaartfoto's centraal.
 - [BEELD NODIG: screenshots van bovenstaande in `/design/referenties/`]
 
 

@@ -5,7 +5,7 @@ import type { RequirementState } from './goals'
 import { formatEur } from './stats'
 import type { Variant } from './types'
 
-export type PageSize = 9 | 12
+export type PageSize = 6 | 9
 
 export interface Cost {
   done: number
@@ -54,7 +54,8 @@ const OLD_PAGE_SIZE_KEY = 'binderline:binder-page-size'
 
 export function readPageSize(): PageSize {
   try {
-    return (localStorage.getItem(PAGE_SIZE_KEY) ?? localStorage.getItem(OLD_PAGE_SIZE_KEY)) === '12' ? 12 : 9
+    // 6 of 9 per pagina (sinds 17-10-2026; een oude keuze "12" wordt 9).
+    return (localStorage.getItem(PAGE_SIZE_KEY) ?? localStorage.getItem(OLD_PAGE_SIZE_KEY)) === '6' ? 6 : 9
   } catch {
     return 9 // geen opslag: standaard 9-pocket
   }
