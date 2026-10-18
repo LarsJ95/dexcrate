@@ -10,7 +10,8 @@ import { PurchaseDialog } from '../components/PurchaseDialog'
 import { SaleDialog } from '../components/SaleDialog'
 import { useNewCardDefaults } from '../hooks/useNewCardDefaults'
 import { useTransactionsEnabled } from '../hooks/useTransactionsEnabled'
-import { IconEdit, IconPlus, IconReceipt, IconSearch, IconTag } from '../components/Icons'
+import { IconClose, IconEdit, IconPlus, IconReceipt, IconSearch, IconTag } from '../components/Icons'
+import { useDismissedIds } from '../hooks/useDismissedIds'
 import { SearchClear } from '../components/SearchClear'
 import { useMarketPrices } from '../hooks/useMarketPrices'
 import { listCards, updateCard } from '../lib/db'
@@ -122,7 +123,10 @@ export function CollectionPage(): JSX.Element {
   }, [cards])
 
   // Alleen binnen de gekozen status (Owned, Sold …), zodat het aantal klopt met wat je ziet.
-  const unlinked = useMemo(() => (cards ?? []).filter((c) => matchesFilter(c, filter) && isUnlinked(c)).length, [cards, filter])
+  const unlinkedIds = useMemo(() => (cards ?? []).filter((c) => matchesFilter(c, filter) && isUnlinked(c)).map((c) => c.id), [cards, filter])
+  const unlinked = unlinkedIds.length
+  // Weggeklikt: pas weer tonen als er een nieuwe niet-gekoppelde kaart bij komt.
+  const unlinkedNotice = useDismissedIds('dexcrate:unlinked-dismissed')
 
   const toggleSold = useCallback(
     async (id: string): Promise<void> => {
@@ -332,16 +336,21 @@ export function CollectionPage(): JSX.Element {
         </div>
       )}
 
-      {unlinked > 0 && extra.link !== 'unlinked' && (
-        <button
-          type="button"
-          className="notice notice-action"
-          onClick={() => {
-            setExtra((f) => ({ ...f, link: 'unlinked' }))
-          }}
-        >
-          {unlinked} {unlinked === 1 ? 'card is' : 'cards are'} not linked yet. Show {unlinked === 1 ? 'it' : 'them'}.
-        </button>
+      {unlinked > 0 && extra.link !== 'unlinked' && unlinkedNotice.hasNew(unlinkedIds) && (
+        <div className="notice-dismissable">
+          <button
+            type="button"
+            className="notice notice-action"
+            onClick={() => {
+              setExtra((f) => ({ ...f, link: 'unlinked' }))
+            }}
+          >
+            {unlinked} {unlinked === 1 ? 'card is' : 'cards are'} not linked yet. Show {unlinked === 1 ? 'it' : 'them'}.
+          </button>
+          <button type="button" className="ghost icon-btn notice-dismiss" aria-label="Dismiss" title="Dismiss" onClick={() => unlinkedNotice.dismiss(unlinkedIds)}>
+            <IconClose />
+          </button>
+        </div>
       )}
       {actionError && <p className="error" role="alert">{actionError}</p>}
       {loadError && (

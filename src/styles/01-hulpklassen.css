@@ -60,6 +60,27 @@ button.notice-action:hover:not(:disabled) {
   border-left-color: var(--accent-line);
 }
 
+/* Melding met wegklik-kruisje rechts. */
+.notice-dismissable {
+  position: relative;
+}
+
+.notice-dismissable > button.notice-action {
+  padding-right: calc(var(--space-4) + var(--space-4) + 44px);
+}
+
+/* Het "verder"-pijltje (styles/41) links van het kruisje. */
+.notice-dismissable > button.notice-action::after {
+  right: calc(var(--space-3) + 44px);
+}
+
+.notice-dismissable > .notice-dismiss {
+  position: absolute;
+  top: 50%;
+  right: var(--space-2);
+  translate: 0 -50%;
+}
+
 .empty {
   padding: var(--space-7) var(--space-4);
   text-align: center;
