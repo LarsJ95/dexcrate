@@ -4,6 +4,7 @@ import { CrateCardSheet, CrateTilePrice } from '../components/CrateCardSheet'
 import { CrateOverview } from '../components/CrateOverview'
 import { CatalogKeyPicture } from '../components/CatalogCardPicture'
 import { HoloCard } from '../components/HoloCard'
+import { PackOpening } from '../components/PackOpening'
 import { CatalogFilterFields } from '../components/CatalogFilterFields'
 import { FilterPanel } from '../components/FilterPanel'
 import { IconCrate, IconSearch } from '../components/Icons'
@@ -12,7 +13,7 @@ import { RaritySymbols } from '../components/RaritySymbols'
 import { SearchClear } from '../components/SearchClear'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { useDbFeature } from '../hooks/useDbFeature'
-import { ENERGY_TYPES, foilStyleFor, isEnergyType, rarityRule, type EnergyType } from '../lib/cardTraits'
+import { ENERGY_TYPES, foilStyleFor, isEnergyType, type EnergyType } from '../lib/cardTraits'
 import {
   OLD_RULES,
   PACKS,
@@ -39,9 +40,7 @@ import { energyColor } from '../lib/energy'
 import { LOCAL_SET_IDS } from '../lib/localCatalog'
 import { showMoment } from '../lib/moments'
 import { digitalSetIds, getSetList } from '../lib/tcgdex'
-import { burstFrom } from '../lib/fx'
 import { buzz } from '../lib/haptics'
-import { useMotion } from '../lib/motion'
 import { errorText } from '../lib/errors'
 import { needsCatalog } from '../lib/collectionFilters'
 import { CRATE_SORTS, NO_CRATE_FILTERS, crateFilterCount, crateSetOptions, matchesCrate, matchesCrateSearch, sortCrate, type CrateFilters, type CrateSort } from '../lib/crateFilters'
@@ -69,73 +68,6 @@ interface SetChoice {
   id: string
   name: string
   official: number
-}
-
-function PackReveal({ pulls, onDone }: { pulls: PackPull[]; onDone: () => void }): JSX.Element {
-  // Zeldzaamste als laatste.
-  const order = useMemo(() => [...pulls].sort((a, b) => rarityRule(a.rarity).rank - rarityRule(b.rarity).rank), [pulls])
-  const [open, setOpen] = useState<ReadonlySet<number>>(new Set())
-  const motion = useMotion()
-  const all = open.size === order.length
-
-  function flip(i: number, el: HTMLElement | null): void {
-    if (open.has(i)) return
-    setOpen((s) => new Set(s).add(i))
-    const rank = rarityRule(order[i].rarity).rank
-    if (el && motion && rank >= 5) {
-      burstFrom(el, { colors: rank >= 9 ? ['var(--gold-a)', 'var(--gold-b)', '#ffffff'] : ['var(--yellow)', '#ffffff', 'var(--type)'], count: rank >= 9 ? 60 : 30, speed: 8 })
-      buzz(rank >= 9 ? [40, 60, 40] : [20])
-    }
-  }
-
-  return (
-    <section className="panel crate-reveal" aria-label="Your pack">
-      <p className="muted small">{all ? 'All cards revealed.' : 'Tap a card to flip it.'}</p>
-      <ol className="crate-pack">
-        {order.map((p, i) => {
-          const shown = open.has(i)
-          return (
-            <li key={`${p.tcgdex_id}-${i}`} className={i === order.length - 1 ? 'is-last' : ''}>
-              <button
-                type="button"
-                className={`crate-slot${shown ? ' is-open' : ''}`}
-                onClick={(e) => flip(i, e.currentTarget)}
-                aria-label={shown ? `${p.name}, ${p.rarity}` : `Card ${i + 1}, face down. Flip.`}
-                style={{ '--i': i } as CSSProperties}
-              >
-                <span className="crate-flip">
-                  <span className="moment-face moment-back" aria-hidden="true">
-                    <span className="pokeball" />
-                  </span>
-                  <span className="moment-face moment-front">
-                    <HoloCard foil={foilStyleFor(null, p.rarity)}>
-                      <CatalogKeyPicture cardKey={p.tcgdex_id} image={p.image} name={p.name} quality="low" alt={p.name} fallback={<CardFace name={p.name} detail={p.set_name} />} />
-                    </HoloCard>
-                  </span>
-                </span>
-              </button>
-              {shown && (
-                <span className="crate-pull-name small">
-                  {p.name} <RaritySymbols rarity={p.rarity} />
-                </span>
-              )}
-            </li>
-          )
-        })}
-      </ol>
-      <div className="sheet-foot">
-        {!all && (
-          <button type="button" onClick={() => setOpen(new Set(order.map((_, i) => i)))}>
-            Reveal all
-          </button>
-        )}
-        <span className="spacer" />
-        <button type="button" className="primary" onClick={onDone}>
-          {all ? 'Add to my Crate' : 'Skip'}
-        </button>
-      </div>
-    </section>
-  )
 }
 
 interface Loaded {
@@ -166,7 +98,9 @@ export function CratePage(): JSX.Element {
   const [points, setPoints] = useState<number | null>(null)
   const [freePack, setFreePack] = useState(false)
   const [cards, setCards] = useState<CrateCard[] | null>(null)
-  const [pulls, setPulls] = useState<PackPull[] | null>(null)
+  // Pack opening in een popup; id = nieuwe popup per pakje (ook bij "Open another").
+  const openingSeq = useRef(0)
+  const [opening, setOpening] = useState<{ id: number; pack: PackKind; pulls: PackPull[]; before: ReadonlyMap<string, number> } | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sort, setSort] = useStoredChoice<CrateSort>('dexcrate:crate-sort', CRATE_SORTS, 'newest')
@@ -253,11 +187,15 @@ export function CratePage(): JSX.Element {
     setBusy(true)
     setError(null)
     try {
-      const drawn = await drawPack(pack, { setId: packSet || undefined, type: packType, owned: new Set((cards ?? []).map((c) => c.tcgdexId)) })
+      // Actuele Crate (ook na een vorig pakje of inruilen in de popup): voor NEW, "je hebt er nu N" en ontbrekend eerst.
+      const fresh = await listCrateCards()
+      setCards(fresh)
+      const before = new Map(fresh.map((c) => [c.tcgdexId, c.quantity]))
+      const drawn = await drawPack(pack, { setId: packSet || undefined, type: packType, owned: new Set(before.keys()) })
       const result = await openCratePack(drawn, pack)
       setPoints(result.points)
       setFreePack(result.freePack)
-      setPulls(drawn)
+      setOpening({ id: ++openingSeq.current, pack, pulls: drawn, before })
     } catch (err) {
       setError(errorText(err, 'Opening the pack failed.'))
     } finally {
@@ -396,7 +334,7 @@ export function CratePage(): JSX.Element {
                     {!ok && points !== null && points < cost && !free && (
                       <span className="small muted">You need {(cost - points).toLocaleString('en-IE')} more points.</span>
                     )}
-                    <button type="button" className="primary" onClick={() => void openPack(kind)} disabled={busy || !ok || pulls !== null}>
+                    <button type="button" className="primary" onClick={() => void openPack(kind)} disabled={busy || !ok || opening !== null}>
                       {busy ? 'Opening…' : free ? 'Open free daily pack' : `Open (${cost.toLocaleString('en-IE')} points)`}
                     </button>
                   </div>
@@ -414,11 +352,20 @@ export function CratePage(): JSX.Element {
         </p>
       )}
 
-      {pulls && (
-        <PackReveal
-          pulls={pulls}
-          onDone={() => {
-            setPulls(null)
+      {opening && (
+        <PackOpening
+          key={opening.id}
+          pack={opening.pack}
+          pulls={opening.pulls}
+          before={opening.before}
+          tradeFactor={rules.tradeFactor}
+          onOpenAnother={points !== null && canAfford(rules, opening.pack, points, freePack) ? () => void openPack(opening.pack) : null}
+          opening={busy}
+          error={error}
+          onPoints={setPoints}
+          onClose={() => {
+            setOpening(null)
+            setError(null)
             reload()
           }}
         />

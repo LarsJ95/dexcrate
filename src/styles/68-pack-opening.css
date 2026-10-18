@@ -1,0 +1,267 @@
+/* ---------- Crate: pack opening in een popup (18-10-2026) ---------- */
+.pack-opening {
+  width: min(640px, calc(100vw - 2rem));
+}
+
+.pack-opening .sheet-head {
+  align-items: center;
+}
+
+.pack-count {
+  margin-left: auto;
+  margin-right: var(--space-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 1. Gesloten pakje: tikken of vegen scheurt het open. */
+.pack-sealed-wrap {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5) 0 var(--space-6);
+}
+
+button.pack-sealed {
+  position: relative;
+  display: grid;
+  grid-template-rows: 14% 1fr;
+  width: min(220px, 60vw);
+  aspect-ratio: 63 / 88;
+  padding: 0;
+  border: 3px solid var(--ball-line);
+  border-radius: var(--radius-card);
+  background: conic-gradient(from 30deg, var(--card-back-1), var(--card-back-2), var(--card-back-3), var(--card-back-2), var(--card-back-1));
+  box-shadow: var(--shadow-float);
+  cursor: grab;
+  touch-action: pan-y;
+  overflow: visible;
+}
+
+button.pack-sealed:hover:not(:disabled) {
+  background: conic-gradient(from 30deg, var(--card-back-1), var(--card-back-2), var(--card-back-3), var(--card-back-2), var(--card-back-1));
+}
+
+.pack-sealed.pack-great,
+.pack-sealed.pack-great:hover:not(:disabled) {
+  background: conic-gradient(from 30deg, #1d4f9a, #3b82f6, #93c5fd, #3b82f6, #1d4f9a);
+}
+
+.pack-sealed.pack-master,
+.pack-sealed.pack-master:hover:not(:disabled) {
+  border-color: var(--gold-b);
+  background: conic-gradient(from 30deg, #4c1d95, #a855f7, var(--gold-a), #a855f7, #4c1d95);
+}
+
+.pack-sealed.pack-set,
+.pack-sealed.pack-set:hover:not(:disabled) {
+  background: conic-gradient(from 30deg, #14532d, #22c55e, #bbf7d0, #22c55e, #14532d);
+}
+
+.pack-sealed.pack-type,
+.pack-sealed.pack-type:hover:not(:disabled) {
+  background: conic-gradient(from 30deg, color-mix(in oklab, var(--type) 45%, #000), var(--type), color-mix(in oklab, var(--type) 40%, #fff), var(--type), color-mix(in oklab, var(--type) 45%, #000));
+}
+
+/* Scheurrand bovenaan (perforatie). */
+.pack-sealed-top {
+  border-bottom: 2px dashed rgb(255 255 255 / 0.55);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  background: rgb(255 255 255 / 0.12);
+}
+
+.pack-sealed-body {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: var(--space-3);
+}
+
+.pack-sealed-body .pokeball {
+  --s: 64px;
+}
+
+.pack-sealed-name {
+  padding: 2px var(--space-3);
+  border-radius: var(--radius-pill);
+  background: rgb(0 0 0 / 0.35);
+  color: #fff;
+  font-weight: 800;
+  font-size: var(--fs-small);
+}
+
+[data-motion='on'] .pack-sealed:not(.is-tearing) {
+  animation: pack-float 2.4s ease-in-out infinite;
+}
+
+[data-motion='on'] .pack-sealed.is-tearing {
+  animation: pack-shake 650ms ease-in both;
+}
+
+[data-motion='on'] .pack-sealed.is-tearing .pack-sealed-top {
+  animation: pack-tear 650ms cubic-bezier(0.5, 0, 0.9, 0.4) both;
+}
+
+@keyframes pack-float {
+  50% {
+    transform: translateY(-8px) rotate(-1.5deg);
+  }
+}
+
+@keyframes pack-shake {
+  0%,
+  40% {
+    transform: none;
+  }
+  10%,
+  30% {
+    transform: rotate(-3deg);
+  }
+  20% {
+    transform: rotate(3deg);
+  }
+  100% {
+    transform: scale(1.08);
+    opacity: 0;
+  }
+}
+
+@keyframes pack-tear {
+  0%,
+  35% {
+    transform: none;
+  }
+  100% {
+    transform: translate(60px, -90px) rotate(28deg);
+    opacity: 0;
+  }
+}
+
+/* 2. Eén kaart tegelijk, groot; zeldzame kaarten gloeien. */
+.pack-stage {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+}
+
+button.pack-current,
+button.pack-current:hover:not(:disabled) {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.pack-current-card {
+  width: min(300px, 68vw);
+  border-radius: var(--radius-card);
+}
+
+[data-motion='on'] .pack-current-card {
+  animation: pack-card-in 420ms cubic-bezier(0.3, 1.3, 0.5, 1) both;
+}
+
+.pack-current-card.is-hit {
+  box-shadow:
+    0 0 0 2px var(--gold-b),
+    0 0 40px color-mix(in oklab, var(--gold-a) 70%, transparent);
+}
+
+@keyframes pack-card-in {
+  from {
+    opacity: 0;
+    transform: perspective(900px) rotateY(80deg) translateX(60px) scale(0.9);
+  }
+}
+
+.pack-current-info {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  text-align: center;
+}
+
+.pack-current-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.pack-stage .sheet-foot {
+  width: 100%;
+}
+
+.pack-badge {
+  display: inline-block;
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  color: var(--ink-soft);
+  font-size: var(--fs-small);
+  font-weight: 800;
+}
+
+.pack-badge.is-new {
+  background: var(--yellow);
+  color: var(--on-yellow);
+}
+
+/* 3. Overzicht met acties. */
+.pack-summary-wrap {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.pack-summary {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--space-3);
+}
+
+.pack-summary li {
+  display: grid;
+  gap: 2px;
+  align-content: start;
+  min-width: 0;
+}
+
+button.pack-tile,
+button.pack-tile:hover:not(:disabled) {
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: var(--radius-card);
+}
+
+button.pack-tile[aria-pressed='true'] {
+  outline: 3px solid var(--accent-line);
+  outline-offset: 2px;
+}
+
+.pack-tile .pack-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  box-shadow: var(--shadow-float);
+}
+
+[data-motion='on'] .pack-summary li {
+  animation: pack-in 300ms cubic-bezier(0.3, 1.2, 0.5, 1) both;
+}
+
+.pack-tile-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 700;
+}
+
+.pack-card-actions {
+  display: grid;
+  gap: var(--space-2);
+}
