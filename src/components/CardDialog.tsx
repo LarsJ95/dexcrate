@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type JSX, type MouseEvent } from 'react'
+import { useBackToClose } from '../hooks/useBackToClose'
 import { EMPTY_CARD, type Card, type CardInput, type CardStatus } from '../lib/types'
 import { CardDetail } from './CardDetail'
 import { CardForm } from './CardForm'
@@ -24,7 +25,7 @@ type Mode = { kind: 'view' } | { kind: 'edit'; status: CardStatus }
 
 /**
  * Popup voor één kaart: bestaande kaarten openen in de weergave, nieuwe direct in het formulier.
- * Sluiten via ✕, Escape of tikken naast de popup.
+ * Sluiten via ✕, Escape, terugknop of tikken naast de popup.
  */
 export function CardDialog({
   card,
@@ -46,6 +47,7 @@ export function CardDialog({
   }, [])
 
   const close = (): void => ref.current?.close()
+  useBackToClose(close)
 
   // Klik op de achtergrond: het event-doel is dan het <dialog>-element zelf (de inhoud vult de popup).
   function onBackdrop(e: MouseEvent<HTMLDialogElement>): void {

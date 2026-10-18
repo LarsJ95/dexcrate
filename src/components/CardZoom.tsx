@@ -1,4 +1,5 @@
 import { useEffect, useRef, type JSX, type ReactNode } from 'react'
+import { useBackToClose } from '../hooks/useBackToClose'
 import { IconClose } from './Icons'
 
 interface Props {
@@ -9,7 +10,7 @@ interface Props {
   onClose: () => void
 }
 
-/** Schermvullende weergave van één kaart om hem goed te bekijken. Tik, ✕ of Escape sluit. */
+/** Schermvullende weergave van één kaart om hem goed te bekijken. Tik, ✕, Escape of terugknop sluit. */
 export function CardZoom({ label, children, onClose }: Props): JSX.Element {
   const ref = useRef<HTMLDialogElement>(null)
 
@@ -17,6 +18,7 @@ export function CardZoom({ label, children, onClose }: Props): JSX.Element {
     const dialog = ref.current
     if (dialog && !dialog.open) dialog.showModal()
   }, [])
+  useBackToClose(() => ref.current?.close())
 
   return (
     <dialog ref={ref} className="card-zoom" aria-label={label} onClose={onClose} onClick={() => ref.current?.close()}>
