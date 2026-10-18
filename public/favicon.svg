@@ -1,9 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- Favicon (17-10-2026): dezelfde pokébal als het logo in de app (LogoMark); donkere rand voor lichte én donkere tabbladen. -->
-  <circle cx="16" cy="16" r="15" fill="#17161c"/>
-  <path d="M3 16a13 13 0 0 1 26 0z" fill="#e3350d"/>
-  <path d="M3 16a13 13 0 0 0 26 0z" fill="#f6f3ee"/>
-  <rect x="3" y="14.3" width="26" height="3.4" fill="#17161c"/>
-  <circle cx="16" cy="16" r="5.6" fill="#17161c"/>
-  <circle cx="16" cy="16" r="3.2" fill="#f6f3ee"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Logo (18-10-2026, gebruiker koos concept C): gele kaart met een D en een holo-glinster. Zelfde vorm als LogoMark in de app.
+       Bron voor alle icoontjes: node tools/icons.mjs -->
+  <g transform="rotate(-8 32 32)">
+    <rect x="12" y="4" width="40" height="56" rx="6" fill="#ffcb05" stroke="#17161c" stroke-width="3.5"/>
+    <path d="M22 17h9.5c8.5 0 13.5 5.6 13.5 15s-5 15-13.5 15H22z" fill="#17161c"/>
+    <path d="M28.5 23.5h2.8c4.4 0 6.7 3 6.7 8.5s-2.3 8.5-6.7 8.5h-2.8z" fill="#ffcb05"/>
+  </g>
+  <path d="M52 3l2 5.2 5.2 2-5.2 2-2 5.2-2-5.2-5.2-2 5.2-2z" fill="#f6f3ee" stroke="#17161c" stroke-width="1.6" stroke-linejoin="round"/>
 </svg>

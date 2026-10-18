@@ -198,8 +198,28 @@ export const IconMore = (p: IconProps): JSX.Element => (
   </Svg>
 )
 
-/** Logo: gestileerde vangbal, bewust geen kopie van het officiële logo. */
+/** Logo (18-10-2026): gele kaart met een D en een holo-glinster; zelfde vorm als public/favicon.svg. */
 export function LogoMark({ size = 28 }: { size?: number }): JSX.Element {
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true" focusable="false" className="logo-mark">
+      <g transform="rotate(-8 32 32)">
+        <rect x="12" y="4" width="40" height="56" rx="6" fill="var(--logo-card)" stroke="var(--logo-ink)" strokeWidth="3.5" />
+        <path d="M22 17h9.5c8.5 0 13.5 5.6 13.5 15s-5 15-13.5 15H22z" fill="var(--logo-ink)" />
+        <path d="M28.5 23.5h2.8c4.4 0 6.7 3 6.7 8.5s-2.3 8.5-6.7 8.5h-2.8z" fill="var(--logo-card)" />
+      </g>
+      <path
+        d="M52 3l2 5.2 5.2 2-5.2 2-2 5.2-2-5.2-5.2-2 5.2-2z"
+        fill="var(--logo-spark)"
+        stroke="var(--logo-ink)"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+/** Gestileerde vangbal op de getekende kaartvoorkant (was tot 18-10-2026 ook het logo). */
+export function BallMark({ size = 28 }: { size?: number }): JSX.Element {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" focusable="false" className="logo-mark">
       <circle cx="16" cy="16" r="14" fill="var(--logo-top)" />

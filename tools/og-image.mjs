@@ -3,7 +3,8 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { openBrowser } from './e2e/browser.mjs'
 
 const font = readFileSync('src/assets/fonts/archivo-latin.woff2').toString('base64')
-const ball = `<svg viewBox="0 0 32 32" width="88" height="88"><circle cx="16" cy="16" r="15" fill="#17161c"/><path d="M3 16a13 13 0 0 1 26 0z" fill="#e3350d"/><path d="M3 16a13 13 0 0 0 26 0z" fill="#f6f3ee"/><rect x="3" y="14.3" width="26" height="3.4" fill="#17161c"/><circle cx="16" cy="16" r="5.6" fill="#17161c"/><circle cx="16" cy="16" r="3.2" fill="#f6f3ee"/></svg>`
+// Het logo zelf (public/favicon.svg), zonder XML-commentaar.
+const logo = readFileSync('public/favicon.svg', 'utf8').replace(/<!--[\s\S]*?-->/g, '').replace('<svg ', '<svg width="88" height="88" ')
 const html = `<!doctype html><html><head><meta charset="utf-8"><style>
 @font-face { font-family: 'Archivo'; font-weight: 400 900; font-stretch: 62% 125%; src: url(data:font/woff2;base64,${font}) format('woff2'); }
 * { box-sizing: border-box; margin: 0; }
@@ -22,7 +23,7 @@ p { margin-top: 24px; font-size: 26px; color: #d3cfd8; }
 .price { position: absolute; z-index: 2; left: 50%; bottom: 40px; transform: translateX(-50%); background: #17161d; border: 2px solid #2f2e38; border-radius: 999px; padding: 12px 24px; font-size: 26px; font-weight: 800; white-space: nowrap; }
 .price span { color: #a19ba9; font-weight: 600; margin-right: 10px; }
 </style></head><body>
-<div><div class="brand">${ball}Dexcrate</div><h1>Your Pokémon card collection, binder and <span>market value</span></h1><p>Scan cards · Set binders · Cardmarket prices</p></div>
+<div><div class="brand">${logo}Dexcrate</div><h1>Your Pokémon card collection, binder and <span>market value</span></h1><p>Scan cards · Set binders · Cardmarket prices</p></div>
 <div class="fan"><div class="card"></div><div class="card"></div><div class="card"></div><div class="price"><span>Market value</span>€ 1,284.50</div></div>
 </body></html>`
 

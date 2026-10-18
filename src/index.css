@@ -70,6 +70,10 @@
   --logo-top: #ff5a3c;
   --logo-bottom: #f6f3ee;
   --logo-band: #0e0d12;
+  /* Dexcrate-logo (LogoMark): in beide thema's gelijk, net als public/favicon.svg. */
+  --logo-card: #ffcb05;
+  --logo-ink: #17161c;
+  --logo-spark: #f6f3ee;
 
   --scrim: rgb(8 7 12 / 0.86);
   --scrim-soft: rgb(8 7 12 / 0.6);
