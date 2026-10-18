@@ -1,29 +1,54 @@
 /* ---------- Crate: pakjes, kaartvenster, overzicht (16-10-2026) ---------- */
-/* Punten links, pakjes ernaast; op smallere schermen onder elkaar. */
+/* Punten als compacte balk bovenaan, de pakjes eronder in een raster (18-10-2026: naast de punten werden vijf pakjes te smal). */
 .crate-top {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
 }
 
 .crate-top .crate-wallet {
-  flex: 0 0 auto;
+  justify-self: start;
   min-width: 220px;
   max-width: 100%;
 }
 
 .crate-packs {
-  flex: 1 1 960px;
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
   gap: var(--space-4);
 }
 
+/* Pakje: plaatje links, tekst rechts; alle pakjes in een rij even hoog, knoppen onderaan op één lijn. */
 .crate-packs .crate-shop {
-  align-items: flex-start;
+  align-items: stretch;
+}
+
+.crate-packs .crate-pack-art {
+  align-self: flex-start;
+  width: 72px;
+}
+
+.crate-packs .crate-shop-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+}
+
+.crate-shop-foot {
+  margin-top: auto;
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-1);
+}
+
+.crate-shop-foot button {
+  white-space: nowrap;
 }
 
 /* Duurdere pakjes: andere kleur en een gouden rand. */
@@ -56,12 +81,10 @@
   );
 }
 
-.crate-pack-choice {
-  width: 100%;
-}
-
+.crate-pack-choice,
 .crate-pack-choice select {
   width: 100%;
+  min-width: 0;
 }
 
 button.crate-card-open {
