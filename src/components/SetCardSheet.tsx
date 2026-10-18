@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type JSX, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode } from 'react'
+import { useBackToClose } from '../hooks/useBackToClose'
 import { useCardInfo } from '../hooks/useCardInfo'
 import { useCardPrice } from '../hooks/useCardPrice'
 import { foilStyleFor } from '../lib/cardTraits'
@@ -79,6 +80,7 @@ export function SetCardSheet({ lang, card, setName, owned, setCode, setId, wishL
   }, [])
 
   const close = (): void => ref.current?.close()
+  useBackToClose(close)
   function onBackdrop(e: MouseEvent<HTMLDialogElement>): void {
     if (e.target === e.currentTarget) close()
   }

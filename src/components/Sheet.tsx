@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type JSX, type MouseEvent, type ReactNode } from 'react'
+import { useBackToClose } from '../hooks/useBackToClose'
 import { IconClose } from './Icons'
 
 interface Props {
@@ -7,7 +8,7 @@ interface Props {
   children: ReactNode
 }
 
-/** Popup in dezelfde vorm als de kaart-popup (desktop gecentreerd, mobiel van onderaf). Sluiten via ✕, Escape of naast tikken. */
+/** Popup in dezelfde vorm als de kaart-popup (desktop gecentreerd, mobiel van onderaf). Sluiten via ✕, Escape, terugknop of naast tikken. */
 export function Sheet({ title, onClose, children }: Props): JSX.Element {
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
@@ -18,6 +19,7 @@ export function Sheet({ title, onClose, children }: Props): JSX.Element {
   }, [])
 
   const close = (): void => ref.current?.close()
+  useBackToClose(close)
   function onBackdrop(e: MouseEvent<HTMLDialogElement>): void {
     if (e.target === e.currentTarget) close()
   }
