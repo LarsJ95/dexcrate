@@ -50,11 +50,6 @@
   content: none;
 }
 
-/* Sets is actief, maar de open set staat als subregel gemarkeerd. */
-.side-nav a[aria-current='true'] {
-  color: var(--ink);
-}
-
 /* Getal: alleen als er iets te doen is. Staat het pokébal-stipje er ook, dan komt dat erachter. */
 .nav-badge {
   display: inline-grid;
@@ -78,29 +73,6 @@
 
 .side-nav a:has(.nav-badge)::after {
   margin-left: var(--space-2);
-}
-
-/* Recente sets onder Sets. */
-.side-nav ul.side-sub {
-  gap: 0;
-  margin: 2px 0 var(--space-1) calc(var(--space-3) + 20px + var(--space-3));
-  padding-left: var(--space-2);
-  border-left: 1px solid var(--line);
-}
-
-.side-nav .side-sub a {
-  display: block;
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--fs-small);
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.side-nav .side-sub a::before,
-.side-nav .side-sub a::after {
-  content: none;
 }
 
 /* Settings onderaan, naast thema en uitloggen. */
