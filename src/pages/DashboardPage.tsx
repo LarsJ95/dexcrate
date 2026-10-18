@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type JSX } from 'react'
 import { CardDialog } from '../components/CardDialog'
 import { DashboardView } from '../components/DashboardView'
 import { ValueBreakdown } from '../components/ValueBreakdown'
+import { WishDeals } from '../components/WishDeals'
 import { useMarketPrices } from '../hooks/useMarketPrices'
 import { listCards, listSnapshotsFor } from '../lib/db'
 import { portfolioSeries, type SnapshotRow } from '../lib/prices'
@@ -87,6 +88,7 @@ export function DashboardPage({ email = null }: { email?: string | null }): JSX.
         onOpenCard={setOpenId}
         trainer={trainerName(email)}
         breakdown={<ValueBreakdown cards={cards} prices={prices} pricesLoading={loading} snapshots={snapshots} />}
+        deals={<WishDeals cards={cards} />}
       />
       {openCard && (
         <CardDialog

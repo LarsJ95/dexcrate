@@ -33,6 +33,8 @@ interface Props {
   onOpenCard?: (id: string) => void
   /** Waardeoverzicht onder het hoofdcijfer (kosten, marktwaarde, eigen waardering, resultaat). */
   breakdown?: ReactNode
+  /** Derde blok naast Gainers en Losers (Wishlist deals). */
+  deals?: ReactNode
   /** Naam op de Trainer Card. */
   trainer?: string
 }
@@ -104,7 +106,7 @@ function MoverList({
   )
 }
 
-export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard, breakdown, trainer = 'Trainer' }: Props): JSX.Element {
+export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard, breakdown, deals, trainer = 'Trainer' }: Props): JSX.Element {
   const stats = useMemo(() => computeStats(cards), [cards])
   const market = useMemo(() => summarizeMarket(cards, prices), [cards, prices])
   const movers = useMemo(() => topMovers(cards, prices), [cards, prices])
@@ -226,7 +228,7 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
             )}
           </div>
         )}
-        {series && series.length >= 2 && <LineChart points={series} label="Value history" valueLabel="Value" />}
+        {series && series.length >= 2 && <LineChart points={series} label="Value history" valueLabel="Value" height={130} />}
       </div>
 
       {/* Eerst het (compacte) overzicht van wat je hebt, daarna je duurste kaarten (volgorde op verzoek 18-10-2026). */}
@@ -246,13 +248,14 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
         <div className="movers">
           <MoverList title="Gainers" flavor="It's super effective!" items={movers.up} empty="No clear risers." onOpenCard={onOpenCard} />
           <MoverList title="Losers" flavor="It's not very effective…" items={movers.down} empty="No clear fallers." onOpenCard={onOpenCard} />
-          <MoverList title="Most valuable" items={movers.valuable} empty="No market prices yet." onOpenCard={onOpenCard} />
+          {/* Duurste kaarten staan al in de spotlight erboven; hier wat je goed kunt kopen (18-10-2026). */}
+          {deals}
         </div>
       )}
 
       <h2 className="section-title">Sales</h2>
 
-      <div className="stat-row">
+      <div className="stat-row is-compact">
         <a className="stat" href="#/collection">
           <span className="stat-label">Net (sold − bought)</span>
           <span className={`stat-value${stats.netComplete ? (stats.net >= 0 ? ' up' : ' down') : ''}`}>{signedEur(stats.net)}</span>
@@ -270,7 +273,7 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
         <Tile label="Bought" bucket={stats.bought} unit={countLabel(stats.bought.count, 'item', 'items')} />
       </div>
 
-      <div className="split-panels">
+      <div className="split-panels is-compact">
         <div className="panel">
           <div className="meter-head">
             <span className="stat-label" id="ratio-label">
@@ -307,7 +310,7 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
         )}
       </div>
 
-      <dl className="averages">
+      <dl className="averages is-compact">
         <div>
           <dt>Avg. sale price</dt>
           <dd>{formatEur(stats.avgSold)}</dd>

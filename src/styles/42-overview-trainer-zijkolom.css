@@ -66,3 +66,67 @@ a.mover:hover {
     padding-top: calc(1.1em + var(--space-6));
   }
 }
+
+/* Heel breed (vanaf 2800 px, op verzoek 18-10-2026: alles in één oogopslag op 100%): pagina breder,
+   hoofdcijfer en duurste kaart naast elkaar, verkoopmeter en gemiddelden naast elkaar. Rest over de volle breedte. */
+@media (min-width: 2800px) {
+  .page.dashboard {
+    max-width: 3200px;
+    grid-template-columns: 860px minmax(0, 1fr);
+  }
+
+  /* Trainer-kolom in twee kolommen, zodat hij net zo kort is als de hoofdkolom. */
+  .dash-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .dash-main {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: var(--space-4);
+  }
+
+  /* Iets compacter: kleinere duimnagels in Gainers/Losers/Deals, smallere spotlight-kaart. */
+  .dash-main .mover {
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    padding-block: 2px;
+  }
+
+  .dash-main .mover img,
+  .dash-main .mover .card-img {
+    width: 30px;
+  }
+
+  .dash-main .spotlight {
+    grid-template-columns: minmax(120px, 170px) minmax(260px, 1fr) minmax(320px, 1.3fr);
+  }
+
+  .dash-main > * {
+    grid-column: 1 / -1;
+  }
+
+  .dash-main > h1 {
+    grid-row: 1;
+  }
+
+  .dash-main > .hero {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: stretch;
+  }
+
+  .dash-main > .spotlight {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: stretch;
+  }
+
+  .dash-main > .split-panels {
+    grid-column: 1;
+  }
+
+  .dash-main > .averages {
+    grid-column: 2;
+  }
+}
