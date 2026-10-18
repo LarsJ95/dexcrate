@@ -192,6 +192,14 @@ export const IconTag = (p: IconProps): JSX.Element => (
   </Svg>
 )
 
+/** Zijbalk in- of uitklappen. */
+export const IconSidebar = (p: IconProps): JSX.Element => (
+  <Svg {...p}>
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <path d="M9 4v16" />
+  </Svg>
+)
+
 export const IconMore = (p: IconProps): JSX.Element => (
   <Svg {...p}>
     <path d="M4 7h16M4 12h16M4 17h16" />

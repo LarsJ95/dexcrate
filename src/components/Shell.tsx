@@ -1,14 +1,16 @@
-import { useEffect, type JSX, type ReactNode } from 'react'
+import { useEffect, useState, type JSX, type ReactNode } from 'react'
 import type { Theme } from '../hooks/useTheme'
 import type { Route } from '../lib/routes'
-import { IconLogout, IconMoon, IconSun, LogoMark } from './Icons'
+import { IconLogout, IconMoon, IconSettings, IconSidebar, IconSun, LogoMark } from './Icons'
 import { Moments } from './Moments'
 import { PartnerBuddy } from './PartnerBuddy'
 import { Peek } from './Peek'
 import { Runner } from './Runner'
 import { Sky } from './Sky'
 import { usePrefs } from '../lib/devicePrefs'
-import { SIDE_GROUPS, TAB_NAV, isActiveTab } from './nav'
+import { SETTINGS_ROUTES, TAB_NAV, isActiveTab, moreHasBadge } from './nav'
+import { NavBadge, SideNav } from './SideNav'
+import { useNavCounts } from '../hooks/useNavCounts'
 import { useBackdrop } from '../hooks/useBackdrop'
 import { useOnline } from '../hooks/useOnline'
 import { useOfflineDataTime } from '../lib/offlineCache'
@@ -20,6 +22,16 @@ interface Props {
   onToggleTheme: () => void
   onSignOut: () => void
   children: ReactNode
+}
+
+const COLLAPSE_KEY = 'dexcrate:sidebar-collapsed'
+
+function readCollapsed(): boolean {
+  try {
+    return localStorage.getItem(COLLAPSE_KEY) === '1'
+  } catch {
+    return false
+  }
 }
 
 /** "14:32" voor vandaag, anders "16 Oct, 14:32". */
@@ -40,6 +52,20 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
   }, [prefs.wallpaper])
   // Achtergrond van de dag (donker thema); bij de sterrennacht tekent de hemel extra sterren.
   const backdrop = useBackdrop()
+  const counts = useNavCounts(route)
+  // Zijbalk inklappen tot alleen iconen (per apparaat onthouden).
+  const [collapsed, setCollapsed] = useState(readCollapsed)
+  function toggleCollapsed(): void {
+    setCollapsed((c) => {
+      try {
+        localStorage.setItem(COLLAPSE_KEY, c ? '0' : '1')
+      } catch (err) {
+        console.warn('Zijbalkstand onthouden mislukt', err)
+      }
+      return !c
+    })
+  }
+  const collapseLabel = collapsed ? 'Expand menu' : 'Collapse menu'
   const themeLabel = theme === 'dark' ? 'Light theme' : 'Dark theme'
   const themeButton = (
     <button type="button" className="ghost icon-btn" onClick={onToggleTheme} aria-label={themeLabel} title={themeLabel}>
@@ -53,35 +79,36 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
   )
 
   return (
-    <div className="shell">
+    <div className={`shell${collapsed ? ' is-collapsed' : ''}`}>
       {prefs.sky && <Sky theme={theme} night={theme === 'dark' && backdrop === 'night'} />}
       <aside className="sidebar">
         <a className="brand" href="#/overview">
           <LogoMark />
           <span>Dexcrate</span>
         </a>
-        <nav className="side-nav" aria-label="Main menu">
-          {SIDE_GROUPS.map((group, i) => (
-            <div key={i} className="side-group">
-              {group.map(({ route: r, label, Icon }) => (
-                <a key={r} href={`#/${r}`} aria-current={route === r ? 'page' : undefined}>
-                  <Icon />
-                  <span>{label}</span>
-                </a>
-              ))}
-            </div>
-          ))}
-        </nav>
+        <SideNav route={route} counts={counts} collapsed={collapsed} />
         <div className="side-foot">
-          <PartnerBuddy />
-          {email && (
+          {!collapsed && <PartnerBuddy />}
+          {email && !collapsed && (
             <p className="side-user" title={email}>
               {email}
             </p>
           )}
           <div className="side-actions">
+            <a
+              className="icon-link"
+              href="#/settings"
+              aria-current={SETTINGS_ROUTES.includes(route) ? 'page' : undefined}
+              aria-label="Settings, backup and import"
+              title="Settings, backup and import"
+            >
+              <IconSettings />
+            </a>
             {themeButton}
             {logoutButton}
+            <button type="button" className="ghost icon-btn side-collapse" onClick={toggleCollapsed} aria-label={collapseLabel} title={collapseLabel} aria-pressed={collapsed}>
+              <IconSidebar />
+            </button>
           </div>
         </div>
       </aside>
@@ -122,6 +149,12 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
           >
             <span className="tab-icon">
               <Icon size={r === 'scan' ? 24 : 20} />
+              {r === 'collection' && <NavBadge kind="collection" counts={counts} />}
+              {r === 'more' && moreHasBadge(counts) && (
+                <span className="nav-dot">
+                  <span className="visually-hidden">: something to do</span>
+                </span>
+              )}
             </span>
             <span>{label}</span>
           </a>
