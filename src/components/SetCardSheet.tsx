@@ -12,13 +12,14 @@ import { CONDITION_LABELS, LANGUAGE_LABELS, VARIANT_LABELS, type Card, type Card
 import type { WishlistInput, WishlistItem } from '../lib/wishlist'
 import { CardDialog } from './CardDialog'
 import { CardImage } from './CardImage'
-import { CardFacts, CardPrice, type Fact } from './CardSheetParts'
+import { CardFacts, CardPrice, Fold, type Fact } from './CardSheetParts'
 import { CardmarketLink } from './CardmarketLink'
 import { CardZoom } from './CardZoom'
 import { ChangeBadge } from './ChangeBadge'
 import { HoloCard } from './HoloCard'
 import { RarityChip, TypeChip } from './Chips'
 import { IconArrowLeft, IconArrowRight, IconCheck, IconClose, IconStar } from './Icons'
+import { OtherPrints } from './OtherPrints'
 import { WishlistDialog } from './WishlistDialog'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 
@@ -326,6 +327,14 @@ export function SetCardSheet({
                 ))}
               </ul>
             </section>
+          )}
+
+          {lang === 'en' && info?.illustrator && (
+            <div className="cd-folds">
+              <Fold title="Other prints" hint="The same card in other sets">
+                <OtherPrints cardKey={key} />
+              </Fold>
+            </div>
           )}
         </div>
       </div>

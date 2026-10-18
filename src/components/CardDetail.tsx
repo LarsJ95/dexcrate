@@ -25,6 +25,7 @@ import {
   type CardStatus,
 } from '../lib/types'
 import { CardGameInfo } from './CardGameInfo'
+import { OtherPrints } from './OtherPrints'
 import { CardImage } from './CardImage'
 import { DexStrip, SetProgress, ValueBar, VariantQuestion } from './CardOverviewParts'
 import { CardmarketLink } from './CardmarketLink'
@@ -221,6 +222,11 @@ export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props):
                 </div>
               </dl>
             )}
+          </Fold>
+        )}
+        {card.kind === 'card' && card.tcgdex_id?.startsWith('en/') && info?.illustrator && (
+          <Fold title="Other prints" hint="The same card in other sets">
+            <OtherPrints cardKey={card.tcgdex_id} />
           </Fold>
         )}
         <Fold title="Prices" hint={hasMarket ? 'Sources and price history' : 'Your valuation'}>
