@@ -5,6 +5,15 @@
   gap: var(--space-2) var(--space-3);
 }
 
+/* Lange lijst met vinkjes (eigen wishlist-lijst vullen): één kolom, scrollt binnen de popup. */
+.check-list {
+  display: grid;
+  gap: var(--space-2);
+  max-height: min(50vh, 420px);
+  overflow-y: auto;
+  padding: var(--space-1);
+}
+
 /* Kaart buiten het doel (bv. secret rare uitgezet): zichtbaar maar teruggeschaald. */
 .slot.outside {
   opacity: 0.5;

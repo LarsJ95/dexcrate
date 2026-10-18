@@ -1,21 +1,26 @@
 import { useState, type FormEvent, type JSX } from 'react'
-import { describeWishFilters, type WishFilters } from '../lib/wishFilters'
-import { MAX_LIST_NAME, addWishlistList, deleteWishlistList, listNameError, updateWishlistList, type WishlistList } from '../lib/wishlistLists'
+import { NO_WISH_FILTERS, describeWishFilters, type WishFilters } from '../lib/wishFilters'
+import { MAX_LIST_NAME, addWishlistList, deleteWishlistList, listNameError, updateWishlistList, type WishlistList, type WishlistListKind } from '../lib/wishlistLists'
 import { Sheet } from './Sheet'
 import { errorText } from '../lib/errors'
 
 interface Props {
-  /** Bestaande lijst (hernoemen/verwijderen) of null (nieuwe lijst met de huidige filters). */
+  /** Bestaande lijst (hernoemen/verwijderen) of null (nieuwe lijst). */
   list: WishlistList | null
+  /** Soort nieuwe lijst: 'smart' bewaart de huidige filters, 'manual' begint leeg. */
+  kind?: WishlistListKind
   filters: WishFilters
+  /** Aantal wensen in een eigen lijst (alleen voor de tekst). */
+  count?: number
   existing: readonly WishlistList[]
   onClose: () => void
   onSaved: (list: WishlistList) => void
   onDeleted: (id: string) => void
 }
 
-/** Slimme lijst opslaan, hernoemen of verwijderen. */
-export function WishlistListSheet({ list, filters, existing, onClose, onSaved, onDeleted }: Props): JSX.Element {
+/** Lijst opslaan (slim of eigen), hernoemen of verwijderen. */
+export function WishlistListSheet({ list, kind = 'smart', filters, count = 0, existing, onClose, onSaved, onDeleted }: Props): JSX.Element {
+  const manual = (list?.kind ?? kind) === 'manual'
   const [name, setName] = useState(list?.name ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -32,7 +37,7 @@ export function WishlistListSheet({ list, filters, existing, onClose, onSaved, o
     setBusy(true)
     setError(null)
     try {
-      onSaved(list ? await updateWishlistList(list.id, { name }) : await addWishlistList(name, filters, existing.length))
+      onSaved(list ? await updateWishlistList(list.id, { name }) : await addWishlistList(name, manual ? NO_WISH_FILTERS : filters, existing.length, manual ? 'manual' : 'smart'))
     } catch (err) {
       setError(errorText(err, 'Saving the list failed.'))
       setBusy(false)
@@ -57,13 +62,19 @@ export function WishlistListSheet({ list, filters, existing, onClose, onSaved, o
   }
 
   return (
-    <Sheet title={list ? `List: ${list.name}` : 'Save as list'} onClose={onClose}>
+    <Sheet title={list ? `List: ${list.name}` : manual ? 'New list' : 'Save as list'} onClose={onClose}>
       <form className="sheet-form" onSubmit={(e) => void onSubmit(e)}>
         <label>
           Name
-          <input value={name} maxLength={MAX_LIST_NAME} placeholder="e.g. Under €10" onChange={(e) => setName(e.target.value)} required autoFocus />
+          <input value={name} maxLength={MAX_LIST_NAME} placeholder={manual ? 'e.g. Pikachu collection' : 'e.g. Under €10'} onChange={(e) => setName(e.target.value)} required autoFocus />
         </label>
-        <p className="muted small">Shows: {describeWishFilters(list?.filters ?? filters)}</p>
+        <p className="muted small">
+          {manual
+            ? list
+              ? `${count} ${count === 1 ? 'wish' : 'wishes'} in this list. Removing the list keeps the wishes.`
+              : 'You choose which wishes go in it: with “Choose wishes”, or when adding or editing a wish.'
+            : `Shows: ${describeWishFilters(list?.filters ?? filters)}`}
+        </p>
         {error && (
           <p className="error" role="alert">
             {error}
