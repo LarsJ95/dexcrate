@@ -5,7 +5,6 @@ import { IconLogout, IconMoon, IconSettings, IconSidebar, IconSun, LogoMark } fr
 import { Moments } from './Moments'
 import { PartnerBuddy } from './PartnerBuddy'
 import { Peek } from './Peek'
-import { Runner } from './Runner'
 import { Sky } from './Sky'
 import { usePrefs } from '../lib/devicePrefs'
 import { SETTINGS_ROUTES, TAB_NAV, isActiveTab, moreHasBadge } from './nav'
@@ -136,7 +135,6 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
         {children}
       </main>
       <Moments />
-      <Runner paused={route === 'scan'} />
       <Peek paused={route === 'scan'} />
 
       <nav className="tab-bar" aria-label="Main menu">

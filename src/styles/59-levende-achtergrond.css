@@ -150,66 +150,6 @@
   }
 }
 
-/* Team Rocket-ballon. */
-.sky-rocket {
-  position: absolute;
-  left: 0;
-  opacity: 0.92;
-  animation: sky-rocket-rtl 26s linear forwards;
-}
-
-.sky-rocket.from-left {
-  animation-name: sky-rocket-ltr;
-}
-
-.sky-rocket-bob {
-  display: block;
-  animation: sky-bob 3.2s ease-in-out infinite;
-}
-
-@keyframes sky-rocket-rtl {
-  from {
-    transform: translateX(calc(100vw + 20px));
-  }
-
-  to {
-    transform: translateX(-140px);
-  }
-}
-
-@keyframes sky-rocket-ltr {
-  from {
-    transform: translateX(-140px);
-  }
-
-  to {
-    transform: translateX(calc(100vw + 20px));
-  }
-}
-
-@keyframes sky-bob {
-  50% {
-    transform: translateY(-10px) rotate(-2deg);
-  }
-}
-
-/* Weggeschoten: draaiend omhoog en weg, met een twinkelend sterretje. */
-.sky-rocket.blast {
-  animation: sky-blast 1.3s cubic-bezier(0.5, 0, 0.9, 0.4) forwards;
-}
-
-@keyframes sky-blast {
-  from {
-    transform: translate(0, 0) rotate(0) scale(1);
-    opacity: 1;
-  }
-
-  to {
-    transform: translate(40vw, -60vh) rotate(720deg) scale(0.1);
-    opacity: 0;
-  }
-}
-
 /* Gengar kijkt 's nachts om de hoek (boven de inhoud, maar je kunt er gewoon doorheen klikken). */
 .sky-gengar {
   position: fixed;
@@ -288,7 +228,7 @@
   }
 }
 
-/* Tekstje bij een wens of Team Rocket. */
+/* Tekstje bij een wens. */
 .sky-note {
   position: fixed;
   z-index: 60;

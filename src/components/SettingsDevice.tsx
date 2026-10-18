@@ -31,7 +31,7 @@ export function AppearanceSection(): JSX.Element {
         Animations: holo effects, celebrations and visiting Pokémon
       </Toggle>
       <Toggle checked={prefs.sky} onChange={(v) => setPref('sky', v)} hint={prefs.sky && !motion ? 'With animations off you see a still starry sky.' : undefined}>
-        Living background: stars, falling stars, Team Rocket and more
+        Living background: stars, falling stars, flying Pokémon and more
       </Toggle>
       <Toggle checked={prefs.wallpaper} onChange={(v) => setPref('wallpaper', v)}>
         Background pattern: a different one each day in the dark theme (Poké Balls, holo, energy mix, night sky)

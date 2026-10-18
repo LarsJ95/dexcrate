@@ -29,7 +29,6 @@ import { SetBinderPage } from '../pages/SetBinderPage'
 import { SetsPage } from '../pages/SetsPage'
 import { overrideSchemaV2ForPreview } from '../lib/db'
 import { showMoment } from '../lib/moments'
-import { seedRunnerForPreview } from '../lib/runner'
 import { seedPeekForPreview } from '../lib/sprites'
 import { overrideTransactionsForPreview } from '../lib/transactions'
 import { overrideGoalForPreview } from '../lib/wishlist'
@@ -104,16 +103,10 @@ const CARDS: { card: Card; market: MarketValue | null }[] = [
   { card: demo({ name: 'Morpeko', set_code: 'CBB3C', card_number: '14', language: 'zh-cn', purchase_price: 3.5 }), market: null },
 ]
 
-// ?runner=<dexId>: deze Pokémon rent na `at` ms voor de screenshot (na 7 s) langs.
-if (params.get('runner')) {
-  const dexId = Number(params.get('runner'))
-  seedRunnerForPreview([{ dexId, name: params.get('runnername') ?? 'Pikachu', type: 'Lightning' }], 7000 - Number(params.get('at') ?? 2500))
-}
-
-// ?sky=star|rocket|flyer|gengar[&phase=dawn|day|dusk|night]: achtergrond-gebeurtenis direct starten.
+// ?sky=star|flyer|gengar[&phase=dawn|day|dusk|night]: achtergrond-gebeurtenis direct starten.
 const skyKind = params.get('sky')
 const skyPhaseParam = params.get('phase')
-const seededKind = skyKind === 'star' || skyKind === 'rocket' || skyKind === 'flyer' || skyKind === 'gengar' ? skyKind : null
+const seededKind = skyKind === 'star' || skyKind === 'flyer' || skyKind === 'gengar' ? skyKind : null
 const seededPhase = skyPhaseParam === 'dawn' || skyPhaseParam === 'day' || skyPhaseParam === 'dusk' || skyPhaseParam === 'night' ? skyPhaseParam : null
 if (seededKind || seededPhase) seedSkyForPreview(seededKind, seededPhase)
 

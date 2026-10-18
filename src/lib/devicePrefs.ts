@@ -10,7 +10,7 @@ export type ScanModePref = 'queue' | 'single' | 'multi'
 
 export interface DevicePrefs {
   theme: ThemeChoice
-  /** Levende achtergrond (sterren, Team Rocket …). */
+  /** Levende achtergrond (sterren, vliegende Pokémon …). */
   sky: boolean
   /** Vaag behang van energiesymbolen. */
   wallpaper: boolean

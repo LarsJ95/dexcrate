@@ -1,50 +1,4 @@
-/* ---------- Langsrenner (DESIGN.md §9) ---------- */
-.runner {
-  position: fixed;
-  left: 0;
-  bottom: calc(var(--tabbar) + var(--space-2) + env(safe-area-inset-bottom, 0px));
-  z-index: 40;
-  display: block;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  animation: runner-run var(--run-ms, 7s) linear forwards;
-}
-
-.runner:hover:not(:disabled) {
-  background: none;
-  border: 0;
-}
-
-@media (min-width: 1024px) {
-  .runner {
-    left: var(--sidebar);
-    bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
-  }
-}
-
-@keyframes runner-run {
-  from {
-    transform: translateX(100vw);
-  }
-  to {
-    transform: translateX(-220px);
-  }
-}
-
-.runner-hop {
-  display: grid;
-  justify-items: center;
-  animation: runner-bob 300ms ease-in-out infinite alternate;
-}
-
-.runner-hop.is-jump {
-  animation:
-    runner-jump 650ms cubic-bezier(0.3, 0.7, 0.4, 1),
-    runner-bob 300ms ease-in-out 650ms infinite alternate;
-}
-
+/* ---------- Sprite-animaties en tekstballon (partner, trainerkaart; DESIGN.md §9) ---------- */
 @keyframes runner-bob {
   to {
     transform: translateY(-6px);
@@ -55,20 +9,6 @@
   45% {
     transform: translateY(-80px);
   }
-}
-
-.runner img {
-  display: block;
-  image-rendering: pixelated;
-  filter: drop-shadow(0 2px 0 rgb(0 0 0 / 0.35));
-}
-
-.runner-shadow {
-  width: 46px;
-  height: 8px;
-  margin-top: 2px;
-  border-radius: 50%;
-  background: var(--runner-shadow);
 }
 
 .runner-bubble {
