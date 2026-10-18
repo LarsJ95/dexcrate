@@ -5,19 +5,20 @@ import { burstFrom } from '../lib/fx'
 import { SET_MILESTONES, celebrateMilestone, showMoment, takeQuiet } from '../lib/moments'
 import { crateForSet } from '../lib/celebrate'
 import { hpLevel } from '../lib/trainer'
-import { DEFAULT_GOAL, goalProgress, goalRequirements, type GoalSettings, type OwnedCopy, type RequirementState } from '../lib/goals'
+import { DEFAULT_GOAL, goalProgress, goalRequirements, splitProgress, type GoalSettings, type OwnedCopy, type RequirementState } from '../lib/goals'
 import { marketValue } from '../lib/prices'
 import { isValueSort, sortSetCards, type SetSort } from '../lib/setSort'
 import { VARIANT_LABELS, type Card } from '../lib/types'
 import { loadGoal } from '../lib/wishlist'
 import { BinderSlot } from '../components/BinderSlot'
-import { BinderToolbar, CostPanel, GoalStats, type BinderShow } from '../components/SetBinderParts'
+import { BinderToolbar, CostPanel, GoalStats, SetProgressSplit, type BinderShow } from '../components/SetBinderParts'
 import { GoalSheet } from '../components/GoalSheet'
 import { IconArrowLeft } from '../components/Icons'
 import { SetCardSheet, type SheetNav } from '../components/SetCardSheet'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { useSetRarities } from '../hooks/useSetRarities'
 import { useSetValues } from '../hooks/useSetValues'
+import { useSetVariantMap } from '../hooks/useSetVariantMap'
 import { useSetVariants } from '../hooks/useSetVariants'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import { getCardPrice, getSet, isLang, setOfKey, type SetCard, type SetSummary } from '../lib/tcgdex'
@@ -117,8 +118,11 @@ export function SetBinderPage({ param }: Props): JSX.Element {
     }
   }, [goalsEnabled, valid, lang, setId])
 
-  // Doel per uitvoering: uitvoeringen van elke kaart ophalen.
-  const { variantsByCard, loading: variantsLoading } = useSetVariants(lang, data?.cards ?? null, goal.variants.length > 0)
+  // Master set: uitvoeringen van de hele set in één keer (Engels); anders per kaart, pas na "Count master set".
+  const variantMap = useSetVariantMap(lang, data?.summary.id ?? null)
+  const [countMaster, setCountMaster] = useState(false)
+  // Doel per uitvoering (of master set buiten het Engels): uitvoeringen van elke kaart ophalen.
+  const { variantsByCard, loading: variantsLoading } = useSetVariants(lang, data?.cards ?? null, goal.variants.length > 0 || (countMaster && variantMap === null))
 
   // Sorteren op waarde: marktprijs van elke kaart, geladen zodra je die sortering kiest.
   const values = useSetValues(lang, data?.cards ?? null, isValueSort(sort))
@@ -151,6 +155,12 @@ export function SetBinderPage({ param }: Props): JSX.Element {
     const reqs = goalRequirements(data.cards, variantsByCard, goal, data.summary.official ?? null)
     return goalProgress(reqs, data.copies, goal)
   }, [data, variantsByCard, goal])
+
+  const split = useMemo(() => {
+    if (!data) return null
+    const perCard = variantMap === null && (goal.variants.length > 0 || countMaster) && !variantsLoading ? variantsByCard : null
+    return splitProgress(data.cards, variantMap ?? perCard, data.copies, goal, data.summary.official ?? null)
+  }, [data, variantMap, variantsByCard, variantsLoading, goal, countMaster])
 
   /** Vakjes per kaart; een kaart zonder vakjes valt buiten het doel (bv. secret rare uitgezet). */
   const statesByCard = useMemo(() => {
@@ -355,6 +365,14 @@ export function SetBinderPage({ param }: Props): JSX.Element {
           style={{ width: `${progress.total > 0 ? (progress.done / progress.total) * 100 : 0}%` }}
         />
       </div>
+
+      {split && data.cards.length > 0 && (
+        <SetProgressSplit
+          split={split}
+          masterLoading={variantMap === null && countMaster ? variantsLoading : null}
+          onCountMaster={variantMap === null && !countMaster && goal.variants.length === 0 ? () => setCountMaster(true) : null}
+        />
+      )}
 
       <GoalStats
         progress={progress}

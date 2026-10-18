@@ -27,6 +27,7 @@ vi.mock('../lib/tcgdex', async (importOriginal) => ({
     return v == null ? null : ({ trend: v, avg30: v, idProduct: null } as unknown as CardmarketPrice)
   }),
   getCardInfo: vi.fn(async () => null),
+  getSetVariants: vi.fn(async () => new Map([['tst-2', ['normal', 'reverse']]])),
 }))
 vi.mock('../lib/prices', () => ({ marketValue: (p: { trend: number } | null) => (p ? { value: p.trend } : null) }))
 vi.mock('../hooks/useWishlistEnabled', () => ({ useWishlistEnabled: () => false }))
@@ -168,6 +169,14 @@ describe('SetBinderPage', () => {
     expect((screen.getByLabelText('Sort') as HTMLSelectElement).value).toBe('number')
   })
 
+  it('voortgang: officiële set en master set (uitvoeringen per kaart uit de catalogus)', async () => {
+    await renderPage()
+    const split = screen.getByRole('region', { name: 'Set progress' })
+    expect(within(split).getByRole('progressbar', { name: 'Official set' }).getAttribute('aria-valuenow')).toBe('2')
+    // Master: tst-2 heeft normal + reverse (2 vakjes), de andere 9 kaarten zijn onbekend (1 vakje) = 11.
+    expect((await within(split).findByRole('progressbar', { name: 'Master set' })).getAttribute('aria-valuemax')).toBe('11')
+  })
+
   it('kaartvenster bladert in de getoonde volgorde', async () => {
     await renderPage()
     await userEvent.selectOptions(screen.getByLabelText('Sort'), 'numberDesc')
@@ -176,8 +185,7 @@ describe('SetBinderPage', () => {
     expect(within(sheet).getByText('1 of 10')).toBeTruthy()
     expect((within(sheet).getByRole('button', { name: 'Previous' }) as HTMLButtonElement).disabled).toBe(true)
     await userEvent.click(within(sheet).getByRole('button', { name: 'Next' }))
-    expect(screen.getByRole('dialog', { name: 'tst-9' })).toBeTruthy()
-    expect(screen.getByText('2 of 10')).toBeTruthy()
+    expect(within(screen.getByRole('dialog', { name: 'tst-9' })).getByText('2 of 10')).toBeTruthy()
   })
 
   it('kaartvenster krijgt je exemplaren mee en herlaadt na bewerken', async () => {

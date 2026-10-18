@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { EMPTY_CARD } from './types'
 import { ownedForWish } from './wishlist'
-import { DEFAULT_GOAL, goalProgress, goalRequirements, type GoalSettings, type OwnedCopy } from './goals'
+import { DEFAULT_GOAL, goalProgress, goalRequirements, splitProgress, type GoalSettings, type OwnedCopy } from './goals'
 import type { Variant } from './types'
 
 // wishlist.ts maakt bij import een Supabase-client; die is hier niet nodig.
@@ -97,5 +97,28 @@ describe('ownedForWish', () => {
     expect(ownedForWish(item, [{ ...card, variant: 'reverse', quantity: 2 }])).toEqual({ owned: 2, incoming: 0 })
     expect(ownedForWish(item, [{ ...card, variant: 'reverse', ownership: 'incoming' }])).toEqual({ owned: 0, incoming: 1 })
     expect(ownedForWish(item, [{ ...card, variant: 'reverse', ownership: 'sold', status: 'sold' }])).toEqual({ owned: 0, incoming: 0 })
+  })
+})
+
+describe('setvoortgang in drie delen', () => {
+  const withTg = [...cards, { id: 's-TG01', localId: 'TG01' }]
+  const map = new Map(variants).set('s-TG01', ['holo'])
+  it('officieel, extra (hoger nummer en TG) en master per uitvoering', () => {
+    const owned = [copy('s-1', 'normal'), copy('s-1', 'reverse'), copy('s-3', 'holo'), copy('s-TG01', 'holo')]
+    const p = splitProgress(withTg, map, owned, DEFAULT_GOAL, 3)
+    expect(p.official).toEqual({ done: 2, total: 3 })
+    expect(p.extra).toEqual({ done: 1, total: 2 })
+    // Master: s-1 normal+reverse, s-2 normal+reverse, s-3 holo, s-4 holo, TG01 holo = 7 vakjes.
+    expect(p.master).toEqual({ done: 4, total: 7 })
+  })
+  it('zonder uitvoeringen geen master; zonder officiële telling alles officieel', () => {
+    const p = splitProgress(withTg, null, [], DEFAULT_GOAL, null)
+    expect(p.master).toBeNull()
+    expect(p.official.total).toBe(5)
+    expect(p.extra.total).toBe(0)
+  })
+  it('taal uit het doel telt mee', () => {
+    const p = splitProgress(cards, null, [copy('s-1', 'normal', { language: 'ja' })], { ...DEFAULT_GOAL, languages: ['en'] }, 3)
+    expect(p.official.done).toBe(0)
   })
 })

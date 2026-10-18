@@ -134,3 +134,45 @@ export function goalProgress(reqs: readonly Requirement[], copies: readonly Owne
     unknownVariant,
   }
 }
+
+/** Alle uitvoeringen die een master set kan hebben. */
+const ALL_VARIANTS: readonly Variant[] = ['normal', 'holo', 'reverse', 'firstEdition']
+
+export interface SplitProgress {
+  /** Kaarten 1 t/m de officiële telling, elke uitvoering telt. */
+  official: { done: number; total: number }
+  /** Kaarten boven de officiële telling (secret rares, TG …); total 0 = de set heeft er geen. */
+  extra: { done: number; total: number }
+  /** Elke kaart in elke uitvoering die volgens de catalogus bestaat; null = uitvoeringen nog onbekend. */
+  master: { done: number; total: number } | null
+}
+
+/** Hoort bij de officiële set: een nummer 1 t/m de officiële telling (zonder telling: elke kaart). */
+function inOfficialSet(localId: string, official: number | null): boolean {
+  if (!official) return true
+  return /^\d+$/.test(localId) && Number.parseInt(localId, 10) <= official
+}
+
+/**
+ * Setvoortgang in drie delen, zoals verzamelaars tellen (los van het eigen doel): officiële set, extra kaarten
+ * (hogere nummers en TG/GG …) en master set. Taal en "onderweg telt mee" komen uit het doel; elk vakje één exemplaar.
+ */
+export function splitProgress(
+  cards: readonly GoalCard[],
+  variantsByCard: ReadonlyMap<string, readonly Variant[] | null> | null,
+  copies: readonly OwnedCopy[],
+  goal: GoalSettings,
+  official: number | null,
+): SplitProgress {
+  const base: GoalSettings = { ...goal, variants: [], wantedQty: 1, includeSecret: true }
+  const count = (list: readonly GoalCard[], g: GoalSettings, map: ReadonlyMap<string, readonly Variant[] | null>): { done: number; total: number } => {
+    const p = goalProgress(goalRequirements(list, map, g, official), copies, g)
+    return { done: p.done, total: p.total }
+  }
+  const none = new Map<string, Variant[] | null>()
+  return {
+    official: count(cards.filter((c) => inOfficialSet(c.localId, official)), base, none),
+    extra: count(cards.filter((c) => !inOfficialSet(c.localId, official)), base, none),
+    master: variantsByCard ? count(cards, { ...base, variants: [...ALL_VARIANTS] }, variantsByCard) : null,
+  }
+}
