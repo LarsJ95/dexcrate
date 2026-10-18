@@ -22,6 +22,10 @@ export function WishFilterFields({ filters, setFilter }: Props): JSX.Element {
   return (
     <>
       <label>
+        Name
+        <input type="text" placeholder="e.g. Pikachu" maxLength={40} value={filters.name} onChange={(e) => setFilter({ name: e.target.value })} />
+      </label>
+      <label>
         Variant
         <select value={filters.variant} onChange={(e) => setFilter({ variant: e.target.value as Variant | '' })}>
           <option value="">All</option>
