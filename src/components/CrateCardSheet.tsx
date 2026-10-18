@@ -3,7 +3,9 @@ import { foilStyleFor } from '../lib/cardTraits'
 import { tradeValue, type CrateCard } from '../lib/crate'
 import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
-import { getCardPrice, type CardmarketPrice } from '../lib/tcgdex'
+import { getCardPrice, getSet, setOfKey, type CardmarketPrice } from '../lib/tcgdex'
+import type { WishlistInput } from '../lib/wishlist'
+import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import { cardLanguageOf } from '../lib/cardmarket'
 import { CardFace } from './CardFace'
 import { CardmarketLink } from './CardmarketLink'
@@ -11,8 +13,10 @@ import { CardZoom } from './CardZoom'
 import { CatalogKeyPicture } from './CatalogCardPicture'
 import { RarityChip } from './Chips'
 import { HoloCard } from './HoloCard'
+import { IconStar } from './Icons'
 import { LazyCardPrice } from './LazyCardPrice'
 import { Sheet } from './Sheet'
+import { WishlistDialog } from './WishlistDialog'
 
 /** Cardmarket-prijs van een catalogus-kaart; undefined = laden, null = onbekend. Alleen als `enabled`. */
 function useCratePrice(tcgdexId: string, enabled = true): CardmarketPrice | null | undefined {
@@ -54,6 +58,30 @@ export function CrateCardSheet({ card, busy, onTrade, onClose, tradeFactor }: Pr
   const price = useCratePrice(card.tcgdexId)
   const mv = marketValue(price, null)
   const [zoom, setZoom] = useState(false)
+  const wishlist = useWishlistEnabled() === true
+  const [wishInitial, setWishInitial] = useState<Partial<WishlistInput> | null>(null)
+  const [wished, setWished] = useState(false)
+
+  /** Wishlist met deze kaart als echte kaart (Engels, gekoppeld); setcode = officiële afkorting. */
+  async function openWish(): Promise<void> {
+    const ref = setOfKey(card.tcgdexId)
+    let code: string | null = ref?.setId ?? null
+    if (ref) {
+      try {
+        code = (await getSet(ref.lang, ref.setId))?.summary.abbr ?? ref.setId
+      } catch (err) {
+        console.warn('Setinfo ophalen mislukt', err)
+      }
+    }
+    const localId = ref ? ref.cardId.slice(ref.setId.length + 1) : ''
+    setWishInitial({
+      tcgdex_id: card.tcgdexId,
+      name: card.name,
+      set_code: code?.slice(0, 20) ?? null,
+      card_number: /^\d+$/.test(localId) ? String(Number.parseInt(localId, 10)) : localId || null,
+      language: ref?.lang === 'en' ? 'en' : null,
+    })
+  }
   const extra = card.quantity - 1
   const picture = (quality: 'low' | 'high'): JSX.Element => (
     <CatalogKeyPicture cardKey={card.tcgdexId} image={card.image} name={card.name} quality={quality} alt={card.name} fallback={<CardFace name={card.name} detail={card.setName} />} />
@@ -92,6 +120,12 @@ export function CrateCardSheet({ card, busy, onTrade, onClose, tradeFactor }: Pr
           </dl>
           <div className="crate-sheet-actions">
             <CardmarketLink idProduct={price?.idProduct ?? null} searchText={`${card.name} ${card.setName ?? ''}`} language={cardLanguageOf(null, card.tcgdexId)} button />
+            {wishlist && (
+              <button type="button" className="wish-add" onClick={() => void openWish()} disabled={wished}>
+                <IconStar size={16} />
+                {wished ? 'On your wishlist' : 'Add to wishlist'}
+              </button>
+            )}
             {extra > 0 && (
               <button type="button" onClick={() => onTrade(card)} disabled={busy}>
                 Trade {extra} for {extra * tradeValue(card.rarity, tradeFactor)} pts
@@ -101,6 +135,17 @@ export function CrateCardSheet({ card, busy, onTrade, onClose, tradeFactor }: Pr
           <p className="muted small">Virtual card: the price is what the real card costs on Cardmarket.</p>
         </div>
       </div>
+      {wishInitial && (
+        <WishlistDialog
+          item={null}
+          initial={wishInitial}
+          onClose={() => setWishInitial(null)}
+          onSaved={() => {
+            setWishInitial(null)
+            setWished(true)
+          }}
+        />
+      )}
       {zoom && (
         <CardZoom label={card.name} onClose={() => setZoom(false)}>
           {picture('high')}
