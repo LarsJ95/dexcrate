@@ -40,6 +40,30 @@
   border-color: color-mix(in oklab, var(--gold-b) 55%, var(--line));
 }
 
+/* Set pack groen; Type pack in de kleur van het gekozen type (STAP18). */
+.pack-set .crate-pack-art {
+  background: conic-gradient(from 30deg, #14532d, #22c55e, #bbf7d0, #22c55e, #14532d);
+}
+
+.pack-type .crate-pack-art {
+  background: conic-gradient(
+    from 30deg,
+    color-mix(in oklab, var(--pack-type, var(--type)) 45%, #000),
+    var(--pack-type, var(--type)),
+    color-mix(in oklab, var(--pack-type, var(--type)) 40%, #fff),
+    var(--pack-type, var(--type)),
+    color-mix(in oklab, var(--pack-type, var(--type)) 45%, #000)
+  );
+}
+
+.crate-pack-choice {
+  width: 100%;
+}
+
+.crate-pack-choice select {
+  width: 100%;
+}
+
 button.crate-card-open {
   position: relative;
   display: block;

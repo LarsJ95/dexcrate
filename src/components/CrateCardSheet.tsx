@@ -45,10 +45,12 @@ interface Props {
   busy: boolean
   onTrade: (card: CrateCard) => void
   onClose: () => void
+  /** Inruilfactor uit de regels (STAP18: 2). */
+  tradeFactor: number
 }
 
 /** Eén virtuele kaart groot bekijken, met Cardmarket-prijs en -link. */
-export function CrateCardSheet({ card, busy, onTrade, onClose }: Props): JSX.Element {
+export function CrateCardSheet({ card, busy, onTrade, onClose, tradeFactor }: Props): JSX.Element {
   const price = useCratePrice(card.tcgdexId)
   const mv = marketValue(price, null)
   const [zoom, setZoom] = useState(false)
@@ -92,7 +94,7 @@ export function CrateCardSheet({ card, busy, onTrade, onClose }: Props): JSX.Ele
             <CardmarketLink idProduct={price?.idProduct ?? null} searchText={`${card.name} ${card.setName ?? ''}`} language={cardLanguageOf(null, card.tcgdexId)} button />
             {extra > 0 && (
               <button type="button" onClick={() => onTrade(card)} disabled={busy}>
-                Trade {extra} for {extra * tradeValue(card.rarity)} pts
+                Trade {extra} for {extra * tradeValue(card.rarity, tradeFactor)} pts
               </button>
             )}
           </div>

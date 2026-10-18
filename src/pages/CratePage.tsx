@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties, type JSX } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type JSX } from 'react'
 import { CardFace } from '../components/CardFace'
 import { CrateCardSheet, CrateTilePrice } from '../components/CrateCardSheet'
 import { CrateOverview } from '../components/CrateOverview'
@@ -12,8 +12,32 @@ import { RaritySymbols } from '../components/RaritySymbols'
 import { SearchClear } from '../components/SearchClear'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { useDbFeature } from '../hooks/useDbFeature'
-import { foilStyleFor, rarityRule } from '../lib/cardTraits'
-import { PACKS, canAfford, drawPack, hasCrate, listCrateCards, openCratePack, syncCrate, tradeAllDuplicates, tradeCrateCard, tradeValue, type CrateCard, type PackKind, type PackPull } from '../lib/crate'
+import { ENERGY_TYPES, foilStyleFor, isEnergyType, rarityRule, type EnergyType } from '../lib/cardTraits'
+import {
+  OLD_RULES,
+  PACKS,
+  canAfford,
+  crateSetDone,
+  crateSetProgress,
+  drawPack,
+  getCrateRules,
+  hasCrate,
+  listCrateCards,
+  openCratePack,
+  packCost,
+  syncCrate,
+  tradeAllDuplicates,
+  tradeCrateCard,
+  tradeValue,
+  type CrateCard,
+  type CrateRules,
+  type PackKind,
+  type PackPull,
+} from '../lib/crate'
+import { energyColor } from '../lib/energy'
+import { LOCAL_SET_IDS } from '../lib/localCatalog'
+import { showMoment } from '../lib/moments'
+import { digitalSetIds, getSetList } from '../lib/tcgdex'
 import { burstFrom } from '../lib/fx'
 import { buzz } from '../lib/haptics'
 import { useMotion } from '../lib/motion'
@@ -26,15 +50,26 @@ import { useStoredChoice } from '../hooks/useStoredChoice'
 type View = 'cards' | 'overview'
 const PACK_KINDS = Object.keys(PACKS) as PackKind[]
 
-const EARN = [
-  ['Add a card to your collection', '10 + up to 20 for rarity'],
-  ['Record a sale', '15'],
-  ['Record a purchase', '5'],
-  ['New Pokémon in your Pokédex', '25'],
-  ['Complete a set', '250'],
-  ['Open the app (daily bonus)', '50'],
-  ['Trade in a duplicate', '2 to 30'],
-] as const
+/** Zo verdien je punten; dagbonus, inruilwaarde en Crate-set volgen de regels uit de database. */
+function earnRows(rules: CrateRules): [string, string][] {
+  return [
+    ['Add a card to your collection', '10 + up to 20 for rarity'],
+    ['Record a sale', '15'],
+    ['Record a purchase', '5'],
+    ['New Pokémon in your Pokédex', '25'],
+    ['Complete a set in your collection', '250'],
+    ...(rules.crateSet ? [['Complete a set in your Crate', String(rules.crateSet)] as [string, string]] : []),
+    ['Open the app (daily bonus)', String(rules.daily)],
+    ['Trade in a duplicate', `${2 * rules.tradeFactor} to ${30 * rules.tradeFactor}`],
+  ]
+}
+
+interface SetChoice {
+  key: string
+  id: string
+  name: string
+  official: number
+}
 
 function PackReveal({ pulls, onDone }: { pulls: PackPull[]; onDone: () => void }): JSX.Element {
   // Zeldzaamste als laatste.
@@ -107,12 +142,22 @@ interface Loaded {
   points: number
   freePack: boolean
   cards: CrateCard[]
+  rules: CrateRules
 }
 
 /** Stand ophalen; bijwerken zonder bonus/Pokédex (die komen via Overview en het toevoegen van kaarten). */
 async function loadCrate(): Promise<Loaded> {
-  const w = await syncCrate({}, [])
-  return { points: w.points, freePack: w.freePack, cards: await listCrateCards() }
+  const [w, rules] = await Promise.all([syncCrate({}, []), getCrateRules()])
+  return { points: w.points, freePack: w.freePack, cards: await listCrateCards(), rules }
+}
+
+/** Engelse sets voor het Set pack, nieuwste eerst; zonder digitale (TCG Pocket), eigen catalogus (geen zeldzaamheden) en sets zonder telling. */
+async function loadSetChoices(): Promise<SetChoice[]> {
+  const [list, digital] = await Promise.all([getSetList('en'), digitalSetIds('en')])
+  return [...list.values()]
+    .filter((s) => !digital.has(s.id) && !LOCAL_SET_IDS.has(s.id) && (s.official ?? 0) >= 5)
+    .map((s) => ({ key: `en/${s.id}`, id: s.id, name: s.name, official: s.official ?? 0 }))
+    .reverse()
 }
 
 /** Crate: verdien punten met je echte collectie en open er virtuele pakjes mee. */
@@ -130,11 +175,18 @@ export function CratePage(): JSX.Element {
   const [view, setView] = useState<View>('cards')
   const [opened, setOpened] = useState<CrateCard | null>(null)
   const [confirmAll, setConfirmAll] = useState(false)
+  const [rules, setRules] = useState<CrateRules>(OLD_RULES)
+  const [setChoices, setSetChoices] = useState<SetChoice[]>([])
+  const [packSet, setPackSet] = useState('')
+  const [packType, setPackType] = useStoredChoice<EnergyType>('dexcrate:crate-pack-type', ENERGY_TYPES, 'Fire')
+  // Sets waarvoor deze sessie al om de Crate-setbonus is gevraagd.
+  const askedSets = useRef<Set<string>>(new Set())
 
   const apply = useCallback((d: Loaded): void => {
     setPoints(d.points)
     setFreePack(d.freePack)
     setCards(d.cards)
+    setRules(d.rules)
   }, [])
 
   const reload = useCallback((): void => {
@@ -158,12 +210,50 @@ export function CratePage(): JSX.Element {
     }
   }, [enabled, apply])
 
+  // Sets voor het Set pack (alleen met STAP18); standaard de nieuwste.
+  const setPackOn = packCost(rules, 'set') !== null
+  useEffect(() => {
+    if (!setPackOn) return
+    let cancelled = false
+    loadSetChoices()
+      .then((list) => {
+        if (cancelled) return
+        setSetChoices(list)
+        setPackSet((cur) => cur || list[0]?.id || '')
+      })
+      .catch((err: unknown) => console.warn('Sets voor het Set pack ophalen mislukt', err))
+    return () => {
+      cancelled = true
+    }
+  }, [setPackOn])
+
+  // Complete set in je Crate: bonus (één keer per set; de database bewaakt dat).
+  const crateSetBonus = rules.crateSet
+  useEffect(() => {
+    if (!crateSetBonus || !cards || setChoices.length === 0) return
+    const keys = new Set(cards.map((c) => c.tcgdexId.slice(0, c.tcgdexId.lastIndexOf('-'))))
+    for (const s of setChoices) {
+      if (!keys.has(s.key) || askedSets.current.has(s.key) || crateSetProgress(cards, s.key, s.official) < s.official) continue
+      askedSets.current.add(s.key)
+      crateSetDone(s.key, s.official)
+        .then((gained) => {
+          if (gained <= 0) return
+          setPoints((p) => (p === null ? p : p + gained))
+          showMoment({ kind: 'points', amount: gained, reason: `${s.name} complete in your Crate` })
+        })
+        .catch((err: unknown) => console.warn('Crate-setbonus mislukt', err))
+    }
+  }, [cards, setChoices, crateSetBonus])
+
+  const chosenSet = setChoices.find((s) => s.id === packSet) ?? null
+  const chosenSetHave = chosenSet && cards ? crateSetProgress(cards, chosenSet.key, chosenSet.official) : 0
+
   async function openPack(pack: PackKind): Promise<void> {
     if (busy) return
     setBusy(true)
     setError(null)
     try {
-      const drawn = await drawPack(pack)
+      const drawn = await drawPack(pack, { setId: packSet || undefined, type: packType })
       const result = await openCratePack(drawn, pack)
       setPoints(result.points)
       setFreePack(result.freePack)
@@ -219,7 +309,7 @@ export function CratePage(): JSX.Element {
   )
   const activeFilters = crateFilterCount(filters)
   const total = (cards ?? []).reduce((n, c) => n + c.quantity, 0)
-  const extras = (cards ?? []).reduce((n, c) => n + (c.quantity - 1) * tradeValue(c.rarity), 0)
+  const extras = (cards ?? []).reduce((n, c) => n + (c.quantity - 1) * tradeValue(c.rarity, rules.tradeFactor), 0)
   const extraCopies = (cards ?? []).reduce((n, c) => n + c.quantity - 1, 0)
 
   if (enabled === false) {
@@ -255,20 +345,59 @@ export function CratePage(): JSX.Element {
         <ul className="crate-packs" aria-label="Packs">
         {PACK_KINDS.map((kind) => {
           const p = PACKS[kind]
+          const cost = packCost(rules, kind)
           const free = kind === 'booster' && freePack
-          const ok = points !== null && canAfford(kind, points, freePack)
+          const ok = points !== null && canAfford(rules, kind, points, freePack) && (kind !== 'set' || packSet !== '')
+          const art = kind === 'type' ? ({ '--pack-type': energyColor(packType) } as CSSProperties) : undefined
           return (
             <li key={kind} className={`panel crate-shop pack-${kind}`}>
-              <div className="crate-pack-art" aria-hidden="true">
+              <div className="crate-pack-art" aria-hidden="true" style={art}>
                 <span className="pokeball" />
               </div>
               <div className="crate-shop-info">
                 <strong>{p.name}</strong>
                 <span className="muted small">{p.contents}</span>
-                <button type="button" className="primary" onClick={() => void openPack(kind)} disabled={busy || !ok || pulls !== null}>
-                  {busy ? 'Opening…' : free ? 'Open free daily pack' : `Open (${p.cost.toLocaleString('en-IE')} points)`}
-                </button>
-                {!ok && points !== null && <span className="small muted">You need {(p.cost - points).toLocaleString('en-IE')} more points.</span>}
+                {cost === null ? (
+                  <span className="small muted">Not set up yet: run STAP18 in Supabase.</span>
+                ) : (
+                  <>
+                    {kind === 'set' && (
+                      <label className="crate-pack-choice">
+                        <span className="visually-hidden">Set</span>
+                        <select value={packSet} onChange={(e) => setPackSet(e.target.value)} disabled={setChoices.length === 0}>
+                          {setChoices.length === 0 && <option value="">Loading sets…</option>}
+                          {setChoices.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+                    {kind === 'set' && chosenSet && (
+                      <span className="small muted">
+                        You have {chosenSetHave} of {chosenSet.official}
+                        {rules.crateSet ? ` · +${rules.crateSet} when complete` : ''}
+                      </span>
+                    )}
+                    {kind === 'type' && (
+                      <label className="crate-pack-choice">
+                        <span className="visually-hidden">Type</span>
+                        <select value={packType} onChange={(e) => isEnergyType(e.target.value) && setPackType(e.target.value)}>
+                          {ENERGY_TYPES.map((t) => (
+                            <option key={t} value={t}>
+                              {t}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+                    <button type="button" className="primary" onClick={() => void openPack(kind)} disabled={busy || !ok || pulls !== null}>
+                      {busy ? 'Opening…' : free ? 'Open free daily pack' : `Open (${cost.toLocaleString('en-IE')} points)`}
+                    </button>
+                    {!ok && points !== null && points < cost && <span className="small muted">You need {(cost - points).toLocaleString('en-IE')} more points.</span>}
+                  </>
+                )}
               </div>
             </li>
           )
@@ -392,7 +521,7 @@ export function CratePage(): JSX.Element {
           </FilterPanel>
         )}
         {cards === null && !error && <Loading />}
-        {view === 'overview' && cards && <CrateOverview cards={cards} onOpen={setOpened} />}
+        {view === 'overview' && cards && <CrateOverview cards={cards} onOpen={setOpened} tradeFactor={rules.tradeFactor} />}
         {view === 'cards' && cards?.length === 0 && <p className="empty">No virtual cards yet. Open your first pack above.</p>}
         {view === 'cards' && cards && cards.length > 0 && sorted.length === 0 && <p className="empty">No cards match these filters.</p>}
         {view === 'cards' && sorted.length > 0 && (
@@ -412,7 +541,7 @@ export function CratePage(): JSX.Element {
                 <CrateTilePrice tcgdexId={c.tcgdexId} />
                 {c.quantity > 1 && (
                   <button type="button" className="small-btn" onClick={() => void tradeIn(c)} disabled={busy}>
-                    Trade {c.quantity - 1} for {(c.quantity - 1) * tradeValue(c.rarity)} pts
+                    Trade {c.quantity - 1} for {(c.quantity - 1) * tradeValue(c.rarity, rules.tradeFactor)} pts
                   </button>
                 )}
               </li>
@@ -421,12 +550,12 @@ export function CratePage(): JSX.Element {
         )}
       </section>
 
-      {opened && <CrateCardSheet card={opened} busy={busy} onTrade={(c) => void tradeIn(c)} onClose={() => setOpened(null)} />}
+      {opened && <CrateCardSheet card={opened} busy={busy} onTrade={(c) => void tradeIn(c)} onClose={() => setOpened(null)} tradeFactor={rules.tradeFactor} />}
 
       <details className="panel crate-earn">
         <summary>How to earn Crate points</summary>
         <dl>
-          {EARN.map(([what, pts]) => (
+          {earnRows(rules).map(([what, pts]) => (
             <div key={what}>
               <dt>{what}</dt>
               <dd>{pts}</dd>
