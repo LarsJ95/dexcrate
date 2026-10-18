@@ -44,6 +44,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
   const [data, setData] = useState<Loaded | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [show, setShow] = useState<BinderShow>('all')
+  const toolbarRef = useRef<HTMLDivElement>(null)
   const [pageSize, setPageSize] = useState<PageSize>(readPageSize)
   const [cost, setCost] = useState<Cost | null>(null)
   const [openCard, setOpenCard] = useState<SetCard | null>(null)
@@ -195,7 +196,9 @@ export function SetBinderPage({ param }: Props): JSX.Element {
         ? data.cards.filter((c) => complete(c.id))
         : show === 'missing'
           ? data.cards.filter((c) => statesByCard.has(c.id) && !complete(c.id))
-          : data.cards
+          : show === 'duplicates'
+            ? data.cards.filter((c) => (statesByCard.get(c.id) ?? []).some((st) => st.extra > 0))
+            : data.cards
     // Op waarde of zeldzaamheid pas sorteren als alles binnen is; anders springen kaarten tijdens het laden.
     const ready = isValueSort(sort) ? values !== null && values.done >= values.total : sort === 'rarity' ? raritiesReady : true
     return sortSetCards(shown, ready ? sort : 'number', { complete, value: values?.prices ?? new Map(), rank: ranks })
@@ -339,13 +342,30 @@ export function SetBinderPage({ param }: Props): JSX.Element {
         />
       </div>
 
-      <GoalStats progress={progress} variantsLoading={variantsLoading} />
+      <GoalStats
+        progress={progress}
+        variantsLoading={variantsLoading}
+        onShowDuplicates={() => {
+          setShow('duplicates')
+          toolbarRef.current?.scrollIntoView({ block: 'start' })
+        }}
+      />
 
       {missingCount > 0 && data.cards.length > 0 && (
         <CostPanel missingCount={missingCount} unit={unit} cost={cost} costSummary={costSummary} onCalculate={() => void calculateCost()} />
       )}
 
-      <BinderToolbar show={show} onShow={setShow} pageSize={pageSize} onPageSize={changePageSize} sort={sort} onSort={setSort} />
+      <div ref={toolbarRef} className="scroll-target">
+        <BinderToolbar
+          show={show}
+          onShow={setShow}
+          duplicates={progress.duplicates}
+          pageSize={pageSize}
+          onPageSize={changePageSize}
+          sort={sort}
+          onSort={setSort}
+        />
+      </div>
       {isValueSort(sort) && values && values.done < values.total && (
         <p className="muted small" aria-live="polite">
           Loading prices… {values.done} of {values.total}

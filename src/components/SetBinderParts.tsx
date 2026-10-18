@@ -4,11 +4,13 @@ import type { Cost, PageSize } from '../lib/setBinder'
 import { SET_SORT_LABELS, type SetSort } from '../lib/setSort'
 import { formatEur } from '../lib/stats'
 
-export type BinderShow = 'all' | 'owned' | 'missing'
+export type BinderShow = 'all' | 'owned' | 'missing' | 'duplicates'
 
 interface BinderToolbarProps {
   show: BinderShow
   onShow: (show: BinderShow) => void
+  /** Aantal dubbelen; keuze "Duplicates" alleen als die er zijn (of al gekozen is). */
+  duplicates: number
   pageSize: PageSize
   onPageSize: (size: PageSize) => void
   sort: SetSort
@@ -16,17 +18,17 @@ interface BinderToolbarProps {
 }
 
 /** Tonen (alles/compleet/ontbrekend), vakken per pagina en sortering van de setbinder. */
-export function BinderToolbar({ show, onShow, pageSize, onPageSize, sort, onSort }: BinderToolbarProps): JSX.Element {
+export function BinderToolbar({ show, onShow, duplicates, pageSize, onPageSize, sort, onSort }: BinderToolbarProps): JSX.Element {
+  const options: [BinderShow, string][] = [
+    ['all', 'All'],
+    ['owned', 'Complete'],
+    ['missing', 'Missing'],
+  ]
+  if (duplicates > 0 || show === 'duplicates') options.push(['duplicates', 'Duplicates'])
   return (
     <div className="filters">
       <div className="segmented" role="group" aria-label="Show">
-        {(
-          [
-            ['all', 'All'],
-            ['owned', 'Complete'],
-            ['missing', 'Missing'],
-          ] as const
-        ).map(([key, label]) => (
+        {options.map(([key, label]) => (
           <button key={key} type="button" aria-pressed={show === key} onClick={() => onShow(key)}>
             {label}
           </button>
@@ -51,16 +53,25 @@ export function BinderToolbar({ show, onShow, pageSize, onPageSize, sort, onSort
 }
 
 /** Dubbelen, onderweg, onbekende uitvoering en het ophalen van uitvoeringen; niets te melden = niets tonen. */
-export function GoalStats({ progress, variantsLoading }: { progress: GoalProgress; variantsLoading: { done: number; total: number } | null }): JSX.Element | null {
+export function GoalStats({
+  progress,
+  variantsLoading,
+  onShowDuplicates,
+}: {
+  progress: GoalProgress
+  variantsLoading: { done: number; total: number } | null
+  /** Tik op Duplicates: alleen de kaarten met dubbelen tonen. */
+  onShowDuplicates: () => void
+}): JSX.Element | null {
   if (!(progress.duplicates > 0 || progress.ordered > 0 || progress.unknownVariant > 0 || variantsLoading)) return null
   return (
     <div className="stat-row">
       {progress.duplicates > 0 && (
-        <div className="stat">
+        <button type="button" className="stat" onClick={onShowDuplicates}>
           <span className="stat-label">Duplicates</span>
           <span className="stat-value">{progress.duplicates}</span>
-          <span className="stat-sub">More than you need for this goal</span>
-        </div>
+          <span className="stat-sub">More than you need for this goal · Show them</span>
+        </button>
       )}
       {progress.ordered > 0 && (
         <div className="stat">

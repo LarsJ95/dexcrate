@@ -15,7 +15,8 @@ vi.mock('../lib/supabase', () => ({ supabase: {} }))
 vi.mock('../lib/db', () => ({
   listCards: vi.fn(async () => [
     { id: 'm1', tcgdex_id: 'en/tst-2', status: 'collection', ownership: 'owned', quantity: 1, variant: null, language: 'en' },
-    { id: 'm2', tcgdex_id: 'en/tst-4', status: 'collection', ownership: 'owned', quantity: 1, variant: null, language: 'en' },
+    // Kaart 4 twee keer: één dubbele.
+    { id: 'm2', tcgdex_id: 'en/tst-4', status: 'collection', ownership: 'owned', quantity: 2, variant: null, language: 'en' },
   ]),
 }))
 vi.mock('../lib/tcgdex', async (importOriginal) => ({
@@ -94,6 +95,17 @@ describe('SetBinderPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Missing' }))
     expect(pages().flat()).toHaveLength(8)
     expect(pages().flat()).not.toContain('tst-2')
+  })
+
+  it('tik op Duplicates toont alleen de kaarten met dubbelen', async () => {
+    // jsdom kent scrollIntoView niet.
+    Element.prototype.scrollIntoView = vi.fn()
+    await renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /Duplicates\s*1/ }))
+    expect(pages().flat()).toEqual(['tst-4'])
+    expect(screen.getByRole('button', { name: 'Duplicates', pressed: true })).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: 'All' }))
+    expect(pages().flat()).toHaveLength(10)
   })
 
   it('sorteren houdt pagina’s van 9 en 6', async () => {
