@@ -103,7 +103,7 @@ export function ValueBreakdown({ cards, prices, pricesLoading, snapshots }: Prop
   return (
     <>
       <h2 className="section-title">What you own</h2>
-      <div className="stat-row">
+      <div className="stat-row is-compact">
         <div className="stat">
           <span className="stat-label">Purchase cost</span>
           <span className="stat-value">{formatEur(b.cost.amount)}</span>
