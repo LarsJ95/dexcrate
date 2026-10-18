@@ -358,9 +358,10 @@ export function CratePage(): JSX.Element {
                 <strong>{p.name}</strong>
                 <span className="muted small">{p.contents}</span>
                 {cost === null ? (
-                  <span className="small muted">Not set up yet: run STAP18 in Supabase.</span>
+                  <span className="small muted crate-shop-foot">Not set up yet: run STAP18 in Supabase.</span>
                 ) : (
-                  <>
+                  // Keuze, uitleg en knop onderaan; de knop als laatste, zodat de knoppen op één lijn staan.
+                  <div className="crate-shop-foot">
                     {kind === 'set' && (
                       <label className="crate-pack-choice">
                         <span className="visually-hidden">Set</span>
@@ -392,11 +393,13 @@ export function CratePage(): JSX.Element {
                         </select>
                       </label>
                     )}
+                    {!ok && points !== null && points < cost && !free && (
+                      <span className="small muted">You need {(cost - points).toLocaleString('en-IE')} more points.</span>
+                    )}
                     <button type="button" className="primary" onClick={() => void openPack(kind)} disabled={busy || !ok || pulls !== null}>
                       {busy ? 'Opening…' : free ? 'Open free daily pack' : `Open (${cost.toLocaleString('en-IE')} points)`}
                     </button>
-                    {!ok && points !== null && points < cost && <span className="small muted">You need {(cost - points).toLocaleString('en-IE')} more points.</span>}
-                  </>
+                  </div>
                 )}
               </div>
             </li>
