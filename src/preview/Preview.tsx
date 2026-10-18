@@ -236,6 +236,29 @@ function BinderPreview(): JSX.Element {
   )
 }
 
+/** Overview met werkende kaartpopup (zoals DashboardPage), om bv. kaart openen vanuit de Pokédex te testen. */
+function OverviewPreview(): JSX.Element {
+  const [openId, setOpenId] = useState<string | null>(null)
+  const cards = CARDS.map((c) => c.card)
+  const open = cards.find((c) => c.id === openId) ?? null
+  return (
+    <>
+      <DashboardView
+        cards={cards}
+        prices={PRICES}
+        pricesLoading={false}
+        series={SERIES}
+        onOpenCard={setOpenId}
+        breakdown={<ValueBreakdown cards={cards} prices={PRICES} pricesLoading={false} snapshots={null} />}
+        deals={<WishDeals cards={cards} />}
+      />
+      {open && (
+        <CardDialog key={open.id} card={open} defaultStatus={open.status} nextSortOrder={0} onClose={() => setOpenId(null)} onSaved={() => setOpenId(null)} onDeleted={() => setOpenId(null)} />
+      )}
+    </>
+  )
+}
+
 export function Preview(): JSX.Element {
   const page = (params.get('page') ?? 'collection') as Route
   const noop = useMemo(() => () => undefined, [])
@@ -367,14 +390,7 @@ export function Preview(): JSX.Element {
   if (page === 'overview') {
     return (
       <Shell route={page} email="demo@example.com" theme={theme} onToggleTheme={noop} onSignOut={noop}>
-        <DashboardView
-          cards={CARDS.map((c) => c.card)}
-          prices={PRICES}
-          pricesLoading={false}
-          series={SERIES}
-          breakdown={<ValueBreakdown cards={CARDS.map((c) => c.card)} prices={PRICES} pricesLoading={false} snapshots={null} />}
-          deals={<WishDeals cards={CARDS.map((c) => c.card)} />}
-        />
+        <OverviewPreview />
       </Shell>
     )
   }
