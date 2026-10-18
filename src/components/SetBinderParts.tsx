@@ -1,6 +1,6 @@
 import type { JSX } from 'react'
 import type { GoalProgress, SplitProgress } from '../lib/goals'
-import type { Cost, PageSize } from '../lib/setBinder'
+import { PAGE_SIZES, pageSizeLabel, type Cost, type PageSize } from '../lib/setBinder'
 import { SET_SORT_LABELS, type SetSort } from '../lib/setSort'
 import { formatEur } from '../lib/stats'
 import { closeKeyboardOnEnter } from '../lib/keyboard'
@@ -20,12 +20,15 @@ interface BinderToolbarProps {
   duplicates: number
   pageSize: PageSize
   onPageSize: (size: PageSize) => void
+  /** Map begint met de lege binnenkant van de kaft (pagina 1 rechts). */
+  skipFirst: boolean
+  onSkipFirst: (skip: boolean) => void
   sort: SetSort
   onSort: (sort: SetSort) => void
 }
 
 /** Tonen (alles/compleet/ontbrekend), vakken per pagina en sortering van de setbinder. */
-export function BinderToolbar({ query, onQuery, show, onShow, duplicates, pageSize, onPageSize, sort, onSort }: BinderToolbarProps): JSX.Element {
+export function BinderToolbar({ query, onQuery, show, onShow, duplicates, pageSize, onPageSize, skipFirst, onSkipFirst, sort, onSort }: BinderToolbarProps): JSX.Element {
   const options: [BinderShow, string][] = [
     ['all', 'All'],
     ['owned', 'Complete'],
@@ -54,13 +57,17 @@ export function BinderToolbar({ query, onQuery, show, onShow, duplicates, pageSi
           </button>
         ))}
       </div>
-      <div className="segmented" role="group" aria-label="Pockets per page">
-        {([6, 9] as const).map((size) => (
-          <button key={size} type="button" aria-pressed={pageSize === size} onClick={() => onPageSize(size)}>
-            {size} per page
-          </button>
+      <select className="toolbar-sort" aria-label="Pockets per page" value={pageSize} onChange={(e) => onPageSize(Number(e.target.value) as PageSize)}>
+        {PAGE_SIZES.map((size) => (
+          <option key={size} value={size}>
+            {pageSizeLabel(size)} per page
+          </option>
         ))}
-      </div>
+      </select>
+      <label className="check binder-skip">
+        <input type="checkbox" checked={skipFirst} onChange={(e) => onSkipFirst(e.target.checked)} />
+        Skip first page
+      </label>
       <select className="toolbar-sort" aria-label="Sort" value={sort} onChange={(e) => onSort(e.target.value as SetSort)}>
         {(Object.keys(SET_SORT_LABELS) as SetSort[]).map((k) => (
           <option key={k} value={k}>

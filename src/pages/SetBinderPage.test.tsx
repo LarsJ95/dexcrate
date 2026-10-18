@@ -96,13 +96,23 @@ async function renderPage(): Promise<void> {
 }
 
 describe('SetBinderPage', () => {
-  it('toont de set in pagina’s van 9, of 6 als je dat kiest (en onthoudt dat)', async () => {
+  it('toont de set in pagina’s van 9, of het formaat dat je kiest (en onthoudt dat)', async () => {
     await renderPage()
     expect(screen.getByText(/2 of 10 cards/)).toBeTruthy()
     expect(pages().map((p) => p.length)).toEqual([9, 1])
-    await userEvent.click(screen.getByRole('button', { name: '6 per page' }))
+    await userEvent.selectOptions(screen.getByLabelText('Pockets per page'), '6')
     expect(pages().map((p) => p.length)).toEqual([6, 4])
     expect(localStorage.getItem('dexcrate:binder-page-size')).toBe('6')
+    await userEvent.selectOptions(screen.getByLabelText('Pockets per page'), '4')
+    expect(pages().map((p) => p.length)).toEqual([4, 4, 2])
+  })
+
+  it('eerste pagina overslaan wordt onthouden; onbekend formaat wordt 9', async () => {
+    localStorage.setItem('dexcrate:binder-page-size', '7')
+    await renderPage()
+    expect((screen.getByLabelText('Pockets per page') as HTMLSelectElement).value).toBe('9')
+    await userEvent.click(screen.getByLabelText('Skip first page'))
+    expect(localStorage.getItem('dexcrate:binder-skip-first')).toBe('1')
   })
 
   it('Complete en Missing filteren op bezit', async () => {
