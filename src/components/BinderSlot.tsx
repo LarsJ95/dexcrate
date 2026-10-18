@@ -96,7 +96,7 @@ export function BinderSlot({ card: c, lang, setId, qty, states, cost, sort, valu
         ) : !complete && inGoal && price !== undefined ? (
           <span className="slot-price">{price === null ? 'no price' : formatEur(price)}</span>
         ) : isLang(lang) ? (
-          <LazyCardPrice cardKey={`${lang}/${c.id}`} className="slot-price" />
+          <LazyCardPrice cardKey={`${lang}/${c.id}`} className="slot-price" withReverse />
         ) : null}
         {qty && qty > 1 ? <span className="qty-badge">{qty}×</span> : null}
       </button>

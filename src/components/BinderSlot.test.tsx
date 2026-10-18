@@ -13,7 +13,10 @@ const priceCalls: (string | null)[] = []
 vi.mock('../hooks/useCardPrice', () => ({
   useCardPrice: (key: string | null) => {
     priceCalls.push(key)
-    return key ? { trend: 2.5, avg30: 2.5, idProduct: null } : null
+    if (!key) return null
+    // Kaart 026 heeft ook een reverse holo.
+    const rh = key.endsWith('-026') ? 6 : null
+    return { trend: 2.5, avg30: 2.5, avg7: null, idProduct: null, trendHolo: rh, avg30Holo: rh, avg7Holo: null }
   },
 }))
 
@@ -77,6 +80,12 @@ describe('BinderSlot', () => {
     const { container } = render(<BinderSlot {...base} lang="en" states={[state(null, 0)]} />)
     expect(container.querySelector('.slot-price')?.textContent).toBe('€2.50')
     expect(priceCalls).toContain('en/sv03.5-025')
+  })
+
+  it('bestaat er een reverse holo, dan staat die prijs eronder (RH)', () => {
+    const { container } = render(<BinderSlot {...base} card={{ ...card, id: 'sv03.5-026', localId: '026' }} lang="en" states={[state(null, 0)]} />)
+    expect(container.querySelector('.slot-price')?.textContent).toBe('€2.50RH €6.00')
+    expect(container.querySelector('.price-rh abbr')?.getAttribute('title')).toBe('Reverse holo')
   })
 
   it('na "kosten berekenen" blijft de prijs van wat ontbreekt staan, niet de marktprijs', () => {

@@ -17,7 +17,7 @@ import { CardZoom } from './CardZoom'
 import { ChangeBadge } from './ChangeBadge'
 import { HoloCard } from './HoloCard'
 import { RarityChip, TypeChip } from './Chips'
-import { IconArrowLeft, IconArrowRight, IconClose, IconStar } from './Icons'
+import { IconArrowLeft, IconArrowRight, IconCheck, IconClose, IconStar } from './Icons'
 import { WishlistDialog } from './WishlistDialog'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 
@@ -158,12 +158,30 @@ export function SetCardSheet({
   }
 
   const copyCount = copies.reduce((n, c) => n + c.quantity, 0)
+  // Waarde van je exemplaren, elk tegen de prijs van zijn eigen uitvoering (zonder prijs: niet meegeteld).
+  const copiesTotal = copies.reduce((sum, c) => sum + c.quantity * (marketValue(price, c.variant)?.value ?? 0), 0)
   const factList: (Fact | null)[] = [
     { label: 'Status', value: owned ? `Owned ${owned}×` : 'Missing' },
     info?.rarity ? { label: 'Rarity', value: <RarityChip rarity={info.rarity} /> } : null,
     type ? { label: 'Type', value: <TypeChip type={type} /> } : null,
-    reverse ? { label: 'Reverse holo', value: formatEur(reverse.value) } : null,
+    copies.length > 0 && price !== undefined ? { label: 'Your copies', value: `${formatEur(copiesTotal)} (${copyCount})` } : null,
   ]
+  // Standaarduitvoering heet "Holo" als de kaart alleen als holo bestaat (bv. Rare), anders "Normal".
+  const baseLabel = info?.variants?.includes('normal') ? 'Normal' : info?.variants?.includes('holo') ? 'Holo' : 'Market'
+  const ownsBase = copies.some((c) => c.variant !== null && c.variant !== 'reverse')
+  const ownsReverse = copies.some((c) => c.variant === 'reverse')
+  /** Prijslabel, met vinkje als je die uitvoering hebt. */
+  const priceLabel = (text: string, mine: boolean): JSX.Element => (
+    <>
+      {text}
+      {mine && (
+        <span className="cd-price-mine">
+          <IconCheck size={14} />
+          <span className="visually-hidden"> (you have this)</span>
+        </span>
+      )}
+    </>
+  )
   const facts = factList.filter((x): x is Fact => x !== null)
   /** Marktwaarde van precies deze uitvoering (onbekend: de gewone prijs). */
   const copyValue = (c: Card): string => {
@@ -252,11 +270,20 @@ export function SetCardSheet({
             </div>
             <CardFacts
               price={
-                <CardPrice
-                  label="Market"
-                  value={price === undefined ? '…' : normal ? formatEur(normal.value) : '–'}
-                  change={normal && <ChangeBadge change={normal.change30} label="vs 30-day avg" showLabel />}
-                />
+                <div className={reverse ? 'cd-prices' : undefined}>
+                  <CardPrice
+                    label={priceLabel(reverse ? baseLabel : 'Market', ownsBase)}
+                    value={price === undefined ? '…' : normal ? formatEur(normal.value) : '–'}
+                    change={normal && <ChangeBadge change={normal.change30} label="vs 30-day avg" showLabel={!reverse} />}
+                  />
+                  {reverse && (
+                    <CardPrice
+                      label={priceLabel('Reverse holo', ownsReverse)}
+                      value={formatEur(reverse.value)}
+                      change={<ChangeBadge change={reverse.change30} label="vs 30-day avg" />}
+                    />
+                  )}
+                </div>
               }
               facts={facts}
             >

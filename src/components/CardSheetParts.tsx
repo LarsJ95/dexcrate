@@ -30,7 +30,7 @@ export function CardFacts({ price, facts, children }: { price?: ReactNode; facts
 }
 
 /** Grote marktprijs met label en beweging. */
-export function CardPrice({ label, value, change }: { label: string; value: ReactNode; change?: ReactNode }): JSX.Element {
+export function CardPrice({ label, value, change }: { label: ReactNode; value: ReactNode; change?: ReactNode }): JSX.Element {
   return (
     <div className="cd-price">
       <span className="cd-price-label">{label}</span>
