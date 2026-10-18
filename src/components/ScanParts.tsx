@@ -108,7 +108,7 @@ export function SingleScanResult({ recognition, candidates, ownedByKey, earlier,
                 <span className="muted small">
                   {c.setName} {c.localId}
                 </span>
-                <span className="cand-reason small">{i === 0 ? 'Best match' : c.reason}</span>
+                <span className="cand-reason small">{i === 0 && !c.noCardData ? 'Best match' : c.reason}</span>
                 {owned && <span className="small">Owned {owned}×</span>}
               </button>
             </li>

@@ -99,6 +99,7 @@ function toCandidate(v: unknown): Candidate | null {
     image: typeof v.image === 'string' ? v.image : null,
     score: typeof v.score === 'number' ? v.score : 0,
     reason: str(v.reason),
+    ...(v.noCardData === true ? { noCardData: true } : {}),
   }
 }
 
@@ -172,7 +173,7 @@ export function reviewGroups(queue: readonly QueueItem[]): { check: QueueItem[];
   for (const q of queue) {
     if (q.status === 'error') out.check.push(q)
     else if (q.status !== 'ready') out.working.push(q)
-    else if (q.candidates.length === 0 || q.rec?.confidence !== 'high' || isAmbiguous(q) || twice.has(q.id)) out.check.push(q)
+    else if (q.candidates.length === 0 || q.rec?.confidence !== 'high' || isAmbiguous(q) || withoutCardData(q) || twice.has(q.id)) out.check.push(q)
     else out.good.push(q)
   }
   return out
@@ -180,6 +181,11 @@ export function reviewGroups(queue: readonly QueueItem[]): { check: QueueItem[];
 
 /** Marge waaronder twee kandidaten als 'even goed' gelden: dan kiest de app niet zelf. */
 const AMBIGUOUS_MARGIN = 0.5
+
+/** Gekozen kaart alleen op set + nummer gekoppeld (geen kaartdata in de catalogus): naam en nummer even nakijken. */
+export function withoutCardData(q: Pick<QueueItem, 'candidates' | 'chosen'>): boolean {
+  return q.candidates.find((c) => c.key === q.chosen)?.noCardData === true
+}
 
 /** De beste match is niet duidelijk beter dan de tweede (bv. zelfde naam en nummer in twee sets). */
 export function isAmbiguous(q: Pick<QueueItem, 'candidates'>): boolean {
