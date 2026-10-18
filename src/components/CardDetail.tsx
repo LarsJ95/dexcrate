@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type JSX, type KeyboardEvent } from 'react'
+import { useEffect, useMemo, useState, type JSX } from 'react'
 import { useCardInfo } from '../hooks/useCardInfo'
 import { useCardPrice } from '../hooks/useCardPrice'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
@@ -28,6 +28,7 @@ import { CardGameInfo } from './CardGameInfo'
 import { CardImage } from './CardImage'
 import { DexStrip, SetProgress, ValueBar, VariantQuestion } from './CardOverviewParts'
 import { CardmarketLink } from './CardmarketLink'
+import { CardFacts, CardPrice, Fold, type Fact } from './CardSheetParts'
 import { CardZoom } from './CardZoom'
 import { ChangeBadge } from './ChangeBadge'
 import { HoloCard } from './HoloCard'
@@ -49,10 +50,6 @@ interface Props {
   onSold: () => void
 }
 
-type Tab = 'overview' | 'card' | 'prices' | 'photos'
-
-const TAB_LABELS: Record<Tab, string> = { overview: 'Overview', card: 'Card', prices: 'Prices', photos: 'Photos' }
-
 const MATCH_HELP: Record<string, string> = {
   exact: 'Set and number matched exactly.',
   approximate: 'Matched on name; set or number may differ.',
@@ -69,8 +66,6 @@ export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props):
   const [error, setError] = useState<string | null>(null)
   const [zoomOpen, setZoomOpen] = useState(false)
   const [selling, setSelling] = useState(false)
-  const [tab, setTab] = useState<Tab>('overview')
-  const tabRefs = useRef<Partial<Record<Tab, HTMLButtonElement | null>>>({})
   const type = info?.types?.[0] ?? null
   const foil = card.status === 'sold' ? 'none' : foilStyleFor(card.variant, info?.rarity)
 
@@ -81,8 +76,7 @@ export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props):
   // Jouw kaarten: voor setvoortgang en welke Pokémon van de evolutielijn je hebt.
   const owned = useOwnedCards()
   const ownedKeys = useMemo(() => (owned ?? []).flatMap((c) => (c.tcgdex_id ? [c.tcgdex_id] : [])), [owned])
-  const showDex = tab === 'overview' && Boolean(info?.dexId)
-  const ownedInfos = useCatalogInfos(ownedKeys, showDex)
+  const ownedInfos = useCatalogInfos(ownedKeys, Boolean(info?.dexId))
   const ownedDex = useMemo(() => new Set([...ownedInfos.values()].flatMap((i) => (i?.dexId ? [i.dexId] : []))), [ownedInfos])
   const setRef = card.tcgdex_id ? setOfKey(card.tcgdex_id) : null
   // Verkopen als transactie (STAP5): met kosten, status en eventueel deel van de stuks.
@@ -91,34 +85,24 @@ export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props):
   const v2 = useSchemaV2() === true
   const main = primaryPhoto(card)
 
-  const facts = [
-    card.language ? LANGUAGE_LABELS[card.language] : null,
-    card.variant ? VARIANT_LABELS[card.variant] : null,
-    card.condition ? CONDITION_LABELS[card.condition] : null,
-    card.grading_company ? `${card.grading_company} ${card.grade ?? ''}`.trim() : null,
-    card.edition,
-    card.quantity > 1 ? `${card.quantity}×` : null,
-  ].filter((f): f is string => f !== null)
+  // Alles uitgelijnd naast de foto (ontwerp B, 18-10-2026); lege kenmerken weglaten.
+  const factList: (Fact | null)[] = [
+    { label: 'Status', value: statusBadge(card) ?? 'In collection' },
+    info?.rarity ? { label: 'Rarity', value: <RarityChip rarity={info.rarity} /> } : null,
+    card.condition ? { label: 'Condition', value: CONDITION_LABELS[card.condition] } : null,
+    type ? { label: 'Type', value: <TypeChip type={type} /> } : null,
+    card.language ? { label: 'Language', value: LANGUAGE_LABELS[card.language] } : null,
+    card.grading_company ? { label: 'Grade', value: `${card.grading_company} ${card.grade ?? ''}`.trim() } : null,
+    card.edition ? { label: 'Edition', value: card.edition } : null,
+    card.quantity > 1 ? { label: 'Copies', value: `${card.quantity}×` } : null,
+    { label: 'Paid', value: card.purchase_price !== null ? formatEur(card.purchase_price) : '–' },
+    card.status !== 'collection' && card.sale_price !== null ? { label: card.status === 'sold' ? 'Sold for' : 'Asking', value: formatEur(card.sale_price) } : null,
+  ]
+  const facts = factList.filter((f): f is Fact => f !== null)
 
   // Resultaat: verkocht → verkoop tegenover aankoop; anders marktwaarde tegenover aankoop (op papier).
   const reference = card.status === 'sold' ? card.sale_price : (market?.value ?? null)
-
-  const tabs: Tab[] = [
-    'overview',
-    ...(card.kind === 'card' && info?.game ? (['card'] as const) : []),
-    'prices',
-    ...(v2 ? (['photos'] as const) : []),
-  ]
-  const activeTab = tabs.includes(tab) ? tab : 'overview'
-
-  function onTabKey(e: KeyboardEvent<HTMLButtonElement>): void {
-    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return
-    e.preventDefault()
-    const i = tabs.indexOf(activeTab)
-    const next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length]
-    setTab(next)
-    tabRefs.current[next]?.focus()
-  }
+  const hasMarket = card.kind === 'card' && card.tcgdex_id !== null
 
   async function markSold(): Promise<void> {
     if (busy) return
@@ -153,7 +137,7 @@ export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props):
   )
 
   return (
-    <div className="card-detail">
+    <div className="card-detail cd">
       {zoomOpen && (
         <CardZoom label={card.name} onClose={() => setZoomOpen(false)}>
           <HoloCard foil={foil} interactive>
@@ -161,117 +145,70 @@ export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props):
           </HoloCard>
         </CardZoom>
       )}
-      <div className="detail-top">
-        <div className="detail-image">
+      <p className="cd-set">
+        {card.kind === 'card' && <CardSetSymbol tcgdexId={card.tcgdex_id} />}
+        {card.kind === 'sealed' ? 'Sealed product' : [info?.set.name ?? card.set_code, card.card_number && `#${card.card_number}`].filter(Boolean).join(' · ')}
+      </p>
+
+      <div className="cd-hero">
+        <div className="cd-image">
           <button type="button" className="zoom-trigger" onClick={() => setZoomOpen(true)} aria-label={`Enlarge ${card.name}`}>
             <HoloCard foil={foil}>{image}</HoloCard>
           </button>
         </div>
-
-        <div className="detail-info">
-          <p className="detail-set">
-            {card.kind === 'card' && <CardSetSymbol tcgdexId={card.tcgdex_id} />}
-            {card.kind === 'sealed'
-              ? 'Sealed product'
-              : [info?.set.name ?? card.set_code, card.card_number && `#${card.card_number}`].filter(Boolean).join(' ')}
-          </p>
-
-          <div className="chips">
-            <span className={`chip status-${card.status}`}>{statusBadge(card) ?? 'In collection'}</span>
-            {info?.rarity && <RarityChip rarity={info.rarity} />}
-            {type && <TypeChip type={type} />}
-            {facts.map((f) => (
-              <span key={f} className="chip">
-                {f}
-              </span>
-            ))}
-          </div>
-
-          <dl className="detail-prices">
-            {card.kind === 'card' && card.tcgdex_id && (
-              <div className="detail-market">
-                <dt>Market{card.variant === 'reverse' ? ' (reverse)' : ''}</dt>
-                <dd>
-                  {price === undefined ? '…' : market ? formatEur(market.value) : '–'}
-                  {market && <ChangeBadge change={market.change30} label="vs 30-day avg" showLabel />}
-                </dd>
-              </div>
-            )}
-            {card.purchase_price !== null && (
-              <div>
-                <dt>Paid</dt>
-                <dd>{formatEur(card.purchase_price)}</dd>
-              </div>
-            )}
-            {card.status !== 'collection' && card.sale_price !== null && (
-              <div>
-                <dt>{card.status === 'sold' ? 'Sold for' : 'Asking'}</dt>
-                <dd>{formatEur(card.sale_price)}</dd>
-              </div>
-            )}
-          </dl>
-
+        <CardFacts
+          price={
+            hasMarket && (
+              <CardPrice
+                label={`Market${card.variant ? ` · ${VARIANT_LABELS[card.variant]}` : ''}`}
+                value={price === undefined ? '…' : market ? formatEur(market.value) : '–'}
+                change={market && <ChangeBadge change={market.change30} label="vs 30-day avg" showLabel />}
+              />
+            )
+          }
+          facts={facts}
+        >
           {card.purchase_price !== null && reference !== null && (
             <ValueBar paid={card.purchase_price} value={reference} quantity={card.quantity} sold={card.status === 'sold'} />
           )}
+        </CardFacts>
+      </div>
 
+      {/* Alleen vragen als er echt iets te kiezen is (bestaat de kaart in maar één versie, dan klopt de prijs al). */}
+      {hasMarket && !card.variant && info && (info.variants?.length ?? 2) > 1 && (
+        <VariantQuestion card={card} options={info.variants ?? null} onChanged={onChanged} />
+      )}
+
+      {(info?.dexId || (setRef && owned)) && (
+        <div className="cd-rows">
+          {info?.dexId && <DexStrip dexId={info.dexId} name={speciesName(info.name)} ownedDex={ownedDex} />}
+          {setRef && owned && <SetProgress lang={setRef.lang} setId={setRef.setId} setName={info?.set.name ?? card.set_code ?? setRef.setId} ownedKeys={ownedKeys} />}
         </div>
-      </div>
+      )}
+      {!info?.dexId && !setRef && card.kind === 'card' && (
+        <p className="muted small">Link this card to the catalog (Edit) to see its Pokédex entry and set progress.</p>
+      )}
 
-      <div className="detail-tabs segmented" role="tablist" aria-label="Card details">
-        {tabs.map((t) => (
-          <button
-            key={t}
-            ref={(el) => {
-              tabRefs.current[t] = el
-            }}
-            type="button"
-            role="tab"
-            id={`tab-${card.id}-${t}`}
-            aria-selected={activeTab === t}
-            aria-controls={`panel-${card.id}-${t}`}
-            tabIndex={activeTab === t ? 0 : -1}
-            onClick={() => setTab(t)}
-            onKeyDown={onTabKey}
-          >
-            {TAB_LABELS[t]}
-          </button>
-        ))}
-      </div>
+      {(card.cert_number || card.notes) && (
+        <dl className="detail-meta">
+          {card.cert_number && (
+            <div>
+              <dt>Certificate</dt>
+              <dd>{card.cert_number}</dd>
+            </div>
+          )}
+          {card.notes && (
+            <div>
+              <dt>Notes</dt>
+              <dd className="detail-notes">{card.notes}</dd>
+            </div>
+          )}
+        </dl>
+      )}
 
-      <div className="detail-panel" role="tabpanel" id={`panel-${card.id}-${activeTab}`} aria-labelledby={`tab-${card.id}-${activeTab}`}>
-        {activeTab === 'overview' && (
-          <>
-            {/* Alleen vragen als er echt iets te kiezen is (bestaat de kaart in maar één versie, dan klopt de prijs al). */}
-            {card.kind === 'card' && card.tcgdex_id && !card.variant && info && (info.variants?.length ?? 2) > 1 && (
-              <VariantQuestion card={card} options={info.variants ?? null} onChanged={onChanged} />
-            )}
-            {info?.dexId && <DexStrip dexId={info.dexId} name={speciesName(info.name)} ownedDex={ownedDex} />}
-            {setRef && owned && <SetProgress lang={setRef.lang} setId={setRef.setId} setName={info?.set.name ?? card.set_code ?? setRef.setId} ownedKeys={ownedKeys} />}
-            {(card.cert_number || card.notes) && (
-              <dl className="detail-meta">
-                {card.cert_number && (
-                  <div>
-                    <dt>Certificate</dt>
-                    <dd>{card.cert_number}</dd>
-                  </div>
-                )}
-                {card.notes && (
-                  <div>
-                    <dt>Notes</dt>
-                    <dd className="detail-notes">{card.notes}</dd>
-                  </div>
-                )}
-              </dl>
-            )}
-            {!info?.dexId && !setRef && !(card.cert_number || card.notes) && card.kind === 'card' && (
-              <p className="muted small">Link this card to the catalog (Edit) to see its Pokédex entry and set progress.</p>
-            )}
-          </>
-        )}
-
-        {activeTab === 'card' && info?.game && (
-          <>
+      <div className="cd-folds">
+        {card.kind === 'card' && info?.game && (
+          <Fold title="Card text" hint="Attacks, abilities, illustrator">
             <CardGameInfo game={info.game} illustrator={info.illustrator ?? null} />
             {card.link_status && (
               <dl className="detail-meta">
@@ -284,17 +221,17 @@ export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props):
                 </div>
               </dl>
             )}
-          </>
+          </Fold>
         )}
-
-        {activeTab === 'prices' && (
-          <>
-            <ValuePanel card={card} price={price} />
-            {card.kind === 'card' && card.tcgdex_id && <PriceChart tcgdexId={card.tcgdex_id} reverse={card.variant === 'reverse'} />}
-          </>
+        <Fold title="Prices" hint={hasMarket ? 'Sources and price history' : 'Your valuation'}>
+          <ValuePanel card={card} price={price} />
+          {hasMarket && card.tcgdex_id && <PriceChart tcgdexId={card.tcgdex_id} reverse={card.variant === 'reverse'} />}
+        </Fold>
+        {v2 && (
+          <Fold title="Photos" hint="Your own photos of this card">
+            <PhotoManager card={card} onChange={onChanged} />
+          </Fold>
         )}
-
-        {activeTab === 'photos' && v2 && <PhotoManager card={card} onChange={onChanged} />}
       </div>
 
       {selling && (

@@ -1,0 +1,242 @@
+/* ---------- Kaartpopup ontwerp B (gekozen 18-10-2026): één rustige lijst, geen tabs ---------- */
+.card-detail.cd {
+  gap: var(--space-4);
+}
+
+/* Set en nummer direct onder de titel. */
+.cd-set {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: calc(var(--space-2) - var(--gap-section));
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* Foto met de feitenkolom ernaast. */
+.cd-hero {
+  display: grid;
+  grid-template-columns: min(220px, 40%) minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.cd-image .card-img {
+  border-radius: var(--radius-card);
+}
+
+.cd-facts {
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+  min-width: 0;
+}
+
+.cd-price {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+}
+
+.cd-price-label {
+  font-size: var(--fs-label);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.cd-price-value {
+  font-size: 2.1rem;
+  font-weight: 900;
+  font-stretch: var(--stretch-display);
+  line-height: 1.05;
+}
+
+.cd-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3) var(--space-4);
+  margin: 0;
+}
+
+.cd-grid div {
+  display: grid;
+  min-width: 0;
+}
+
+.cd-grid dt {
+  font-size: var(--fs-label);
+  color: var(--muted);
+}
+
+.cd-grid dd {
+  margin: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+/* Zeldzaamheid en type als gewone waarde met hun symbool, niet als losse chip. */
+.cd-grid .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: inherit;
+  font-weight: inherit;
+  color: var(--ink);
+}
+
+/* Pokédex en setvoortgang als compacte rijen in één blok. */
+.cd-rows {
+  display: grid;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  overflow: hidden;
+}
+
+.cd-rows > * + * {
+  border-top: 1px solid var(--line);
+}
+
+.cd-rows .dex-strip {
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  grid-template-areas: 'sprite info evo';
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: 0;
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.cd-rows .dex-strip-sprite {
+  width: 40px;
+  height: 40px;
+  border-width: 2px;
+  box-shadow: none;
+}
+
+/* Nummer en naam op één regel, regio eronder. */
+.cd-rows .dex-strip-info {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: var(--space-2);
+  row-gap: 0;
+}
+
+.cd-rows .dex-strip-info .muted {
+  grid-column: 1 / -1;
+  color: var(--muted);
+}
+
+.cd-rows .dex-strip-num {
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+
+.cd-rows .dex-strip-evo {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.cd-rows .dex-strip-evo > .muted {
+  display: none;
+}
+
+.cd-rows .dex-strip-evo .evo-mon {
+  width: 36px;
+  height: 36px;
+}
+
+.cd-rows a.set-progress-link {
+  border-radius: 0;
+  padding: var(--space-3);
+}
+
+/* Kaarttekst, prijzen en foto's: inklapbaar. */
+.cd-folds {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.cd-fold {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  background: var(--surface-2);
+}
+
+.cd-fold summary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  cursor: pointer;
+  list-style: none;
+}
+
+.cd-fold summary::-webkit-details-marker {
+  display: none;
+}
+
+.cd-fold summary::after {
+  content: '›';
+  margin-left: auto;
+  color: var(--muted);
+  font-weight: 700;
+  transition: transform 150ms ease-out;
+}
+
+.cd-fold[open] summary::after {
+  transform: rotate(90deg);
+}
+
+.cd-fold-title {
+  font-weight: 800;
+}
+
+.cd-fold-hint {
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+
+.cd-fold-body {
+  display: grid;
+  gap: var(--space-4);
+  padding: 0 var(--space-3) var(--space-3);
+}
+
+/* Telefoon: smallere foto, kenmerken als rijen met de waarde rechts. */
+@media (max-width: 480px) {
+  .cd-hero {
+    grid-template-columns: 132px minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+
+  .cd-price-value {
+    font-size: 1.75rem;
+  }
+
+  .cd-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+
+  .cd-grid div {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--space-2);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .cd-grid dd {
+    text-align: right;
+  }
+
+  .cd-fold-hint {
+    display: none;
+  }
+}
