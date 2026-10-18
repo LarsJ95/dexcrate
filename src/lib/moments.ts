@@ -89,6 +89,36 @@ export function newSince(key: string, ids: readonly string[]): string[] {
   return known === null ? [] : ids.filter((id) => !known.has(id))
 }
 
+const QUIET_KEY = 'dexcrate:quiet-progress'
+
+/**
+ * Na scannen geen feestjes, ook later niet (keuze gebruiker 18-10-2026): deze voortgangssleutels
+ * (level, badges, mijlpalen …) worden de volgende keer stil bijgewerkt.
+ */
+export function quietNext(keys: readonly string[]): void {
+  const quiet = readSet(QUIET_KEY) ?? new Set<string>()
+  for (const k of keys) quiet.add(k)
+  try {
+    localStorage.setItem(QUIET_KEY, [...quiet].join('|'))
+  } catch (err) {
+    console.warn('Stil bijwerken onthouden mislukt', err)
+  }
+}
+
+/** Deze sleutel deze keer stil bijwerken? Geldt één keer; daarna wordt er weer gewoon gevierd. */
+export function takeQuiet(key: string): boolean {
+  const quiet = readSet(QUIET_KEY)
+  if (!quiet?.has(key)) return false
+  quiet.delete(key)
+  try {
+    if (quiet.size === 0) localStorage.removeItem(QUIET_KEY)
+    else localStorage.setItem(QUIET_KEY, [...quiet].join('|'))
+  } catch (err) {
+    console.warn('Stil bijwerken onthouden mislukt', err)
+  }
+  return true
+}
+
 /** Hoogste bereikte waarde onthouden; geeft true als die nu hoger is dan vorige keer (eerste keer: false). */
 export function risenSince(key: string, value: number): boolean {
   let stored: string | null
@@ -104,6 +134,7 @@ export function risenSince(key: string, value: number): boolean {
 /** Mijlpalen voor kaarten in één set en voor de hele collectie. */
 export const SET_MILESTONES = [10, 25, 50, 100, 150, 200, 250, 300] as const
 export const COLLECTION_MILESTONES = [10, 25, 50, 100, 250, 500, 1000, 2500] as const
+export const COLLECTION_MILESTONE_KEY = 'dexcrate:collection-milestone'
 
 /** Hoogste mijlpaal die nu gehaald is maar nog niet gevierd (boven `celebrated`), of null. */
 export function newMilestone(count: number, celebrated: number, steps: readonly number[]): number | null {
@@ -131,12 +162,12 @@ export function celebrateMilestone(key: string, count: number, steps: readonly n
   } catch (err) {
     console.warn('Mijlpaal onthouden mislukt', err)
   }
-  if (celebrated === null) return
+  if (takeQuiet(key) || celebrated === null) return
   const level = newMilestone(count, celebrated, steps)
   if (level !== null) showMoment({ kind: 'milestone', level, caption: caption(level) })
 }
 
-const BADGES_KEY = 'dexcrate:badges-earned'
+export const BADGES_KEY = 'dexcrate:badges-earned'
 
 /**
  * Nieuwe badges vieren (hoogstens één moment: de laatst verdiende). Eerste keer alleen onthouden.
@@ -155,7 +186,7 @@ export function celebrateBadges(earned: readonly { id: string; name: string; col
   } catch (err) {
     console.warn('Badges onthouden mislukt', err)
   }
-  if (known === null) return
+  if (takeQuiet(BADGES_KEY) || known === null) return
   const fresh = earned.filter((b) => !known.has(b.id))
   const last = fresh[fresh.length - 1]
   if (last) showMoment({ kind: 'badge', name: last.name, color: last.color })

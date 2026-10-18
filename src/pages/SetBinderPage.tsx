@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type JSX } from 'react'
 import { listCards } from '../lib/db'
 import { rarityRule } from '../lib/cardTraits'
 import { burstFrom } from '../lib/fx'
-import { SET_MILESTONES, celebrateMilestone, showMoment } from '../lib/moments'
+import { SET_MILESTONES, celebrateMilestone, showMoment, takeQuiet } from '../lib/moments'
 import { crateForSet } from '../lib/celebrate'
 import { hpLevel } from '../lib/trainer'
 import { DEFAULT_GOAL, goalProgress, goalRequirements, type GoalSettings, type OwnedCopy, type RequirementState } from '../lib/goals'
@@ -281,8 +281,10 @@ export function SetBinderPage({ param }: Props): JSX.Element {
       return // geen opslag: niet bij elk bezoek opnieuw vieren
     }
     remember(key, '1')
-    showMoment({ kind: 'complete', setName: data.summary.name })
-    void crateForSet(`${lang}/${setId}`, data.summary.name)
+    // Compleet geworden door scannen: punten wel, feestje niet (zie addedQuietly).
+    const quiet = takeQuiet(key)
+    if (!quiet) showMoment({ kind: 'complete', setName: data.summary.name })
+    void crateForSet(`${lang}/${setId}`, data.summary.name, quiet)
   }, [data, progress, isComplete, lang, setId])
 
   // Mijlpaal (10, 25, 50 … kaarten in deze set); compleet heeft zijn eigen viering.

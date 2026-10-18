@@ -1,11 +1,22 @@
 import { rarityRule } from './cardTraits'
 import { crateSetComplete, hasCrate, syncCrate } from './crate'
 import { listCards } from './db'
-import { celebrateNewCards, newSince, risenSince, showMoment, type PackCard } from './moments'
+import {
+  BADGES_KEY,
+  COLLECTION_MILESTONE_KEY,
+  celebrateNewCards,
+  newSince,
+  quietNext,
+  risenSince,
+  showMoment,
+  takeQuiet,
+  type PackCard,
+} from './moments'
 import { motionAllowed } from './motion'
 import { englishSpeciesName, isNonLatin } from './names'
 import { achievements, levelFor, xpFor, type ProgressCard } from './progress'
 import { speciesName } from './runner'
+import { COMPLETE_KEY, MILESTONE_KEY } from './setBinder'
 import { getCardInfo, getSet, setOfKey, type CardInfo } from './tcgdex'
 import type { Card } from './types'
 
@@ -17,7 +28,6 @@ import type { Card } from './types'
 const LEVEL_KEY = 'dexcrate:trainer-level'
 const ACHIEVEMENTS_KEY = 'dexcrate:achievements'
 const TRAINER_KEY = 'dexcrate:trainer-name'
-const BADGES_KEY = 'dexcrate:badges-earned'
 
 export function rememberTrainerName(name: string): void {
   try {
@@ -65,9 +75,9 @@ export function toProgressCards(cards: readonly Card[], infoOf: (key: string) =>
 
 /**
  * Crate points bijwerken (STAP11): kaarten, transacties, nieuwe Pokédex-soorten en de dagbonus.
- * Bonus per kaart naar zeldzaamheid (max. 20). Toont "+N Crate points" als er iets bij kwam.
+ * Bonus per kaart naar zeldzaamheid (max. 20). Toont "+N Crate points" als er iets bij kwam, behalve met `quiet`.
  */
-export async function syncCratePoints(cards: readonly ProgressCard[], reason: string): Promise<void> {
+export async function syncCratePoints(cards: readonly ProgressCard[], reason: string, quiet = false): Promise<void> {
   try {
     if (!(await hasCrate())) return
     const bonus: Record<string, number> = {}
@@ -79,33 +89,35 @@ export async function syncCratePoints(cards: readonly ProgressCard[], reason: st
       bonus,
       cards.flatMap((c) => (c.dexId ? [c.dexId] : [])),
     )
-    if (result.earned > 0 && motionAllowed()) showMoment({ kind: 'points', amount: result.earned, reason })
+    if (result.earned > 0 && !quiet && motionAllowed()) showMoment({ kind: 'points', amount: result.earned, reason })
   } catch (err) {
     console.warn('Crate points bijwerken mislukt', err)
   }
 }
 
-/** Set compleet: 250 Crate points (eenmalig). */
-export async function crateForSet(setKey: string, setName: string): Promise<void> {
+/** Set compleet: 250 Crate points (eenmalig); met `quiet` zonder melding. */
+export async function crateForSet(setKey: string, setName: string, quiet = false): Promise<void> {
   try {
     if (!(await hasCrate())) return
     const got = await crateSetComplete(setKey)
-    if (got > 0 && motionAllowed()) showMoment({ kind: 'points', amount: got, reason: `${setName} complete` })
+    if (got > 0 && !quiet && motionAllowed()) showMoment({ kind: 'points', amount: got, reason: `${setName} complete` })
   } catch (err) {
     console.warn('Crate points voor de set mislukt', err)
   }
 }
 
-/** Level-up en nieuwe verborgen prestaties vieren. */
+/** Level-up en nieuwe verborgen prestaties vieren (na scannen stil bijwerken, zie quietNext). */
 export function celebrateProgress(cards: readonly ProgressCard[], badges = badgesEarned()): void {
   const { level } = levelFor(xpFor(cards, badges))
-  if (risenSince(LEVEL_KEY, level)) showMoment({ kind: 'level', level, trainer: trainerName() })
+  const quietLevel = takeQuiet(LEVEL_KEY)
+  if (risenSince(LEVEL_KEY, level) && !quietLevel) showMoment({ kind: 'level', level, trainer: trainerName() })
   const list = achievements(cards)
+  const quietAchievements = takeQuiet(ACHIEVEMENTS_KEY)
   const fresh = newSince(
     ACHIEVEMENTS_KEY,
     list.filter((a) => a.earned).map((a) => a.id),
   )
-  for (const id of fresh.slice(-1)) {
+  for (const id of quietAchievements ? [] : fresh.slice(-1)) {
     const a = list.find((x) => x.id === id)
     if (a) showMoment({ kind: 'achievement', name: a.name, how: a.how })
   }
@@ -136,10 +148,7 @@ export async function celebrateAdded(rows: readonly Card[]): Promise<void> {
       await celebrateNewCards(rows)
     }
 
-    // Alles in bezit, met kaartinfo (meestal al gecachet).
-    const all = (await listCards()).filter((c) => c.ownership === 'owned')
-    const keys = [...new Set(all.flatMap((c) => (c.tcgdex_id ? [c.tcgdex_id] : [])))]
-    const infos = new Map(await Promise.all(keys.map(async (k) => [k, await getCardInfo(k).catch(() => null)] as const)))
+    const { all, keys, infos } = await ownedWithInfo()
     const newIds = new Set(rows.map((r) => r.id))
 
     // Nieuwe Pokédex-soorten: een soort die je vóór deze kaarten nog niet had.
@@ -170,5 +179,34 @@ export async function celebrateAdded(rows: readonly Card[]): Promise<void> {
     await syncCratePoints(progress, rows.length === 1 ? 'For adding a card' : `For adding ${rows.length} cards`)
   } catch (err) {
     console.warn('Vieringen na toevoegen overgeslagen', err)
+  }
+}
+
+/** Alles in bezit, met kaartinfo (meestal al gecachet). */
+async function ownedWithInfo(): Promise<{ all: Card[]; keys: string[]; infos: Map<string, CardInfo | null> }> {
+  const all = (await listCards()).filter((c) => c.ownership === 'owned')
+  const keys = [...new Set(all.flatMap((c) => (c.tcgdex_id ? [c.tcgdex_id] : [])))]
+  const infos = new Map(await Promise.all(keys.map(async (k) => [k, await getCardInfo(k).catch(() => null)] as const)))
+  return { all, keys, infos }
+}
+
+/**
+ * Na scannen: geen vieringen, nu niet en later niet (keuze gebruiker 18-10-2026; bij 100 kaarten kreeg alleen de
+ * laatste een feestje). Level, prestaties, badges, mijlpalen en "set compleet" worden de volgende keer stil
+ * bijgewerkt; Crate points worden wel meteen bijgeschreven, zonder melding.
+ */
+export async function addedQuietly(rows: readonly Card[]): Promise<void> {
+  if (rows.length === 0) return
+  const sets = new Set(rows.flatMap((r) => {
+    const s = r.tcgdex_id ? setOfKey(r.tcgdex_id) : null
+    return s ? [`${s.lang}/${s.setId}`] : []
+  }))
+  quietNext([LEVEL_KEY, ACHIEVEMENTS_KEY, BADGES_KEY, COLLECTION_MILESTONE_KEY, ...[...sets].flatMap((s) => [`${MILESTONE_KEY}${s}`, `${COMPLETE_KEY}${s}`])])
+  try {
+    if (!(await hasCrate())) return
+    const { all, infos } = await ownedWithInfo()
+    await syncCratePoints(toProgressCards(all, (k) => infos.get(k)), '', true)
+  } catch (err) {
+    console.warn('Crate points na scannen overgeslagen', err)
   }
 }
