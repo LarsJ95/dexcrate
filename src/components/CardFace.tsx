@@ -1,6 +1,6 @@
 import type { JSX } from 'react'
 import type { ItemKind } from '../lib/types'
-import { LogoMark } from './Icons'
+import { BallMark } from './Icons'
 
 interface Props {
   name: string
@@ -16,7 +16,7 @@ export function CardFace({ name, detail, kind = 'card', loading = false }: Props
     <div className={`card-img card-face ${kind}${loading ? ' loading' : ''}`} role="img" aria-label={[name, detail].filter(Boolean).join(', ')}>
       {!loading && (
         <>
-          <LogoMark size={22} />
+          <BallMark size={22} />
           <span className="card-face-name">{name}</span>
           {kind === 'sealed' ? <span className="card-face-detail">Sealed product</span> : detail && <span className="card-face-detail">{detail}</span>}
         </>
