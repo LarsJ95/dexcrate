@@ -102,7 +102,7 @@ export function PhotosPage(): JSX.Element {
   if (v2 === false) {
     return (
       <section className="page">
-        <h1>Photos</h1>
+        <h1>Photo inbox</h1>
         <p className="notice">Photo storage is not set up yet (run STAP4 in Supabase).</p>
       </section>
     )
@@ -112,7 +112,7 @@ export function PhotosPage(): JSX.Element {
     <section className="page">
       <div className="page-head">
         <div>
-          <h1>Photos</h1>
+          <h1>Photo inbox</h1>
           <p className="muted">Upload photos now and link them to a card later.</p>
         </div>
         <div className="photo-add">
