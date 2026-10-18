@@ -245,7 +245,16 @@ export function Preview(): JSX.Element {
           lang="en"
           card={{ id: 'sv03.5-016', localId: '016', name: 'Pidgey', image: 'https://assets.tcgdex.net/en/sv/sv03.5/016' }}
           setName="151"
-          owned={0}
+          owned={params.get('copies') ? 3 : 0}
+          copies={
+            params.get('copies')
+              ? [
+                  { ...CARDS[0].card, id: 'p1', name: 'Pidgey', variant: 'reverse', condition: 'NM', language: 'en', quantity: 1 },
+                  { ...CARDS[0].card, id: 'p2', name: 'Pidgey', variant: 'normal', condition: 'EX', language: 'en', quantity: 2 },
+                ]
+              : undefined
+          }
+          nav={params.get('nav') ? { position: 9, total: 34, onPrev: noop, onNext: noop } : undefined}
           onClose={noop}
         />
       </Shell>

@@ -19,6 +19,8 @@ interface Props {
   onChanged?: (row: Card) => void
   /** Verkoop vastgelegd (regels kunnen gesplitst zijn): collectie opnieuw laden. Zonder: popup sluit. */
   onSold?: () => void
+  /** Bestaande kaart meteen in het formulier openen (bv. "Edit" bij een exemplaar op de setpagina); Cancel sluit dan. */
+  startInEdit?: boolean
 }
 
 type Mode = { kind: 'view' } | { kind: 'edit'; status: CardStatus }
@@ -37,9 +39,12 @@ export function CardDialog({
   onDeleted,
   onChanged,
   onSold,
+  startInEdit = false,
 }: Props): JSX.Element {
   const ref = useRef<HTMLDialogElement>(null)
-  const [mode, setMode] = useState<Mode>(() => (card ? { kind: 'view' } : { kind: 'edit', status: initial?.status ?? defaultStatus }))
+  const [mode, setMode] = useState<Mode>(() =>
+    card && !startInEdit ? { kind: 'view' } : { kind: 'edit', status: card?.status ?? initial?.status ?? defaultStatus },
+  )
 
   useEffect(() => {
     const dialog = ref.current
@@ -84,7 +89,7 @@ export function CardDialog({
             source={source}
             startStatus={mode.kind === 'edit' ? mode.status : defaultStatus}
             nextSortOrder={nextSortOrder}
-            onCancel={() => (card ? setMode({ kind: 'view' }) : close())}
+            onCancel={() => (card && !startInEdit ? setMode({ kind: 'view' }) : close())}
             onSaved={onSaved}
             onDeleted={onDeleted}
           />

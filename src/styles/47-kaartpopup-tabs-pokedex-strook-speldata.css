@@ -20,18 +20,6 @@
     linear-gradient(var(--ball-red) 0 44%, var(--ball-line) 44% 56%, var(--ball-white) 56%);
 }
 
-.detail-tabs {
-  justify-self: start;
-}
-
-.detail-panel {
-  display: grid;
-  gap: var(--space-4);
-  /* Minder verspringen bij wisselen van tab. */
-  min-height: 260px;
-  align-content: start;
-}
-
 .change-label {
   margin-left: var(--space-1);
   font-weight: 500;

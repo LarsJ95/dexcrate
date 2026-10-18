@@ -8,7 +8,7 @@ import { hpLevel } from '../lib/trainer'
 import { DEFAULT_GOAL, goalProgress, goalRequirements, type GoalSettings, type OwnedCopy, type RequirementState } from '../lib/goals'
 import { marketValue } from '../lib/prices'
 import { isValueSort, sortSetCards, type SetSort } from '../lib/setSort'
-import { VARIANT_LABELS } from '../lib/types'
+import { VARIANT_LABELS, type Card } from '../lib/types'
 import { loadGoal } from '../lib/wishlist'
 import { BinderSlot } from '../components/BinderSlot'
 import { BinderToolbar, CostPanel, GoalStats, type BinderShow } from '../components/SetBinderParts'
@@ -37,6 +37,8 @@ interface Loaded {
   owned: Map<string, number>
   /** Eigen exemplaren in deze set, voor het verzameldoel. */
   copies: OwnedCopy[]
+  /** kaart-id → jouw regels uit de collectie (om ze vanuit het kaartvenster te bewerken). */
+  rows: Map<string, Card[]>
 }
 
 
@@ -48,6 +50,8 @@ export function SetBinderPage({ param }: Props): JSX.Element {
   const [pageSize, setPageSize] = useState<PageSize>(readPageSize)
   const [cost, setCost] = useState<Cost | null>(null)
   const [openCard, setOpenCard] = useState<SetCard | null>(null)
+  // Na het bewerken van een exemplaar opnieuw laden (aantallen, voortgang, dubbelen).
+  const [reloadKey, setReloadKey] = useState(0)
   // Elke set begint in setvolgorde; een andere sortering geldt alleen voor deze set (niet onthouden).
   const [sort, setSort] = useState<SetSort>('number')
   const cancelCost = useRef(false)
@@ -78,14 +82,16 @@ export function SetBinderPage({ param }: Props): JSX.Element {
         }
         const owned = new Map<string, number>()
         const copies: OwnedCopy[] = []
+        const rows = new Map<string, Card[]>()
         for (const c of cards) {
           if (c.status === 'sold' || !c.tcgdex_id) continue
           const s = setOfKey(c.tcgdex_id)
           if (!s || s.lang !== lang || s.setId !== set.summary.id) continue
           owned.set(s.cardId, (owned.get(s.cardId) ?? 0) + c.quantity)
           copies.push({ cardId: s.cardId, variant: c.variant, language: c.language, quantity: c.quantity, incoming: c.ownership === 'incoming' })
+          rows.set(s.cardId, [...(rows.get(s.cardId) ?? []), c])
         }
-        setData({ summary: set.summary, cards: set.cards, owned, copies })
+        setData({ summary: set.summary, cards: set.cards, owned, copies, rows })
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(errorText(err, 'Loading failed.'))
@@ -93,7 +99,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
     return () => {
       cancelled = true
     }
-  }, [valid, lang, setId])
+  }, [valid, lang, setId, reloadKey])
 
   // Opgeslagen doel voor deze set.
   useEffect(() => {
@@ -388,6 +394,8 @@ export function SetBinderPage({ param }: Props): JSX.Element {
           setName={data.summary.name}
           setCode={data.summary.abbr ?? data.summary.id}
           owned={data.owned.get(openCard.id) ?? 0}
+          copies={data.rows.get(openCard.id) ?? []}
+          onCopiesChanged={() => setReloadKey((k) => k + 1)}
           nav={sheetNav(openIndex)}
           onClose={() => setOpenCard(null)}
         />
