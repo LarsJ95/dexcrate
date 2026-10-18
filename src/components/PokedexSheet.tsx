@@ -39,10 +39,8 @@ export function PokedexSheet({ gen, caught, onClose, onOpenCard }: Props): JSX.E
                   <button
                     type="button"
                     className="link-button"
-                    onClick={() => {
-                      onClose()
-                      onOpenCard(c.id)
-                    }}
+                    // Pokédex blijft open: de kaart opent erbovenop, sluiten brengt je terug (18-10-2026).
+                    onClick={() => onOpenCard(c.id)}
                   >
                     {c.name}
                   </button>
