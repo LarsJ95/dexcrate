@@ -207,6 +207,70 @@
   padding: 0 var(--space-3) var(--space-3);
 }
 
+/* Knoppen onder de feiten (setkaart): Cardmarket, wishlist, eigen actie. */
+.cd-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+/* Jouw exemplaren van deze kaart, elk met Edit. */
+.cd-copies {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.cd-copies h3 {
+  margin: 0;
+  font-size: 1rem;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.cd-copies ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  overflow: hidden;
+}
+
+.cd-copies li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-2);
+}
+
+.cd-copies li + li {
+  border-top: 1px solid var(--line);
+}
+
+.cd-copy-what {
+  display: grid;
+  font-weight: 700;
+  min-width: 0;
+}
+
+.cd-copy-what .muted {
+  font-weight: 500;
+}
+
+.cd-copy-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Bladeren (setpagina, wishlist): de kaart groter om te beoordelen. */
+.card-sheet.is-browse .cd-hero {
+  grid-template-columns: min(300px, 45%) minmax(0, 1fr);
+}
+
 /* Telefoon: smallere foto, kenmerken als rijen met de waarde rechts. */
 @media (max-width: 480px) {
   .cd-hero {
@@ -238,5 +302,15 @@
 
   .cd-fold-hint {
     display: none;
+  }
+
+  /* Bladeren op de telefoon: kaart groot bovenaan, feiten eronder. */
+  .card-sheet.is-browse .cd-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .card-sheet.is-browse .cd-image {
+    justify-self: center;
+    width: min(72vw, 300px);
   }
 }

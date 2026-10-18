@@ -7,9 +7,11 @@ import { applyPageType } from '../lib/energy'
 import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
 import { getSet, type Lang, type SetCard } from '../lib/tcgdex'
-import type { CardLanguage } from '../lib/types'
+import { CONDITION_LABELS, LANGUAGE_LABELS, VARIANT_LABELS, type Card, type CardLanguage } from '../lib/types'
 import type { WishlistInput, WishlistItem } from '../lib/wishlist'
+import { CardDialog } from './CardDialog'
 import { CardImage } from './CardImage'
+import { CardFacts, CardPrice, type Fact } from './CardSheetParts'
 import { CardmarketLink } from './CardmarketLink'
 import { CardZoom } from './CardZoom'
 import { ChangeBadge } from './ChangeBadge'
@@ -48,6 +50,10 @@ interface Props {
   nav?: SheetNav
   /** Extra knoppen onder de prijs, bv. "Edit wish". */
   actions?: ReactNode
+  /** Jouw exemplaren van deze kaart (regels uit je collectie); met Edit per exemplaar. */
+  copies?: readonly Card[]
+  /** Een exemplaar is gewijzigd of verwijderd: gegevens opnieuw laden. */
+  onCopiesChanged?: () => void
   onClose: () => void
 }
 
@@ -55,10 +61,26 @@ interface Props {
 const SWIPE_PX = 60
 
 /** Kaart uit een set bekijken (ook als je hem niet hebt): foto, marktprijs en Cardmarket-link. */
-export function SetCardSheet({ lang, card, setName, owned, setCode, setId, wishLanguage = null, wished: wishedBefore = false, onWishSaved, nav, actions, onClose }: Props): JSX.Element {
+export function SetCardSheet({
+  lang,
+  card,
+  setName,
+  owned,
+  setCode,
+  setId,
+  wishLanguage = null,
+  wished: wishedBefore = false,
+  onWishSaved,
+  nav,
+  actions,
+  copies = [],
+  onCopiesChanged,
+  onClose,
+}: Props): JSX.Element {
   const ref = useRef<HTMLDialogElement>(null)
   const swipe = useRef<{ x: number; y: number } | null>(null)
   const [zoomOpen, setZoomOpen] = useState(false)
+  const [editingCopy, setEditingCopy] = useState<Card | null>(null)
   const [wishInitial, setWishInitial] = useState<Partial<WishlistInput> | null>(null)
   // Kaarten die je in dit venster op de wishlist zette (bij bladeren per kaart).
   const [wishedNow, setWishedNow] = useState<ReadonlySet<string>>(new Set())
@@ -108,7 +130,7 @@ export function SetCardSheet({ lang, card, setName, owned, setCode, setId, wishL
 
   // Bladeren: pijltjestoetsen (ook in de vergrote kaart), niet tijdens invullen van de wishlist.
   function onKeyDown(e: KeyboardEvent<HTMLDialogElement>): void {
-    if (!nav || wishInitial) return
+    if (!nav || wishInitial || editingCopy) return
     const t = e.target
     if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement) return
     if (e.key === 'ArrowLeft' && nav.onPrev) {
@@ -135,6 +157,21 @@ export function SetCardSheet({ lang, card, setName, owned, setCode, setId, wishL
     else nav.onPrev?.()
   }
 
+  const copyCount = copies.reduce((n, c) => n + c.quantity, 0)
+  const factList: (Fact | null)[] = [
+    { label: 'Status', value: owned ? `Owned ${owned}×` : 'Missing' },
+    info?.rarity ? { label: 'Rarity', value: <RarityChip rarity={info.rarity} /> } : null,
+    type ? { label: 'Type', value: <TypeChip type={type} /> } : null,
+    reverse ? { label: 'Reverse holo', value: formatEur(reverse.value) } : null,
+  ]
+  const facts = factList.filter((x): x is Fact => x !== null)
+  /** Marktwaarde van precies deze uitvoering (onbekend: de gewone prijs). */
+  const copyValue = (c: Card): string => {
+    if (price === undefined) return '…'
+    const v = marketValue(price, c.variant)
+    return v ? formatEur(v.value) : '–'
+  }
+
   const image = <CardImage tcgdexId={key} kind="card" name={card.name} detail={`#${card.localId}`} quality="high" />
 
   return (
@@ -148,6 +185,28 @@ export function SetCardSheet({ lang, card, setName, owned, setCode, setId, wishL
             setWishInitial(null)
             setWishedNow((s) => new Set(s).add(key))
             onWishSaved?.(saved)
+          }}
+        />
+      )}
+      {editingCopy && (
+        <CardDialog
+          card={editingCopy}
+          defaultStatus={editingCopy.status}
+          nextSortOrder={editingCopy.sort_order}
+          startInEdit
+          onClose={() => setEditingCopy(null)}
+          onSaved={() => {
+            setEditingCopy(null)
+            onCopiesChanged?.()
+          }}
+          onDeleted={() => {
+            setEditingCopy(null)
+            onCopiesChanged?.()
+          }}
+          onChanged={() => onCopiesChanged?.()}
+          onSold={() => {
+            setEditingCopy(null)
+            onCopiesChanged?.()
           }}
         />
       )}
@@ -183,50 +242,63 @@ export function SetCardSheet({ lang, card, setName, owned, setCode, setId, wishL
           </div>
         </header>
 
-        <div className="card-detail">
-          <div className="detail-top">
-            <div className="detail-image">
+        <div className="card-detail cd">
+          <p className="cd-set">{[setName ?? info?.set.name, `#${card.localId}`].filter(Boolean).join(' · ')}</p>
+          <div className="cd-hero">
+            <div className="cd-image">
               <button type="button" className="zoom-trigger" onClick={() => setZoomOpen(true)} aria-label={`Enlarge ${card.name}`}>
                 <HoloCard foil={foil}>{image}</HoloCard>
               </button>
             </div>
-
-            <div className="detail-info">
-              <p className="detail-set">
-                {setName ?? info?.set.name ?? ''} #{card.localId}
-              </p>
-              <div className="chips">
-                <span className={`chip${owned ? ' status-sold' : ''}`}>{owned ? `Owned ${owned}×` : 'Missing'}</span>
-                {info?.rarity && <RarityChip rarity={info.rarity} />}
-                {type && <TypeChip type={type} />}
-              </div>
-
-              <dl className="detail-prices">
-                <div className="detail-market">
-                  <dt>Market</dt>
-                  <dd>
-                    {price === undefined ? '…' : normal ? formatEur(normal.value) : '–'}
-                    {normal && <ChangeBadge change={normal.change30} />}
-                  </dd>
-                </div>
-                {reverse && (
-                  <div>
-                    <dt>Reverse holo</dt>
-                    <dd>{formatEur(reverse.value)}</dd>
-                  </div>
+            <CardFacts
+              price={
+                <CardPrice
+                  label="Market"
+                  value={price === undefined ? '…' : normal ? formatEur(normal.value) : '–'}
+                  change={normal && <ChangeBadge change={normal.change30} label="vs 30-day avg" showLabel />}
+                />
+              }
+              facts={facts}
+            >
+              <div className="cd-actions">
+                <CardmarketLink idProduct={price?.idProduct ?? null} searchText={`${card.name} ${card.localId}`} language={wishLanguage ?? lang} />
+                {wishlist && (
+                  <button type="button" className="small-btn wish-add" onClick={() => void openWish()} disabled={wished}>
+                    <IconStar size={16} />
+                    {wished ? 'On your wishlist' : 'Add to wishlist'}
+                  </button>
                 )}
-              </dl>
-
-              <CardmarketLink idProduct={price?.idProduct ?? null} searchText={`${card.name} ${card.localId}`} language={wishLanguage ?? lang} />
-              {wishlist && (
-                <button type="button" className="small-btn wish-add" onClick={() => void openWish()} disabled={wished}>
-                  <IconStar size={16} />
-                  {wished ? 'On your wishlist' : 'Add to wishlist'}
-                </button>
-              )}
-              {actions}
-            </div>
+                {actions}
+              </div>
+            </CardFacts>
           </div>
+
+          {copies.length > 0 && (
+            <section className="cd-copies" aria-labelledby="set-card-copies">
+              <h3 id="set-card-copies">
+                Your copies <span className="muted small">{copyCount} in your collection</span>
+              </h3>
+              <ul>
+                {copies.map((c) => (
+                  <li key={c.id}>
+                    <span className="cd-copy-what">
+                      {c.variant ? VARIANT_LABELS[c.variant] : 'Version unknown'}
+                      {c.quantity > 1 ? ` · ${c.quantity}×` : ''}
+                      <span className="muted small">
+                        {[c.condition && CONDITION_LABELS[c.condition], c.language && LANGUAGE_LABELS[c.language], c.ownership === 'incoming' && 'Incoming']
+                          .filter(Boolean)
+                          .join(' · ') || 'No details yet'}
+                      </span>
+                    </span>
+                    <span className="cd-copy-value">{copyValue(c)}</span>
+                    <button type="button" className="small-btn" onClick={() => setEditingCopy(c)} aria-label={`Edit ${c.variant ? VARIANT_LABELS[c.variant] : ''} copy`}>
+                      Edit
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
       </div>
     </dialog>

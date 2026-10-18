@@ -45,11 +45,27 @@ vi.mock('../components/BinderSlot', () => ({
   ),
 }))
 vi.mock('../components/SetCardSheet', () => ({
-  SetCardSheet: ({ card, nav, onClose }: { card: SetCard; nav?: { position: number; total: number; onPrev: (() => void) | null; onNext: (() => void) | null }; onClose: () => void }): JSX.Element => (
+  SetCardSheet: ({
+    card,
+    nav,
+    copies,
+    onCopiesChanged,
+    onClose,
+  }: {
+    card: SetCard
+    nav?: { position: number; total: number; onPrev: (() => void) | null; onNext: (() => void) | null }
+    copies?: { id: string }[]
+    onCopiesChanged?: () => void
+    onClose: () => void
+  }): JSX.Element => (
     <div role="dialog" aria-label={card.id}>
       <p>
         {nav?.position} of {nav?.total}
       </p>
+      <p>Copies: {(copies ?? []).map((c) => c.id).join(',')}</p>
+      <button type="button" onClick={() => onCopiesChanged?.()}>
+        Copy changed
+      </button>
       <button type="button" disabled={!nav?.onPrev} onClick={() => nav?.onPrev?.()}>
         Previous
       </button>
@@ -152,6 +168,17 @@ describe('SetBinderPage', () => {
     await userEvent.click(within(sheet).getByRole('button', { name: 'Next' }))
     expect(screen.getByRole('dialog', { name: 'tst-9' })).toBeTruthy()
     expect(screen.getByText('2 of 10')).toBeTruthy()
+  })
+
+  it('kaartvenster krijgt je exemplaren mee en herlaadt na bewerken', async () => {
+    const { listCards } = await import('../lib/db')
+    await renderPage()
+    const before = vi.mocked(listCards).mock.calls.length
+    await userEvent.click(screen.getByRole('button', { name: 'tst-4' }))
+    const sheet = screen.getByRole('dialog', { name: 'tst-4' })
+    expect(within(sheet).getByText('Copies: m2')).toBeTruthy()
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Copy changed' }))
+    await waitFor(() => expect(vi.mocked(listCards).mock.calls.length).toBe(before + 1))
   })
 
   it('onbekende set: melding met weg terug', async () => {
