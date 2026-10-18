@@ -4,7 +4,8 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+  /* Hooguit 6 naast elkaar, net als de wishlist (op verzoek 18-10-2026); smaller dan 176 px nooit. */
+  grid-template-columns: repeat(auto-fill, minmax(max(176px, calc((100% - 5 * var(--space-4)) / 6)), 1fr));
   gap: var(--space-4) var(--space-4);
 }
 
