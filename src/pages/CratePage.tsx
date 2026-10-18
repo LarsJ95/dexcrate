@@ -253,7 +253,7 @@ export function CratePage(): JSX.Element {
     setBusy(true)
     setError(null)
     try {
-      const drawn = await drawPack(pack, { setId: packSet || undefined, type: packType })
+      const drawn = await drawPack(pack, { setId: packSet || undefined, type: packType, owned: new Set((cards ?? []).map((c) => c.tcgdexId)) })
       const result = await openCratePack(drawn, pack)
       setPoints(result.points)
       setFreePack(result.freePack)

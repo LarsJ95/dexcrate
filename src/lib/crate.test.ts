@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('./supabase', () => ({ supabase: {} }))
-const { GREAT_SLOT, HIT_SLOT, OLD_RULES, RARE_SLOT, canAfford, crateSetProgress, packCost, packSlots, setPackSlots, toRules, tradeValue } = await import('./crate')
+const { GREAT_SLOT, HIT_SLOT, MISSING_FIRST, OLD_RULES, RARE_SLOT, canAfford, crateSetProgress, packCost, packSlots, pickSetCard, setPackSlots, toRules, tradeValue } = await import('./crate')
 
 describe('Crate-pakje', () => {
   it('kansen per vak tellen op tot 1', () => {
@@ -66,5 +66,16 @@ describe('Crate-pakje', () => {
   it('voortgang van een set in de Crate: alleen nummers 1..official', () => {
     const cards = ['en/sv03.5-001', 'en/sv03.5-002', 'en/sv03.5-200', 'en/sv03.5-TG01', 'en/sv03-001'].map((tcgdexId) => ({ tcgdexId }))
     expect(crateSetProgress(cards, 'en/sv03.5', 165)).toBe(2)
+  })
+  it('set pack: met kans MISSING_FIRST een kaart die je nog mist', () => {
+    const list = [{ id: 's-001' }, { id: 's-002' }, { id: 's-003' }]
+    const have = new Set(['en/s-001', 'en/s-002'])
+    // Onder de grens: uit de ontbrekende (alleen s-003).
+    expect(pickSetCard(list, have, () => MISSING_FIRST - 0.01)?.id).toBe('s-003')
+    // Erboven: willekeurig uit alle kaarten (0.99 → de laatste).
+    expect(pickSetCard(list, have, () => 0.99)?.id).toBe('s-003')
+    expect(pickSetCard(list, have, (() => { const r = [0.9, 0.1]; return () => r.shift() ?? 0 })())?.id).toBe('s-001')
+    // Alles al binnen: gewoon willekeurig.
+    expect(pickSetCard(list, new Set(list.map((c) => `en/${c.id}`)), () => 0.1)?.id).toBe('s-001')
   })
 })

@@ -345,8 +345,23 @@ export function setPackSlots(rarities: readonly string[], random: () => number =
 export interface PackChoice {
   /** Set pack: Engelse set-id ("sv03.5"). */
   setId?: string
+  /** Set pack: kaarten die al in je Crate zitten ("en/sv03.5-025"), voor "ontbrekend eerst". */
+  owned?: ReadonlySet<string>
   /** Type pack: energietype. */
   type?: EnergyType
+}
+
+/**
+ * Set pack: kans dat een vak een kaart geeft die je nog mist (als die er in die zeldzaamheid is). Zonder dit kost een
+ * grote set als 151 zo'n 128 Set packs (±6 maanden), met 50% zo'n 46 (gesimuleerd 18-10-2026, keuze gebruiker).
+ */
+export const MISSING_FIRST = 0.5
+
+/** Eén kaart uit een vak: met kans MISSING_FIRST een ontbrekende, anders willekeurig. `have` = al in je Crate of dit pakje. */
+export function pickSetCard<T extends { id: string }>(list: readonly T[], have: ReadonlySet<string>, random: () => number): T | undefined {
+  const missing = list.filter((c) => !have.has(`en/${c.id}`))
+  const from = missing.length > 0 && random() < MISSING_FIRST ? missing : list
+  return from[Math.floor(random() * from.length)]
 }
 
 /** Kaarten van een set met hun zeldzaamheid (Set pack); liefst alleen kaarten met plaatje. */
@@ -369,10 +384,12 @@ export async function drawPack(pack: PackKind = 'booster', choice: PackChoice = 
     if (!choice.setId) throw new Error('Pick a set first.')
     const { name, cards } = await setCards(choice.setId)
     if (cards.length === 0) throw new Error('This set has no cards to draw. Pick another set.')
+    const have = new Set(choice.owned ?? [])
     for (const rarity of setPackSlots(cards.map((c) => c.rarity), random)) {
-      const list = cards.filter((c) => rarityMatches(c.rarity, rarity))
-      const card = list[Math.floor(random() * list.length)]
-      if (card) pulls.push({ tcgdex_id: `en/${card.id}`, name: card.name, image: card.image, rarity: card.rarity, set_name: name })
+      const card = pickSetCard(cards.filter((c) => rarityMatches(c.rarity, rarity)), have, random)
+      if (!card) continue
+      have.add(`en/${card.id}`)
+      pulls.push({ tcgdex_id: `en/${card.id}`, name: card.name, image: card.image, rarity: card.rarity, set_name: name })
     }
   } else {
     const type = pack === 'type' ? choice.type : undefined
