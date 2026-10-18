@@ -11,6 +11,7 @@ import { SaleDialog } from '../components/SaleDialog'
 import { useNewCardDefaults } from '../hooks/useNewCardDefaults'
 import { useTransactionsEnabled } from '../hooks/useTransactionsEnabled'
 import { IconEdit, IconPlus, IconReceipt, IconSearch, IconTag } from '../components/Icons'
+import { SearchClear } from '../components/SearchClear'
 import { useMarketPrices } from '../hooks/useMarketPrices'
 import { listCards, updateCard } from '../lib/db'
 import { compareOrder, swapOrder, useDragSwap } from '../lib/dragSwap'
@@ -291,6 +292,7 @@ export function CollectionPage(): JSX.Element {
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={closeKeyboardOnEnter}
               />
+              <SearchClear value={query} onClear={() => setQuery('')} />
             </div>
             <div className="segmented" role="group" aria-label="Status">
               {FILTERS.map(([key, label]) => (

@@ -8,7 +8,8 @@ import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { useCardPrices } from '../hooks/useCardPrices'
 import { useDbFeature } from '../hooks/useDbFeature'
 import { WishlistListSheet } from '../components/WishlistListSheet'
-import { IconClose, IconEdit, IconPlus, IconSearch } from '../components/Icons'
+import { IconEdit, IconPlus, IconSearch } from '../components/Icons'
+import { SearchClear } from '../components/SearchClear'
 import { WishlistDialog } from '../components/WishlistDialog'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import { catalogActive, type CatalogHit } from '../lib/catalogSearch'
@@ -333,11 +334,7 @@ export function WishlistPage(): JSX.Element {
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={closeKeyboardOnEnter}
               />
-              {query !== '' && (
-                <button type="button" className="ghost icon-btn search-clear" aria-label="Clear search" onClick={() => setQuery('')}>
-                  <IconClose size={18} />
-                </button>
-              )}
+              <SearchClear value={query} onClear={() => setQuery('')} />
             </div>
           </>
         }

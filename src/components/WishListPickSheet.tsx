@@ -3,6 +3,8 @@ import { errorText } from '../lib/errors'
 import { matchesWords } from '../lib/search'
 import type { WishlistItem } from '../lib/wishlist'
 import { setListItems, type WishlistList } from '../lib/wishlistLists'
+import { IconSearch } from './Icons'
+import { SearchClear } from './SearchClear'
 import { Sheet } from './Sheet'
 
 interface Props {
@@ -53,10 +55,11 @@ export function WishListPickSheet({ list, items, members, onClose, onSaved }: Pr
   return (
     <Sheet title={`Choose wishes: ${list.name}`} onClose={onClose}>
       <form className="sheet-form" onSubmit={(e) => void onSubmit(e)}>
-        <label>
-          Search
-          <input type="search" value={query} placeholder="e.g. Pikachu" enterKeyHint="search" onChange={(e) => setQuery(e.target.value)} />
-        </label>
+        <div className="search">
+          <IconSearch size={18} />
+          <input type="search" value={query} placeholder="Search your wishes, e.g. Pikachu" aria-label="Search your wishes" enterKeyHint="search" onChange={(e) => setQuery(e.target.value)} />
+          <SearchClear value={query} onClear={() => setQuery('')} />
+        </div>
         {items.length === 0 && <p className="muted">Your wishlist is empty. Add wishes first.</p>}
         {items.length > 0 && shown.length === 0 && <p className="muted">No wishes match.</p>}
         <div className="check-list" role="group" aria-label="Wishes">

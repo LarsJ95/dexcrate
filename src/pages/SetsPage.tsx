@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type JSX, type KeyboardEvent } from 'react'
 import { IconSearch } from '../components/Icons'
+import { SearchClear } from '../components/SearchClear'
 import { SetIcon } from '../components/SetIcon'
 import { listCards } from '../lib/db'
 import { hpLevel } from '../lib/trainer'
@@ -231,6 +232,7 @@ export function SetsPage(): JSX.Element {
             onBlur={() => setSuggestOpen(false)}
             onKeyDown={onSearchKey}
           />
+          <SearchClear value={query} onClear={() => setQuery('')} />
           {showSuggest && (
             <ul id="set-suggestions" className="set-suggestions" role="listbox" aria-label="Suggested sets">
               {suggestions.map((r, i) => {
