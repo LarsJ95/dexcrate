@@ -169,11 +169,14 @@ a.mover:hover {
     align-self: stretch;
   }
 
+  /* Verkoopmeter en gemiddelden in één rij: allebei de volle rijhoogte, zodat de tegels gelijk eindigen. */
   .dash-main > .split-panels {
     grid-column: 1;
+    align-self: stretch;
   }
 
   .dash-main > .averages {
     grid-column: 2;
+    align-self: stretch;
   }
 }
