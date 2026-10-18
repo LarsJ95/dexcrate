@@ -1,5 +1,5 @@
 import { useEffect, useState, useSyncExternalStore, type JSX } from 'react'
-import { celebrateAdded } from '../lib/celebrate'
+import { addedQuietly } from '../lib/celebrate'
 import { insertCards } from '../lib/db'
 import { draftFromScan } from '../lib/scan'
 import { MAX_QTY, isAmbiguous, isCondition, reviewGroups, scannedTwice, summarize, type QueueItem } from '../lib/scanQueue'
@@ -155,7 +155,7 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
       setDone(`Added ${count} ${count === 1 ? 'card' : 'cards'}${fromWishlist > 0 ? `, ${fromWishlist} from your wishlist ★` : ''}.`)
       removeItems(selected.map((q) => q.id))
       onAdded(rows)
-      void celebrateAdded(rows)
+      void addedQuietly(rows)
     } catch (err) {
       setError(errorText(err, 'Adding failed.'))
     } finally {

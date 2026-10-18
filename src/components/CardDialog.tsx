@@ -22,6 +22,8 @@ interface Props {
   onSold?: () => void
   /** Bestaande kaart meteen in het formulier openen (bv. "Edit" bij een exemplaar op de setpagina); Cancel sluit dan. */
   startInEdit?: boolean
+  /** Nieuwe kaart uit een scan: na opslaan geen vieringen (zie addedQuietly). */
+  quietAdd?: boolean
 }
 
 type Mode = { kind: 'view' } | { kind: 'edit'; status: CardStatus }
@@ -41,6 +43,7 @@ export function CardDialog({
   onChanged,
   onSold,
   startInEdit = false,
+  quietAdd = false,
 }: Props): JSX.Element {
   const ref = useRef<HTMLDialogElement>(null)
   const [mode, setMode] = useState<Mode>(() =>
@@ -93,6 +96,7 @@ export function CardDialog({
             onCancel={() => (card && !startInEdit ? setMode({ kind: 'view' }) : close())}
             onSaved={onSaved}
             onDeleted={onDeleted}
+            quietAdd={quietAdd}
           />
         )}
       </div>

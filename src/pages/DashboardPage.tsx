@@ -8,11 +8,9 @@ import { listCards, listSnapshotsFor } from '../lib/db'
 import { portfolioSeries, type SnapshotRow } from '../lib/prices'
 import type { Card } from '../lib/types'
 import { Loading } from '../components/Loading'
-import { COLLECTION_MILESTONES, celebrateMilestone } from '../lib/moments'
+import { COLLECTION_MILESTONES, COLLECTION_MILESTONE_KEY, celebrateMilestone } from '../lib/moments'
 import { trainerName } from '../lib/trainer'
 import { errorText } from '../lib/errors'
-
-const COLLECTION_MILESTONE_KEY = 'dexcrate:collection-milestone'
 
 export function DashboardPage({ email = null }: { email?: string | null }): JSX.Element {
   const [cards, setCards] = useState<Card[] | null>(null)

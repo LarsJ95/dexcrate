@@ -390,6 +390,7 @@ export function ScanPage(): JSX.Element {
           initial={draft.values}
           defaultStatus="collection"
           nextSortOrder={nextSortOrder}
+          quietAdd
           onClose={() => setDraft(null)}
           onSaved={(rows) => {
             rememberAdded(rows)

@@ -1,7 +1,7 @@
 import { useState, type FormEvent, type JSX, type ReactNode } from 'react'
 import { deleteCard, insertCard, splitCard, updateCard } from '../lib/db'
 import type { Candidate } from '../lib/match'
-import { celebrateAdded } from '../lib/celebrate'
+import { addedQuietly, celebrateAdded } from '../lib/celebrate'
 import { getSet, lookupLang, type Lang } from '../lib/tcgdex'
 import {
   AVAILABILITY_LABELS,
@@ -41,6 +41,8 @@ interface Props {
   onCancel: () => void
   onSaved: (rows: Card[]) => void
   onDeleted: (id: string) => void
+  /** Nieuwe kaart uit een scan: na opslaan geen vieringen (zie addedQuietly). */
+  quietAdd?: boolean
 }
 
 function Select<K extends string>({
@@ -95,6 +97,7 @@ export function CardForm({
   onCancel,
   onSaved,
   onDeleted,
+  quietAdd = false,
 }: Props): JSX.Element {
   const [form, setForm] = useState<FormState>(() => initialState(source, startStatus))
   const [splitQty, setSplitQty] = useState(String(card?.quantity ?? 1))
@@ -186,7 +189,7 @@ export function CardForm({
       } else {
         const created = await insertCard({ ...EMPTY_CARD, ...source, ...result.value, sort_order: nextSortOrder })
         onSaved([created])
-        void celebrateAdded([created])
+        void (quietAdd ? addedQuietly([created]) : celebrateAdded([created]))
       }
     } catch (err) {
       setError(errorText(err, 'Saving failed.'))
