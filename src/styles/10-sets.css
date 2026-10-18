@@ -192,3 +192,13 @@
   font-size: var(--fs-small);
   color: var(--muted);
 }
+
+/* Reverse-holoprijs onder de gewone (18-10-2026): "€0.23" / "RH €1.30", altijd op een eigen regel. */
+.price-rh {
+  display: block;
+  white-space: nowrap;
+}
+
+.price-rh abbr {
+  text-decoration: none;
+}

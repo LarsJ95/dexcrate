@@ -51,6 +51,20 @@
   line-height: 1.05;
 }
 
+/* Twee uitvoeringen (bv. holo en reverse holo): even groot naast elkaar, vinkje bij wat je hebt. */
+.cd-prices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.cd-price-mine {
+  display: inline-flex;
+  margin-left: var(--space-1);
+  color: var(--green);
+  vertical-align: -2px;
+}
+
 .cd-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -280,6 +294,12 @@
 
   .cd-price-value {
     font-size: 1.75rem;
+  }
+
+  /* Twee uitvoeringen passen niet naast elkaar naast de foto: onder elkaar. */
+  .cd-prices {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
   }
 
   .cd-grid {
