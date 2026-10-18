@@ -20,7 +20,7 @@ import { formatEur } from '../lib/stats'
 import { canToggleSold, statusFields, type Card, type CardInput, type CardStatus } from '../lib/types'
 import { Loading } from '../components/Loading'
 import { closeKeyboardOnEnter } from '../lib/keyboard'
-import { FILTERS, VIEW_KEY, matchesFilter, readView, relevantPrice, type SortKey, type StatusFilter } from '../lib/collectionView'
+import { FILTERS, VIEW_KEY, comparePrice, matchesFilter, readView, relevantPrice, type SortKey, type StatusFilter } from '../lib/collectionView'
 import { useSetOptions } from '../hooks/useSetOptions'
 import { useLoadMore } from '../hooks/useLoadMore'
 import { OFFLINE_TEXT, errorText, isNetworkError } from '../lib/errors'
@@ -93,8 +93,9 @@ export function CollectionPage(): JSX.Element {
     const sorted = [...filtered]
     if (sort === 'list') sorted.sort(compareOrder)
     if (sort === 'newest') sorted.sort((a, b) => compareOrder(b, a))
-    if (sort === 'priceDesc') sorted.sort((a, b) => relevantPrice(b) - relevantPrice(a))
-    if (sort === 'priceAsc') sorted.sort((a, b) => relevantPrice(a) - relevantPrice(b))
+    const marketOf = (c: Card): number | null => marketById.get(c.id)?.value ?? null
+    if (sort === 'priceDesc') sorted.sort((a, b) => comparePrice(a, b, -1, marketOf))
+    if (sort === 'priceAsc') sorted.sort((a, b) => comparePrice(a, b, 1, marketOf))
     if (sort === 'marketDesc') {
       sorted.sort((a, b) => (marketById.get(b.id)?.value ?? -1) - (marketById.get(a.id)?.value ?? -1))
     }
