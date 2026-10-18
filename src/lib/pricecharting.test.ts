@@ -11,6 +11,12 @@ describe('PriceCharting: juiste regel kiezen', () => {
     expect(pickRow(rows, 'Charizard', '1', "McDonald's Collection 2024")?.hash).toBe('goodhash1')
   })
 
+  it('eigen catalogus: Pokémon TCG Classic (antwoord van PriceCharting, 18-10-2026)', () => {
+    const rows = [row('Voltorb #10', 'Pokemon TCG Classic: Charizard Deck', 'ypd5tlv52rkkkn72')]
+    expect(pickRow(rows, 'Voltorb', '010', 'Pokémon TCG Classic (Charizard)')?.hash).toBe('ypd5tlv52rkkkn72')
+    expect(pickRow(rows, 'Voltorb', '011', 'Pokémon TCG Classic (Charizard)')).toBeNull()
+  })
+
   it('jaartal moet kloppen: 2014 is niet 2024', () => {
     expect(pickRow([row('Charizard #1', 'Pokemon McDonalds 2024')], 'Charizard', '1', "McDonald's Collection 2014")).toBeNull()
   })

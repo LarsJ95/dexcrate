@@ -9,6 +9,7 @@ Live: https://dexcrate.com (landingspagina) en https://dexcrate.com/app/ (de app
 - React 19 + TypeScript + Vite (PWA via `vite-plugin-pwa`, hash-routing)
 - Supabase: database met Row Level Security, opslag (foto's, bonnetjes), Edge Functions
 - Kaartdata en prijzen: TCGdex; extra beeldbronnen in `src/lib/cardImages.ts` en `src/lib/setIcons.ts`
+- Sets die TCGdex niet kent (nu Pokémon TCG Classic CLV/CLC/CLB): eigen catalogus in `src/lib/localCatalog.ts`, sleutels zoals `en/clc-010`; foto via PriceCharting, geen prijs
 
 ## Starten
 

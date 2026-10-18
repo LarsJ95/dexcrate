@@ -1,3 +1,4 @@
+import { LOCAL_SET_IDS } from './localCatalog'
 import { setOfKey, type Lang } from './tcgdex'
 
 /**
@@ -11,7 +12,7 @@ const LIMITLESS = 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpci'
  * TCGdex-sets waarvan de nummering bij Limitless/pokemontcg.io anders is (gecontroleerd op kaartnaam, 16-10-2026):
  * daar zou een verkeerde kaart verschijnen, dus geen plaatje uit die bronnen.
  */
-const NUMBERING_DIFFERS = new Set(['30th-c'])
+const NUMBERING_DIFFERS = new Set(['30th-c', ...LOCAL_SET_IDS]) // eigen catalogus: daar bestaan ze niet
 
 /** Limitless TCG: "<AFK>/<AFK>_<nr>_R_EN_SM.png"; nummers met 3 cijfers. */
 export function limitlessEnCardUrl(abbr: string | null | undefined, setId: string, localId: string, quality: 'low' | 'high'): string | null {
