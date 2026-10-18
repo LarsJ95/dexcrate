@@ -78,6 +78,13 @@
   transform: translateY(-50%) scale(0.96);
 }
 
+/* .search svg is het vergrootglas; het kruisje staat gewoon in zijn knop. */
+.search .search-clear svg {
+  position: static;
+  transform: none;
+  color: inherit;
+}
+
 .segmented {
   display: inline-flex;
   flex-wrap: wrap;

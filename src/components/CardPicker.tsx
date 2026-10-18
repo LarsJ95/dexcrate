@@ -2,6 +2,7 @@ import { useMemo, useState, type JSX } from 'react'
 import { matchesSearch } from '../lib/search'
 import { statusBadge, type Card } from '../lib/types'
 import { IconSearch } from './Icons'
+import { SearchClear } from './SearchClear'
 
 const MAX_RESULTS = 8
 
@@ -14,6 +15,7 @@ export function CardPicker({ cards, onPick, onCancel }: { cards: readonly Card[]
       <div className="search">
         <IconSearch size={18} />
         <input type="search" placeholder="Name, set or number" aria-label="Find card" value={query} autoFocus onChange={(e) => setQuery(e.target.value)} />
+        <SearchClear value={query} onClear={() => setQuery('')} />
       </div>
       {results.length > 0 && (
         <ul className="picker-results">
