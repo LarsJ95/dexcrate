@@ -47,11 +47,23 @@ vi.mock('../lib/db', () => ({
   // Squirtle heb je al: die wens is "gevonden".
   listCards: vi.fn(async () => [{ id: 'c1', tcgdex_id: 'en/sv07-148', ownership: 'owned', status: 'collection', quantity: 1, variant: null, language: 'en' }]),
 }))
-vi.mock('../lib/wishlistLists', () => ({
-  hasWishlistLists: async () => true,
-  listWishlistLists: vi.fn(async () => [{ id: 'l1', name: 'High only', filters: { ...NO_WISH_FILTERS, priority: 1, showFound: true }, sort_order: 1 }]),
-  updateWishlistList: vi.fn(),
-}))
+vi.mock('../lib/wishlistLists', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../lib/wishlistLists')>()
+  return {
+    hasWishlistLists: async () => true,
+    hasManualLists: async () => true,
+    listWishlistLists: vi.fn(async () => [
+      { id: 'l1', name: 'High only', kind: 'smart', filters: { ...NO_WISH_FILTERS, priority: 1, showFound: true }, sort_order: 1 },
+      { id: 'l2', name: 'Binder page', kind: 'manual', filters: NO_WISH_FILTERS, sort_order: 2 },
+    ]),
+    // Eigen lijst "Binder page" bevat alleen Old Promo.
+    listListMembers: vi.fn(async () => new Map([['l2', new Set(['w4'])]])),
+    listChanges: real.listChanges,
+    setItemLists: vi.fn(async () => {}),
+    updateWishlistList: vi.fn(),
+  }
+})
+vi.mock('../components/WishListPickSheet', () => ({ WishListPickSheet: () => <div role="dialog" aria-label="Choose wishes" /> }))
 vi.mock('../components/CardImage', () => ({ CardImage: () => null }))
 vi.mock('../components/SetIcon', () => ({ CardSetSymbol: () => null }))
 vi.mock('../components/SetPicker', () => ({ SetPicker: () => null }))
@@ -118,6 +130,16 @@ describe('WishlistPage', () => {
     expect(names()).toEqual(['Squirtle'])
     await userEvent.selectOptions(screen.getByLabelText('Priority'), '')
     expect(screen.getByRole('button', { name: 'Update “High only”' })).toBeTruthy()
+  })
+
+  it('eigen lijst toont alleen de gekozen wensen, zonder "Update", met "Choose wishes"', async () => {
+    await renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: 'Binder page' }))
+    expect(names()).toEqual(['Old Promo'])
+    await userEvent.selectOptions(screen.getByLabelText('Priority'), '1')
+    expect(screen.queryByRole('button', { name: /Update/ })).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Choose wishes' }))
+    expect(screen.getByRole('dialog', { name: 'Choose wishes' })).toBeTruthy()
   })
 
   it('gekoppelde wens opent als kaart met bladeren en "Edit wish"; ongekoppeld meteen bewerken', async () => {

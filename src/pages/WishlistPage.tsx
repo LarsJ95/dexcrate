@@ -28,7 +28,17 @@ import {
   sameWishFilters,
   type WishFilters,
 } from '../lib/wishFilters'
-import { hasWishlistLists, listWishlistLists, updateWishlistList, type WishlistList } from '../lib/wishlistLists'
+import {
+  hasManualLists,
+  hasWishlistLists,
+  listChanges,
+  listListMembers,
+  listWishlistLists,
+  setItemLists,
+  updateWishlistList,
+  type WishlistList,
+} from '../lib/wishlistLists'
+import { WishListPickSheet } from '../components/WishListPickSheet'
 import { Loading } from '../components/Loading'
 import { closeKeyboardOnEnter } from '../lib/keyboard'
 import { errorText } from '../lib/errors'
@@ -64,7 +74,11 @@ export function WishlistPage(): JSX.Element {
   const listsEnabled = useDbFeature(hasWishlistLists, 'wishlist-lists')
   const [lists, setLists] = useState<WishlistList[]>([])
   const [activeListId, setActiveListId] = useState<string | null>(null)
-  const [listSheet, setListSheet] = useState<WishlistList | 'new' | null>(null)
+  const [listSheet, setListSheet] = useState<WishlistList | 'new' | 'new-manual' | null>(null)
+  // Eigen lijsten (STAP17): zelf gekozen wensen per lijst.
+  const manualEnabled = useDbFeature(hasManualLists, 'wishlist-manual-lists')
+  const [members, setMembers] = useState<Map<string, Set<string>>>(new Map())
+  const [picking, setPicking] = useState(false)
   const [listNotice, setListNotice] = useState<string | null>(null)
   const [listBusy, setListBusy] = useState(false)
   const activeList = lists.find((l) => l.id === activeListId) ?? null
@@ -108,6 +122,57 @@ export function WishlistPage(): JSX.Element {
     }
   }, [listsEnabled])
 
+  useEffect(() => {
+    if (manualEnabled !== true) return
+    let cancelled = false
+    listListMembers()
+      .then((m) => {
+        if (!cancelled) setMembers(m)
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setListNotice(errorText(err, 'Loading your lists failed.'))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [manualEnabled])
+
+  const manualLists = useMemo(() => (manualEnabled === true ? lists.filter((l) => l.kind === 'manual') : []), [lists, manualEnabled])
+
+  /** Lidmaatschap van één wens lokaal bijwerken (na opslaan in de database). */
+  function applyMembership(itemId: string, change: { add: readonly string[]; remove: readonly string[] }): void {
+    setMembers((cur) => {
+      const next = new Map(cur)
+      for (const id of change.add) next.set(id, new Set(next.get(id)).add(itemId))
+      for (const id of change.remove) {
+        const set = new Set(next.get(id))
+        set.delete(itemId)
+        next.set(id, set)
+      }
+      return next
+    })
+  }
+
+  /** Wens in precies deze eigen lijsten zetten. */
+  async function saveMembership(itemId: string, wanted: ReadonlySet<string>): Promise<void> {
+    const change = listChanges(members, itemId, wanted, manualLists.map((l) => l.id))
+    if (change.add.length === 0 && change.remove.length === 0) return
+    try {
+      await setItemLists(itemId, change)
+      applyMembership(itemId, change)
+    } catch (err) {
+      setListNotice(errorText(err, 'Saving the list failed.'))
+    }
+  }
+
+  function newManualList(): void {
+    if (manualEnabled !== true) {
+      setListNotice('Lists you fill yourself are not set up yet: run STAP17 in Supabase.')
+      return
+    }
+    setListSheet('new-manual')
+  }
+
   function chooseList(list: WishlistList | null): void {
     setActiveListId(list?.id ?? null)
     setFilters(list?.filters ?? NO_WISH_FILTERS)
@@ -149,6 +214,7 @@ export function WishlistPage(): JSX.Element {
     // undefined = nog aan het laden (dan niet wegfilteren), null = onbekend.
     const market = !key ? null : prices.has(key) ? (marketValue(prices.get(key) ?? null, r.item.variant)?.value ?? null) : undefined
     const info = !key ? null : infos.has(key) ? (infos.get(key) ?? null) : undefined
+    if (activeList?.kind === 'manual' && !members.get(activeList.id)?.has(r.item.id)) return false
     return matches(r.item, query) && matchesWishFilters(r.item, filters, { found: r.found, market, info })
   })
   const foundCount = rows.filter((r) => r.found).length
@@ -163,16 +229,20 @@ export function WishlistPage(): JSX.Element {
   const searching = activeList ? query.trim().length >= 2 : catalogActive(query, filters, filters.set.trim())
   const filterCount = activeWishFilterCount(filters)
   const listChanged = activeList !== null && !sameWishFilters(filters, activeList.filters)
-  const canUpdateList = listChanged
+  const canUpdateList = listChanged && activeList?.kind === 'smart'
   const canSaveList = (filterCount > 0 || filters.showFound) && (listChanged || !activeList)
-  const canClear = (filterCount > 0 || query.trim() !== '') && !activeList
+  const canClear = (filterCount > 0 || query.trim() !== '') && (!activeList || activeList.kind === 'manual')
 
   function openNew(start?: Partial<WishlistInput>): void {
     setInitial(start)
     setEditing('new')
   }
 
-  function addSaved(saved: WishlistItem): void {
+  /** lists: gekozen eigen lijsten uit het wens-venster; zonder: een nieuwe wens komt in de open eigen lijst. */
+  function addSaved(saved: WishlistItem, lists: ReadonlySet<string> | null = null): void {
+    const isNew = !(items ?? []).some((x) => x.id === saved.id)
+    if (lists) void saveMembership(saved.id, lists)
+    else if (isNew && activeList?.kind === 'manual') void saveMembership(saved.id, new Set([activeList.id]))
     setItems((list) => {
       const next = [...(list ?? [])]
       const i = next.findIndex((x) => x.id === saved.id)
@@ -230,9 +300,20 @@ export function WishlistPage(): JSX.Element {
               </button>
             ))}
           </div>
+          {activeList?.kind === 'manual' && (
+            <button type="button" className="small-btn" onClick={() => setPicking(true)}>
+              Choose wishes
+            </button>
+          )}
           {activeList && (
             <button type="button" className="ghost small-btn" onClick={() => setListSheet(activeList)}>
               Rename or remove
+            </button>
+          )}
+          {listsEnabled === true && (
+            <button type="button" className="ghost small-btn" onClick={newManualList}>
+              <IconPlus size={16} />
+              New list
             </button>
           )}
         </div>
@@ -301,7 +382,13 @@ export function WishlistPage(): JSX.Element {
       )}
       {items && items.length > 0 && visible.length === 0 && (
         <p className="empty">
-          {searching ? 'None of your wishes match. Cards from the database are below.' : activeList ? 'No wishes in this list right now.' : 'No wishes match these filters.'}
+          {searching
+            ? 'None of your wishes match. Cards from the database are below.'
+            : activeList?.kind === 'manual' && (members.get(activeList.id)?.size ?? 0) === 0
+              ? 'This list is empty. Tap “Choose wishes”, or tick this list when you add or edit a wish.'
+              : activeList
+                ? 'No wishes in this list right now.'
+                : 'No wishes match these filters.'}
         </p>
       )}
 
@@ -385,7 +472,9 @@ export function WishlistPage(): JSX.Element {
 
       {listSheet && (
         <WishlistListSheet
-          list={listSheet === 'new' ? null : listSheet}
+          list={listSheet === 'new' || listSheet === 'new-manual' ? null : listSheet}
+          kind={listSheet === 'new-manual' ? 'manual' : 'smart'}
+          count={typeof listSheet === 'object' ? (members.get(listSheet.id)?.size ?? 0) : 0}
           filters={filters}
           existing={lists}
           onClose={() => setListSheet(null)}
@@ -397,6 +486,11 @@ export function WishlistPage(): JSX.Element {
           }}
           onDeleted={(id) => {
             setLists((l) => l.filter((x) => x.id !== id))
+            setMembers((m) => {
+              const next = new Map(m)
+              next.delete(id)
+              return next
+            })
             chooseList(null)
             setListSheet(null)
           }}
@@ -408,13 +502,34 @@ export function WishlistPage(): JSX.Element {
           item={editing === 'new' ? null : editing}
           initial={editing === 'new' ? initial : undefined}
           onClose={() => setEditing(null)}
-          onSaved={(saved) => {
-            addSaved(saved)
+          lists={manualLists}
+          inLists={
+            editing === 'new'
+              ? new Set(activeList?.kind === 'manual' ? [activeList.id] : [])
+              : new Set(manualLists.filter((l) => members.get(l.id)?.has(editing.id)).map((l) => l.id))
+          }
+          onSaved={(saved, chosen) => {
+            addSaved(saved, chosen)
             setEditing(null)
           }}
           onDeleted={(id) => {
             setItems((list) => list?.filter((x) => x.id !== id) ?? null)
+            // De database haalt de wens zelf uit alle lijsten (cascade).
+            setMembers((m) => new Map([...m].map(([listId, set]) => [listId, new Set([...set].filter((x) => x !== id))])))
             setEditing(null)
+          }}
+        />
+      )}
+
+      {picking && activeList?.kind === 'manual' && (
+        <WishListPickSheet
+          list={activeList}
+          items={items ?? []}
+          members={members.get(activeList.id) ?? new Set()}
+          onClose={() => setPicking(false)}
+          onSaved={(chosen) => {
+            setMembers((m) => new Map(m).set(activeList.id, new Set(chosen)))
+            setPicking(false)
           }}
         />
       )}

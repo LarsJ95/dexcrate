@@ -21,8 +21,13 @@ interface Props {
   /** Startwaarden voor een nieuw item (bv. vanuit een set). */
   initial?: Partial<WishlistInput>
   onClose: () => void
-  onSaved: (item: WishlistItem) => void
+  /** lists = gekozen eigen lijsten (alleen als er lijsten te kiezen waren), anders null. */
+  onSaved: (item: WishlistItem, lists: ReadonlySet<string> | null) => void
   onDeleted?: (id: string) => void
+  /** Eigen lijsten (STAP17) om de wens in te zetten; leeg = geen keuze tonen. */
+  lists?: readonly { id: string; name: string }[]
+  /** Lijsten waar de wens nu in staat (bij een nieuwe wens: de standaardkeuze). */
+  inLists?: ReadonlySet<string>
 }
 
 const PRIORITY_LABELS: Record<'1' | '2' | '3', string> = { '1': 'High', '2': 'Normal', '3': 'Low' }
@@ -41,7 +46,7 @@ function WishMarket({ tcgdexId, variant, searchText, language }: { tcgdexId: str
 }
 
 /** Wishlist-item toevoegen of aanpassen; optioneel gekoppeld aan een cataloguskaart. */
-export function WishlistDialog({ item, initial, onClose, onSaved, onDeleted }: Props): JSX.Element {
+export function WishlistDialog({ item, initial, onClose, onSaved, onDeleted, lists = [], inLists }: Props): JSX.Element {
   const src = item ?? initial
   const [name, setName] = useState(src?.name ?? '')
   const [setCode, setSetCode] = useState(src?.set_code ?? '')
@@ -54,6 +59,14 @@ export function WishlistDialog({ item, initial, onClose, onSaved, onDeleted }: P
   const [maxPrice, setMaxPrice] = useState(moneyText(src?.max_price ?? null))
   const [priority, setPriority] = useState<'1' | '2' | '3'>(String(src?.priority ?? 2) as '1' | '2' | '3')
   const [notes, setNotes] = useState(src?.notes ?? '')
+  const [chosenLists, setChosenLists] = useState<ReadonlySet<string>>(() => new Set(inLists ?? []))
+  const toggleList = (id: string, on: boolean): void =>
+    setChosenLists((cur) => {
+      const next = new Set(cur)
+      if (on) next.add(id)
+      else next.delete(id)
+      return next
+    })
   const [busy, setBusy] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -114,10 +127,10 @@ export function WishlistDialog({ item, initial, onClose, onSaved, onDeleted }: P
     setError(null)
     try {
       if (item) {
-        onSaved(await updateWishlistItem(item.id, input))
+        onSaved(await updateWishlistItem(item.id, input), lists.length > 0 ? chosenLists : null)
       } else {
         const added = await addWishlistItem(input)
-        onSaved(added)
+        onSaved(added, lists.length > 0 ? chosenLists : null)
         showMoment({ kind: 'gotcha', name: added.name })
       }
     } catch (err) {
@@ -229,6 +242,20 @@ export function WishlistDialog({ item, initial, onClose, onSaved, onDeleted }: P
           Notes
           <textarea value={notes} maxLength={2000} rows={2} onChange={(e) => setNotes(e.target.value)} />
         </label>
+
+        {lists.length > 0 && (
+          <fieldset className="form-group">
+            <legend>Your lists</legend>
+            <div className="filter-checks">
+              {lists.map((l) => (
+                <label key={l.id} className="check">
+                  <input type="checkbox" checked={chosenLists.has(l.id)} onChange={(e) => toggleList(l.id, e.target.checked)} />
+                  {l.name}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        )}
 
         {error && (
           <p className="error" role="alert">
