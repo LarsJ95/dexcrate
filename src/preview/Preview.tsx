@@ -12,6 +12,7 @@ import { CardImage } from '../components/CardImage'
 import { CardZoom } from '../components/CardZoom'
 import { SetCardSheet } from '../components/SetCardSheet'
 import { DashboardView } from '../components/DashboardView'
+import { ValueBreakdown } from '../components/ValueBreakdown'
 import { IconArrowLeft, IconSearch } from '../components/Icons'
 import { BackupPage } from '../pages/BackupPage'
 import { CollectionPage } from '../pages/CollectionPage'
@@ -356,7 +357,13 @@ export function Preview(): JSX.Element {
   if (page === 'overview') {
     return (
       <Shell route={page} email="demo@example.com" theme={theme} onToggleTheme={noop} onSignOut={noop}>
-        <DashboardView cards={CARDS.map((c) => c.card)} prices={PRICES} pricesLoading={false} series={SERIES} />
+        <DashboardView
+          cards={CARDS.map((c) => c.card)}
+          prices={PRICES}
+          pricesLoading={false}
+          series={SERIES}
+          breakdown={<ValueBreakdown cards={CARDS.map((c) => c.card)} prices={PRICES} pricesLoading={false} snapshots={null} />}
+        />
       </Shell>
     )
   }

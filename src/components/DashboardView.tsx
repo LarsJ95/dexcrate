@@ -229,6 +229,9 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
         {series && series.length >= 2 && <LineChart points={series} label="Value history" valueLabel="Value" />}
       </div>
 
+      {/* Eerst het (compacte) overzicht van wat je hebt, daarna je duurste kaarten (volgorde op verzoek 18-10-2026). */}
+      {breakdown}
+
       {!pricesLoading && movers.valuable[0] && (
         <Spotlight
           item={movers.valuable[0]}
@@ -238,8 +241,6 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
           fallbackType={favourite}
         />
       )}
-
-      {breakdown}
 
       {!pricesLoading && (
         <div className="movers">

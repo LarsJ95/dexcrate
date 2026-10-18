@@ -76,6 +76,24 @@ a.stat:hover {
   border-color: var(--line-strong);
 }
 
+/* Aantikbare tegel als knop (bv. Duplicates op de setpagina): zelfde vorm als de andere tegels. */
+button.stat {
+  justify-items: start;
+  align-content: start;
+  text-align: left;
+  font-weight: inherit;
+}
+
+button.stat:hover:not(:disabled) {
+  background: var(--surface);
+  border-color: var(--line-strong);
+}
+
+/* Spring-doel onder de vaste kopbalk op de telefoon. */
+.scroll-target {
+  scroll-margin-top: var(--space-8);
+}
+
 .stat-value {
   font-size: var(--fs-stat);
   font-weight: 800;
@@ -85,6 +103,21 @@ a.stat:hover {
 .stat-sub {
   color: var(--muted);
   font-size: 0.88rem;
+}
+
+/* Compacte tegels voor ondersteunende cijfers (Overview: What you own). */
+.stat-row.is-compact {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-2);
+}
+
+.stat-row.is-compact .stat {
+  gap: 0;
+  padding: var(--space-3);
+}
+
+.stat-row.is-compact .stat-value {
+  font-size: var(--fs-h2);
 }
 
 .panel {

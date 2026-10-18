@@ -55,6 +55,29 @@
   padding-left: calc(var(--space-3) + 18px + var(--space-2));
 }
 
+/* Kruisje dat het hele zoekveld in één tik leegmaakt (i.p.v. het wisselvallige ingebouwde kruisje). */
+.search:has(.search-clear) input {
+  padding-right: calc(var(--space-2) + 44px);
+}
+
+.search:has(.search-clear) input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.search button.search-clear {
+  position: absolute;
+  right: var(--space-1);
+  top: 50%;
+  transform: translateY(-50%);
+  min-width: 36px;
+  min-height: 36px;
+  color: var(--muted);
+}
+
+.search button.search-clear:active:not(:disabled) {
+  transform: translateY(-50%) scale(0.96);
+}
+
 .segmented {
   display: inline-flex;
   flex-wrap: wrap;
