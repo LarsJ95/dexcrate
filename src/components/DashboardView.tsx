@@ -33,6 +33,8 @@ interface Props {
   onOpenCard?: (id: string) => void
   /** Waardeoverzicht onder het hoofdcijfer (kosten, marktwaarde, eigen waardering, resultaat). */
   breakdown?: ReactNode
+  /** Derde blok naast Gainers en Losers (Wishlist deals). */
+  deals?: ReactNode
   /** Naam op de Trainer Card. */
   trainer?: string
 }
@@ -104,7 +106,7 @@ function MoverList({
   )
 }
 
-export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard, breakdown, trainer = 'Trainer' }: Props): JSX.Element {
+export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard, breakdown, deals, trainer = 'Trainer' }: Props): JSX.Element {
   const stats = useMemo(() => computeStats(cards), [cards])
   const market = useMemo(() => summarizeMarket(cards, prices), [cards, prices])
   const movers = useMemo(() => topMovers(cards, prices), [cards, prices])
@@ -246,7 +248,8 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
         <div className="movers">
           <MoverList title="Gainers" flavor="It's super effective!" items={movers.up} empty="No clear risers." onOpenCard={onOpenCard} />
           <MoverList title="Losers" flavor="It's not very effective…" items={movers.down} empty="No clear fallers." onOpenCard={onOpenCard} />
-          <MoverList title="Most valuable" items={movers.valuable} empty="No market prices yet." onOpenCard={onOpenCard} />
+          {/* Duurste kaarten staan al in de spotlight erboven; hier wat je goed kunt kopen (18-10-2026). */}
+          {deals}
         </div>
       )}
 

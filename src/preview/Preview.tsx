@@ -13,6 +13,7 @@ import { CardZoom } from '../components/CardZoom'
 import { SetCardSheet } from '../components/SetCardSheet'
 import { DashboardView } from '../components/DashboardView'
 import { ValueBreakdown } from '../components/ValueBreakdown'
+import { WishDeals } from '../components/WishDeals'
 import { IconArrowLeft, IconSearch } from '../components/Icons'
 import { BackupPage } from '../pages/BackupPage'
 import { CollectionPage } from '../pages/CollectionPage'
@@ -372,6 +373,7 @@ export function Preview(): JSX.Element {
           pricesLoading={false}
           series={SERIES}
           breakdown={<ValueBreakdown cards={CARDS.map((c) => c.card)} prices={PRICES} pricesLoading={false} snapshots={null} />}
+          deals={<WishDeals cards={CARDS.map((c) => c.card)} />}
         />
       </Shell>
     )
