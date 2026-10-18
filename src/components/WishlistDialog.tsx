@@ -2,6 +2,7 @@ import { errorText } from '../lib/errors'
 import { useState, type FormEvent, type JSX } from 'react'
 import { useCardInfo } from '../hooks/useCardInfo'
 import { useCardPrice } from '../hooks/useCardPrice'
+import { useManualLists } from '../hooks/useManualLists'
 import type { Candidate } from '../lib/match'
 import { showMoment } from '../lib/moments'
 import { moneyText, parseMoney } from '../lib/money'
@@ -11,6 +12,7 @@ import { getSet, lookupLang, type Lang } from '../lib/tcgdex'
 import { cardLanguageOf } from '../lib/cardmarket'
 import { CONDITION_LABELS, LANGUAGE_LABELS, VARIANT_LABELS, type CardLanguage, type Condition, type Variant } from '../lib/types'
 import { addWishlistItem, deleteWishlistItem, updateWishlistItem, type WishlistInput, type WishlistItem } from '../lib/wishlist'
+import { setItemLists } from '../lib/wishlistLists'
 import { CardmarketLink } from './CardmarketLink'
 import { LinkPicker } from './LinkPicker'
 import { Sheet } from './Sheet'
@@ -24,13 +26,35 @@ interface Props {
   /** lists = gekozen eigen lijsten (alleen als er lijsten te kiezen waren), anders null. */
   onSaved: (item: WishlistItem, lists: ReadonlySet<string> | null) => void
   onDeleted?: (id: string) => void
-  /** Eigen lijsten (STAP17) om de wens in te zetten; leeg = geen keuze tonen. */
+  /**
+   * Eigen lijsten (STAP17) om de wens in te zetten; leeg = geen keuze tonen. Niet meegegeven bij een nieuwe wens
+   * (bv. vanuit een set of de Crate): dan haalt het venster ze zelf op en zet de wens er na opslaan zelf in.
+   */
   lists?: readonly { id: string; name: string }[]
   /** Lijsten waar de wens nu in staat (bij een nieuwe wens: de standaardkeuze). */
   inLists?: ReadonlySet<string>
 }
 
 const PRIORITY_LABELS: Record<'1' | '2' | '3', string> = { '1': 'High', '2': 'Normal', '3': 'Low' }
+
+/** Laatst gekozen eigen lijsten voor een nieuwe wens (per apparaat), zodat je niet elke keer opnieuw kiest. */
+const LAST_LISTS_KEY = 'dexcrate:wish-last-lists'
+
+function readLastLists(): Set<string> {
+  try {
+    return new Set((localStorage.getItem(LAST_LISTS_KEY) ?? '').split('|').filter(Boolean))
+  } catch {
+    return new Set() // geen opslag: niets voorgekozen
+  }
+}
+
+function rememberLastLists(ids: readonly string[]): void {
+  try {
+    localStorage.setItem(LAST_LISTS_KEY, ids.join('|'))
+  } catch (err) {
+    console.warn('Gekozen lijsten onthouden mislukt', err)
+  }
+}
 
 /** Marktprijs en Cardmarket-link van de gekoppelde kaart (zonder koppeling: zoeken op naam en nummer). */
 function WishMarket({ tcgdexId, variant, searchText, language }: { tcgdexId: string | null; variant: Variant | null; searchText: string; language: string | null }): JSX.Element | null {
@@ -46,7 +70,11 @@ function WishMarket({ tcgdexId, variant, searchText, language }: { tcgdexId: str
 }
 
 /** Wishlist-item toevoegen of aanpassen; optioneel gekoppeld aan een cataloguskaart. */
-export function WishlistDialog({ item, initial, onClose, onSaved, onDeleted, lists = [], inLists }: Props): JSX.Element {
+export function WishlistDialog({ item, initial, onClose, onSaved, onDeleted, lists: givenLists, inLists }: Props): JSX.Element {
+  // Zelf lijsten ophalen en vullen: alleen bij een nieuwe wens zonder meegegeven lijsten.
+  const ownLists = givenLists === undefined && item === null
+  const fetchedLists = useManualLists(ownLists)
+  const lists = givenLists ?? fetchedLists
   const src = item ?? initial
   const [name, setName] = useState(src?.name ?? '')
   const [setCode, setSetCode] = useState(src?.set_code ?? '')
@@ -59,7 +87,9 @@ export function WishlistDialog({ item, initial, onClose, onSaved, onDeleted, lis
   const [maxPrice, setMaxPrice] = useState(moneyText(src?.max_price ?? null))
   const [priority, setPriority] = useState<'1' | '2' | '3'>(String(src?.priority ?? 2) as '1' | '2' | '3')
   const [notes, setNotes] = useState(src?.notes ?? '')
-  const [chosenLists, setChosenLists] = useState<ReadonlySet<string>>(() => new Set(inLists ?? []))
+  const [chosenLists, setChosenLists] = useState<ReadonlySet<string>>(() => (ownLists ? readLastLists() : new Set(inLists ?? [])))
+  // Wens opgeslagen, maar in de lijst zetten mislukte: dan alleen nog sluiten (niet nog eens opslaan).
+  const [savedOnly, setSavedOnly] = useState<WishlistItem | null>(null)
   const toggleList = (id: string, on: boolean): void =>
     setChosenLists((cur) => {
       const next = new Set(cur)
@@ -128,6 +158,23 @@ export function WishlistDialog({ item, initial, onClose, onSaved, onDeleted, lis
     try {
       if (item) {
         onSaved(await updateWishlistItem(item.id, input), lists.length > 0 ? chosenLists : null)
+      } else if (ownLists) {
+        const added = await addWishlistItem(input)
+        const add = lists.filter((l) => chosenLists.has(l.id)).map((l) => l.id)
+        if (lists.length > 0) rememberLastLists(add)
+        if (add.length > 0) {
+          try {
+            await setItemLists(added.id, { add, remove: [] })
+          } catch (err) {
+            console.warn('Wens in lijst zetten mislukt', err)
+            setSavedOnly(added)
+            setError('Saved to your wishlist, but adding it to your list failed. You can add it on the Wishlist page.')
+            setBusy(false)
+            return
+          }
+        }
+        onSaved(added, null)
+        showMoment({ kind: 'gotcha', name: added.name })
       } else {
         const added = await addWishlistItem(input)
         onSaved(added, lists.length > 0 ? chosenLists : null)
@@ -273,9 +320,15 @@ export function WishlistDialog({ item, initial, onClose, onSaved, onDeleted, lis
           <button type="button" className="ghost" onClick={onClose} disabled={busy}>
             Cancel
           </button>
-          <button type="submit" className="primary" disabled={busy}>
-            {busy ? 'Saving…' : 'Save'}
-          </button>
+          {savedOnly ? (
+            <button type="button" className="primary" onClick={() => onSaved(savedOnly, null)}>
+              Done
+            </button>
+          ) : (
+            <button type="submit" className="primary" disabled={busy}>
+              {busy ? 'Saving…' : 'Save'}
+            </button>
+          )}
         </footer>
       </form>
     </Sheet>
