@@ -106,7 +106,8 @@ export function CratePage(): JSX.Element {
   const [sort, setSort] = useStoredChoice<CrateSort>('dexcrate:crate-sort', CRATE_SORTS, 'newest')
   const [query, setQuery] = useState('')
   const [filters, setFilters] = useState<CrateFilters>(NO_CRATE_FILTERS)
-  const [view, setView] = useState<View>('cards')
+  // Overview is de hoofdweergave (keuze gebruiker 18-10-2026).
+  const [view, setView] = useState<View>('overview')
   const [opened, setOpened] = useState<CrateCard | null>(null)
   const [confirmAll, setConfirmAll] = useState(false)
   const [rules, setRules] = useState<CrateRules>(OLD_RULES)
@@ -250,6 +251,30 @@ export function CratePage(): JSX.Element {
   const extras = (cards ?? []).reduce((n, c) => n + (c.quantity - 1) * tradeValue(c.rarity, rules.tradeFactor), 0)
   const extraCopies = (cards ?? []).reduce((n, c) => n + c.quantity - 1, 0)
 
+  // Alle dubbelen inruilen (met bevestigen): in Cards boven de kaarten, in Overview in de statistiekbalk.
+  const tradeAll =
+    extras > 0 ? (
+      <div className="crate-trade-all" role="group" aria-label="Trade in duplicates">
+        {confirmAll ? (
+          <>
+            <span>
+              Trade in {extraCopies} duplicate {extraCopies === 1 ? 'copy' : 'copies'} for {extras} points? You keep one of each card.
+            </span>
+            <button type="button" className="primary small-btn" onClick={() => void tradeInAll()} disabled={busy}>
+              Trade in
+            </button>
+            <button type="button" className="small-btn" onClick={() => setConfirmAll(false)}>
+              Cancel
+            </button>
+          </>
+        ) : (
+          <button type="button" className="small-btn" onClick={() => setConfirmAll(true)} disabled={busy}>
+            Trade in all duplicates (+{extras} pts)
+          </button>
+        )}
+      </div>
+    ) : null
+
   if (enabled === false) {
     return (
       <section className="page">
@@ -289,57 +314,55 @@ export function CratePage(): JSX.Element {
           const art = kind === 'type' ? ({ '--pack-type': energyColor(packType) } as CSSProperties) : undefined
           return (
             <li key={kind} className={`panel crate-shop pack-${kind}`}>
+              {/* Vaste rijen (titel, uitleg, keuze, melding, knop), via subgrid gelijk over alle pakjes in een rij. */}
               <div className="crate-pack-art" aria-hidden="true" style={art}>
                 <span className="pokeball" />
               </div>
-              <div className="crate-shop-info">
-                <strong>{p.name}</strong>
-                <span className="muted small">{p.contents}</span>
-                {cost === null ? (
-                  <span className="small muted crate-shop-foot">Not set up yet: run STAP18 in Supabase.</span>
-                ) : (
-                  // Keuze, uitleg en knop onderaan; de knop als laatste, zodat de knoppen op één lijn staan.
-                  <div className="crate-shop-foot">
-                    {kind === 'set' && (
-                      <label className="crate-pack-choice">
-                        <span className="visually-hidden">Set</span>
-                        <select value={packSet} onChange={(e) => setPackSet(e.target.value)} disabled={setChoices.length === 0}>
-                          {setChoices.length === 0 && <option value="">Loading sets…</option>}
-                          {setChoices.map((s) => (
-                            <option key={s.id} value={s.id}>
-                              {s.name}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    )}
-                    {kind === 'set' && chosenSet && (
+              <strong className="crate-shop-title">{p.name}</strong>
+              <span className="muted small crate-shop-text">{p.contents}</span>
+              <div className="crate-shop-choice">
+                {cost === null && <span className="small muted">Not set up yet: run STAP18 in Supabase.</span>}
+                {cost !== null && kind === 'set' && (
+                  <>
+                    <label className="crate-pack-choice">
+                      <span className="visually-hidden">Set</span>
+                      <select value={packSet} onChange={(e) => setPackSet(e.target.value)} disabled={setChoices.length === 0}>
+                        {setChoices.length === 0 && <option value="">Loading sets…</option>}
+                        {setChoices.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    {chosenSet && (
                       <span className="small muted">
-                        You have {chosenSetHave} of {chosenSet.official}
-                        {rules.crateSet ? ` · +${rules.crateSet} when complete` : ''}
+                        {chosenSetHave}/{chosenSet.official} collected{rules.crateSet ? ` · +${rules.crateSet} when complete` : ''}
                       </span>
                     )}
-                    {kind === 'type' && (
-                      <label className="crate-pack-choice">
-                        <span className="visually-hidden">Type</span>
-                        <select value={packType} onChange={(e) => isEnergyType(e.target.value) && setPackType(e.target.value)}>
-                          {ENERGY_TYPES.map((t) => (
-                            <option key={t} value={t}>
-                              {t}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    )}
-                    {!ok && points !== null && points < cost && !free && (
-                      <span className="small muted">You need {(cost - points).toLocaleString('en-IE')} more points.</span>
-                    )}
-                    <button type="button" className="primary" onClick={() => void openPack(kind)} disabled={busy || !ok || opening !== null}>
-                      {busy ? 'Opening…' : free ? 'Open free daily pack' : `Open (${cost.toLocaleString('en-IE')} points)`}
-                    </button>
-                  </div>
+                  </>
+                )}
+                {cost !== null && kind === 'type' && (
+                  <label className="crate-pack-choice">
+                    <span className="visually-hidden">Type</span>
+                    <select value={packType} onChange={(e) => isEnergyType(e.target.value) && setPackType(e.target.value)}>
+                      {ENERGY_TYPES.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 )}
               </div>
+              <span className="small muted crate-shop-note">
+                {cost !== null && !ok && points !== null && points < cost && !free ? `You need ${(cost - points).toLocaleString('en-IE')} more points.` : ''}
+              </span>
+              {cost !== null && (
+                <button type="button" className="primary crate-shop-open" onClick={() => void openPack(kind)} disabled={busy || !ok || opening !== null}>
+                  {busy ? 'Opening…' : free ? 'Open free daily pack' : `Open (${cost.toLocaleString('en-IE')} points)`}
+                </button>
+              )}
             </li>
           )
         })}
@@ -383,36 +406,16 @@ export function CratePage(): JSX.Element {
           )}
           {cards && cards.length > 0 && (
             <div className="segmented" role="group" aria-label="View">
-              <button type="button" aria-pressed={view === 'cards'} onClick={() => setView('cards')}>
-                Cards
-              </button>
               <button type="button" aria-pressed={view === 'overview'} onClick={() => setView('overview')}>
                 Overview
+              </button>
+              <button type="button" aria-pressed={view === 'cards'} onClick={() => setView('cards')}>
+                Cards
               </button>
             </div>
           )}
         </div>
-        {extras > 0 && (
-          <div className="crate-trade-all" role="group" aria-label="Trade in duplicates">
-            {confirmAll ? (
-              <>
-                <span>
-                  Trade in {extraCopies} duplicate {extraCopies === 1 ? 'copy' : 'copies'} for {extras} points? You keep one of each card.
-                </span>
-                <button type="button" className="primary small-btn" onClick={() => void tradeInAll()} disabled={busy}>
-                  Trade in
-                </button>
-                <button type="button" className="small-btn" onClick={() => setConfirmAll(false)}>
-                  Cancel
-                </button>
-              </>
-            ) : (
-              <button type="button" className="small-btn" onClick={() => setConfirmAll(true)} disabled={busy}>
-                Trade in all duplicates (+{extras} pts)
-              </button>
-            )}
-          </div>
-        )}
+        {view === 'cards' && tradeAll}
         {view === 'cards' && cards && cards.length > 1 && (
           <FilterPanel
             activeCount={activeFilters}
@@ -471,7 +474,7 @@ export function CratePage(): JSX.Element {
           </FilterPanel>
         )}
         {cards === null && !error && <Loading />}
-        {view === 'overview' && cards && <CrateOverview cards={cards} onOpen={setOpened} tradeFactor={rules.tradeFactor} />}
+        {view === 'overview' && cards && <CrateOverview cards={cards} onOpen={setOpened} tradeFactor={rules.tradeFactor} tradeAll={tradeAll} />}
         {view === 'cards' && cards?.length === 0 && <p className="empty">No virtual cards yet. Open your first pack above.</p>}
         {view === 'cards' && cards && cards.length > 0 && sorted.length === 0 && <p className="empty">No cards match these filters.</p>}
         {view === 'cards' && sorted.length > 0 && (

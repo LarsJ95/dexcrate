@@ -59,12 +59,6 @@
   animation: ball-wobble 700ms ease-in-out;
 }
 
-.crate-shop-info {
-  display: grid;
-  gap: var(--space-2);
-  justify-items: start;
-}
-
 
 .crate-grid .crate-card {
   position: relative;

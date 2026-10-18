@@ -1,9 +1,14 @@
-import { useEffect, useMemo, useState, type JSX } from 'react'
-import { rarityRule } from '../lib/cardTraits'
-import { summarizeCrate, type CrateCard } from '../lib/crate'
+import { useEffect, useMemo, useState, type JSX, type ReactNode } from 'react'
+import { foilStyleFor, rarityRule } from '../lib/cardTraits'
+import { crateSetProgress, summarizeCrate, type CrateCard } from '../lib/crate'
+import { crateSetKey } from '../lib/crateFilters'
 import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
-import { getCardPrice } from '../lib/tcgdex'
+import { getCardPrice, getSetList } from '../lib/tcgdex'
+import { hpLevel } from '../lib/trainer'
+import { CardFace } from './CardFace'
+import { CatalogKeyPicture } from './CatalogCardPicture'
+import { HoloCard } from './HoloCard'
 import { RaritySymbols } from './RaritySymbols'
 
 type Col = 'name' | 'set' | 'rarity' | 'qty' | 'price' | 'value'
@@ -22,10 +27,19 @@ interface Props {
   onOpen: (card: CrateCard) => void
   /** Inruilfactor uit de regels (STAP18: 2). */
   tradeFactor: number
+  /** Knop (met bevestigen) om alle dubbelen in te ruilen; null = geen dubbelen. */
+  tradeAll: ReactNode
 }
 
-/** Overzicht van je Crate: totalen, per zeldzaamheid en een sorteerbare tabel met Cardmarket-prijzen. */
-export function CrateOverview({ cards, onOpen, tradeFactor }: Props): JSX.Element {
+/** Zoveel waardevolste kaarten en sets tonen; de rest via de tabel / "Show all sets". */
+const TOP_CARDS = 6
+const TOP_SETS = 6
+
+/**
+ * Overzicht van je Crate (standaardweergave, rustiger sinds 18-10-2026): één statistiekbalk, je waardevolste kaarten,
+ * setvoortgang (doel van het Set pack), zeldzaamheid als balkjes en de volledige tabel ingeklapt.
+ */
+export function CrateOverview({ cards, onOpen, tradeFactor, tradeAll }: Props): JSX.Element {
   // Prijs per exemplaar; ontbreekt zolang hij laadt, null = geen prijs.
   const [prices, setPrices] = useState<ReadonlyMap<string, number | null>>(new Map())
   const [sort, setSort] = useState<{ col: Col; desc: boolean }>({ col: 'value', desc: true })
@@ -75,75 +89,143 @@ export function CrateOverview({ cards, onOpen, tradeFactor }: Props): JSX.Elemen
     return [...cards].sort((a, b) => dir * cmp[sort.col](a, b) || a.name.localeCompare(b.name, 'en'))
   }, [cards, prices, sort])
 
+  // Officiële grootte per set (voor de setvoortgang); de Engelse setlijst is gedeeld en gecachet.
+  const [official, setOfficial] = useState<ReadonlyMap<string, number>>(new Map())
+  useEffect(() => {
+    let cancelled = false
+    getSetList('en')
+      .then((list) => {
+        if (!cancelled) setOfficial(new Map([...list.values()].flatMap((s) => (s.official ? [[`en/${s.id}`, s.official] as const] : []))))
+      })
+      .catch((err: unknown) => console.warn('Setlijst ophalen mislukt', err))
+    return () => {
+      cancelled = true
+    }
+  }, [])
+  const [allSets, setAllSets] = useState(false)
+
+  const sets = useMemo(() => {
+    const names = new Map<string, string>()
+    for (const c of cards) {
+      const key = crateSetKey(c)
+      if (key && !names.has(key)) names.set(key, c.setName ?? key)
+    }
+    return [...names]
+      .flatMap(([key, name]) => {
+        const total = official.get(key)
+        return total ? [{ key, name, have: crateSetProgress(cards, key, total), total }] : []
+      })
+      .sort((a, b) => b.have / b.total - a.have / a.total || b.have - a.have)
+  }, [cards, official])
+
+  const top = useMemo(
+    () =>
+      [...cards]
+        .filter((c) => (prices.get(c.tcgdexId) ?? null) !== null)
+        .sort((a, b) => (prices.get(b.tcgdexId) ?? 0) - (prices.get(a.tcgdexId) ?? 0))
+        .slice(0, TOP_CARDS),
+    [cards, prices],
+  )
+  const maxRarity = Math.max(1, ...summary.byRarity.map((g) => g.unique))
+
   if (cards.length === 0) return <p className="empty">No virtual cards yet. Open your first pack above.</p>
 
   return (
     <div className="crate-overview">
-      <div className="crate-stats">
-        <div className="panel">
+      <section className="panel crate-ov-stats" aria-label="Your Crate in numbers">
+        <div>
           <span className="stat-label">Cards</span>
           <strong>{summary.unique}</strong>
-          <span className="muted small">{summary.copies} in total</span>
+          <span className="muted small">{summary.copies} copies</span>
         </div>
-        <div className="panel">
+        <div>
           <span className="stat-label">Market value</span>
           <strong>{formatEur(summary.value)}</strong>
-          <span className="muted small">{loaded < cards.length ? `Loading prices ${loaded}/${cards.length}…` : `${summary.priced} of ${summary.unique} cards have a price`}</span>
+          <span className="muted small">{loaded < cards.length ? `Loading prices ${loaded}/${cards.length}…` : `${summary.priced} of ${summary.unique} with a price`}</span>
         </div>
-        <div className="panel">
+        <div>
           <span className="stat-label">Duplicates</span>
-          <strong>{formatEur(summary.duplicateValue)}</strong>
-          <span className="muted small">or {summary.duplicatePoints} points when traded in</span>
+          <strong>{summary.duplicatePoints} pts</strong>
+          <span className="muted small">worth {formatEur(summary.duplicateValue)}</span>
         </div>
-        <div className="panel">
-          <span className="stat-label">Most valuable</span>
-          {summary.top ? (
-            <>
-              <button type="button" className="link-button" onClick={() => summary.top && onOpen(summary.top.card)}>
-                {summary.top.card.name}
-              </button>
-              <span className="muted small">{formatEur(summary.top.value)}</span>
-            </>
-          ) : (
-            <span className="muted small">{loaded < cards.length ? 'Loading…' : 'No prices'}</span>
-          )}
-        </div>
-      </div>
-
-      <section className="panel" aria-labelledby="crate-rarity-title">
-        <h3 id="crate-rarity-title" className="section-title">
-          By rarity
-        </h3>
-        <div className="crate-table-wrap">
-          <table className="crate-table">
-            <thead>
-              <tr>
-                <th scope="col">Rarity</th>
-                <th scope="col" className="num">Cards</th>
-                <th scope="col" className="num">Copies</th>
-                <th scope="col" className="num">Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              {summary.byRarity.map((g) => (
-                <tr key={g.rarity}>
-                  <td>
-                    <RaritySymbols rarity={g.rarity} /> {g.rarity}
-                  </td>
-                  <td className="num">{g.unique}</td>
-                  <td className="num">{g.copies}</td>
-                  <td className="num">{formatEur(g.value)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {tradeAll && <div className="crate-ov-trade">{tradeAll}</div>}
       </section>
 
-      <section className="panel" aria-labelledby="crate-all-title">
-        <h3 id="crate-all-title" className="section-title">
-          All cards
-        </h3>
+      {top.length > 0 && (
+        <section className="crate-ov-section" aria-labelledby="crate-top-title">
+          <h3 id="crate-top-title" className="section-title">
+            Most valuable
+          </h3>
+          <ul className="crate-ov-top">
+            {top.map((c) => (
+              <li key={c.tcgdexId}>
+                <button type="button" className="crate-ov-card" onClick={() => onOpen(c)} aria-label={`${c.name}, ${formatEur(prices.get(c.tcgdexId) ?? 0)}. Show details`}>
+                  <HoloCard foil={foilStyleFor(null, c.rarity)}>
+                    <CatalogKeyPicture cardKey={c.tcgdexId} image={c.image} name={c.name} quality="low" alt="" fallback={<CardFace name={c.name} detail={c.setName} />} />
+                  </HoloCard>
+                </button>
+                <span className="small crate-ov-name">{c.name}</span>
+                <strong className="small">{formatEur(prices.get(c.tcgdexId) ?? 0)}</strong>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <div className="crate-ov-columns">
+        {sets.length > 0 && (
+          <section className="panel crate-ov-section" aria-labelledby="crate-sets-title">
+            <h3 id="crate-sets-title" className="section-title">
+              Sets
+            </h3>
+            <ul className="crate-ov-bars">
+              {(allSets ? sets : sets.slice(0, TOP_SETS)).map((s) => (
+                <li key={s.key}>
+                  <span className="crate-ov-bar-label">{s.name}</span>
+                  <span className="muted small crate-ov-bar-count">
+                    {s.have}/{s.total}
+                  </span>
+                  <span className="meter" aria-hidden="true">
+                    <span className="meter-fill" data-hp={hpLevel(s.have / s.total)} style={{ width: `${(s.have / s.total) * 100}%` }} />
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {sets.length > TOP_SETS && (
+              <button type="button" className="small-btn" onClick={() => setAllSets((v) => !v)}>
+                {allSets ? 'Show fewer sets' : `Show all ${sets.length} sets`}
+              </button>
+            )}
+          </section>
+        )}
+
+        <section className="panel crate-ov-section" aria-labelledby="crate-rarity-title">
+          <h3 id="crate-rarity-title" className="section-title">
+            By rarity
+          </h3>
+          <ul className="crate-ov-bars">
+            {summary.byRarity.map((g) => (
+              <li key={g.rarity}>
+                <span className="crate-ov-bar-label">
+                  <RaritySymbols rarity={g.rarity} /> {g.rarity}
+                </span>
+                <span className="muted small crate-ov-bar-count">
+                  {g.unique} · {formatEur(g.value)}
+                </span>
+                <span className="meter" aria-hidden="true">
+                  <span className="meter-fill" style={{ width: `${(g.unique / maxRarity) * 100}%` }} />
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
+
+      <details className="panel crate-ov-all">
+        <summary>
+          <span className="section-title">All cards</span>
+          <span className="muted small">{cards.length} cards, sortable by price and value</span>
+        </summary>
         <div className="crate-table-wrap">
           <table className="crate-table">
             <thead>
@@ -173,7 +255,7 @@ export function CrateOverview({ cards, onOpen, tradeFactor }: Props): JSX.Elemen
                 return (
                   <tr key={c.tcgdexId}>
                     <td>
-                      <button type="button" className="link-button" onClick={() => onOpen(c)}>
+                      <button type="button" className="crate-table-name" onClick={() => onOpen(c)}>
                         {c.name}
                       </button>
                     </td>
@@ -190,7 +272,7 @@ export function CrateOverview({ cards, onOpen, tradeFactor }: Props): JSX.Elemen
             </tbody>
           </table>
         </div>
-      </section>
+      </details>
     </div>
   )
 }
