@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('./supabase', () => ({ supabase: {} }))
-const { GREAT_SLOT, HIT_SLOT, PACKS, RARE_SLOT, canAfford, packSlots, tradeValue } = await import('./crate')
+const { GREAT_SLOT, HIT_SLOT, OLD_RULES, RARE_SLOT, canAfford, crateSetProgress, packCost, packSlots, setPackSlots, toRules, tradeValue } = await import('./crate')
 
 describe('Crate-pakje', () => {
   it('kansen per vak tellen op tot 1', () => {
@@ -28,16 +28,43 @@ describe('Crate-pakje', () => {
     expect(slots).not.toContain('Common')
     expect(slots.slice(8)).toEqual(['Double rare', 'Double rare'])
   })
-  it('kosten en gratis booster', () => {
-    expect(PACKS.master.cost).toBe(1000)
-    expect(canAfford('booster', 0, true)).toBe(true)
-    expect(canAfford('great', 0, true)).toBe(false)
-    expect(canAfford('great', 300, false)).toBe(true)
+  it('kosten en gratis booster (oude regels, zonder STAP18)', () => {
+    expect(packCost(OLD_RULES, 'master')).toBe(1000)
+    expect(packCost(OLD_RULES, 'set')).toBeNull()
+    expect(canAfford(OLD_RULES, 'booster', 0, true)).toBe(true)
+    expect(canAfford(OLD_RULES, 'great', 0, true)).toBe(false)
+    expect(canAfford(OLD_RULES, 'great', 300, false)).toBe(true)
+    expect(canAfford(OLD_RULES, 'set', 9999, false)).toBe(false)
   })
-  it('inruilwaarde volgens zeldzaamheid', () => {
+  it('regels uit de database (STAP18), kapot antwoord = oude regels', () => {
+    const rules = toRules({ daily: 100, trade_factor: 2, crate_set: 500, packs: { booster: 100, great: 300, master: 1000, set: 200, type: 300 } })
+    expect(rules).toEqual({ daily: 100, tradeFactor: 2, crateSet: 500, packs: { booster: 100, great: 300, master: 1000, set: 200, type: 300 } })
+    expect(canAfford(rules, 'set', 200, false)).toBe(true)
+    expect(toRules(null)).toBe(OLD_RULES)
+    expect(toRules({ packs: { set: -5, booster: 'x' } }).packs).toEqual({})
+  })
+  it('inruilwaarde volgens zeldzaamheid, met factor', () => {
     expect(tradeValue('Hyper rare')).toBe(30)
     expect(tradeValue('Rare Holo')).toBe(5)
     expect(tradeValue('Uncommon')).toBe(3)
     expect(tradeValue(null)).toBe(2)
+    expect(tradeValue('Hyper rare', 2)).toBe(60)
+  })
+  it('set pack: alleen zeldzaamheden die de set heeft', () => {
+    const rarities = ['Common', 'Uncommon', 'Rare', 'Double rare', 'ACE SPEC Rare']
+    const slots = setPackSlots(rarities, () => 0.999)
+    expect(slots).toHaveLength(10)
+    expect(slots.filter((s) => s === 'Common')).toHaveLength(5)
+    expect(slots.filter((s) => s === 'Uncommon')).toHaveLength(3)
+    for (const s of slots.slice(8)) expect(['Rare', 'Double rare', 'ACE SPEC Rare']).toContain(s)
+    expect(setPackSlots(rarities, () => 0.01).slice(8)).toEqual(['Rare', 'Rare'])
+    // Set zonder uncommons (bv. 30th Celebration): die vakken worden common, niet rare.
+    expect(setPackSlots(['Common', 'Rare', 'Illustration rare'], () => 0.5).slice(0, 8)).toEqual(Array(8).fill('Common'))
+    // Promoset zonder common/uncommon: elk vak uit wat er is.
+    expect(new Set(setPackSlots(['Promo'], () => 0.5))).toEqual(new Set(['Promo']))
+  })
+  it('voortgang van een set in de Crate: alleen nummers 1..official', () => {
+    const cards = ['en/sv03.5-001', 'en/sv03.5-002', 'en/sv03.5-200', 'en/sv03.5-TG01', 'en/sv03-001'].map((tcgdexId) => ({ tcgdexId }))
+    expect(crateSetProgress(cards, 'en/sv03.5', 165)).toBe(2)
   })
 })

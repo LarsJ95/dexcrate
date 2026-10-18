@@ -20,10 +20,12 @@ const COLS: [Col, string][] = [
 interface Props {
   cards: readonly CrateCard[]
   onOpen: (card: CrateCard) => void
+  /** Inruilfactor uit de regels (STAP18: 2). */
+  tradeFactor: number
 }
 
 /** Overzicht van je Crate: totalen, per zeldzaamheid en een sorteerbare tabel met Cardmarket-prijzen. */
-export function CrateOverview({ cards, onOpen }: Props): JSX.Element {
+export function CrateOverview({ cards, onOpen, tradeFactor }: Props): JSX.Element {
   // Prijs per exemplaar; ontbreekt zolang hij laadt, null = geen prijs.
   const [prices, setPrices] = useState<ReadonlyMap<string, number | null>>(new Map())
   const [sort, setSort] = useState<{ col: Col; desc: boolean }>({ col: 'value', desc: true })
@@ -56,7 +58,7 @@ export function CrateOverview({ cards, onOpen }: Props): JSX.Element {
     }
   }, [ids])
 
-  const summary = useMemo(() => summarizeCrate(cards, (id) => prices.get(id)), [cards, prices])
+  const summary = useMemo(() => summarizeCrate(cards, (id) => prices.get(id), tradeFactor), [cards, prices, tradeFactor])
   const loaded = cards.filter((c) => prices.has(c.tcgdexId)).length
 
   const rows = useMemo(() => {
