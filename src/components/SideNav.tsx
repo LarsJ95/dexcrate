@@ -1,6 +1,5 @@
-import { useEffect, useState, type JSX } from 'react'
+import type { JSX } from 'react'
 import type { NavCounts } from '../lib/navCounts'
-import { RECENT_SETS_EVENT, readRecentSets, recentSetHref, type RecentSet } from '../lib/recentSets'
 import type { Route } from '../lib/routes'
 import { SCAN_ITEM, SIDE_GROUPS, type NavItem } from './nav'
 
@@ -24,30 +23,6 @@ export function NavBadge({ kind, counts }: { kind: keyof NavCounts | undefined; 
   )
 }
 
-function useHash(): string {
-  const [hash, setHash] = useState(() => window.location.hash)
-  useEffect(() => {
-    const on = (): void => setHash(window.location.hash)
-    window.addEventListener('hashchange', on)
-    return () => window.removeEventListener('hashchange', on)
-  }, [])
-  return hash
-}
-
-function useRecentSets(): RecentSet[] {
-  const [sets, setSets] = useState(readRecentSets)
-  useEffect(() => {
-    const on = (): void => setSets(readRecentSets())
-    window.addEventListener(RECENT_SETS_EVENT, on)
-    window.addEventListener('storage', on)
-    return () => {
-      window.removeEventListener(RECENT_SETS_EVENT, on)
-      window.removeEventListener('storage', on)
-    }
-  }, [])
-  return sets
-}
-
 interface Props {
   route: Route
   counts: NavCounts
@@ -55,17 +30,12 @@ interface Props {
   collapsed: boolean
 }
 
-/** Zijbalk: Scan als hoofdknop, daaronder de pagina's in groepen met kopje; onder Sets je laatste drie sets. */
+/** Zijbalk: Scan als hoofdknop, daaronder de pagina's in groepen met kopje. */
 export function SideNav({ route, counts, collapsed }: Props): JSX.Element {
-  const hash = useHash()
-  const recent = useRecentSets()
-  // Open set staat in de recente sets: die regel is "de pagina", Sets zelf licht dan zachter op.
-  const inRecentSet = route === 'sets' && !collapsed && recent.some((s) => recentSetHref(s) === hash)
-
   const link = (item: NavItem): JSX.Element => (
     <a
       href={`#/${item.route}`}
-      aria-current={route === item.route ? (item.route === 'sets' && inRecentSet ? 'true' : 'page') : undefined}
+      aria-current={route === item.route ? 'page' : undefined}
       title={collapsed ? item.label : item.hint}
     >
       <item.Icon />
@@ -87,23 +57,7 @@ export function SideNav({ route, counts, collapsed }: Props): JSX.Element {
           </h2>
           <ul>
             {group.items.map((item) => (
-              <li key={item.route}>
-                {link(item)}
-                {item.route === 'sets' && !collapsed && recent.length > 0 && (
-                  <ul className="side-sub" aria-label="Recent sets">
-                    {recent.map((s) => {
-                      const href = recentSetHref(s)
-                      return (
-                        <li key={`${s.lang}/${s.setId}`}>
-                          <a href={href} aria-current={hash === href ? 'page' : undefined} title={s.name}>
-                            {s.name}
-                          </a>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
-              </li>
+              <li key={item.route}>{link(item)}</li>
             ))}
           </ul>
         </section>
