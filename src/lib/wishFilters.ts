@@ -1,11 +1,14 @@
 import { RARITY_FILTERS, SUFFIX_FILTERS, isEnergyType, type EnergyType } from './cardTraits'
 import { matchesCatalog, type CatalogTraits } from './collectionFilters'
+import { matchesWords } from './search'
 import { formatEur } from './stats'
 import { setOfKey } from './tcgdex'
 import { LANGUAGE_LABELS, VARIANT_LABELS, type CardLanguage, type Variant } from './types'
 
 /** Filters op de wishlist; ook de inhoud van een slimme lijst. '' / null = geen filter. */
 export interface WishFilters {
+  /** Naam bevat (bv. "pikachu"); elk woord moet voorkomen. */
+  name: string
   variant: Variant | ''
   language: CardLanguage | ''
   rarity: string
@@ -23,6 +26,7 @@ export interface WishFilters {
 }
 
 export const NO_WISH_FILTERS: WishFilters = {
+  name: '',
   variant: '',
   language: '',
   rarity: '',
@@ -38,7 +42,7 @@ export const NO_WISH_FILTERS: WishFilters = {
 
 /** Aantal actieve filters (zonder "Show found", dat is een weergave-keuze). */
 export function activeWishFilterCount(f: WishFilters): number {
-  return [f.variant, f.language, f.rarity, f.type, f.suffix, f.minPrice !== null, f.maxPrice !== null, f.underMax, f.priority !== null, f.set.trim()].filter(Boolean)
+  return [f.name.trim(), f.variant, f.language, f.rarity, f.type, f.suffix, f.minPrice !== null, f.maxPrice !== null, f.underMax, f.priority !== null, f.set.trim()].filter(Boolean)
     .length
 }
 
@@ -49,6 +53,7 @@ export const needsWishCatalog = (f: WishFilters): boolean => Boolean(f.rarity ||
 export const needsWishPrices = (f: WishFilters): boolean => f.minPrice !== null || f.maxPrice !== null || f.underMax
 
 export interface WishRow {
+  name: string
   variant: Variant | null
   language: CardLanguage | null
   set_code: string | null
@@ -73,6 +78,7 @@ function inSet(item: WishRow, set: string): boolean {
 
 export function matchesWishFilters(item: WishRow, f: WishFilters, ctx: WishContext): boolean {
   if (!f.showFound && ctx.found) return false
+  if (f.name.trim() && !matchesWords([item.name], f.name)) return false
   if (f.variant && item.variant !== f.variant) return false
   if (f.language && item.language !== f.language) return false
   if (f.priority !== null && item.priority !== f.priority) return false
@@ -104,6 +110,7 @@ export function parseWishFilters(v: unknown): WishFilters {
   const suffix = str(v.suffix)
   const p = v.priority
   return {
+    name: str(v.name).trim().slice(0, 40),
     variant: Object.hasOwn(VARIANT_LABELS, variant) ? (variant as Variant) : '',
     language: Object.hasOwn(LANGUAGE_LABELS, language) ? (language as CardLanguage) : '',
     rarity: (RARITY_FILTERS as readonly string[]).includes(rarity) ? rarity : '',
@@ -128,6 +135,7 @@ const PRIORITY_NAMES = { 1: 'High priority', 2: 'Normal priority', 3: 'Low prior
 /** Leesbare samenvatting van de filters, bv. "Fire, market €10.00 or less". */
 export function describeWishFilters(f: WishFilters): string {
   const parts = [
+    f.name.trim() && `name “${f.name.trim()}”`,
     f.type,
     f.rarity,
     f.suffix && `${f.suffix} cards`,

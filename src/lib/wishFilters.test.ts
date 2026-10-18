@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { NO_WISH_FILTERS, activeWishFilterCount, matchesWishFilters, parseWishFilters, sameWishFilters, type WishRow } from './wishFilters'
 
-const item: WishRow = { variant: 'holo', language: 'en', set_code: 'SCR', priority: 1, max_price: 10, tcgdex_id: 'en/sv07-148' }
+const item: WishRow = { name: 'Pikachu ex', variant: 'holo', language: 'en', set_code: 'SCR', priority: 1, max_price: 10, tcgdex_id: 'en/sv07-148' }
 const ctx = { found: false, market: 7.5, info: { illustrator: null, rarity: 'Illustration rare', types: ['Water' as const], suffix: null } }
 
 describe('wishlist-filters', () => {
@@ -26,6 +26,15 @@ describe('wishlist-filters', () => {
     expect(matchesWishFilters({ ...item, tcgdex_id: null }, { ...NO_WISH_FILTERS, type: 'Water' }, ctx)).toBe(false)
     expect(matchesWishFilters(item, NO_WISH_FILTERS, { ...ctx, found: true })).toBe(false)
     expect(matchesWishFilters(item, { ...NO_WISH_FILTERS, showFound: true }, { ...ctx, found: true })).toBe(true)
+  })
+
+  it('naam bevat (hoofdletterongevoelig, elk woord)', () => {
+    expect(matchesWishFilters(item, { ...NO_WISH_FILTERS, name: 'pikachu' }, ctx)).toBe(true)
+    expect(matchesWishFilters(item, { ...NO_WISH_FILTERS, name: ' PIKA ex ' }, ctx)).toBe(true)
+    expect(matchesWishFilters(item, { ...NO_WISH_FILTERS, name: 'raichu' }, ctx)).toBe(false)
+    expect(activeWishFilterCount({ ...NO_WISH_FILTERS, name: 'pikachu' })).toBe(1)
+    expect(activeWishFilterCount({ ...NO_WISH_FILTERS, name: '  ' })).toBe(0)
+    expect(parseWishFilters({ name: ` ${'x'.repeat(60)}` }).name).toHaveLength(40)
   })
 
   it('inlezen uit de database: rommel valt terug op geen filter', () => {
