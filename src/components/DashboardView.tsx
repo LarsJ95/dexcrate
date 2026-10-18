@@ -228,7 +228,7 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
             )}
           </div>
         )}
-        {series && series.length >= 2 && <LineChart points={series} label="Value history" valueLabel="Value" />}
+        {series && series.length >= 2 && <LineChart points={series} label="Value history" valueLabel="Value" height={130} />}
       </div>
 
       {/* Eerst het (compacte) overzicht van wat je hebt, daarna je duurste kaarten (volgorde op verzoek 18-10-2026). */}
@@ -255,7 +255,7 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
 
       <h2 className="section-title">Sales</h2>
 
-      <div className="stat-row">
+      <div className="stat-row is-compact">
         <a className="stat" href="#/collection">
           <span className="stat-label">Net (sold − bought)</span>
           <span className={`stat-value${stats.netComplete ? (stats.net >= 0 ? ' up' : ' down') : ''}`}>{signedEur(stats.net)}</span>
@@ -273,7 +273,7 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
         <Tile label="Bought" bucket={stats.bought} unit={countLabel(stats.bought.count, 'item', 'items')} />
       </div>
 
-      <div className="split-panels">
+      <div className="split-panels is-compact">
         <div className="panel">
           <div className="meter-head">
             <span className="stat-label" id="ratio-label">
@@ -310,7 +310,7 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
         )}
       </div>
 
-      <dl className="averages">
+      <dl className="averages is-compact">
         <div>
           <dt>Avg. sale price</dt>
           <dd>{formatEur(stats.avgSold)}</dd>

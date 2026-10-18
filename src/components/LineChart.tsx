@@ -8,7 +8,8 @@ export interface Point {
 
 /** Startbreedte; daarna de echte breedte van het vak, zodat tekst niet mee-schaalt. */
 const DEFAULT_W = 600
-const H = 170
+/** Standaardhoogte; Overview gebruikt een lagere grafiek (alles in één oogopslag). */
+const DEFAULT_H = 170
 const PAD = { top: 12, right: 12, bottom: 28, left: 64 }
 
 const dateFmt = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' })
@@ -20,11 +21,15 @@ export function LineChart({
   points,
   label,
   valueLabel = 'Trend price',
+  height = DEFAULT_H,
 }: {
   points: Point[]
   label: string
   valueLabel?: string
+  /** Hoogte in px (de breedte volgt het vak). */
+  height?: number
 }): JSX.Element {
+  const H = height
   const [hover, setHover] = useState<number | null>(null)
   const gradientId = useId()
   const boxRef = useRef<HTMLDivElement>(null)
@@ -56,7 +61,7 @@ export function LineChart({
     const bottom = (H - PAD.bottom).toFixed(1)
     const area = `${path}L${x(points.length - 1).toFixed(1)},${bottom}L${x(0).toFixed(1)},${bottom}Z`
     return { min, max, x, y, path, area }
-  }, [points, W])
+  }, [points, W, H])
 
   function onMove(e: PointerEvent<SVGRectElement>): void {
     const rect = e.currentTarget.ownerSVGElement?.getBoundingClientRect()
