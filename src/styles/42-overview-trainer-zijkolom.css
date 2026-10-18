@@ -34,11 +34,11 @@ a.mover:hover {
   background: var(--surface-2);
 }
 
-/* Breed scherm (vanaf 2200 px): vaste trainer-kolom links en de hoofdkolom ernaast, samen breder dan de gewone pagina. */
+/* Breed scherm (vanaf 2200 px): hoofdkolom links, vaste trainer-kolom rechts (omgedraaid op verzoek 18-10-2026). */
 @media (min-width: 2200px) {
   .page.dashboard {
     max-width: 2080px;
-    grid-template-columns: 420px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) 420px;
     column-gap: var(--space-6);
     align-items: start;
   }
@@ -46,7 +46,7 @@ a.mover:hover {
   .dash-main {
     display: grid;
     gap: var(--gap-section);
-    grid-column: 2;
+    grid-column: 1;
     grid-row: 1;
     min-width: 0;
   }
@@ -58,7 +58,7 @@ a.mover:hover {
   }
 
   .dash-rail {
-    grid-column: 1;
+    grid-column: 2;
     grid-row: 1;
     grid-template-columns: 1fr;
     position: sticky;
@@ -72,13 +72,58 @@ a.mover:hover {
 @media (min-width: 2800px) {
   .page.dashboard {
     max-width: 3200px;
-    grid-template-columns: 860px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) 440px;
   }
 
-  /* Trainer-kolom in twee kolommen, zodat hij net zo kort is als de hoofdkolom. */
+  /* Trainer-kolom rechts en kleiner (op verzoek 18-10-2026): compactere trainer card en Pokédex,
+     "Recently added" één rij, zodat de kolom niet hoger is dan de hoofdkolom. */
   .dash-rail {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: start;
+    gap: var(--space-3);
+  }
+
+  .dash-rail .panel {
+    padding: var(--space-3);
+    gap: var(--space-2);
+  }
+
+  .dash-rail .trainer-stats div {
+    gap: 0;
+    padding: var(--space-1) var(--space-2);
+  }
+
+  .dash-rail .trainer-stats dd {
+    font-size: 1rem;
+  }
+
+  .dash-rail .badge-row {
+    padding: var(--space-1) var(--space-2);
+  }
+
+  .dash-rail .badge-icon {
+    max-width: 28px;
+  }
+
+  .dash-rail .dex-lens {
+    width: 24px;
+    height: 24px;
+    border-width: 2px;
+  }
+
+  .dash-rail .dex-screen {
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .dash-rail .dex-gen-bar {
+    height: 32px;
+  }
+
+  .dash-rail .dex-hint {
+    display: none;
+  }
+
+  .dash-rail .recent-cards li:nth-child(n + 5) {
+    display: none;
   }
 
   .dash-main {
@@ -114,6 +159,8 @@ a.mover:hover {
     grid-column: 1;
     grid-row: 2;
     align-self: stretch;
+    /* Even hoog als de spotlight, maar de inhoud bovenaan (niet over de hoogte uitgesmeerd). */
+    align-content: start;
   }
 
   .dash-main > .spotlight {
