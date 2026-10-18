@@ -4,6 +4,7 @@ import type { CardLanguage, Variant } from './types'
 import { parseCardGame, type CardGame } from './cardGame'
 import { parseTcgplayer, type TcgplayerPrice } from './valuation'
 import { parseDexId, parseRarity, parseSuffix, parseTypes, type EnergyType } from './cardTraits'
+import { isLocalKey, localCardInfo, localSet, localSetIdForAbbr, localSetSummaries, searchLocal } from './localCatalog'
 
 /** Talen met eigen sets/nummering in TCGdex. */
 export const LANGS = ['en', 'ja', 'zh-cn', 'zh-tw', 'ko'] as const
@@ -156,6 +157,9 @@ export function stripLangTag(name: string): string {
 
 const fetchSet = memo(async (k: string): Promise<{ summary: SetSummary; cards: SetCard[] } | null> => {
   const [lang, setId] = k.split('|')
+  // Sets die TCGdex niet kent (Pokémon TCG Classic): uit de eigen catalogus.
+  const local = lang === 'en' ? localSet(setId) : null
+  if (local) return local
   const data = await getJson(`${API}/${lang}/sets/${encodeURIComponent(setId)}`)
   if (!isRecord(data) || typeof data.id !== 'string') return null
   const cards = parseCards(data.cards)
@@ -185,6 +189,8 @@ export function getSet(lang: Lang, setId: string): Promise<{ summary: SetSummary
 const fetchSetId = memo(async (k: string): Promise<string | null> => {
   const [lang, code] = k.split('|')
   if (lang !== 'en') return (await getSet(lang as Lang, code))?.summary.id ?? null
+  const local = localSetIdForAbbr(code)
+  if (local) return local
   const found = await getJson(`${API}/en/sets?abbreviation.official=eq:${encodeURIComponent(code)}`)
   if (!Array.isArray(found) || found.length !== 1 || !isRecord(found[0]) || typeof found[0].id !== 'string') return null
   return found[0].id
@@ -207,6 +213,7 @@ const fetchSetList = memo(async (lang: string): Promise<Map<string, SetSummary>>
       }
     }
   }
+  if (lang === 'en') for (const s of localSetSummaries()) map.set(s.id, s)
   return map
 })
 
@@ -265,7 +272,9 @@ export async function searchCards(lang: Lang, name: string, filters: CardQueryFi
   const [cards, digital] = await Promise.all([getJson(`${API}/${lang}/cards?${cardQuery(lang, q, filters)}`).then(parseCards), digitalSetIds(lang)])
   // Buiten het Engels geen achtervoegsel-veld: dan op de naam ("リザードンex").
   const suffix = lang !== 'en' && filters.suffix ? filters.suffix : null
-  return cards.filter((c) => !digital.has(setIdOf(c)) && (!suffix || c.name.endsWith(suffix)))
+  // Eigen catalogus (Engels) erbij, alleen op naam: zeldzaamheid en achtervoegsel kent hij niet.
+  const local = lang === 'en' && !filters.rarity && !filters.suffix ? searchLocal(q, filters.type) : []
+  return [...cards.filter((c) => !digital.has(setIdOf(c)) && (!suffix || c.name.endsWith(suffix))), ...local]
 }
 
 export function matchNumber(cards: readonly SetCard[], number: string): SetCard | undefined {
@@ -360,7 +369,8 @@ export async function getSetAbbr(lang: Lang, setId: string): Promise<string | nu
 /** Kaartdetails uit de API; één request per kaart per sessie, gedeeld door info en prijs. */
 const fetchCardRaw = memo(async (key: string): Promise<Record<string, unknown> | null> => {
   const parts = splitKey(key)
-  if (!parts) return null
+  // Eigen catalogus: TCGdex kent de kaart niet (en heeft dus ook geen prijs).
+  if (!parts || isLocalKey(key)) return null
   const data = await getJson(`${API}/${parts.lang}/cards/${encodeURIComponent(parts.cardId)}`)
   return isRecord(data) ? data : null
 })
@@ -457,6 +467,8 @@ export function parseVariants(data: Record<string, unknown>): Variant[] | null {
 }
 
 const fetchCardInfo = memo(async (key: string): Promise<CardInfo | null> => {
+  const local = localCardInfo(key)
+  if (local) return local
   const cached = readCache<CardInfo>(INFO_PREFIX, INFO_TTL_MS, key)
   if (cached) return cached
   const parts = splitKey(key)
