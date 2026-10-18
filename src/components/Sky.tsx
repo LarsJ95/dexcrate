@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type CSSProperties, type JSX } from 'react'
-import { celebrateSecret } from '../lib/celebrate'
 import { makeWish } from '../lib/crate'
 import { energyColor, favouriteType } from '../lib/energy'
 import { burst } from '../lib/fx'
@@ -8,8 +7,6 @@ import { showMoment } from '../lib/moments'
 import { useMotion } from '../lib/motion'
 import { ownedDexIds } from '../lib/runner'
 import {
-  ROCKET_GOAL,
-  addRocketBlast,
   between,
   fallingHead,
   hitsFallingStar,
@@ -27,7 +24,7 @@ import {
 
 /**
  * Levende achtergrond (DESIGN.md §9). Alles staat achter de panelen en kaarten; tikken op een vallende ster
- * of de Team Rocket-ballon werkt op lege plekken (de klik wordt op positie herkend, er ligt niets over de inhoud).
+ * werkt op lege plekken (de klik wordt op positie herkend, er ligt niets over de inhoud).
  * Volgt de instelling Animations: uit = alleen een stille sterrenhemel.
  */
 
@@ -36,14 +33,6 @@ const ARTWORK = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprite
 /** Hier tik je op iets anders dan de lucht. */
 const NOT_SKY =
   'button, a, input, select, textarea, label, summary, dialog, [role="dialog"], [role="button"], .panel, .tile, .stat, .catalog-hit, .set-row, .scan-row, .sidebar, .tab-bar, .mobile-bar, .notice, .camera, .hero'
-
-interface Rocket {
-  id: number
-  fromLeft: boolean
-  top: number
-  /** Bij wegschieten: vaste plek waar hij was. */
-  blastAt: { x: number; y: number } | null
-}
 
 interface Flyer {
   id: number
@@ -67,33 +56,6 @@ interface Note {
 }
 
 let seq = 0
-
-function RocketBalloon(): JSX.Element {
-  return (
-    <svg viewBox="0 0 120 170" width="96" height="136" aria-hidden="true">
-      {/* Meowth-ballon */}
-      <path d="M22 38 L30 6 L48 26 Z" fill="#e9d8b4" stroke="#6b5233" strokeWidth="2" />
-      <path d="M98 38 L90 6 L72 26 Z" fill="#e9d8b4" stroke="#6b5233" strokeWidth="2" />
-      <path d="M28 32 L32 14 L42 26 Z" fill="#3b2a24" />
-      <path d="M92 32 L88 14 L78 26 Z" fill="#3b2a24" />
-      <ellipse cx="60" cy="58" rx="46" ry="42" fill="#f1e3c3" stroke="#6b5233" strokeWidth="2" />
-      <circle cx="60" cy="30" r="8" fill="#f4c542" stroke="#9a7417" strokeWidth="2" />
-      <ellipse cx="44" cy="56" rx="7" ry="10" fill="#fff" stroke="#3b2a24" strokeWidth="2" />
-      <ellipse cx="76" cy="56" rx="7" ry="10" fill="#fff" stroke="#3b2a24" strokeWidth="2" />
-      <ellipse cx="45" cy="58" rx="2.5" ry="6" fill="#3b2a24" />
-      <ellipse cx="75" cy="58" rx="2.5" ry="6" fill="#3b2a24" />
-      <path d="M48 76 Q60 84 72 76" fill="none" stroke="#3b2a24" strokeWidth="2.5" strokeLinecap="round" />
-      <path d="M20 66 L40 70 M18 74 L40 74 M100 66 L80 70 M102 74 L80 74" stroke="#3b2a24" strokeWidth="1.5" />
-      {/* Touwen en mand met de R */}
-      <path d="M30 92 L44 132 M90 92 L76 132 M60 100 L60 132" stroke="#6b5233" strokeWidth="1.5" />
-      <rect x="40" y="130" width="40" height="30" rx="4" fill="#8a5a2b" stroke="#4d3016" strokeWidth="2" />
-      <path d="M40 140 H80 M40 150 H80" stroke="#4d3016" strokeWidth="1" />
-      <text x="60" y="152" textAnchor="middle" fontSize="20" fontWeight="900" fill="#d6303a" fontFamily="sans-serif">
-        R
-      </text>
-    </svg>
-  )
-}
 
 function GengarPeek(): JSX.Element {
   return (
@@ -120,8 +82,6 @@ export function Sky({ theme, night = false }: { theme: 'dark' | 'light'; night?:
   const [phase, setPhase] = useState<SkyPhase>(() => preview?.phase ?? skyPhase(new Date()))
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fallingRef = useRef<FallingStar | null>(null)
-  const rocketRef = useRef<HTMLDivElement>(null)
-  const [rocket, setRocket] = useState<Rocket | null>(null)
   const [flyer, setFlyer] = useState<Flyer | null>(null)
   const [gengar, setGengar] = useState<Gengar | null>(null)
   const [note, setNote] = useState<Note | null>(null)
@@ -244,7 +204,7 @@ export function Sky({ theme, night = false }: { theme: 'dark' | 'light'; night?:
     }
   }, [motion, theme, phase, night])
 
-  // Gebeurtenissen inplannen: vallende ster, Team Rocket, vliegende Pokémon, Gengar ('s nachts).
+  // Gebeurtenissen inplannen: vallende ster, vliegende Pokémon, Gengar ('s nachts).
   useEffect(() => {
     if (!motion) return
     const timers: number[] = []
@@ -260,11 +220,6 @@ export function Sky({ theme, night = false }: { theme: 'dark' | 'light'; night?:
     const slowStar = (): void => {
       fallingRef.current = { x0: window.innerWidth * 0.85, y0: window.innerHeight * 0.02, dx: -window.innerWidth * 0.4, dy: window.innerHeight * 0.08, start: performance.now(), duration: 8000 }
     }
-    const rocketLater = (ms: number): void =>
-      later(ms, () => {
-        if (!document.hidden) setRocket({ id: ++seq, fromLeft: Math.random() < 0.5, top: 6 + Math.random() * 26, blastAt: null })
-        rocketLater(between(240, 420))
-      })
     const flyerLater = (ms: number): void =>
       later(ms, () => {
         if (!document.hidden) setFlyer({ id: ++seq, dexId: pickFlyer(ownedDexIds()), fromLeft: Math.random() < 0.5, top: 12 + Math.random() * 40 })
@@ -281,7 +236,6 @@ export function Sky({ theme, night = false }: { theme: 'dark' | 'light'; night?:
     const kind = preview?.kind
     if (kind === 'star') later(300, slowStar)
     later(between(8, 30), star)
-    rocketLater(kind === 'rocket' ? 300 : between(60, 150))
     flyerLater(kind === 'flyer' ? 300 : between(90, 200))
     gengarLater(kind === 'gengar' ? 300 : between(40, 120))
     return () => {
@@ -315,22 +269,12 @@ export function Sky({ theme, night = false }: { theme: 'dark' | 'light'; night?:
     return () => window.clearTimeout(timer)
   }, [note])
 
-  // Tikken op een lege plek: Team Rocket of de vallende ster geraakt?
+  // Tikken op een lege plek: de vallende ster geraakt?
   useEffect(() => {
     if (!motion) return
     const onClick = (e: MouseEvent): void => {
       if (e.defaultPrevented || !(e.target instanceof Element) || e.target.closest(NOT_SKY)) return
       const { clientX: x, clientY: y } = e
-      const balloon = rocketRef.current?.getBoundingClientRect()
-      if (balloon && x >= balloon.left - 16 && x <= balloon.right + 16 && y >= balloon.top - 16 && y <= balloon.bottom + 16) {
-        setRocket((r) => (r && !r.blastAt ? { ...r, blastAt: { x: balloon.left, y: balloon.top } } : r))
-        const total = addRocketBlast()
-        burst(x, y, { colors: ['#ffffff', 'var(--yellow)', '#d6303a'], count: 26, speed: 7 })
-        buzz([20, 40, 20])
-        setNote({ id: ++seq, text: "Team Rocket's blasting off again!", x, y })
-        if (total === ROCKET_GOAL) celebrateSecret('rocket')
-        return
-      }
       const f = fallingRef.current
       if (f && hitsFallingStar(f, x, y, performance.now())) {
         fallingRef.current = null
@@ -370,21 +314,6 @@ export function Sky({ theme, night = false }: { theme: 'dark' | 'light'; night?:
             onAnimationEnd={() => setFlyer(null)}
             onError={() => setFlyer(null)}
           />
-        )}
-        {motion && rocket && (
-          <div
-            key={rocket.id}
-            ref={rocketRef}
-            className={`sky-rocket${rocket.fromLeft ? ' from-left' : ''}${rocket.blastAt ? ' blast' : ''}`}
-            style={rocket.blastAt ? { left: rocket.blastAt.x, top: rocket.blastAt.y } : { top: `${rocket.top}%` }}
-            onAnimationEnd={(e) => {
-              if (e.target === e.currentTarget) setRocket(null)
-            }}
-          >
-            <span className="sky-rocket-bob">
-              <RocketBalloon />
-            </span>
-          </div>
         )}
       </div>
       {motion && gengar && (

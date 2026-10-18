@@ -1,9 +1,9 @@
-/** Gedeeld door de langsrenner en Pikachu die om een hoekje kijkt (DESIGN.md §9). */
+/** Voor Pikachu die om een hoekje kijkt (DESIGN.md §9). */
 
 /** Iets anders aan de gang (popup, formulier, verborgen tab, al een Pokémon in beeld): dan niet storen. */
 export function busy(): boolean {
   if (document.hidden) return true
-  if (document.querySelector('dialog[open], .sheet[open], .runner, .peek')) return true
+  if (document.querySelector('dialog[open], .sheet[open], .peek')) return true
   const a = document.activeElement
   return a instanceof HTMLInputElement || a instanceof HTMLTextAreaElement || a instanceof HTMLSelectElement
 }

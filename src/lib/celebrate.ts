@@ -1,12 +1,11 @@
 import { rarityRule } from './cardTraits'
 import { crateSetComplete, hasCrate, syncCrate } from './crate'
 import { listCards } from './db'
-import { addSeen, celebrateNewCards, newSince, risenSince, showMoment, type PackCard } from './moments'
+import { celebrateNewCards, newSince, risenSince, showMoment, type PackCard } from './moments'
 import { motionAllowed } from './motion'
 import { englishSpeciesName, isNonLatin } from './names'
 import { achievements, levelFor, xpFor, type ProgressCard } from './progress'
 import { speciesName } from './runner'
-import { rocketBlasts } from './sky'
 import { getCardInfo, getSet, setOfKey, type CardInfo } from './tcgdex'
 import type { Card } from './types'
 
@@ -101,7 +100,7 @@ export async function crateForSet(setKey: string, setName: string): Promise<void
 export function celebrateProgress(cards: readonly ProgressCard[], badges = badgesEarned()): void {
   const { level } = levelFor(xpFor(cards, badges))
   if (risenSince(LEVEL_KEY, level)) showMoment({ kind: 'level', level, trainer: trainerName() })
-  const list = achievements(cards, rocketBlasts())
+  const list = achievements(cards)
   const fresh = newSince(
     ACHIEVEMENTS_KEY,
     list.filter((a) => a.earned).map((a) => a.id),
@@ -110,14 +109,6 @@ export function celebrateProgress(cards: readonly ProgressCard[], badges = badge
     const a = list.find((x) => x.id === id)
     if (a) showMoment({ kind: 'achievement', name: a.name, how: a.how })
   }
-}
-
-/** Geheime prestatie die buiten de collectie om verdiend wordt (bv. Team Rocket): meteen vieren, en niet nog eens. */
-export function celebrateSecret(id: string): void {
-  const a = achievements([], rocketBlasts()).find((x) => x.id === id && x.earned)
-  if (!a) return
-  addSeen(ACHIEVEMENTS_KEY, id)
-  showMoment({ kind: 'achievement', name: a.name, how: a.how })
 }
 
 async function englishName(info: CardInfo): Promise<string> {

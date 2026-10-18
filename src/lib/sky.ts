@@ -1,5 +1,5 @@
 /**
- * Levende achtergrond (DESIGN.md §9): sterrenhemel, hemel volgens de tijd, vallende sterren, Team Rocket,
+ * Levende achtergrond (DESIGN.md §9): sterrenhemel, hemel volgens de tijd, vallende sterren,
  * vliegende Pokémon en Gengar. Dit bestand bevat de pure logica; het tekenen zit in components/Sky.tsx.
  */
 
@@ -99,37 +99,12 @@ export function pickFlyer(owned: Iterable<number>, random: () => number = Math.r
 /** Willekeurige wachttijd in ms tussen min en max (seconden). */
 export const between = (minS: number, maxS: number, random: () => number = Math.random): number => (minS + random() * (maxS - minS)) * 1000
 
-// --- Team Rocket ---
-
-const ROCKET_KEY = 'dexcrate:rocket-blasts'
-export const ROCKET_GOAL = 10
-
-export function rocketBlasts(): number {
-  try {
-    const n = Number.parseInt(localStorage.getItem(ROCKET_KEY) ?? '0', 10)
-    return Number.isFinite(n) && n > 0 ? n : 0
-  } catch {
-    return 0
-  }
-}
-
-/** Team Rocket nog een keer weggestuurd; geeft het nieuwe totaal. */
-export function addRocketBlast(): number {
-  const n = rocketBlasts() + 1
-  try {
-    localStorage.setItem(ROCKET_KEY, String(n))
-  } catch (err) {
-    console.warn('Team Rocket-teller bewaren mislukt', err)
-  }
-  return n
-}
-
 // --- Preview (alleen preview.html) ---
 
-export type SkyEvent = 'star' | 'rocket' | 'flyer' | 'gengar'
+export type SkyEvent = 'star' | 'flyer' | 'gengar'
 let previewEvent: { kind: SkyEvent | null; phase: SkyPhase | null } | null = null
 
-/** preview.html?sky=rocket&phase=night: gebeurtenis direct starten, eventueel met een vaste fase. */
+/** preview.html?sky=flyer&phase=night: gebeurtenis direct starten, eventueel met een vaste fase. */
 export function seedSkyForPreview(kind: SkyEvent | null, phase: SkyPhase | null): void {
   previewEvent = { kind, phase }
 }
