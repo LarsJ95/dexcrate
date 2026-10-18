@@ -3,10 +3,16 @@ import type { GoalProgress } from '../lib/goals'
 import type { Cost, PageSize } from '../lib/setBinder'
 import { SET_SORT_LABELS, type SetSort } from '../lib/setSort'
 import { formatEur } from '../lib/stats'
+import { closeKeyboardOnEnter } from '../lib/keyboard'
+import { IconSearch } from './Icons'
+import { SearchClear } from './SearchClear'
 
 export type BinderShow = 'all' | 'owned' | 'missing' | 'duplicates'
 
 interface BinderToolbarProps {
+  /** Zoeken op naam of nummer binnen de set. */
+  query: string
+  onQuery: (query: string) => void
   show: BinderShow
   onShow: (show: BinderShow) => void
   /** Aantal dubbelen; keuze "Duplicates" alleen als die er zijn (of al gekozen is). */
@@ -18,7 +24,7 @@ interface BinderToolbarProps {
 }
 
 /** Tonen (alles/compleet/ontbrekend), vakken per pagina en sortering van de setbinder. */
-export function BinderToolbar({ show, onShow, duplicates, pageSize, onPageSize, sort, onSort }: BinderToolbarProps): JSX.Element {
+export function BinderToolbar({ query, onQuery, show, onShow, duplicates, pageSize, onPageSize, sort, onSort }: BinderToolbarProps): JSX.Element {
   const options: [BinderShow, string][] = [
     ['all', 'All'],
     ['owned', 'Complete'],
@@ -27,6 +33,19 @@ export function BinderToolbar({ show, onShow, duplicates, pageSize, onPageSize, 
   if (duplicates > 0 || show === 'duplicates') options.push(['duplicates', 'Duplicates'])
   return (
     <div className="filters">
+      <div className="search">
+        <IconSearch size={18} />
+        <input
+          type="search"
+          placeholder="Search this set, e.g. Pikachu or 25"
+          aria-label="Search this set"
+          enterKeyHint="search"
+          value={query}
+          onChange={(e) => onQuery(e.target.value)}
+          onKeyDown={closeKeyboardOnEnter}
+        />
+        <SearchClear value={query} onClear={() => onQuery('')} />
+      </div>
       <div className="segmented" role="group" aria-label="Show">
         {options.map(([key, label]) => (
           <button key={key} type="button" aria-pressed={show === key} onClick={() => onShow(key)}>

@@ -78,6 +78,8 @@ a.stat:hover {
 
 /* Aantikbare tegel als knop (bv. Duplicates op de setpagina): zelfde vorm als de andere tegels. */
 button.stat {
+  /* Knoppen centreren standaard (justify-content); een tegel staat links uitgelijnd zoals de andere. */
+  justify-content: stretch;
   justify-items: start;
   align-content: start;
   text-align: left;

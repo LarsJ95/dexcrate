@@ -24,6 +24,7 @@ import { getCardPrice, getSet, isLang, setOfKey, type SetCard, type SetSummary }
 import { Loading } from '../components/Loading'
 import { COMPLETE_KEY, MAX_NEW, MILESTONE_KEY, PAGE_SIZE_KEY, SEEN_KEY, SPARKLE_COLORS, VARIANT_SHORT, readPageSize, readSeen, remember, stateKey, type Cost, type PageSize } from '../lib/setBinder'
 import { errorText } from '../lib/errors'
+import { matchesWords } from '../lib/search'
 
 interface Props {
   /** "<taal>/<set-id>" uit de URL. */
@@ -46,6 +47,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
   const [data, setData] = useState<Loaded | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [show, setShow] = useState<BinderShow>('all')
+  const [query, setQuery] = useState('')
   const toolbarRef = useRef<HTMLDivElement>(null)
   const [pageSize, setPageSize] = useState<PageSize>(readPageSize)
   const [cost, setCost] = useState<Cost | null>(null)
@@ -205,10 +207,14 @@ export function SetBinderPage({ param }: Props): JSX.Element {
           : show === 'duplicates'
             ? data.cards.filter((c) => (statesByCard.get(c.id) ?? []).some((st) => st.extra > 0))
             : data.cards
+    // Zoeken op naam of nummer ("25" vindt ook #025).
+    const found = query.trim()
+      ? shown.filter((c) => matchesWords([c.name, c.localId, `#${c.localId}`, /^\d+$/.test(c.localId) ? String(Number.parseInt(c.localId, 10)) : null], query))
+      : shown
     // Op waarde of zeldzaamheid pas sorteren als alles binnen is; anders springen kaarten tijdens het laden.
     const ready = isValueSort(sort) ? values !== null && values.done >= values.total : sort === 'rarity' ? raritiesReady : true
-    return sortSetCards(shown, ready ? sort : 'number', { complete, value: values?.prices ?? new Map(), rank: ranks })
-  }, [data, show, statesByCard, sort, values, ranks, raritiesReady])
+    return sortSetCards(found, ready ? sort : 'number', { complete, value: values?.prices ?? new Map(), rank: ranks })
+  }, [data, show, query, statesByCard, sort, values, ranks, raritiesReady])
 
   // Altijd binderpagina's van 6 of 9, ook gesorteerd (dan in de gekozen volgorde).
   const pages = useMemo(() => {
@@ -363,6 +369,8 @@ export function SetBinderPage({ param }: Props): JSX.Element {
 
       <div ref={toolbarRef} className="scroll-target">
         <BinderToolbar
+          query={query}
+          onQuery={setQuery}
           show={show}
           onShow={setShow}
           duplicates={progress.duplicates}
