@@ -1,5 +1,6 @@
 import { useEffect, useRef, type JSX, type ReactNode } from 'react'
 import { useBackToClose } from '../hooks/useBackToClose'
+import { onOwnClose } from '../lib/dialog'
 import { IconClose } from './Icons'
 
 interface Props {
@@ -21,7 +22,7 @@ export function CardZoom({ label, children, onClose }: Props): JSX.Element {
   useBackToClose(() => ref.current?.close())
 
   return (
-    <dialog ref={ref} className="card-zoom" aria-label={label} onClose={onClose} onClick={() => ref.current?.close()}>
+    <dialog ref={ref} className="card-zoom" aria-label={label} onClose={onOwnClose(onClose)} onClick={() => ref.current?.close()}>
       <div className="card-zoom-image">{children}</div>
       <button type="button" className="card-zoom-close icon-btn" aria-label="Close" autoFocus>
         <IconClose />

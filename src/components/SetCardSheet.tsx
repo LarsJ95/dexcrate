@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type JSX, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode } from 'react'
 import { useBackToClose } from '../hooks/useBackToClose'
+import { onOwnClose } from '../lib/dialog'
 import { useCardInfo } from '../hooks/useCardInfo'
 import { useCardPrice } from '../hooks/useCardPrice'
 import { foilStyleFor } from '../lib/cardTraits'
@@ -193,7 +194,7 @@ export function SetCardSheet({
   const image = <CardImage tcgdexId={key} kind="card" name={card.name} detail={`#${card.localId}`} quality="high" />
 
   return (
-    <dialog ref={ref} className={`card-sheet${nav ? ' is-browse' : ''}`} onClose={onClose} onClick={onBackdrop} onKeyDown={onKeyDown} aria-labelledby="set-card-title">
+    <dialog ref={ref} className={`card-sheet${nav ? ' is-browse' : ''}`} onClose={onOwnClose(onClose)} onClick={onBackdrop} onKeyDown={onKeyDown} aria-labelledby="set-card-title">
       {wishInitial && (
         <WishlistDialog
           item={null}

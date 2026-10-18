@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type JSX, type MouseEvent } from 'react'
 import { useBackToClose } from '../hooks/useBackToClose'
+import { onOwnClose } from '../lib/dialog'
 import { EMPTY_CARD, type Card, type CardInput, type CardStatus } from '../lib/types'
 import { CardDetail } from './CardDetail'
 import { CardForm } from './CardForm'
@@ -63,7 +64,7 @@ export function CardDialog({
   const title = card?.name ?? (initial?.name || 'Add card')
 
   return (
-    <dialog ref={ref} className="card-sheet" onClose={onClose} onClick={onBackdrop} aria-labelledby="card-sheet-title">
+    <dialog ref={ref} className="card-sheet" onClose={onOwnClose(onClose)} onClick={onBackdrop} aria-labelledby="card-sheet-title">
       <div className="sheet-body">
         <header className="sheet-head">
           {/* Focus bij openen op de titel, niet op de sluitknop. */}
