@@ -5,7 +5,26 @@ import type { RequirementState } from './goals'
 import { formatEur } from './stats'
 import type { Variant } from './types'
 
-export type PageSize = 6 | 9
+/** Vakjes per binderpagina (idee uit DEX, 18-10-2026): 2×2 t/m 5×5, plus 6 (2 kolommen, fijn op de telefoon). */
+export const PAGE_SIZES = [4, 6, 9, 12, 15, 16, 20, 25] as const
+export type PageSize = (typeof PAGE_SIZES)[number]
+
+/** Kolommen per paginaformaat. */
+export const PAGE_COLUMNS: Record<PageSize, number> = { 4: 2, 6: 2, 9: 3, 12: 4, 15: 5, 16: 4, 20: 5, 25: 5 }
+
+/** "9 (3×3)" */
+export const pageSizeLabel = (size: PageSize): string => `${size} (${PAGE_COLUMNS[size]}×${size / PAGE_COLUMNS[size]})`
+
+/** Eerste pagina overslaan: links begint de map met de lege binnenkant van de kaft, zoals een echt album. */
+export const SKIP_FIRST_KEY = 'dexcrate:binder-skip-first'
+
+export function readSkipFirst(): boolean {
+  try {
+    return localStorage.getItem(SKIP_FIRST_KEY) === '1'
+  } catch {
+    return false
+  }
+}
 
 export interface Cost {
   done: number
@@ -54,8 +73,8 @@ const OLD_PAGE_SIZE_KEY = 'binderline:binder-page-size'
 
 export function readPageSize(): PageSize {
   try {
-    // 6 of 9 per pagina (sinds 17-10-2026; een oude keuze "12" wordt 9).
-    return (localStorage.getItem(PAGE_SIZE_KEY) ?? localStorage.getItem(OLD_PAGE_SIZE_KEY)) === '6' ? 6 : 9
+    const n = Number(localStorage.getItem(PAGE_SIZE_KEY) ?? localStorage.getItem(OLD_PAGE_SIZE_KEY))
+    return PAGE_SIZES.find((s) => s === n) ?? 9
   } catch {
     return 9 // geen opslag: standaard 9-pocket
   }

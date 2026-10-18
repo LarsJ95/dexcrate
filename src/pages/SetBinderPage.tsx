@@ -23,7 +23,24 @@ import { useSetVariants } from '../hooks/useSetVariants'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import { getCardPrice, getSet, isLang, setOfKey, type SetCard, type SetSummary } from '../lib/tcgdex'
 import { Loading } from '../components/Loading'
-import { COMPLETE_KEY, MAX_NEW, MILESTONE_KEY, PAGE_SIZE_KEY, SEEN_KEY, SPARKLE_COLORS, VARIANT_SHORT, readPageSize, readSeen, remember, stateKey, type Cost, type PageSize } from '../lib/setBinder'
+import {
+  COMPLETE_KEY,
+  MAX_NEW,
+  MILESTONE_KEY,
+  PAGE_COLUMNS,
+  PAGE_SIZE_KEY,
+  SEEN_KEY,
+  SKIP_FIRST_KEY,
+  SPARKLE_COLORS,
+  VARIANT_SHORT,
+  readPageSize,
+  readSeen,
+  readSkipFirst,
+  remember,
+  stateKey,
+  type Cost,
+  type PageSize,
+} from '../lib/setBinder'
 import { errorText } from '../lib/errors'
 import { matchesWords } from '../lib/search'
 
@@ -51,6 +68,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
   const [query, setQuery] = useState('')
   const toolbarRef = useRef<HTMLDivElement>(null)
   const [pageSize, setPageSize] = useState<PageSize>(readPageSize)
+  const [skipFirst, setSkipFirst] = useState(readSkipFirst)
   const [cost, setCost] = useState<Cost | null>(null)
   const [openCard, setOpenCard] = useState<SetCard | null>(null)
   // Na het bewerken van een exemplaar opnieuw laden (aantallen, voortgang, dubbelen).
@@ -178,6 +196,25 @@ export function SetBinderPage({ param }: Props): JSX.Element {
     }
   }
 
+  // Passen er twee pagina's naast elkaar? Alleen dan is een lege kaft links zinvol (eerste pagina overslaan).
+  const pagesRef = useRef<HTMLDivElement>(null)
+  const [spread, setSpread] = useState(false)
+  const hasPages = data !== null && data.cards.length > 0
+  useEffect(() => {
+    const el = pagesRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const check = (): void => setSpread(getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length >= 2)
+    check()
+    const ro = new ResizeObserver(check)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [hasPages, pageSize])
+
+  function changeSkipFirst(skip: boolean): void {
+    setSkipFirst(skip)
+    remember(SKIP_FIRST_KEY, skip ? '1' : null)
+  }
+
   /** Kosten om het doel af te maken: per ontbrekend vakje de marktprijs van precies die uitvoering × ontbrekend aantal. */
   async function calculateCost(): Promise<void> {
     if (!progress || !isLang(lang) || cost?.running) return
@@ -226,7 +263,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
     return sortSetCards(found, ready ? sort : 'number', { complete, value: values?.prices ?? new Map(), rank: ranks })
   }, [data, show, query, statesByCard, sort, values, ranks, raritiesReady])
 
-  // Altijd binderpagina's van 6 of 9, ook gesorteerd (dan in de gekozen volgorde).
+  // Altijd binderpagina's van het gekozen formaat, ook gesorteerd (dan in de gekozen volgorde).
   const pages = useMemo(() => {
     const out: SetCard[][] = []
     for (let i = 0; i < visible.length; i += pageSize) out.push(visible.slice(i, i + pageSize))
@@ -396,6 +433,8 @@ export function SetBinderPage({ param }: Props): JSX.Element {
           duplicates={progress.duplicates}
           pageSize={pageSize}
           onPageSize={changePageSize}
+          skipFirst={skipFirst}
+          onSkipFirst={changeSkipFirst}
           sort={sort}
           onSort={setSort}
         />
@@ -458,11 +497,17 @@ export function SetBinderPage({ param }: Props): JSX.Element {
         </div>
       )}
 
-      <div className="binder-pages">
+      <div ref={pagesRef} className="binder-pages" style={{ ['--binder-cols' as string]: PAGE_COLUMNS[pageSize] }}>
+        {skipFirst && spread && pages.length > 0 && (
+          <div className="binder-page binder-cover" aria-hidden="true">
+            <p className="binder-page-label">Inside cover</p>
+            <div className="binder-cover-blank" />
+          </div>
+        )}
         {pages.map((page, i) => (
           <section key={i} className="binder-page" aria-label={`Page ${i + 1}`}>
             <p className="binder-page-label">Page {i + 1}</p>
-            <ul className="binder set-binder" style={{ ['--binder-cols' as string]: pageSize === 6 ? 2 : 3 }}>
+            <ul className="binder set-binder">
               {page.map((c) => (
                 <BinderSlot
                   key={c.id}

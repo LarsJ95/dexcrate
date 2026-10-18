@@ -109,12 +109,29 @@
   border-radius: var(--radius-l);
 }
 
-/* Pagina's naast elkaar zoals een opengeslagen map; ze vullen samen de volle breedte. */
+/* Pagina's naast elkaar zoals een opengeslagen map; ze vullen samen de volle breedte. Bredere pagina's bij meer kolommen. */
 .binder-pages {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, calc(var(--binder-cols, 3) * 150px + 10px)), 1fr));
   gap: var(--space-4);
   align-items: start;
+}
+
+/* Eerste pagina overslaan: lege binnenkant van de kaft links (de pagina toont hem alleen als er twee pagina's naast elkaar passen). */
+.binder-cover {
+  grid-template-rows: auto 1fr;
+  align-self: stretch;
+}
+
+.binder-cover-blank {
+  min-height: 200px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-l);
+  background: color-mix(in oklab, var(--surface) 60%, transparent);
+}
+
+.binder-skip {
+  white-space: nowrap;
 }
 
 .binder-page {
