@@ -193,28 +193,151 @@ button.crate-sheet-image:hover:not(:disabled) {
   }
 }
 
+/* Overzicht (18-10-2026, rustiger): statistiekbalk, waardevolste kaarten, sets en zeldzaamheid als balkjes, tabel ingeklapt. */
 .crate-overview {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-5);
 }
 
-.crate-stats {
+.crate-ov-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
-  gap: var(--space-3);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3) var(--space-4);
 }
 
-.crate-stats .panel {
+.crate-ov-stats > div {
   display: grid;
-  gap: var(--space-1);
+  gap: 2px;
   align-content: start;
   justify-items: start;
 }
 
-.crate-stats strong {
-  font-size: 1.5rem;
+.crate-ov-stats strong {
+  font-size: clamp(1.2rem, 4.5vw, 1.6rem);
   font-weight: 900;
+  font-stretch: var(--stretch-display);
   font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.crate-ov-trade {
+  grid-column: 1 / -1;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.crate-ov-section {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+}
+
+.crate-ov-top {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 100px), 1fr));
+  gap: var(--space-3);
+}
+
+.crate-ov-top li {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+button.crate-ov-card,
+button.crate-ov-card:hover:not(:disabled) {
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: var(--radius-card);
+}
+
+.crate-ov-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 700;
+}
+
+/* Sets en zeldzaamheid naast elkaar op brede schermen. */
+.crate-ov-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.crate-ov-bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.crate-ov-bars li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px var(--space-3);
+  align-items: baseline;
+}
+
+.crate-ov-bars .meter {
+  grid-column: 1 / -1;
+  height: 8px;
+}
+
+.crate-ov-bar-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+
+.crate-ov-bar-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.crate-ov-all > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+  cursor: pointer;
+}
+
+.crate-ov-all[open] > summary {
+  margin-bottom: var(--space-3);
+}
+
+/* Flex haalt het standaard-pijltje weg: zelf tekenen, gedraaid als hij open is. */
+.crate-ov-all > summary::before {
+  content: '▸';
+  color: var(--muted);
+  transition: rotate 150ms ease-out;
+}
+
+.crate-ov-all[open] > summary::before {
+  rotate: 90deg;
+}
+
+button.crate-table-name,
+button.crate-table-name:hover:not(:disabled) {
+  padding: 0;
+  min-height: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+}
+
+button.crate-table-name:hover:not(:disabled) {
+  color: var(--accent-line);
 }
 
 .crate-table-wrap {

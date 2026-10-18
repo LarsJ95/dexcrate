@@ -106,7 +106,8 @@ export function CratePage(): JSX.Element {
   const [sort, setSort] = useStoredChoice<CrateSort>('dexcrate:crate-sort', CRATE_SORTS, 'newest')
   const [query, setQuery] = useState('')
   const [filters, setFilters] = useState<CrateFilters>(NO_CRATE_FILTERS)
-  const [view, setView] = useState<View>('cards')
+  // Overview is de hoofdweergave (keuze gebruiker 18-10-2026).
+  const [view, setView] = useState<View>('overview')
   const [opened, setOpened] = useState<CrateCard | null>(null)
   const [confirmAll, setConfirmAll] = useState(false)
   const [rules, setRules] = useState<CrateRules>(OLD_RULES)
@@ -250,6 +251,30 @@ export function CratePage(): JSX.Element {
   const extras = (cards ?? []).reduce((n, c) => n + (c.quantity - 1) * tradeValue(c.rarity, rules.tradeFactor), 0)
   const extraCopies = (cards ?? []).reduce((n, c) => n + c.quantity - 1, 0)
 
+  // Alle dubbelen inruilen (met bevestigen): in Cards boven de kaarten, in Overview in de statistiekbalk.
+  const tradeAll =
+    extras > 0 ? (
+      <div className="crate-trade-all" role="group" aria-label="Trade in duplicates">
+        {confirmAll ? (
+          <>
+            <span>
+              Trade in {extraCopies} duplicate {extraCopies === 1 ? 'copy' : 'copies'} for {extras} points? You keep one of each card.
+            </span>
+            <button type="button" className="primary small-btn" onClick={() => void tradeInAll()} disabled={busy}>
+              Trade in
+            </button>
+            <button type="button" className="small-btn" onClick={() => setConfirmAll(false)}>
+              Cancel
+            </button>
+          </>
+        ) : (
+          <button type="button" className="small-btn" onClick={() => setConfirmAll(true)} disabled={busy}>
+            Trade in all duplicates (+{extras} pts)
+          </button>
+        )}
+      </div>
+    ) : null
+
   if (enabled === false) {
     return (
       <section className="page">
@@ -381,36 +406,16 @@ export function CratePage(): JSX.Element {
           )}
           {cards && cards.length > 0 && (
             <div className="segmented" role="group" aria-label="View">
-              <button type="button" aria-pressed={view === 'cards'} onClick={() => setView('cards')}>
-                Cards
-              </button>
               <button type="button" aria-pressed={view === 'overview'} onClick={() => setView('overview')}>
                 Overview
+              </button>
+              <button type="button" aria-pressed={view === 'cards'} onClick={() => setView('cards')}>
+                Cards
               </button>
             </div>
           )}
         </div>
-        {extras > 0 && (
-          <div className="crate-trade-all" role="group" aria-label="Trade in duplicates">
-            {confirmAll ? (
-              <>
-                <span>
-                  Trade in {extraCopies} duplicate {extraCopies === 1 ? 'copy' : 'copies'} for {extras} points? You keep one of each card.
-                </span>
-                <button type="button" className="primary small-btn" onClick={() => void tradeInAll()} disabled={busy}>
-                  Trade in
-                </button>
-                <button type="button" className="small-btn" onClick={() => setConfirmAll(false)}>
-                  Cancel
-                </button>
-              </>
-            ) : (
-              <button type="button" className="small-btn" onClick={() => setConfirmAll(true)} disabled={busy}>
-                Trade in all duplicates (+{extras} pts)
-              </button>
-            )}
-          </div>
-        )}
+        {view === 'cards' && tradeAll}
         {view === 'cards' && cards && cards.length > 1 && (
           <FilterPanel
             activeCount={activeFilters}
@@ -469,7 +474,7 @@ export function CratePage(): JSX.Element {
           </FilterPanel>
         )}
         {cards === null && !error && <Loading />}
-        {view === 'overview' && cards && <CrateOverview cards={cards} onOpen={setOpened} tradeFactor={rules.tradeFactor} />}
+        {view === 'overview' && cards && <CrateOverview cards={cards} onOpen={setOpened} tradeFactor={rules.tradeFactor} tradeAll={tradeAll} />}
         {view === 'cards' && cards?.length === 0 && <p className="empty">No virtual cards yet. Open your first pack above.</p>}
         {view === 'cards' && cards && cards.length > 0 && sorted.length === 0 && <p className="empty">No cards match these filters.</p>}
         {view === 'cards' && sorted.length > 0 && (
