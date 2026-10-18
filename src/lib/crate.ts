@@ -35,6 +35,12 @@ export const OLD_RULES: CrateRules = { daily: 50, tradeFactor: 1, crateSet: null
 /** Kosten van een pakje, of null als die soort (nog) niet bestaat. */
 export const packCost = (rules: CrateRules, pack: PackKind): number | null => rules.packs[pack] ?? null
 
+/** Pakjes van goedkoop naar duur; gelijke prijs in de vaste volgorde, nog niet beschikbaar (geen prijs) achteraan. */
+export function packsByCost(rules: CrateRules): PackKind[] {
+  const cost = (k: PackKind): number => packCost(rules, k) ?? Number.POSITIVE_INFINITY
+  return (Object.keys(PACKS) as PackKind[]).sort((a, b) => cost(a) - cost(b))
+}
+
 /** Pakje van de soort is voor dit aantal punten te openen (booster ook gratis). */
 export function canAfford(rules: CrateRules, pack: PackKind, points: number, freePack: boolean): boolean {
   const cost = packCost(rules, pack)

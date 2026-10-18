@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('./supabase', () => ({ supabase: {} }))
-const { GREAT_SLOT, HIT_SLOT, MISSING_FIRST, OLD_RULES, RARE_SLOT, canAfford, crateSetProgress, packCost, packSlots, pickSetCard, setPackSlots, toRules, tradeValue } = await import('./crate')
+const { GREAT_SLOT, HIT_SLOT, MISSING_FIRST, OLD_RULES, RARE_SLOT, canAfford, crateSetProgress, packCost, packSlots, packsByCost, pickSetCard, setPackSlots, toRules, tradeValue } = await import('./crate')
 
 describe('Crate-pakje', () => {
   it('kansen per vak tellen op tot 1', () => {
@@ -77,5 +77,10 @@ describe('Crate-pakje', () => {
     expect(pickSetCard(list, have, (() => { const r = [0.9, 0.1]; return () => r.shift() ?? 0 })())?.id).toBe('s-001')
     // Alles al binnen: gewoon willekeurig.
     expect(pickSetCard(list, new Set(list.map((c) => `en/${c.id}`)), () => 0.1)?.id).toBe('s-001')
+  })
+  it('pakjes van goedkoop naar duur; gelijke prijs in vaste volgorde, zonder prijs achteraan', () => {
+    const rules = toRules({ daily: 150, trade_factor: 2, crate_set: 500, packs: { booster: 100, great: 300, master: 1000, set: 150, type: 300 } })
+    expect(packsByCost(rules)).toEqual(['booster', 'set', 'great', 'type', 'master'])
+    expect(packsByCost(OLD_RULES)).toEqual(['booster', 'great', 'master', 'set', 'type'])
   })
 })

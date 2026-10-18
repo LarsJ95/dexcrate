@@ -25,6 +25,7 @@ import {
   listCrateCards,
   openCratePack,
   packCost,
+  packsByCost,
   syncCrate,
   tradeAllDuplicates,
   tradeCrateCard,
@@ -48,7 +49,6 @@ import { closeKeyboardOnEnter } from '../lib/keyboard'
 import { useStoredChoice } from '../hooks/useStoredChoice'
 
 type View = 'cards' | 'overview'
-const PACK_KINDS = Object.keys(PACKS) as PackKind[]
 
 /** Zo verdien je punten; dagbonus, inruilwaarde en Crate-set volgen de regels uit de database. */
 function earnRows(rules: CrateRules): [string, string][] {
@@ -343,7 +343,7 @@ export function CratePage(): JSX.Element {
 
 
         <ul className="crate-packs" aria-label="Packs">
-        {PACK_KINDS.map((kind) => {
+        {packsByCost(rules).map((kind) => {
           const p = PACKS[kind]
           const cost = packCost(rules, kind)
           const free = kind === 'booster' && freePack
