@@ -1,6 +1,7 @@
 import { rarityMatches, rarityRule, type EnergyType } from './cardTraits'
 import { supabase } from './supabase'
-import { getSet, getSetList, getSetRarities, searchCards, setIdOf, type SetCard } from './tcgdex'
+import { getSet, getSetList, getSetRarities, searchCards, setIdOf, setOfKey, type SetCard } from './tcgdex'
+import type { WishlistInput } from './wishlist'
 
 /**
  * Crate-game (STAP11): Crate points verdienen met je echte collectie en er virtuele pakjes mee openen.
@@ -184,6 +185,27 @@ function baseTradeValue(rarity: string | null): number {
 /** Inruilwaarde per extra exemplaar; `factor` uit de regels (STAP18: 2). */
 export function tradeValue(rarity: string | null, factor = 1): number {
   return baseTradeValue(rarity) * factor
+}
+
+/** Startwaarden voor de wishlist met een Crate-kaart als echte kaart (gekoppeld; setcode = officiële afkorting). */
+export async function crateWishInitial(tcgdexId: string, name: string): Promise<Partial<WishlistInput>> {
+  const ref = setOfKey(tcgdexId)
+  let code: string | null = ref?.setId ?? null
+  if (ref) {
+    try {
+      code = (await getSet(ref.lang, ref.setId))?.summary.abbr ?? ref.setId
+    } catch (err) {
+      console.warn('Setinfo ophalen mislukt', err)
+    }
+  }
+  const localId = ref ? ref.cardId.slice(ref.setId.length + 1) : ''
+  return {
+    tcgdex_id: tcgdexId,
+    name,
+    set_code: code?.slice(0, 20) ?? null,
+    card_number: /^\d+$/.test(localId) ? String(Number.parseInt(localId, 10)) : localId || null,
+    language: ref?.lang === 'en' ? 'en' : null,
+  }
 }
 
 /** Complete set in je Crate (STAP18): punten, één keer per set ("en/sv03.5"). 0 = nog niet compleet of al gekregen. */

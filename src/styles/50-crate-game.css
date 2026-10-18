@@ -65,67 +65,6 @@
   justify-items: start;
 }
 
-.crate-reveal {
-  display: grid;
-  gap: var(--space-3);
-}
-
-.crate-pack {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: var(--space-3);
-}
-
-.crate-pack li {
-  display: grid;
-  gap: var(--space-1);
-  justify-items: center;
-  align-content: start;
-}
-
-button.crate-slot {
-  position: relative;
-  align-self: start;
-  width: 100%;
-  aspect-ratio: 63 / 88;
-  padding: 0;
-  border: 0;
-  background: none;
-  perspective: 900px;
-  animation: pack-in 300ms cubic-bezier(0.3, 1.2, 0.5, 1) both;
-  animation-delay: calc(var(--i, 0) * 50ms);
-}
-
-button.crate-slot:hover:not(:disabled) {
-  background: none;
-}
-
-[data-motion='on'] button.crate-slot:not(.is-open):hover {
-  transform: translateY(-4px);
-}
-
-.crate-flip {
-  position: absolute;
-  inset: 0;
-  transform-style: preserve-3d;
-  transition: transform 450ms cubic-bezier(0.3, 1.4, 0.5, 1);
-}
-
-.crate-slot.is-open .crate-flip {
-  transform: rotateY(180deg);
-}
-
-[data-motion='off'] .crate-flip {
-  transition: none;
-}
-
-.crate-pull-name {
-  text-align: center;
-  font-weight: 700;
-}
 
 .crate-grid .crate-card {
   position: relative;
@@ -166,11 +105,6 @@ button.crate-slot:hover:not(:disabled) {
 }
 
 @media (max-width: 480px) {
-  .crate-pack {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--space-2);
-  }
-
   .crate-shop {
     align-items: flex-start;
   }

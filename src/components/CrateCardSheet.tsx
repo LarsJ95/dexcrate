@@ -1,9 +1,9 @@
 import { useEffect, useState, type JSX } from 'react'
 import { foilStyleFor } from '../lib/cardTraits'
-import { tradeValue, type CrateCard } from '../lib/crate'
+import { crateWishInitial, tradeValue, type CrateCard } from '../lib/crate'
 import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
-import { getCardPrice, getSet, setOfKey, type CardmarketPrice } from '../lib/tcgdex'
+import { getCardPrice, type CardmarketPrice } from '../lib/tcgdex'
 import type { WishlistInput } from '../lib/wishlist'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import { cardLanguageOf } from '../lib/cardmarket'
@@ -62,25 +62,8 @@ export function CrateCardSheet({ card, busy, onTrade, onClose, tradeFactor }: Pr
   const [wishInitial, setWishInitial] = useState<Partial<WishlistInput> | null>(null)
   const [wished, setWished] = useState(false)
 
-  /** Wishlist met deze kaart als echte kaart (Engels, gekoppeld); setcode = officiële afkorting. */
   async function openWish(): Promise<void> {
-    const ref = setOfKey(card.tcgdexId)
-    let code: string | null = ref?.setId ?? null
-    if (ref) {
-      try {
-        code = (await getSet(ref.lang, ref.setId))?.summary.abbr ?? ref.setId
-      } catch (err) {
-        console.warn('Setinfo ophalen mislukt', err)
-      }
-    }
-    const localId = ref ? ref.cardId.slice(ref.setId.length + 1) : ''
-    setWishInitial({
-      tcgdex_id: card.tcgdexId,
-      name: card.name,
-      set_code: code?.slice(0, 20) ?? null,
-      card_number: /^\d+$/.test(localId) ? String(Number.parseInt(localId, 10)) : localId || null,
-      language: ref?.lang === 'en' ? 'en' : null,
-    })
+    setWishInitial(await crateWishInitial(card.tcgdexId, card.name))
   }
   const extra = card.quantity - 1
   const picture = (quality: 'low' | 'high'): JSX.Element => (
