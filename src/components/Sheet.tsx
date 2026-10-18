@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, type JSX, type MouseEvent, type ReactNode } from 'react'
 import { useBackToClose } from '../hooks/useBackToClose'
+import { onOwnClose } from '../lib/dialog'
 import { IconClose } from './Icons'
 
 interface Props {
@@ -25,7 +26,7 @@ export function Sheet({ title, onClose, children }: Props): JSX.Element {
   }
 
   return (
-    <dialog ref={ref} className="card-sheet" onClose={onClose} onClick={onBackdrop} aria-labelledby={titleId}>
+    <dialog ref={ref} className="card-sheet" onClose={onOwnClose(onClose)} onClick={onBackdrop} aria-labelledby={titleId}>
       <div className="sheet-body">
         <header className="sheet-head">
           <h2 id={titleId} tabIndex={-1} autoFocus>
