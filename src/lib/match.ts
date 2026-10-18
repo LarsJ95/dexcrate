@@ -2,6 +2,7 @@ import { isNonLatin, translateName } from './names'
 import type { CardInput } from './types'
 import {
   findExact,
+  getSet,
   getSetList,
   lookupLang,
   resolveSetId,
@@ -21,6 +22,8 @@ export interface Candidate {
   image: string | null
   score: number
   reason: string
+  /** Gekoppeld op set + nummer: TCGdex kent de set, maar heeft (nog) geen kaartenlijst (veel Japanse/Chinese sets). */
+  noCardData?: boolean
 }
 
 export interface MatchQuery {
@@ -93,6 +96,35 @@ export function searchTerms(name: string): string[] {
   return [...new Set(terms.filter((t): t is string => !!t && t.length >= 3))]
 }
 
+/** TCGdex-nummer zoals in zijn kaart-id's: cijfers met drie posities ("16" → "016"), anders ongewijzigd. */
+export function catalogLocalId(number: string): string {
+  const n = number.trim()
+  return /^\d+$/.test(n) ? String(Number.parseInt(n, 10)).padStart(3, '0') : n
+}
+
+/**
+ * Veel Japanse en Chinese sets staan wel in TCGdex, maar zonder kaartenlijst (gecontroleerd 18-10-2026: 68 van
+ * 186 Japanse en 49 van 57 Chinese sets). Dan toch een kandidaat op set + nummer, zodat de kaart bij de set hoort;
+ * foto via Limitless (Japans), geen catalogusprijs. Niet als het gedrukte totaal niet bij de set past.
+ */
+async function setNumberCandidate(lang: Lang, setId: string, q: MatchQuery): Promise<Omit<Candidate, 'setName'> | null> {
+  if (!q.card_number?.trim()) return null
+  const set = await getSet(lang, setId)
+  if (!set || set.cards.length > 0) return null
+  if (q.set_total && set.summary.official && !matchesSetTotal(set.summary.official, q.set_total)) return null
+  const localId = catalogLocalId(q.card_number)
+  return {
+    key: `${lang}/${set.summary.id}-${localId}`,
+    name: stripLangTag(q.name),
+    localId,
+    setId: set.summary.id,
+    image: null,
+    score: 8,
+    reason: 'Set and number; no card data in the catalog for this set',
+    noCardData: true,
+  }
+}
+
 /**
  * Zoekt de meest aannemelijke TCGdex-kaarten voor een regel, ook bij typo's in naam, set of nummer.
  * Volgorde: exacte set+nummer, daarna naam+nummer elders, daarna gelijkende namen.
@@ -115,6 +147,9 @@ export async function findCandidates(q: MatchQuery, lang: Lang): Promise<Candida
       // Buitenlandse namen zijn niet te vergelijken met de Engelse naam uit de Excel.
       const sim = lang === 'en' ? nameSimilarity(stripLangTag(q.name), exact.name) : 1
       add(exact, exact.setId, 4 + sim * 4, sim >= MIN_NAME_SIMILARITY ? 'Set and number match' : 'Set and number match, name differs')
+    } else if (lang !== 'en' && expectedSet) {
+      const loose = await setNumberCandidate(lang, expectedSet, q)
+      if (loose) byKey.set(loose.key, loose)
     }
   }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Candidate } from './match'
 import type { Recognition } from './scanResult'
-import { isAmbiguous, mergeDuplicate, newItem, parseQueue, reviewGroups, scannedTwice, summarize, withMatch, type QueueItem } from './scanQueue'
+import { isAmbiguous, mergeDuplicate, newItem, parseQueue, reviewGroups, scannedTwice, summarize, withMatch, withoutCardData, type QueueItem } from './scanQueue'
 
 const rec = (over: Partial<Recognition> = {}): Recognition => ({
   position: 1,
@@ -87,5 +87,14 @@ describe('scan-wachtrij', () => {
     const g = reviewGroups([tie, clear, holo, normal])
     expect(g.check.map((q) => q.id)).toEqual(['t', 'h', 'n'])
     expect(g.good.map((q) => q.id)).toEqual(['k'])
+  })
+
+  it('alleen op set + nummer gekoppeld (geen kaartdata): nakijken, en blijft zo na herladen', () => {
+    const loose = withMatch(newItem('j', THUMB), rec({ language: 'ja' }), [{ ...cand('ja/S4a-016'), noCardData: true }])
+    expect(withoutCardData(loose)).toBe(true)
+    expect(reviewGroups([loose]).check.map((q) => q.id)).toEqual(['j'])
+    const [restored] = parseQueue(JSON.stringify([loose]))
+    expect(withoutCardData(restored)).toBe(true)
+    expect(withoutCardData(ready('a'))).toBe(false)
   })
 })

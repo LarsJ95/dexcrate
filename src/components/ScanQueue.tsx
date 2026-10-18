@@ -2,7 +2,7 @@ import { useEffect, useState, useSyncExternalStore, type JSX } from 'react'
 import { addedQuietly } from '../lib/celebrate'
 import { insertCards } from '../lib/db'
 import { draftFromScan } from '../lib/scan'
-import { MAX_QTY, isAmbiguous, isCondition, reviewGroups, scannedTwice, summarize, type QueueItem } from '../lib/scanQueue'
+import { MAX_QTY, isAmbiguous, isCondition, reviewGroups, scannedTwice, summarize, withoutCardData, type QueueItem } from '../lib/scanQueue'
 import { canRetry, getFeedback, getQueue, removeItems, retry, subscribe, undoFeedback, updateItem } from '../lib/scanQueueStore'
 import { lookupLang } from '../lib/tcgdex'
 import { CONDITION_LABELS, EMPTY_CARD, LANGUAGE_LABELS, VARIANT_LABELS, type Card, type CardInput, type Condition, type Variant } from '../lib/types'
@@ -207,6 +207,7 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
             </p>
           )}
           {ready && isAmbiguous(q) && <p className="queue-why small">Same name and number in more than one set: pick the right one.</p>}
+          {ready && withoutCardData(q) && <p className="queue-why small">No card data for this set in the catalog: linked on set and number. Check the number.</p>}
           {ready && twice.has(q.id) && <p className="queue-why small">Scanned twice: same card? Remove one, or keep both if you have two.</p>}
           {ready && (
             <div className="queue-fields">
