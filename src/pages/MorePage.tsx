@@ -1,28 +1,36 @@
 import type { JSX } from 'react'
-import { COLLECT_ITEMS, DATA_ITEMS, type NavItem } from '../components/nav'
+import { MORE_GROUPS } from '../components/nav'
+import { NavBadge } from '../components/SideNav'
+import { useNavCounts } from '../hooks/useNavCounts'
 
-const list = (items: NavItem[]): JSX.Element => (
-  <ul className="more-list">
-    {items.map(({ route, label, Icon }) => (
-      <li key={route}>
-        <a className="more-link" href={`#/${route}`}>
-          <Icon />
-          <span>{label}</span>
-        </a>
-      </li>
-    ))}
-  </ul>
-)
-
-/** Mobiel: overige pagina's die niet in de onderbalk passen. */
+/** Mobiel: overige pagina's die niet in de onderbalk passen, in dezelfde groepen als de zijbalk. */
 export function MorePage(): JSX.Element {
+  const counts = useNavCounts('more')
   return (
     <section className="page">
       <h1>More</h1>
       <nav aria-label="More pages" className="more-nav">
-        {list(COLLECT_ITEMS)}
-        <h2 className="section-title">Data and settings</h2>
-        {list(DATA_ITEMS)}
+        {MORE_GROUPS.map((group) => (
+          <section key={group.title} className="more-group" aria-labelledby={`more-${group.title}`}>
+            <h2 className="side-title" id={`more-${group.title}`}>
+              {group.title}
+            </h2>
+            <ul className="more-list">
+              {group.items.map(({ route, label, Icon, hint, badge }) => (
+                <li key={route}>
+                  <a className="more-link" href={`#/${route}`}>
+                    <Icon />
+                    <span className="more-text">
+                      {label}
+                      {hint && <span className="muted small">{hint}</span>}
+                    </span>
+                    <NavBadge kind={badge} counts={counts} />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
       </nav>
     </section>
   )

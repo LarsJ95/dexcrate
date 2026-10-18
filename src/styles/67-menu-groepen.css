@@ -1,0 +1,241 @@
+/* ---------- Menu (18-10-2026): groepen met kopje, Scan als knop, getallen, recente sets, inklappen ---------- */
+.side-nav {
+  gap: var(--space-4);
+}
+
+.side-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+/* Groepskopje: klein en rustig, alleen om te ordenen. */
+.side-title {
+  margin: 0;
+  padding: 0 var(--space-3);
+  font-size: var(--fs-small);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+/* Scan: de hoofdhandeling, als gele knop bovenaan (zoals de camera-knop op de telefoon). */
+.side-nav a.side-scan {
+  justify-content: flex-start;
+  background: var(--yellow);
+  color: var(--on-yellow);
+  font-weight: 800;
+}
+
+.side-nav a.side-scan:hover {
+  background: var(--yellow-hover);
+  color: var(--on-yellow);
+}
+
+.side-nav a.side-scan svg,
+.side-nav a.side-scan[aria-current='page'] svg {
+  color: var(--on-yellow);
+}
+
+.side-nav a.side-scan[aria-current='page'] {
+  background: var(--yellow);
+  color: var(--on-yellow);
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--yellow);
+}
+
+.side-nav a.side-scan::before,
+.side-nav a.side-scan::after {
+  content: none;
+}
+
+/* Sets is actief, maar de open set staat als subregel gemarkeerd. */
+.side-nav a[aria-current='true'] {
+  color: var(--ink);
+}
+
+/* Getal: alleen als er iets te doen is. Staat het pokébal-stipje er ook, dan komt dat erachter. */
+.nav-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  color: var(--ink);
+  font-size: var(--fs-small);
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.side-nav a .nav-badge,
+.more-link .nav-badge {
+  margin-left: auto;
+}
+
+.side-nav a:has(.nav-badge)::after {
+  margin-left: var(--space-2);
+}
+
+/* Recente sets onder Sets. */
+.side-nav ul.side-sub {
+  gap: 0;
+  margin: 2px 0 var(--space-1) calc(var(--space-3) + 20px + var(--space-3));
+  padding-left: var(--space-2);
+  border-left: 1px solid var(--line);
+}
+
+.side-nav .side-sub a {
+  display: block;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.side-nav .side-sub a::before,
+.side-nav .side-sub a::after {
+  content: none;
+}
+
+/* Settings onderaan, naast thema en uitloggen. */
+.side-actions {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+a.icon-link {
+  display: inline-grid;
+  place-items: center;
+  padding: var(--space-2);
+  border-radius: var(--radius-s);
+  color: var(--ink-soft);
+}
+
+a.icon-link:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+a.icon-link[aria-current='page'] {
+  background: var(--surface-2);
+  color: var(--accent-line);
+}
+
+.side-collapse {
+  margin-left: auto;
+}
+
+/* Ingeklapt: alleen iconen; labels en kopjes blijven voor schermlezers. */
+.shell.is-collapsed {
+  --sidebar: 76px;
+}
+
+.shell.is-collapsed .sidebar {
+  padding-inline: var(--space-2);
+}
+
+.shell.is-collapsed .sidebar .brand {
+  justify-content: center;
+  padding: 0;
+}
+
+.shell.is-collapsed .sidebar .brand span,
+.shell.is-collapsed .side-label,
+.shell.is-collapsed .side-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.shell.is-collapsed .side-nav a {
+  justify-content: center;
+}
+
+.shell.is-collapsed .side-nav a::after {
+  content: none;
+}
+
+.shell.is-collapsed .side-nav a[aria-current='page']::before {
+  left: calc(-1 * var(--space-2));
+}
+
+/* Getal wordt een stip rechtsboven het icoon. */
+.shell.is-collapsed .side-nav .nav-badge {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  min-width: 0;
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  background: var(--yellow);
+}
+
+.shell.is-collapsed .side-nav .nav-badge > [aria-hidden='true'] {
+  display: none;
+}
+
+.shell.is-collapsed .side-foot {
+  padding-inline: 0;
+}
+
+.shell.is-collapsed .side-actions {
+  flex-direction: column;
+}
+
+.shell.is-collapsed .side-collapse {
+  margin-left: 0;
+}
+
+/* Telefoon: getal bij Collection en een stip bij More in de onderbalk. */
+.tab-icon {
+  position: relative;
+}
+
+.tab-bar .nav-badge {
+  position: absolute;
+  top: -6px;
+  left: calc(100% - 6px);
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--space-1);
+  background: var(--yellow);
+  color: var(--on-yellow);
+}
+
+.nav-dot {
+  position: absolute;
+  top: -2px;
+  left: calc(100% - 2px);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--yellow);
+}
+
+/* More (telefoon): zelfde groepen en kopjes als de zijbalk. */
+.more-group {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.more-group .side-title {
+  padding: 0;
+}
+
+.more-text {
+  display: grid;
+}
+
+.more-text .muted {
+  font-weight: 500;
+}

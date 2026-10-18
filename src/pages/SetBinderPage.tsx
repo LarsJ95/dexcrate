@@ -25,6 +25,7 @@ import { Loading } from '../components/Loading'
 import { COMPLETE_KEY, MAX_NEW, MILESTONE_KEY, PAGE_SIZE_KEY, SEEN_KEY, SPARKLE_COLORS, VARIANT_SHORT, readPageSize, readSeen, remember, stateKey, type Cost, type PageSize } from '../lib/setBinder'
 import { errorText } from '../lib/errors'
 import { matchesWords } from '../lib/search'
+import { rememberRecentSet } from '../lib/recentSets'
 
 interface Props {
   /** "<taal>/<set-id>" uit de URL. */
@@ -102,6 +103,13 @@ export function SetBinderPage({ param }: Props): JSX.Element {
       cancelled = true
     }
   }, [valid, lang, setId, reloadKey])
+
+  // Onthouden als recente set: snelkoppeling onder "Sets" in het menu.
+  const summaryId = data?.summary.id
+  const summaryName = data?.summary.name
+  useEffect(() => {
+    if (summaryId && summaryName && isLang(lang)) rememberRecentSet({ lang, setId: summaryId, name: summaryName })
+  }, [summaryId, summaryName, lang])
 
   // Opgeslagen doel voor deze set.
   useEffect(() => {

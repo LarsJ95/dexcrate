@@ -73,7 +73,7 @@ export function TransactionsPage(): JSX.Element {
   if (enabled === false) {
     return (
       <section className="page">
-        <h1>Transactions</h1>
+        <h1>Buy &amp; sell</h1>
         <p className="notice">Purchases and sales are not set up yet (run STAP5 in Supabase).</p>
       </section>
     )
@@ -83,7 +83,7 @@ export function TransactionsPage(): JSX.Element {
     <section className="page">
       <div className="page-head">
         <div>
-          <h1>Transactions</h1>
+          <h1>Buy &amp; sell</h1>
           <p className="muted">Record a sale or purchase by selecting cards in your collection.</p>
         </div>
         <a className="button-link" href="#/collection">
