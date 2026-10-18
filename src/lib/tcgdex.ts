@@ -314,21 +314,26 @@ export function writeCache(prefix: string, key: string, v: unknown): void {
 }
 
 const GRAPHQL = 'https://api.tcgdex.net/v2/graphql'
-const RARITY_PREFIX = 'tcgdex:set-rarity:v1:'
+// v2 (18-10-2026): met uitvoeringen, voor de master set op de setpagina.
+const SET_CARDS_PREFIX = 'tcgdex:set-cards:v2:'
 const RARITY_PAGE = 100 // TCGdex geeft maximaal 100 kaarten per pagina
 
-/** Zeldzaamheid van alle kaarten van een (Engelse) set: kaart-id → zeldzaamheid. Een paar verzoeken i.p.v. één per kaart. */
-const fetchSetRarities = memo(async (setId: string): Promise<Record<string, string | null>> => {
-  const cached = readCache<Record<string, string | null>>(RARITY_PREFIX, INFO_TTL_MS, setId)
+/** Per kaart-id: zeldzaamheid en uitvoeringen (null = onbekend). */
+type SetCardsData = Record<string, { r: string | null; v: Variant[] | null }>
+
+/** Zeldzaamheid en uitvoeringen van alle kaarten van een (Engelse) set. Een paar verzoeken i.p.v. één per kaart. */
+const fetchSetCardsData = memo(async (setId: string): Promise<SetCardsData> => {
+  const cached = readCache<SetCardsData>(SET_CARDS_PREFIX, INFO_TTL_MS, setId)
   if (cached) return cached
   const prefix = `${setId}-`
-  const out: Record<string, string | null> = {}
+  const out: SetCardsData = {}
   for (let page = 1; page <= 20; page++) {
     const res = await fetch(GRAPHQL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        query: 'query ($id: ID, $page: Int!) { cards(filters: { id: $id }, pagination: { page: $page, count: 100 }) { id rarity } }',
+        query:
+          'query ($id: ID, $page: Int!) { cards(filters: { id: $id }, pagination: { page: $page, count: 100 }) { id rarity variants { normal reverse holo firstEdition } } }',
         variables: { id: prefix, page },
       }),
     })
@@ -337,10 +342,12 @@ const fetchSetRarities = memo(async (setId: string): Promise<Record<string, stri
     const list = isRecord(json) && isRecord(json.data) ? json.data.cards : null
     if (!Array.isArray(list)) throw new Error('TCGdex GraphQL: unexpected answer')
     // Het id-filter zoekt op tekst: alleen kaarten die echt met "<set-id>-" beginnen.
-    for (const c of list) if (isRecord(c) && typeof c.id === 'string' && c.id.startsWith(prefix)) out[c.id] = optStr(c.rarity)
+    for (const c of list) {
+      if (isRecord(c) && typeof c.id === 'string' && c.id.startsWith(prefix)) out[c.id] = { r: optStr(c.rarity), v: parseVariants(c) }
+    }
     if (list.length < RARITY_PAGE) break
   }
-  writeCache(RARITY_PREFIX, setId, out)
+  writeCache(SET_CARDS_PREFIX, setId, out)
   return out
 })
 
@@ -350,7 +357,13 @@ const fetchSetRarities = memo(async (setId: string): Promise<Record<string, stri
  */
 export async function getSetRarities(lang: Lang, setId: string): Promise<ReadonlyMap<string, string | null> | null> {
   if (lang !== 'en') return null
-  return new Map(Object.entries(await fetchSetRarities(setId)))
+  return new Map(Object.entries(await fetchSetCardsData(setId)).map(([id, d]) => [id, d.r]))
+}
+
+/** Uitvoeringen per kaart-id voor een hele set (zoals getSetRarities: alleen Engels, anders null). */
+export async function getSetVariants(lang: Lang, setId: string): Promise<ReadonlyMap<string, Variant[] | null> | null> {
+  if (lang !== 'en') return null
+  return new Map(Object.entries(await fetchSetCardsData(setId)).map(([id, d]) => [id, d.v]))
 }
 
 const ABBR_PREFIX = 'tcgdex:abbr:v1:'

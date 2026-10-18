@@ -1,9 +1,10 @@
 import type { JSX } from 'react'
-import type { GoalProgress } from '../lib/goals'
+import type { GoalProgress, SplitProgress } from '../lib/goals'
 import type { Cost, PageSize } from '../lib/setBinder'
 import { SET_SORT_LABELS, type SetSort } from '../lib/setSort'
 import { formatEur } from '../lib/stats'
 import { closeKeyboardOnEnter } from '../lib/keyboard'
+import { hpLevel } from '../lib/trainer'
 import { IconSearch } from './Icons'
 import { SearchClear } from './SearchClear'
 
@@ -68,6 +69,64 @@ export function BinderToolbar({ query, onQuery, show, onShow, duplicates, pageSi
         ))}
       </select>
     </div>
+  )
+}
+
+function SplitRow({ label, hint, part }: { label: string; hint: string; part: { done: number; total: number } }): JSX.Element {
+  const ratio = part.total > 0 ? part.done / part.total : 0
+  return (
+    <div className="split-row">
+      <span className="split-label" title={hint}>
+        {label}
+      </span>
+      <span className="split-count">
+        {part.done} of {part.total}
+      </span>
+      <div className="set-progress" role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={part.total} aria-valuenow={part.done}>
+        <span data-hp={hpLevel(ratio)} style={{ width: `${ratio * 100}%` }} />
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Setvoortgang zoals verzamelaars tellen (DEX-idee, 18-10-2026): officiële set, master set (elke uitvoering) en extra
+ * kaarten (hogere nummers, TG …). Master: in één keer voor Engelse sets, anders pas na "Count".
+ */
+export function SetProgressSplit({
+  split,
+  masterLoading,
+  onCountMaster,
+}: {
+  split: SplitProgress
+  /** Uitvoeringen worden opgehaald: hoeveel kaarten al. */
+  masterLoading: { done: number; total: number } | null
+  /** Master set tellen (haalt de uitvoeringen per kaart op); null = gebeurt al vanzelf. */
+  onCountMaster: (() => void) | null
+}): JSX.Element {
+  return (
+    <section className="panel set-split" aria-label="Set progress">
+      <SplitRow label="Official set" hint="Every card up to the printed set size, any version" part={split.official} />
+      {split.master ? (
+        <SplitRow label="Master set" hint="Every card in every version the catalog lists (normal, holo, reverse, 1st edition)" part={split.master} />
+      ) : (
+        <div className="split-row">
+          <span className="split-label">Master set</span>
+          {masterLoading ? (
+            <span className="split-count muted">
+              Checking versions… {masterLoading.done} of {masterLoading.total}
+            </span>
+          ) : onCountMaster ? (
+            <button type="button" className="small-btn" onClick={onCountMaster}>
+              Count master set
+            </button>
+          ) : (
+            <span className="split-count muted">Checking versions…</span>
+          )}
+        </div>
+      )}
+      {split.extra.total > 0 && <SplitRow label="Extra cards" hint="Secret rares and other cards above the printed set size" part={split.extra} />}
+    </section>
   )
 }
 

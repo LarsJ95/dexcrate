@@ -37,3 +37,31 @@
     transform: none;
   }
 }
+
+/* Officiële set, master set en extra kaarten (18-10-2026). */
+.set-split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: var(--space-3) var(--space-5);
+  margin-block: var(--space-3);
+}
+
+.split-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+}
+
+.split-row .set-progress {
+  grid-column: 1 / -1;
+}
+
+.split-label {
+  font-weight: 700;
+}
+
+.split-count {
+  font-size: var(--fs-small);
+  font-variant-numeric: tabular-nums;
+}
