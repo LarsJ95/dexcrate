@@ -4,9 +4,13 @@ import { CrateCardSheet, CrateTilePrice } from '../components/CrateCardSheet'
 import { CrateOverview } from '../components/CrateOverview'
 import { CatalogKeyPicture } from '../components/CatalogCardPicture'
 import { HoloCard } from '../components/HoloCard'
-import { IconCrate } from '../components/Icons'
+import { CatalogFilterFields } from '../components/CatalogFilterFields'
+import { FilterPanel } from '../components/FilterPanel'
+import { IconCrate, IconSearch } from '../components/Icons'
 import { Loading } from '../components/Loading'
 import { RaritySymbols } from '../components/RaritySymbols'
+import { SearchClear } from '../components/SearchClear'
+import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { useDbFeature } from '../hooks/useDbFeature'
 import { foilStyleFor, rarityRule } from '../lib/cardTraits'
 import { PACKS, canAfford, drawPack, hasCrate, listCrateCards, openCratePack, syncCrate, tradeAllDuplicates, tradeCrateCard, tradeValue, type CrateCard, type PackKind, type PackPull } from '../lib/crate'
@@ -14,10 +18,11 @@ import { burstFrom } from '../lib/fx'
 import { buzz } from '../lib/haptics'
 import { useMotion } from '../lib/motion'
 import { errorText } from '../lib/errors'
+import { needsCatalog } from '../lib/collectionFilters'
+import { CRATE_SORTS, NO_CRATE_FILTERS, crateFilterCount, crateSetOptions, matchesCrate, matchesCrateSearch, sortCrate, type CrateFilters, type CrateSort } from '../lib/crateFilters'
+import { closeKeyboardOnEnter } from '../lib/keyboard'
 import { useStoredChoice } from '../hooks/useStoredChoice'
 
-type Sort = 'newest' | 'rarity' | 'name'
-const SORTS: readonly Sort[] = ['newest', 'rarity', 'name']
 type View = 'cards' | 'overview'
 const PACK_KINDS = Object.keys(PACKS) as PackKind[]
 
@@ -119,7 +124,9 @@ export function CratePage(): JSX.Element {
   const [pulls, setPulls] = useState<PackPull[] | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [sort, setSort] = useStoredChoice<Sort>('dexcrate:crate-sort', SORTS, 'newest')
+  const [sort, setSort] = useStoredChoice<CrateSort>('dexcrate:crate-sort', CRATE_SORTS, 'newest')
+  const [query, setQuery] = useState('')
+  const [filters, setFilters] = useState<CrateFilters>(NO_CRATE_FILTERS)
   const [view, setView] = useState<View>('cards')
   const [opened, setOpened] = useState<CrateCard | null>(null)
   const [confirmAll, setConfirmAll] = useState(false)
@@ -202,12 +209,15 @@ export function CratePage(): JSX.Element {
     }
   }
 
-  const sorted = useMemo(() => {
-    const list = [...(cards ?? [])]
-    if (sort === 'rarity') list.sort((a, b) => rarityRule(b.rarity).rank - rarityRule(a.rarity).rank || a.name.localeCompare(b.name, 'en'))
-    if (sort === 'name') list.sort((a, b) => a.name.localeCompare(b.name, 'en'))
-    return list
-  }, [cards, sort])
+  // Type, kaarttype en illustrator staan in de catalogus: alleen ophalen als erop gefilterd wordt.
+  const catalogKeys = useMemo(() => (cards ?? []).map((c) => c.tcgdexId), [cards])
+  const infos = useCatalogInfos(catalogKeys, needsCatalog({ ...filters, rarity: '' }))
+  const setOptions = useMemo(() => crateSetOptions(cards ?? []), [cards])
+  const sorted = useMemo(
+    () => sortCrate((cards ?? []).filter((c) => matchesCrateSearch(c, query) && matchesCrate(c, filters, infos.get(c.tcgdexId))), sort),
+    [cards, query, filters, infos, sort],
+  )
+  const activeFilters = crateFilterCount(filters)
   const total = (cards ?? []).reduce((n, c) => n + c.quantity, 0)
   const extras = (cards ?? []).reduce((n, c) => n + (c.quantity - 1) * tradeValue(c.rarity), 0)
   const extraCopies = (cards ?? []).reduce((n, c) => n + c.quantity - 1, 0)
@@ -302,13 +312,6 @@ export function CratePage(): JSX.Element {
               </button>
             </div>
           )}
-          {view === 'cards' && cards && cards.length > 1 && (
-            <select className="catalog-sort" aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
-              <option value="newest">Newest first</option>
-              <option value="rarity">Rarest first</option>
-              <option value="name">Name A–Z</option>
-            </select>
-          )}
         </div>
         {extras > 0 && (
           <div className="crate-trade-all" role="group" aria-label="Trade in duplicates">
@@ -331,9 +334,67 @@ export function CratePage(): JSX.Element {
             )}
           </div>
         )}
+        {view === 'cards' && cards && cards.length > 1 && (
+          <FilterPanel
+            activeCount={activeFilters}
+            canClear={activeFilters > 0 || query !== ''}
+            onClear={() => {
+              setFilters(NO_CRATE_FILTERS)
+              setQuery('')
+            }}
+            toolbar={
+              <>
+                <div className="search">
+                  <IconSearch size={18} />
+                  <input
+                    type="search"
+                    placeholder="Search name or set"
+                    aria-label="Search your Crate"
+                    enterKeyHint="search"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={closeKeyboardOnEnter}
+                  />
+                  <SearchClear value={query} onClear={() => setQuery('')} />
+                </div>
+                <select className="toolbar-sort" aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as CrateSort)}>
+                  <option value="newest">Newest first</option>
+                  <option value="rarity">Rarest first</option>
+                  <option value="set">Set and number</option>
+                  <option value="copies">Most copies</option>
+                  <option value="name">Name A–Z</option>
+                </select>
+              </>
+            }
+          >
+            <label className="span-2">
+              Set
+              <select value={filters.set} onChange={(e) => setFilters((f) => ({ ...f, set: e.target.value }))}>
+                <option value="">All</option>
+                {setOptions.map((o) => (
+                  <option key={o.key} value={o.key}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <CatalogFilterFields value={filters} onChange={(next) => setFilters((f) => ({ ...f, ...next }))} />
+            <label>
+              Illustrator
+              <input value={filters.illustrator} maxLength={60} placeholder="e.g. Arita" onChange={(e) => setFilters((f) => ({ ...f, illustrator: e.target.value }))} />
+            </label>
+            <div className="filter-checks">
+              <label className="check">
+                <input type="checkbox" checked={filters.duplicates} onChange={(e) => setFilters((f) => ({ ...f, duplicates: e.target.checked }))} />
+                Only duplicates
+              </label>
+            </div>
+          </FilterPanel>
+        )}
         {cards === null && !error && <Loading />}
         {view === 'overview' && cards && <CrateOverview cards={cards} onOpen={setOpened} />}
         {view === 'cards' && cards?.length === 0 && <p className="empty">No virtual cards yet. Open your first pack above.</p>}
+        {view === 'cards' && cards && cards.length > 0 && sorted.length === 0 && <p className="empty">No cards match these filters.</p>}
         {view === 'cards' && sorted.length > 0 && (
           <ul className="catalog-grid crate-grid">
             {sorted.map((c) => (
