@@ -289,57 +289,55 @@ export function CratePage(): JSX.Element {
           const art = kind === 'type' ? ({ '--pack-type': energyColor(packType) } as CSSProperties) : undefined
           return (
             <li key={kind} className={`panel crate-shop pack-${kind}`}>
+              {/* Vaste rijen (titel, uitleg, keuze, melding, knop), via subgrid gelijk over alle pakjes in een rij. */}
               <div className="crate-pack-art" aria-hidden="true" style={art}>
                 <span className="pokeball" />
               </div>
-              <div className="crate-shop-info">
-                <strong>{p.name}</strong>
-                <span className="muted small">{p.contents}</span>
-                {cost === null ? (
-                  <span className="small muted crate-shop-foot">Not set up yet: run STAP18 in Supabase.</span>
-                ) : (
-                  // Keuze, uitleg en knop onderaan; de knop als laatste, zodat de knoppen op één lijn staan.
-                  <div className="crate-shop-foot">
-                    {kind === 'set' && (
-                      <label className="crate-pack-choice">
-                        <span className="visually-hidden">Set</span>
-                        <select value={packSet} onChange={(e) => setPackSet(e.target.value)} disabled={setChoices.length === 0}>
-                          {setChoices.length === 0 && <option value="">Loading sets…</option>}
-                          {setChoices.map((s) => (
-                            <option key={s.id} value={s.id}>
-                              {s.name}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    )}
-                    {kind === 'set' && chosenSet && (
+              <strong className="crate-shop-title">{p.name}</strong>
+              <span className="muted small crate-shop-text">{p.contents}</span>
+              <div className="crate-shop-choice">
+                {cost === null && <span className="small muted">Not set up yet: run STAP18 in Supabase.</span>}
+                {cost !== null && kind === 'set' && (
+                  <>
+                    <label className="crate-pack-choice">
+                      <span className="visually-hidden">Set</span>
+                      <select value={packSet} onChange={(e) => setPackSet(e.target.value)} disabled={setChoices.length === 0}>
+                        {setChoices.length === 0 && <option value="">Loading sets…</option>}
+                        {setChoices.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    {chosenSet && (
                       <span className="small muted">
-                        You have {chosenSetHave} of {chosenSet.official}
-                        {rules.crateSet ? ` · +${rules.crateSet} when complete` : ''}
+                        {chosenSetHave}/{chosenSet.official} collected{rules.crateSet ? ` · +${rules.crateSet} when complete` : ''}
                       </span>
                     )}
-                    {kind === 'type' && (
-                      <label className="crate-pack-choice">
-                        <span className="visually-hidden">Type</span>
-                        <select value={packType} onChange={(e) => isEnergyType(e.target.value) && setPackType(e.target.value)}>
-                          {ENERGY_TYPES.map((t) => (
-                            <option key={t} value={t}>
-                              {t}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    )}
-                    {!ok && points !== null && points < cost && !free && (
-                      <span className="small muted">You need {(cost - points).toLocaleString('en-IE')} more points.</span>
-                    )}
-                    <button type="button" className="primary" onClick={() => void openPack(kind)} disabled={busy || !ok || opening !== null}>
-                      {busy ? 'Opening…' : free ? 'Open free daily pack' : `Open (${cost.toLocaleString('en-IE')} points)`}
-                    </button>
-                  </div>
+                  </>
+                )}
+                {cost !== null && kind === 'type' && (
+                  <label className="crate-pack-choice">
+                    <span className="visually-hidden">Type</span>
+                    <select value={packType} onChange={(e) => isEnergyType(e.target.value) && setPackType(e.target.value)}>
+                      {ENERGY_TYPES.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 )}
               </div>
+              <span className="small muted crate-shop-note">
+                {cost !== null && !ok && points !== null && points < cost && !free ? `You need ${(cost - points).toLocaleString('en-IE')} more points.` : ''}
+              </span>
+              {cost !== null && (
+                <button type="button" className="primary crate-shop-open" onClick={() => void openPack(kind)} disabled={busy || !ok || opening !== null}>
+                  {busy ? 'Opening…' : free ? 'Open free daily pack' : `Open (${cost.toLocaleString('en-IE')} points)`}
+                </button>
+              )}
             </li>
           )
         })}
