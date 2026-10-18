@@ -124,6 +124,16 @@ describe('SetBinderPage', () => {
     expect(pages().flat()).toHaveLength(10)
   })
 
+  it('zoeken binnen de set op naam of nummer (25 vindt ook #025)', async () => {
+    await renderPage()
+    // Kaart 9 heet "Card B" (kaart 1 "Card J").
+    await userEvent.type(screen.getByLabelText('Search this set'), 'card b')
+    expect(pages().flat()).toEqual(['tst-9'])
+    await userEvent.click(screen.getByRole('button', { name: 'Clear search' }))
+    await userEvent.type(screen.getByLabelText('Search this set'), '7')
+    expect(pages().flat()).toEqual(['tst-7'])
+  })
+
   it('sorteren houdt pagina’s van 9 en 6', async () => {
     await renderPage()
     await userEvent.selectOptions(screen.getByLabelText('Sort'), 'numberDesc')
