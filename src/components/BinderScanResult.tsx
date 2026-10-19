@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type JSX } from 'react'
 import { insertCards } from '../lib/db'
 import { addedQuietly } from '../lib/celebrate'
-import { findCandidates, type Candidate } from '../lib/match'
+import { autoPick, findCandidates, type Candidate } from '../lib/match'
 import { draftFromScan, type Recognition } from '../lib/scan'
 import { lookupLang } from '../lib/tcgdex'
 import { CardFace } from './CardFace'
@@ -56,9 +56,9 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
                 ? {
                     ...r,
                     candidates,
-                    chosen: candidates[0]?.key ?? '',
+                    chosen: autoPick(candidates)?.key ?? '',
                     // Alleen standaard aanvinken als er een match is en de kaart leesbaar was.
-                    include: candidates.length > 0 && rec.confidence !== 'low',
+                    include: autoPick(candidates) !== null && rec.confidence !== 'low',
                   }
                 : r,
             ),

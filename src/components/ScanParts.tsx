@@ -1,5 +1,5 @@
 import type { JSX } from 'react'
-import type { Candidate } from '../lib/match'
+import { autoPick, type Candidate } from '../lib/match'
 import type { Recognition } from '../lib/scan'
 import type { ScanItem, ScanSession } from '../lib/scanSessions'
 import { LANGUAGE_LABELS } from '../lib/types'
@@ -52,6 +52,7 @@ interface SingleProps {
 
 /** Resultaat van een losse scan: wat herkend is en de kandidaten om uit te kiezen. */
 export function SingleScanResult({ recognition, candidates, ownedByKey, earlier, onChoose, onAddAnotherCopy, onReset }: SingleProps): JSX.Element {
+  const best = autoPick(candidates)
   return (
     <div className="scan-result">
       <div className="panel">
@@ -90,12 +91,17 @@ export function SingleScanResult({ recognition, candidates, ownedByKey, earlier,
 
       <h2>Pick the right card</h2>
       {candidates.length === 0 && <p className="muted">No match found. You can add it without a link.</p>}
+      {candidates.length > 0 && !best && (
+        <p className="muted">
+          No card with number {recognition.cardNumber} in the catalog{recognition.setCode ? ` (set ${recognition.setCode} may be missing)` : ''}. These only share the name. None of them? Add it without link.
+        </p>
+      )}
       <ul className="candidates">
-        {candidates.map((c, i) => {
+        {candidates.map((c) => {
           const owned = ownedByKey.get(c.key)
           return (
             <li key={c.key}>
-              <button type="button" className={`candidate${i === 0 ? ' selected' : ''}`} onClick={() => onChoose(c)}>
+              <button type="button" className={`candidate${c === best ? ' selected' : ''}`} onClick={() => onChoose(c)}>
                 <CatalogKeyPicture
                   cardKey={c.key}
                   image={c.image}
@@ -108,7 +114,7 @@ export function SingleScanResult({ recognition, candidates, ownedByKey, earlier,
                 <span className="muted small">
                   {c.setName} {c.localId}
                 </span>
-                <span className="cand-reason small">{i === 0 && !c.noCardData ? 'Best match' : c.reason}</span>
+                <span className="cand-reason small">{c === best && !c.noCardData ? 'Best match' : c.reason}</span>
                 {owned && <span className="small">Owned {owned}×</span>}
               </button>
             </li>

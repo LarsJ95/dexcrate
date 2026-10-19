@@ -24,6 +24,14 @@ export interface Candidate {
   reason: string
   /** Gekoppeld op set + nummer: TCGdex kent de set, maar heeft (nog) geen kaartenlijst (veel Japanse/Chinese sets). */
   noCardData?: boolean
+  /** Het gelezen nummer past niet bij deze kaart (bv. een set die de catalogus niet kent): alleen een suggestie. */
+  otherNumber?: boolean
+}
+
+/** Kandidaat die de app zelf mag kiezen: de bovenste, behalve als het gelezen nummer daar niet bij past. */
+export function autoPick(candidates: readonly Candidate[]): Candidate | null {
+  const top = candidates[0]
+  return top && !top.otherNumber ? top : null
 }
 
 export interface MatchQuery {
@@ -132,11 +140,12 @@ async function setNumberCandidate(lang: Lang, setId: string, q: MatchQuery): Pro
 export async function findCandidates(q: MatchQuery, lang: Lang): Promise<Candidate[]> {
   const byKey = new Map<string, Omit<Candidate, 'setName'>>()
 
-  const add = (card: SetCard, setId: string, score: number, reason: string): void => {
+  const readNumber = Boolean(q.card_number?.trim())
+  const add = (card: SetCard, setId: string, score: number, reason: string, numberMatches: boolean): void => {
     const key = `${lang}/${card.id}`
     const existing = byKey.get(key)
     if (!existing || existing.score < score) {
-      byKey.set(key, { key, name: card.name, localId: card.localId, setId, image: card.image, score, reason })
+      byKey.set(key, { key, name: card.name, localId: card.localId, setId, image: card.image, score, reason, ...(readNumber && !numberMatches ? { otherNumber: true } : {}) })
     }
   }
 
@@ -146,7 +155,7 @@ export async function findCandidates(q: MatchQuery, lang: Lang): Promise<Candida
     if (exact) {
       // Buitenlandse namen zijn niet te vergelijken met de Engelse naam uit de Excel.
       const sim = lang === 'en' ? nameSimilarity(stripLangTag(q.name), exact.name) : 1
-      add(exact, exact.setId, 4 + sim * 4, sim >= MIN_NAME_SIMILARITY ? 'Set and number match' : 'Set and number match, name differs')
+      add(exact, exact.setId, 4 + sim * 4, sim >= MIN_NAME_SIMILARITY ? 'Set and number match' : 'Set and number match, name differs', true)
     } else if (lang !== 'en' && expectedSet) {
       const loose = await setNumberCandidate(lang, expectedSet, q)
       if (loose) byKey.set(loose.key, loose)
@@ -163,8 +172,8 @@ export async function findCandidates(q: MatchQuery, lang: Lang): Promise<Candida
         const num = sameNumber(q.card_number, card.localId)
         const set = expectedSet !== null && setId === expectedSet
         const score = 3 + (num ? 3 : 0) + (set ? 2 : 0)
-        const reason = num && set ? 'Set and number match' : num ? `Name (${localName}) and number match` : set ? 'Same set' : `Name: ${localName}`
-        add(card, setId, score, reason)
+        const reason = num && set ? 'Set and number match' : num ? `Name (${localName}) and number match` : set ? 'Same set' : readNumber ? `Name (${localName}), other number` : `Name: ${localName}`
+        add(card, setId, score, reason, num)
       }
     }
   }
@@ -181,7 +190,7 @@ export async function findCandidates(q: MatchQuery, lang: Lang): Promise<Candida
         if (sim < MIN_NAME_SIMILARITY && !num) continue
         const score = sim * 3 + (num ? 3 : 0) + (set ? 2 : 0)
         const reason = num && set ? 'Set and number match' : num ? 'Name and number match, other set' : set ? 'Same set, other number' : 'Similar name'
-        add(card, setId, score, reason)
+        add(card, setId, score, reason, num)
       }
       if (byKey.size >= MAX_CANDIDATES) break
     }

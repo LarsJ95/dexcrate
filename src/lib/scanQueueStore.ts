@@ -1,5 +1,5 @@
 import { buzz } from './haptics'
-import { findCandidates } from './match'
+import { autoPick, findCandidates } from './match'
 import { deletePhotos, listPhotoIds, loadPhoto, loadQueueData, savePhoto, saveQueueData } from './photoStore'
 import { preparedFromBlob, prepareImage, recognizeCards, type PreparedImage } from './scan'
 import { BLUR_THRESHOLD, photoSharpness } from './sharpness'
@@ -259,7 +259,7 @@ async function process(id: string): Promise<void> {
     const merged = mergeDuplicate(matched, id)
     set(merged)
     dropImage(id)
-    const best = candidates[0]
+    const best = autoPick(candidates)
     const star = best && wished.has(best.key) ? '★ On your wishlist: ' : ''
     const what = best ? `${star}${best.name} · ${best.setName} #${best.localId}` : `${rec.nameEnglish || rec.namePrinted || 'Unknown card'} (no match)`
     // Samengevoegd: de eerdere regel met dezelfde kaart heeft nu een hoger aantal.
