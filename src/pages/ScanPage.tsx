@@ -21,6 +21,7 @@ import {
   draftFromScan,
   prepareImage,
   recognizeCards,
+  scanQuery,
   type PreparedImage,
   type Recognition,
   type ScanMode,
@@ -86,6 +87,8 @@ export function ScanPage(): JSX.Element {
   const [session, setSession] = useState<ScanSession | null>(null)
   const [sessionError, setSessionError] = useState<string | null>(null)
   const [dup, setDup] = useState<{ candidate: Candidate | null; recognition: Recognition; lang: Lang; earlier: ScanItem } | null>(null)
+  /** Telt per foto (en bij weggooien), zodat een laat antwoord van "Search again" niets overschrijft. */
+  const scanSeq = useRef(0)
 
   useEffect(() => {
     if (!sessionsOn) return
@@ -148,6 +151,7 @@ export function ScanPage(): JSX.Element {
   async function processPhoto(file: File, mode: ScanMode): Promise<void> {
     setCameraOpen(false)
     if (phase.kind === 'working') return
+    scanSeq.current += 1
     try {
       setPhase({ kind: 'working', message: 'Preparing photo…' })
       const prepared = await prepareImage(file, mode)
@@ -167,15 +171,23 @@ export function ScanPage(): JSX.Element {
       }
       setPhase({ kind: 'working', message: 'Looking up card…' })
       const lang = lookupLang(recognition.language)
-      const candidates = await findScanCandidates(
-        { name: recognition.nameEnglish, set_code: recognition.setCode || null, card_number: recognition.cardNumber || null, set_total: recognition.setTotal || null },
-        lang,
-      )
+      const candidates = await findScanCandidates(scanQuery(recognition), lang)
       setPhase({ kind: 'single', recognition, candidates, lang })
     } catch (err) {
       console.error(err)
       setPhase({ kind: 'error', message: errorText(err, 'Scan failed.') })
     }
+  }
+
+  /** Gecorrigeerde gelezen waarden: opnieuw zoeken in de catalogus. Fouten gaan naar het formulier. */
+  async function searchAgain(r: Recognition): Promise<void> {
+    const seq = scanSeq.current
+    const lang = lookupLang(r.language)
+    const candidates = await findScanCandidates(scanQuery(r), lang)
+    // Intussen een nieuwe foto gemaakt of weggegooid: dit antwoord hoort daar niet meer bij.
+    if (seq !== scanSeq.current) return
+    setDup(null)
+    setPhase({ kind: 'single', recognition: r, candidates, lang })
   }
 
   async function chooseSingle(c: Candidate | null, r: Recognition, lang: Lang, force = false): Promise<void> {
@@ -225,6 +237,7 @@ export function ScanPage(): JSX.Element {
   }
 
   function reset(): void {
+    scanSeq.current += 1
     setDup(null)
     setPhase({ kind: 'idle' })
     setImage(null)
@@ -381,6 +394,7 @@ export function ScanPage(): JSX.Element {
             if (dup) void chooseSingle(dup.candidate, dup.recognition, dup.lang, true)
           }}
           onReset={reset}
+          onSearch={searchAgain}
         />
       )}
 

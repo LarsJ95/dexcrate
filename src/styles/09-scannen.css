@@ -180,3 +180,19 @@
     bottom: calc(var(--tabbar) + var(--space-3) + env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* Gelezen waarden verbeteren en opnieuw zoeken (Single en Quick scan). */
+.read-fix {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.read-fix .form-grid {
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+}
+
+/* Naam en taal zijn lang: over de hele breedte. */
+.read-fix .form-grid .wide {
+  grid-column: 1 / -1;
+}

@@ -1,3 +1,4 @@
+import type { MatchQuery } from './match'
 import { LANGUAGE_LABELS, type CardLanguage, type Variant } from './types'
 
 export type ScanMode = 'single' | 'multi'
@@ -55,3 +56,34 @@ export function toScanResult(body: unknown): ScanResult {
 
 /** "001" → "1", zoals de rest van de collectie. */
 export const plainNumber = (n: string): string => (/^\d+$/.test(n) ? String(Number.parseInt(n, 10)) : n)
+
+/** Zoekvraag voor de catalogus bij een herkende kaart. */
+export function scanQuery(r: Recognition): MatchQuery {
+  return { name: r.nameEnglish, set_code: r.setCode || null, card_number: r.cardNumber || null, set_total: r.setTotal || null }
+}
+
+export interface ReadFix {
+  name: string
+  setCode: string
+  cardNumber: string
+  setTotal: string
+  language: CardLanguage | null
+}
+
+/**
+ * Door jou gecorrigeerde gelezen waarden. "004/012" in het nummerveld wordt nummer + totaal.
+ * Je hebt het zelf nagekeken, dus de twijfel van de scan vervalt.
+ */
+export function correctRecognition(r: Recognition, fix: ReadFix): Recognition {
+  const [num, ofTotal] = fix.cardNumber.split('/').map((s) => s.trim())
+  return {
+    ...r,
+    nameEnglish: fix.name.trim().slice(0, 200),
+    language: fix.language,
+    setCode: fix.setCode.trim().slice(0, 20),
+    cardNumber: (num ?? '').slice(0, 20),
+    setTotal: (ofTotal || fix.setTotal.trim()).slice(0, 10),
+    confidence: 'high',
+    notes: '',
+  }
+}
