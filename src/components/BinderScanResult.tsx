@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState, type JSX } from 'react'
 import { insertCards } from '../lib/db'
 import { addedQuietly } from '../lib/celebrate'
-import { autoPick, findScanCandidates, type Candidate } from '../lib/match'
-import { draftFromScan, scanQuery, type Recognition } from '../lib/scan'
+import { autoPick, type Candidate } from '../lib/match'
+import { recordChoices, scanCandidates, type ChoiceInput } from '../lib/scanMemory'
+import { draftFromScan, type Recognition } from '../lib/scan'
 import { lookupLang } from '../lib/tcgdex'
 import { CardFace } from './CardFace'
 import { CatalogKeyPicture } from './CatalogCardPicture'
@@ -18,7 +19,7 @@ interface Props {
   nextSortOrder: number
   onAdded: (rows: Card[]) => void
   /** Eén kaart uitgebreid bewerken in het gewone formulier. */
-  onEdit: (draft: Partial<CardInput>, position: number) => void
+  onEdit: (draft: Partial<CardInput>, position: number, choice: Omit<ChoiceInput, 'chosen'>) => void
   /** Posities die al via het formulier zijn toegevoegd. */
   done: ReadonlySet<number>
   onCancel: () => void
@@ -45,7 +46,7 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
   useEffect(() => {
     let cancelled = false
     recognitions.forEach((rec, i) => {
-      findScanCandidates(scanQuery(rec), lookupLang(rec.language))
+      scanCandidates(rec)
         .catch((err: unknown) => {
           console.error(`Zoeken mislukt voor kaart ${rec.position}`, err)
           return [] as Candidate[]
@@ -107,6 +108,8 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
         }),
       )
       const rows = await insertCards(inputs)
+      // Andere kaart dan de app voorstelde: onthouden voor de volgende keer.
+      void recordChoices(selected.map((r) => ({ rec: r.rec, candidates: r.candidates ?? [], chosen: r.chosen || null })))
       onAdded(rows)
       void addedQuietly(rows)
       setAdded((s) => new Set([...s, ...selected.map((r) => r.rec.position)]))
@@ -118,7 +121,7 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
   }
 
   async function edit(r: Row): Promise<void> {
-    onEdit({ ...(await draftFromScan(r.rec, candidateOf(r), lookupLang(r.rec.language))), variant: r.variant }, r.rec.position)
+    onEdit({ ...(await draftFromScan(r.rec, candidateOf(r), lookupLang(r.rec.language))), variant: r.variant }, r.rec.position, { rec: r.rec, candidates: r.candidates ?? [] })
   }
 
   if (recognitions.length === 0) {

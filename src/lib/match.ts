@@ -26,6 +26,8 @@ export interface Candidate {
   noCardData?: boolean
   /** Het gelezen nummer past niet bij deze kaart (bv. een set die de catalogus niet kent): alleen een suggestie. */
   otherNumber?: boolean
+  /** Je koos deze kaart eerder bij dezelfde lezing (zie scanMemory); staat daarom bovenaan. */
+  remembered?: boolean
 }
 
 /** Kandidaat die de app zelf mag kiezen: de bovenste, behalve als het gelezen nummer daar niet bij past. */

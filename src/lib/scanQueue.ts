@@ -111,6 +111,7 @@ function toCandidate(v: unknown): Candidate | null {
     reason: str(v.reason),
     ...(v.noCardData === true ? { noCardData: true } : {}),
     ...(v.otherNumber === true ? { otherNumber: true } : {}),
+    ...(v.remembered === true ? { remembered: true } : {}),
   }
 }
 
