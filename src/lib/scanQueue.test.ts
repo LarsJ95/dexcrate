@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Candidate } from './match'
 import type { Recognition } from './scanResult'
+import type { Variant } from './types'
 import { isAmbiguous, mergeDuplicate, newItem, onlyOtherNumbers, parseQueue, reviewGroups, scannedTwice, summarize, withMatch, withoutCardData, type QueueItem } from './scanQueue'
 
 const rec = (over: Partial<Recognition> = {}): Recognition => ({
@@ -96,6 +97,23 @@ describe('scan-wachtrij', () => {
     const [restored] = parseQueue(JSON.stringify([loose]))
     expect(withoutCardData(restored)).toBe(true)
     expect(withoutCardData(ready('a'))).toBe(false)
+  })
+
+  it('uitvoering past bij de catalogus; prijsverschil per uitvoering → nakijken, ook na herladen', () => {
+    const facts = (variants: Variant[] | null, askVariant = false) => ({ variants, askVariant })
+    expect(withMatch(newItem('x', THUMB), rec({ variant: 'reverse' }), [cand('en/sv03.5-151')], facts(['holo'])).variant).toBe('holo')
+    expect(withMatch(newItem('x', THUMB), rec({ variant: 'holo' }), [cand('en/sv03.5-149')], facts(['normal', 'reverse'])).variant).toBe(null)
+    expect(withMatch(newItem('x', THUMB), rec({ variant: 'reverse' }), [cand('en/sv03.5-149')], facts(['normal', 'reverse'])).variant).toBe('reverse')
+    const ask = withMatch(newItem('v', THUMB), rec({ variant: 'holo' }), [cand('en/sv03.5-149')], facts(['holo', 'reverse'], true))
+    expect(ask).toMatchObject({ variant: 'holo', askVariant: true, include: true })
+    expect(reviewGroups([ask, ready('a')]).check.map((q) => q.id)).toEqual(['v'])
+    expect(parseQueue(JSON.stringify([ask]))[0].askVariant).toBe(true)
+    // Opnieuw gezocht zonder prijsverschil: vlag weg.
+    expect(withMatch(ask, rec(), [cand('en/sv03.5-025')], facts(['normal'])).askVariant).toBeUndefined()
+    // Geen automatische keuze: uitvoeringen van een suggestie tellen niet.
+    const other = withMatch(newItem('o', THUMB), rec({ variant: 'reverse' }), [{ ...cand('x'), otherNumber: true }], facts(['holo'], true))
+    expect(other).toMatchObject({ variant: 'reverse' })
+    expect(other.askVariant).toBeUndefined()
   })
 
   it('alleen suggesties met een ander nummer: niets gekozen of aangevinkt, nakijken, en blijft zo na herladen', () => {

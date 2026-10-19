@@ -7,8 +7,10 @@ import { lookupLang } from '../lib/tcgdex'
 import { CardFace } from './CardFace'
 import { CatalogKeyPicture } from './CatalogCardPicture'
 import { LazyCardPrice } from './LazyCardPrice'
-import { CONDITION_LABELS, EMPTY_CARD, LANGUAGE_LABELS, type Card, type CardInput, type Condition } from '../lib/types'
+import { VariantGapNote, VariantSelect } from './VariantSelect'
+import { CONDITION_LABELS, EMPTY_CARD, LANGUAGE_LABELS, type Card, type CardInput, type Condition, type Variant } from '../lib/types'
 import { errorText } from '../lib/errors'
+import { fitVariant, variantFacts } from '../lib/variantChoice'
 
 interface Props {
   recognitions: Recognition[]
@@ -29,10 +31,12 @@ interface Row {
   /** Gekozen kaart-sleutel; '' = zonder koppeling toevoegen. */
   chosen: string
   include: boolean
+  /** Uitvoering; de gelezen, als die volgens de catalogus bestaat. */
+  variant: Variant | null
 }
 
 export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAdded, onEdit, done, onCancel }: Props): JSX.Element {
-  const [rows, setRows] = useState<Row[]>(() => recognitions.map((rec) => ({ rec, chosen: '', include: false })))
+  const [rows, setRows] = useState<Row[]>(() => recognitions.map((rec) => ({ rec, chosen: '', include: false, variant: rec.variant })))
   const [condition, setCondition] = useState<Condition | ''>('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -46,7 +50,9 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
           console.error(`Zoeken mislukt voor kaart ${rec.position}`, err)
           return [] as Candidate[]
         })
-        .then((candidates) => {
+        .then(async (candidates) => {
+          const best = autoPick(candidates)
+          const facts = await variantFacts(best?.key)
           if (cancelled) return
           setRows((list) =>
             list.map((r, j) =>
@@ -54,9 +60,10 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
                 ? {
                     ...r,
                     candidates,
-                    chosen: autoPick(candidates)?.key ?? '',
+                    chosen: best?.key ?? '',
                     // Alleen standaard aanvinken als er een match is en de kaart leesbaar was.
-                    include: autoPick(candidates) !== null && rec.confidence !== 'low',
+                    include: best !== null && rec.confidence !== 'low',
+                    variant: fitVariant(rec.variant, best ? facts.variants : null),
                   }
                 : r,
             ),
@@ -92,6 +99,7 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
           return {
             ...EMPTY_CARD,
             ...draft,
+            variant: r.variant,
             name: (draft.name ?? '').slice(0, 200) || 'Unknown card',
             condition: condition || null,
             sort_order: nextSortOrder + i,
@@ -110,7 +118,7 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
   }
 
   async function edit(r: Row): Promise<void> {
-    onEdit(await draftFromScan(r.rec, candidateOf(r), lookupLang(r.rec.language)), r.rec.position)
+    onEdit({ ...(await draftFromScan(r.rec, candidateOf(r), lookupLang(r.rec.language))), variant: r.variant }, r.rec.position)
   }
 
   if (recognitions.length === 0) {
@@ -175,6 +183,10 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
                     <option value="">Add without link</option>
                   </select>
                 )}
+                {r.candidates !== undefined && (
+                  <VariantSelect cardKey={c?.key ?? null} value={r.variant} onChange={(variant) => update(r.rec.position, { variant })} label={`Variant of ${label}`} />
+                )}
+                {c && <VariantGapNote cardKey={c.key} />}
                 {c && (
                   <p className="small">
                     Market <LazyCardPrice cardKey={c.key} className="scan-price" withReverse />

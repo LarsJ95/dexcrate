@@ -36,6 +36,11 @@ vi.mock('./scan', async () => {
   return { scanQuery, recognizeCards: vi.fn(), prepareImage: vi.fn(), preparedFromBlob: vi.fn() }
 })
 vi.mock('./match', async (importOriginal) => ({ ...(await importOriginal<typeof import('./match')>()), findScanCandidates: vi.fn() }))
+// Uitvoeringen opvragen gaat naar TCGdex; hier vast antwoord (geen netwerk in unit-tests).
+vi.mock('./variantChoice', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./variantChoice')>()),
+  variantFacts: vi.fn(() => Promise.resolve({ variants: ['normal', 'reverse'], askVariant: true })),
+}))
 
 const { findScanCandidates } = await import('./match')
 const { getQueue, removeItems, searchAgain } = await import('./scanQueueStore')
@@ -56,7 +61,8 @@ describe('Quick scan: opnieuw zoeken met verbeterde waarden', () => {
     vi.mocked(findScanCandidates).mockResolvedValueOnce([match])
     await searchAgain('a', fixed())
     expect(vi.mocked(findScanCandidates)).toHaveBeenLastCalledWith({ name: 'Dedenne', set_code: 'S12', card_number: '045', set_total: '098' }, 'zh-tw')
-    expect(getQueue()[0]).toMatchObject({ id: 'a', status: 'ready', chosen: 'zh-tw/S12-045', include: true, quantity: 2, rec: { setCode: 'S12', language: 'zh-tw' } })
+    // Gelezen "holo" bestaat niet bij deze kaart (normal/reverse) → onbekend; prijs verschilt → nakijken.
+    expect(getQueue()[0]).toMatchObject({ id: 'a', status: 'ready', chosen: 'zh-tw/S12-045', include: true, quantity: 2, rec: { setCode: 'S12', language: 'zh-tw' }, variant: null, askVariant: true })
   })
 
   it('regel intussen weg: niets terugzetten', async () => {

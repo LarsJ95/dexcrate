@@ -4,6 +4,7 @@ import { supabase } from './supabase'
 import { getSet, lookupLang, splitKey, type Lang } from './tcgdex'
 import { plainNumber, toScanResult, type Recognition, type ScanMode, type ScanResult } from './scanResult'
 import { statusFields, type CardInput } from './types'
+import { fitVariant, variantFacts } from './variantChoice'
 
 export { correctRecognition, plainNumber, scanQuery, type ReadFix, type Recognition, type ScanMode, type ScanResult } from './scanResult'
 
@@ -79,7 +80,9 @@ export async function draftFromScan(r: Recognition, c: Candidate | null, scanLan
     console.error('Setinfo ophalen mislukt', err)
   }
   const language = lookupLang(r.language) === lang ? r.language : lang
-  return { ...base, language, tcgdex_id: c.key, set_code: setCode, card_number: plainNumber(c.localId) }
+  // Gelezen uitvoering alleen als die bij deze kaart bestaat (bv. ex-kaarten: alleen holo).
+  const variant = fitVariant(r.variant, (await variantFacts(c.key)).variants)
+  return { ...base, language, variant, tcgdex_id: c.key, set_code: setCode, card_number: plainNumber(c.localId) }
 }
 
 export async function recognizeCards(img: PreparedImage, mode: ScanMode): Promise<ScanResult> {
