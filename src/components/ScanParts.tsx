@@ -6,6 +6,7 @@ import type { ScanItem, ScanSession } from '../lib/scanSessions'
 import { LANGUAGE_LABELS, type CardLanguage } from '../lib/types'
 import { CardFace } from './CardFace'
 import { CatalogKeyPicture } from './CatalogCardPicture'
+import { LazyCardPrice } from './LazyCardPrice'
 
 /** Lopende scansessie (bewaard), of anders wat je net hebt toegevoegd. */
 export function ScanSessionSummary({ session, added, onEnd }: { session: ScanSession | null; added: readonly string[]; onEnd: () => void }): JSX.Element | null {
@@ -40,6 +41,9 @@ export function ScanSessionSummary({ session, added, onEnd }: { session: ScanSes
 }
 
 const isCardLanguage = (v: string): v is CardLanguage => Object.hasOwn(LANGUAGE_LABELS, v)
+
+/** Marktprijs alleen bij de bovenste kandidaten: elk is een apart verzoek. */
+const PRICED_CANDIDATES = 3
 
 interface ReadFixProps {
   recognition: Recognition
@@ -200,7 +204,7 @@ export function SingleScanResult({ recognition, candidates, ownedByKey, earlier,
         </p>
       )}
       <ul className="candidates">
-        {candidates.map((c) => {
+        {candidates.map((c, i) => {
           const owned = ownedByKey.get(c.key)
           return (
             <li key={c.key}>
@@ -217,6 +221,7 @@ export function SingleScanResult({ recognition, candidates, ownedByKey, earlier,
                 <span className="muted small">
                   {c.setName} {c.localId}
                 </span>
+                {i < PRICED_CANDIDATES && <LazyCardPrice cardKey={c.key} className="cand-price small" withReverse />}
                 <span className="cand-reason small">{c === best && !c.noCardData ? 'Best match' : c.reason}</span>
                 {owned && <span className="small">Owned {owned}×</span>}
               </button>

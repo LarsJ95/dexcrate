@@ -9,6 +9,7 @@ import { CONDITION_LABELS, EMPTY_CARD, LANGUAGE_LABELS, VARIANT_LABELS, type Car
 import { CardFace } from './CardFace'
 import { CatalogKeyPicture } from './CatalogCardPicture'
 import { IconClose } from './Icons'
+import { LazyCardPrice } from './LazyCardPrice'
 import { ReadFixForm } from './ScanParts'
 import { errorText } from '../lib/errors'
 import { useLoadMore } from '../hooks/useLoadMore'
@@ -256,6 +257,11 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
                 />
               </label>
             </div>
+          )}
+          {ready && c && (
+            <p className="small">
+              Market <LazyCardPrice cardKey={c.key} className="scan-price" withReverse />
+            </p>
           )}
           {owned && <p className="small">Owned {owned}×</p>}
         </div>
