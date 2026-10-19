@@ -1,5 +1,5 @@
 import { isNonLatin, translateName } from './names'
-import type { CardInput } from './types'
+import { LANGUAGE_LABELS, type CardInput } from './types'
 import {
   findExact,
   getSet,
@@ -213,6 +213,24 @@ export async function findCandidates(q: MatchQuery, lang: Lang): Promise<Candida
     .sort((a, b) => b.score - a.score)
     .slice(0, MAX_CANDIDATES)
     .map((c) => ({ ...c, setName: sets.get(c.setId)?.name ?? c.setId }))
+}
+
+/** De scan verwart Vereenvoudigd en Traditioneel Chinees soms; dan ook in de andere taal zoeken. */
+const SIBLING_LANG: Partial<Record<Lang, Lang>> = { 'zh-cn': 'zh-tw', 'zh-tw': 'zh-cn' }
+
+/**
+ * Kandidaten voor een gescande kaart. Eerst in de gelezen taal; zit daar geen kaart met het gelezen nummer bij,
+ * dan ook in de verwante taal (zh-cn ↔ zh-tw). Kaarten mét het nummer uit die taal komen bovenaan; suggesties
+ * met een ander nummer alleen als de gelezen taal niets opleverde.
+ */
+export async function findScanCandidates(q: MatchQuery, lang: Lang): Promise<Candidate[]> {
+  const first = await findCandidates(q, lang)
+  const sibling = SIBLING_LANG[lang]
+  if (!sibling || !q.card_number?.trim() || autoPick(first)) return first
+  const other = (await findCandidates(q, sibling)).map((c) => ({ ...c, reason: `${c.reason} (${LANGUAGE_LABELS[sibling]})` }))
+  const matches = other.filter((c) => !c.otherNumber)
+  const extra = first.length === 0 ? other.filter((c) => c.otherNumber) : []
+  return [...matches, ...first, ...extra].slice(0, MAX_CANDIDATES)
 }
 
 /**

@@ -1,5 +1,5 @@
 import { buzz } from './haptics'
-import { autoPick, findCandidates } from './match'
+import { autoPick, findScanCandidates } from './match'
 import { deletePhotos, listPhotoIds, loadPhoto, loadQueueData, savePhoto, saveQueueData } from './photoStore'
 import { preparedFromBlob, prepareImage, recognizeCards, type PreparedImage } from './scan'
 import { BLUR_THRESHOLD, photoSharpness } from './sharpness'
@@ -247,7 +247,7 @@ async function process(id: string): Promise<void> {
       return
     }
     patch(id, { status: 'matching', rec })
-    const candidates = await findCandidates({ name: rec.nameEnglish, set_code: rec.setCode || null, card_number: rec.cardNumber || null, set_total: rec.setTotal || null }, lookupLang(rec.language)).catch(
+    const candidates = await findScanCandidates({ name: rec.nameEnglish, set_code: rec.setCode || null, card_number: rec.cardNumber || null, set_total: rec.setTotal || null }, lookupLang(rec.language)).catch(
       (err: unknown) => {
         console.warn('Kaart opzoeken mislukt', err)
         return []

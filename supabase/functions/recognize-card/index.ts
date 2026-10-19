@@ -65,6 +65,7 @@ const MULTI_SCHEMA = {
 
 const RULES = `- Lees naam, setafkorting en kaartnummer letterlijk van de kaart (onderrand). Gok geen setcode die je niet kunt lezen.
 - De regulation mark (losse letter in een kadertje) is geen setcode.
+- language bij Chinese kaarten: kijk naar de tekens, niet naar de illustratie. "zh-cn" = Vereenvoudigd Chinees (vasteland China; bv. 宝可梦, 闪, 电, 龙, 击), "zh-tw" = Traditioneel Chinees (Taiwan/Hongkong; bv. 寶可夢, 閃, 電, 龍, 擊).
 - variant: "reverse" alleen als het glimmende patroon over de hele kaart behalve de illustratie loopt; "holo" als alleen de illustratie glimt; anders "normal" of "unknown".
 - confidence: "high" alleen als naam én nummer goed leesbaar zijn.
 - notes: schrijf altijd in het Engels (de app is Engelstalig), kort, en alleen bij twijfel.`
