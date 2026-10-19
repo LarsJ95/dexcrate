@@ -92,6 +92,12 @@ export const IconPlus = (p: IconProps): JSX.Element => (
   </Svg>
 )
 
+export const IconFlashlight = (p: IconProps): JSX.Element => (
+  <Svg {...p}>
+    <path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z" />
+  </Svg>
+)
+
 export const IconClose = (p: IconProps): JSX.Element => (
   <Svg {...p}>
     <path d="M6 6l12 12M18 6 6 18" />

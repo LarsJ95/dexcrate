@@ -3,7 +3,8 @@ import { DEFAULT_TUNING, SAMPLE_H, SAMPLE_W, createAutoCapture, type AutoHint } 
 import { frameToSource } from '../lib/cameraCrop'
 import { setPref, usePrefs } from '../lib/devicePrefs'
 import { toGray } from '../lib/sharpness'
-import { IconClose } from './Icons'
+import { setTorch, trackHasTorch } from '../lib/torch'
+import { IconClose, IconFlashlight } from './Icons'
 
 interface Props {
   /** Kaderformaat: één kaart (staand) of een binderpagina (breder). */
@@ -50,6 +51,10 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose, children, 
   const { autoCapture: autoOn, autoGapMs } = usePrefs()
   const [autoHint, setAutoHint] = useState<AutoHint | null>(null)
   const captureRef = useRef<() => void>(() => undefined)
+  // Zaklamp: alleen als de camera hem laat bedienen (veel telefoons, zelden laptops).
+  const [torchAvailable, setTorchAvailable] = useState(false)
+  const [torchOn, setTorchOn] = useState(false)
+  const torchBusy = useRef(false)
 
   useEffect(() => {
     let cancelled = false
@@ -150,14 +155,43 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose, children, 
     setAutoHint(null)
   }
 
+  function onVideoReady(): void {
+    setReady(true)
+    // Pas als het beeld loopt weet de browser zeker wat de camera kan.
+    setTorchAvailable(trackHasTorch(streamRef.current?.getVideoTracks()[0]))
+  }
+
+  async function toggleTorch(): Promise<void> {
+    const track = streamRef.current?.getVideoTracks()[0]
+    // Dubbel tikken: niet twee keer tegelijk schakelen.
+    if (!track || torchBusy.current) return
+    torchBusy.current = true
+    try {
+      await setTorch(track, !torchOn)
+      setTorchOn(!torchOn)
+    } catch (err) {
+      // Werkt toch niet op dit toestel: knop weghalen in plaats van een knop die niets doet.
+      console.warn('Zaklamp schakelen mislukt', err)
+      setTorchAvailable(false)
+      setTorchOn(false)
+    } finally {
+      torchBusy.current = false
+    }
+  }
+
   return (
     <div className="camera" role="dialog" aria-modal="true" aria-label="Camera">
-      <video ref={videoRef} className="camera-video" playsInline muted autoPlay onLoadedData={() => setReady(true)} />
+      <video ref={videoRef} className="camera-video" playsInline muted autoPlay onLoadedData={onVideoReady} />
       {!error && <div ref={frameRef} className={`camera-frame${wide ? ' wide' : ''}`} aria-hidden="true" />}
 
       <button type="button" className="camera-close icon-btn" onClick={onClose} aria-label="Close camera">
         <IconClose />
       </button>
+      {torchAvailable && !error && (
+        <button type="button" className={`camera-torch icon-btn${torchOn ? ' on' : ''}`} onClick={() => void toggleTorch()} aria-pressed={torchOn} aria-label="Flashlight">
+          <IconFlashlight />
+        </button>
+      )}
 
       {error && (
         <div className="camera-error" role="alert">
