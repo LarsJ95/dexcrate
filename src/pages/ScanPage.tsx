@@ -4,7 +4,8 @@ import { CameraCapture } from '../components/CameraCapture'
 import { CardDialog } from '../components/CardDialog'
 import { ScanSessionSummary, SingleScanResult } from '../components/ScanParts'
 import { QueueStrip, ScanQueue } from '../components/ScanQueue'
-import { listCards } from '../lib/db'
+import { addedQuietly } from '../lib/celebrate'
+import { insertCards, listCards } from '../lib/db'
 import { findScanCandidates, type Candidate } from '../lib/match'
 import { uploadPhoto } from '../lib/photos'
 import { useDbFeature } from '../hooks/useDbFeature'
@@ -27,13 +28,13 @@ import {
   type ScanMode,
 } from '../lib/scan'
 import { lookupLang, type Lang } from '../lib/tcgdex'
-import type { Card, CardInput } from '../lib/types'
+import { EMPTY_CARD, type Card, type CardInput, type Variant } from '../lib/types'
 import { errorText } from '../lib/errors'
 
 type Phase =
   | { kind: 'idle' }
   | { kind: 'working'; message: string }
-  | { kind: 'single'; recognition: Recognition; candidates: Candidate[]; lang: Lang }
+  | { kind: 'single'; recognition: Recognition; candidates: Candidate[]; lang: Lang; resultId: number }
   | { kind: 'multi'; recognitions: Recognition[]; scanId: number }
   | { kind: 'error'; message: string }
 
@@ -86,9 +87,13 @@ export function ScanPage(): JSX.Element {
   const sessionsOn = useDbFeature(hasScanSessions, 'scan-sessions') === true
   const [session, setSession] = useState<ScanSession | null>(null)
   const [sessionError, setSessionError] = useState<string | null>(null)
-  const [dup, setDup] = useState<{ candidate: Candidate | null; recognition: Recognition; lang: Lang; earlier: ScanItem } | null>(null)
+  const [dup, setDup] = useState<{ candidate: Candidate | null; recognition: Recognition; lang: Lang; earlier: ScanItem; action: 'add' | 'edit'; variant: Variant | null } | null>(null)
   /** Telt per foto (en bij weggooien), zodat een laat antwoord van "Search again" niets overschrijft. */
   const scanSeq = useRef(0)
+  /** Telt per resultaat: nieuw resultaat = keuzes (selectie, uitvoering) opnieuw. */
+  const resultSeq = useRef(0)
+  /** Laatste foto kwam van de camera: na direct toevoegen gaat die weer open. */
+  const lastFromCamera = useRef(false)
 
   useEffect(() => {
     if (!sessionsOn) return
@@ -136,7 +141,7 @@ export function ScanPage(): JSX.Element {
       for (const f of files) addToQueue(f)
       return
     }
-    if (files[0]) void processPhoto(files[0], mode)
+    if (files[0]) void processPhoto(files[0], mode, false)
   }
 
   /** `fromCamera`: wazige foto's tegenhouden (bestanden kies je bewust, die niet). */
@@ -148,10 +153,11 @@ export function ScanPage(): JSX.Element {
     })
   }
 
-  async function processPhoto(file: File, mode: ScanMode): Promise<void> {
+  async function processPhoto(file: File, mode: ScanMode, fromCamera: boolean): Promise<void> {
     setCameraOpen(false)
     if (phase.kind === 'working') return
     scanSeq.current += 1
+    lastFromCamera.current = fromCamera
     try {
       setPhase({ kind: 'working', message: 'Preparing photo…' })
       const prepared = await prepareImage(file, mode)
@@ -172,7 +178,8 @@ export function ScanPage(): JSX.Element {
       setPhase({ kind: 'working', message: 'Looking up card…' })
       const lang = lookupLang(recognition.language)
       const candidates = await findScanCandidates(scanQuery(recognition), lang)
-      setPhase({ kind: 'single', recognition, candidates, lang })
+      resultSeq.current += 1
+      setPhase({ kind: 'single', recognition, candidates, lang, resultId: resultSeq.current })
     } catch (err) {
       console.error(err)
       setPhase({ kind: 'error', message: errorText(err, 'Scan failed.') })
@@ -187,24 +194,63 @@ export function ScanPage(): JSX.Element {
     // Intussen een nieuwe foto gemaakt of weggegooid: dit antwoord hoort daar niet meer bij.
     if (seq !== scanSeq.current) return
     setDup(null)
-    setPhase({ kind: 'single', recognition: r, candidates, lang })
+    resultSeq.current += 1
+    setPhase({ kind: 'single', recognition: r, candidates, lang, resultId: resultSeq.current })
   }
 
-  async function chooseSingle(c: Candidate | null, r: Recognition, lang: Lang, force = false): Promise<void> {
-    // Al in deze sessie toegevoegd? Eerst vragen, zodat je niet per ongeluk dezelfde kaart twee keer toevoegt.
-    const earlier = session
-      ? earlierInSession(session.items, { tcgdex_id: c?.key ?? null, variant: r.variant, name: r.nameEnglish || r.namePrinted, set_code: r.setCode || null, card_number: r.cardNumber || null })
-      : null
-    if (earlier && !force) {
-      setDup({ candidate: c, recognition: r, lang, earlier })
-      return
-    }
-    setDup(null)
-    // Standaardwaarden (conditie, locatie) aanvullen; wat de scan herkende gaat voor.
+  /** Al in deze sessie toegevoegd? Dan eerst vragen (zie dup), zodat je niet per ongeluk dezelfde kaart twee keer toevoegt. */
+  function earlierFor(c: Candidate | null, r: Recognition, variant: Variant | null): ScanItem | null {
+    if (!session) return null
+    return earlierInSession(session.items, { tcgdex_id: c?.key ?? null, variant, name: r.nameEnglish || r.namePrinted, set_code: r.setCode || null, card_number: r.cardNumber || null })
+  }
+
+  /** Formuliervelden: je standaardwaarden (conditie, locatie) aangevuld met wat de scan herkende (dat gaat voor). */
+  async function scanValues(c: Candidate | null, r: Recognition, lang: Lang, variant: Variant | null): Promise<Partial<CardInput>> {
     const { language: _lang, set_code: _set, ...extra } = newCardDefaults
     void _lang
     void _set
-    setDraft({ values: { ...extra, ...(await draftFromScan(r, c, lang)) }, position: null })
+    return { ...extra, ...(await draftFromScan(r, c, lang)), variant }
+  }
+
+  /** Eerst het formulier openen. */
+  async function chooseSingle(c: Candidate | null, r: Recognition, lang: Lang, variant: Variant | null, force = false): Promise<void> {
+    const earlier = earlierFor(c, r, variant)
+    if (earlier && !force) {
+      setDup({ candidate: c, recognition: r, lang, earlier, action: 'edit', variant })
+      return
+    }
+    setDup(null)
+    setDraft({ values: await scanValues(c, r, lang, variant), position: null })
+  }
+
+  /** Meteen toevoegen (zonder formulier); daarna de camera weer open als de foto daarvan kwam. Fouten gaan naar het resultaat. */
+  async function addSingle(c: Candidate | null, r: Recognition, lang: Lang, variant: Variant | null, force = false): Promise<void> {
+    const earlier = earlierFor(c, r, variant)
+    if (earlier && !force) {
+      setDup({ candidate: c, recognition: r, lang, earlier, action: 'add', variant })
+      return
+    }
+    const values = await scanValues(c, r, lang, variant)
+    const rows = await insertCards([{ ...EMPTY_CARD, ...values, name: (values.name ?? '').slice(0, 200) || 'Unknown card', sort_order: nextSortOrder }])
+    rememberAdded(rows)
+    void addedQuietly(rows)
+    saveScanPhoto(rows, image?.blob ?? null)
+    const again = lastFromCamera.current
+    reset()
+    if (again) setCameraOpen(true)
+  }
+
+  /** Scanfoto bij de kaart bewaren als je dat koos. Hoofdfoto alleen als er geen officiële afbeelding is. */
+  function saveScanPhoto(rows: readonly Card[], photo: Blob | null): void {
+    if (!keepPhoto || !photo) return
+    for (const row of rows) {
+      uploadPhoto(photo, null, { cardId: row.id, label: 'scan', makePrimary: !row.tcgdex_id })
+        .then((saved) => setCards((list) => list.map((c) => (c.id === row.id ? { ...c, photos: [...c.photos, saved] } : c))))
+        .catch((err: unknown) => {
+          console.warn('Scanfoto bewaren mislukt', err)
+          setPhotoError(errorText(err, 'Saving the scan photo failed.'))
+        })
+    }
   }
 
   function rememberAdded(rows: Card[]): void {
@@ -348,7 +394,7 @@ export function ScanPage(): JSX.Element {
           wide={mode === 'multi'}
           crop={mode !== 'multi'}
           autoCapture={mode === 'queue'}
-          onCapture={(file) => (mode === 'queue' ? addToQueue(file, true) : void processPhoto(file, mode))}
+          onCapture={(file) => (mode === 'queue' ? addToQueue(file, true) : void processPhoto(file, mode, true))}
           onPickFile={() => {
             setCameraOpen(false)
             inputRef.current?.click()
@@ -385,13 +431,17 @@ export function ScanPage(): JSX.Element {
 
       {phase.kind === 'single' && (
         <SingleScanResult
+          key={phase.resultId}
           recognition={phase.recognition}
           candidates={phase.candidates}
           ownedByKey={ownedByKey}
           earlier={dup?.earlier ?? null}
-          onChoose={(c) => void chooseSingle(c, phase.recognition, phase.lang)}
-          onAddAnotherCopy={() => {
-            if (dup) void chooseSingle(dup.candidate, dup.recognition, dup.lang, true)
+          onChoose={(c, variant) => chooseSingle(c, phase.recognition, phase.lang, variant)}
+          onAdd={(c, variant) => addSingle(c, phase.recognition, phase.lang, variant)}
+          onAddAnotherCopy={async () => {
+            if (!dup) return
+            if (dup.action === 'add') await addSingle(dup.candidate, dup.recognition, dup.lang, dup.variant, true)
+            else await chooseSingle(dup.candidate, dup.recognition, dup.lang, dup.variant, true)
           }}
           onReset={reset}
           onSearch={searchAgain}
@@ -415,18 +465,8 @@ export function ScanPage(): JSX.Element {
               setDraft(null)
               return
             }
-            // Scanfoto alleen bewaren als je dat koos. Hoofdfoto alleen als er geen officiële afbeelding is.
-            const photo = image?.blob
-            if (keepPhoto && position === null && photo) {
-              for (const row of rows) {
-                uploadPhoto(photo, null, { cardId: row.id, label: 'scan', makePrimary: !row.tcgdex_id })
-                  .then((saved) => setCards((list) => list.map((c) => (c.id === row.id ? { ...c, photos: [...c.photos, saved] } : c))))
-                  .catch((err: unknown) => {
-                    console.warn('Scanfoto bewaren mislukt', err)
-                    setPhotoError(errorText(err, 'Saving the scan photo failed.'))
-                  })
-              }
-            }
+            // Scanfoto alleen bij een losse scan (niet bij een binderpagina).
+            if (position === null) saveScanPhoto(rows, image?.blob ?? null)
             setDraft(null)
             // Losse scan: klaar voor de volgende. Binderpagina: alleen deze kaart afvinken.
             if (position === null) reset()
