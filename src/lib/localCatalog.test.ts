@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { isLocalKey, localCardInfo, localSet, localSetIdForAbbr, localSetSummaries, searchLocal } from './localCatalog'
-import { findCandidates } from './match'
+import { autoPick, findCandidates, findScanCandidates } from './match'
 import { findExact, getCardInfo, getCardPrice, getSetList } from './tcgdex'
 
 describe('eigen catalogus: Pokémon TCG Classic', () => {
@@ -39,11 +39,66 @@ describe('eigen catalogus: Pokémon TCG Classic', () => {
   })
 })
 
+describe('eigen catalogus: Vereenvoudigd Chinees', () => {
+  it('drie sets met het juiste aantal kaarten, unieke nummers', () => {
+    const sets = localSetSummaries('zh-cn')
+    expect(sets.map((s) => [s.id, s.total])).toEqual([
+      ['CSMC', 13],
+      ['CBB3C', 136],
+      ['CBB4C', 196],
+    ])
+    for (const s of sets) {
+      const ids = localSet(s.id, 'zh-cn')?.cards.map((c) => c.localId) ?? []
+      expect(new Set(ids).size).toBe(ids.length)
+    }
+    // Engels ziet ze niet, en andersom.
+    expect(localSetSummaries('en').map((s) => s.id)).toEqual(['clv', 'clc', 'clb'])
+    expect(localSet('CSMC')).toBeNull()
+  })
+
+  it('CSMC: steekproef tegen de bronnen (Cardmarket, advertenties, NipponTCG)', () => {
+    const cards = localSet('CSMC', 'zh-cn')?.cards ?? []
+    expect(cards.map((c) => c.name)).toEqual(['Charizard', 'Flaaffy', 'Zekrom', 'Dedenne', 'Alcremie', 'Wyrdeer', 'Kleavor', 'Ariados', 'Spiritomb', 'Galarian Obstagoon', 'Druddigon', 'Hoothoot', 'Pikachu'])
+    expect(localCardInfo('zh-cn/CSMC-004')).toMatchObject({ lang: 'zh-cn', name: 'Dedenne', localId: '004', dexId: 702, types: [], set: { id: 'CSMC' } })
+    expect(localCardInfo('zh-cn/CSMC-013')?.name).toBe('Pikachu')
+  })
+
+  it('Gem Packs: soort + uitvoering (steekproef tegen PriceCharting/pikaqian)', () => {
+    const v3 = localSet('CBB3C', 'zh-cn')?.cards ?? []
+    expect(v3.filter((c) => c.localId.startsWith('14')).map((c) => [c.localId, c.name])).toEqual(['01', '02', '03', '04', '05', '06', '07'].map((v) => [`14${v}`, 'Morpeko']))
+    expect(v3.find((c) => c.localId === '0107')?.name).toBe('Clefable ex')
+    expect(v3.find((c) => c.localId === '0207')?.name).toBe('Meowth')
+    expect(v3.find((c) => c.localId === '1904')?.name).toBe('Arven')
+    expect(v3.at(-1)).toMatchObject({ localId: '2006', name: 'Luminous Energy' })
+    expect(localCardInfo('zh-cn/CBB3C-1407')).toMatchObject({ name: 'Morpeko', dexId: 877, suffix: null })
+    expect(localCardInfo('zh-cn/CBB3C-1807')).toMatchObject({ name: 'Annihilape ex', suffix: 'ex' })
+    expect(localCardInfo('zh-cn/CBB3C-2001')).toMatchObject({ name: 'Fighting Energy', dexId: null })
+    const v4 = localSet('CBB4C', 'zh-cn')?.cards ?? []
+    expect(v4.filter((c) => c.localId.startsWith('23')).every((c) => c.name === 'Mudsdale')).toBe(true)
+    expect(localCardInfo('zh-cn/CBB4C-2807')).toMatchObject({ name: 'Flutter Mane', dexId: 987 })
+  })
+
+  it('set-id zonder hoofdletters te vinden; sleutels alleen in de echte schrijfwijze', () => {
+    expect(localSet('csMC', 'zh-cn')?.summary.id).toBe('CSMC')
+    expect(localSetIdForAbbr('cbb3c', 'zh-cn')).toBe('CBB3C')
+    expect(isLocalKey('zh-cn/CSMC-004')).toBe(true)
+    expect(isLocalKey('zh-cn/csmc-004')).toBe(false)
+    expect(isLocalKey('zh-tw/CSMC-004')).toBe(false)
+    expect(localCardInfo('zh-cn/CSMC-014')).toBeNull()
+    expect(searchLocal('dedenne', undefined, 'zh-cn').map((c) => c.id)).toEqual(['CSMC-004'])
+    expect(searchLocal('dedenne')).toEqual([])
+  })
+})
+
 describe('koppelen via tcgdex.ts', () => {
   const fetchMock = vi.fn((input: string | URL) => {
     const url = String(input)
     if (url.endsWith('/en/sets')) return Promise.resolve(new Response('[]'))
-    if (url.includes('/en/cards?')) return Promise.resolve(new Response('[]'))
+    // TCGdex kent CBB3C, maar zonder kaarten en met een rare telling (7 = uitvoeringen per soort).
+    if (url.endsWith('/zh-cn/sets')) return Promise.resolve(new Response(JSON.stringify([{ id: 'CBB3C', name: '宝石包Vol.3', cardCount: { total: 7, official: 7 } }])))
+    if (url.endsWith('/zh-tw/sets')) return Promise.resolve(new Response('[]'))
+    if (/\/(en|zh-cn|zh-tw)\/cards\?/.test(url)) return Promise.resolve(new Response('[]'))
+    if (url.includes('pokemon-species/dedenne')) return Promise.resolve(new Response(JSON.stringify({ names: [{ name: '咚咚鼠', language: { name: 'zh-hans' } }, { name: '咚咚鼠', language: { name: 'zh-hant' } }] })))
     return Promise.resolve(new Response('{}', { status: 404 }))
   })
   beforeEach(() => {
@@ -63,5 +118,19 @@ describe('koppelen via tcgdex.ts', () => {
     const [best] = await findCandidates({ name: 'Voltorb', set_code: 'CLC', card_number: '010', set_total: '034' }, 'en')
     expect(best).toMatchObject({ key: 'en/clc-010', setName: 'Pokémon TCG Classic (Charizard)' })
     expect((await getSetList('en')).get('clc')?.official).toBe(34)
+  })
+
+  it('Chinees: CSMC 004 en Gem Pack "14 05" zonder TCGdex; eigen lijst vervangt de lege TCGdex-set', async () => {
+    expect(await findExact('zh-cn', 'csMC', '004')).toMatchObject({ key: 'zh-cn/CSMC-004', name: 'Dedenne', setId: 'CSMC' })
+    expect(await findExact('zh-cn', 'CBB3C', '14 05')).toMatchObject({ key: 'zh-cn/CBB3C-1405', name: 'Morpeko' })
+    expect(await findExact('zh-cn', 'CBB4C', '2301')).toMatchObject({ key: 'zh-cn/CBB4C-2301', name: 'Mudsdale' })
+    expect((await getSetList('zh-cn')).get('CBB3C')).toMatchObject({ name: 'Gem Pack Vol. 3', official: 136 })
+    expect(await getCardPrice('zh-cn/CSMC-004')).toBeNull()
+    expect(fetchMock.mock.calls.some(([u]) => /CSMC|CBB3C-|CBB4C/i.test(String(u)))).toBe(false)
+  })
+
+  it('scan: Dedenne CSMC 004/012 gelezen als Traditioneel Chinees → toch de eigen CSMC-kaart', async () => {
+    const list = await findScanCandidates({ name: 'Dedenne', set_code: 'CSMC', card_number: '004', set_total: '012' }, 'zh-tw')
+    expect(autoPick(list)).toMatchObject({ key: 'zh-cn/CSMC-004', setName: 'Pokémon Card Display Set Gift Box Charizard' })
   })
 })

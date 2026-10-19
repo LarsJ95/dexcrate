@@ -157,8 +157,8 @@ export function stripLangTag(name: string): string {
 
 const fetchSet = memo(async (k: string): Promise<{ summary: SetSummary; cards: SetCard[] } | null> => {
   const [lang, setId] = k.split('|')
-  // Sets die TCGdex niet kent (Pokémon TCG Classic): uit de eigen catalogus.
-  const local = lang === 'en' ? localSet(setId) : null
+  // Sets die TCGdex niet kent of zonder kaarten heeft (Pokémon TCG Classic, CSMC, Gem Packs): uit de eigen catalogus.
+  const local = isLang(lang) ? localSet(setId, lang) : null
   if (local) return local
   const data = await getJson(`${API}/${lang}/sets/${encodeURIComponent(setId)}`)
   if (!isRecord(data) || typeof data.id !== 'string') return null
@@ -213,7 +213,8 @@ const fetchSetList = memo(async (lang: string): Promise<Map<string, SetSummary>>
       }
     }
   }
-  if (lang === 'en') for (const s of localSetSummaries()) map.set(s.id, s)
+  // Eigen catalogus: nieuwe sets erbij, en vervangt een TCGdex-set zonder kaarten met hetzelfde id.
+  if (isLang(lang)) for (const s of localSetSummaries(lang)) map.set(s.id, s)
   return map
 })
 
@@ -272,12 +273,14 @@ export async function searchCards(lang: Lang, name: string, filters: CardQueryFi
   const [cards, digital] = await Promise.all([getJson(`${API}/${lang}/cards?${cardQuery(lang, q, filters)}`).then(parseCards), digitalSetIds(lang)])
   // Buiten het Engels geen achtervoegsel-veld: dan op de naam ("リザードンex").
   const suffix = lang !== 'en' && filters.suffix ? filters.suffix : null
-  // Eigen catalogus (Engels) erbij, alleen op naam: zeldzaamheid en achtervoegsel kent hij niet.
-  const local = lang === 'en' && !filters.rarity && !filters.suffix ? searchLocal(q, filters.type) : []
+  // Eigen catalogus erbij, alleen op (Engelse) naam: zeldzaamheid en achtervoegsel kent hij niet.
+  const local = !filters.rarity && !filters.suffix ? searchLocal(q, filters.type, lang) : []
   return [...cards.filter((c) => !digital.has(setIdOf(c)) && (!suffix || c.name.endsWith(suffix))), ...local]
 }
 
-export function matchNumber(cards: readonly SetCard[], number: string): SetCard | undefined {
+export function matchNumber(cards: readonly SetCard[], printed: string): SetCard | undefined {
+  // Gem Packs drukken "14 01/07": zonder spatie vergelijken.
+  const number = printed.replace(/\s+/g, '')
   const exact = cards.find((c) => c.localId === number)
   if (exact) return exact
   const n = Number.parseInt(number, 10)
