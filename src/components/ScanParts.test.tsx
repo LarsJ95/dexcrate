@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { ComponentProps } from 'react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Candidate } from '../lib/match'
 import type { Recognition } from '../lib/scan'
 import type { ScanItem } from '../lib/scanSessions'
@@ -11,6 +12,7 @@ vi.mock('../lib/supabase', () => ({ supabase: {} }))
 
 const { ScanSessionSummary, SingleScanResult } = await import('./ScanParts')
 
+beforeEach(() => localStorage.clear())
 afterEach(cleanup)
 
 const recognition: Recognition = {
@@ -32,45 +34,101 @@ const candidates: Candidate[] = [
   { key: 'xx/sv2a-026', name: 'Raichu', localId: '026', setId: 'sv2a', setName: '151', image: null, score: 0.4, reason: 'Number close' },
 ]
 
-const noSearch = (): Promise<void> => Promise.resolve()
+const done = (): Promise<void> => Promise.resolve()
 
-const earlier: ScanItem ={ card_id: 'c1', name: 'Pikachu', set_code: 'MEW', card_number: '25', tcgdex_id: 'xx/sv2a-025', variant: null, quantity: 1, at: '' }
+const earlier: ScanItem = { card_id: 'c1', name: 'Pikachu', set_code: 'MEW', card_number: '25', tcgdex_id: 'xx/sv2a-025', variant: null, quantity: 1, at: '' }
+
+type SingleProps = ComponentProps<typeof SingleScanResult>
+
+function renderSingle(over: Partial<SingleProps> = {}): ReturnType<typeof render> & { props: SingleProps } {
+  const props: SingleProps = {
+    recognition,
+    candidates,
+    ownedByKey: new Map(),
+    earlier: null,
+    onChoose: vi.fn(done),
+    onAdd: vi.fn(done),
+    onAddAnotherCopy: vi.fn(done),
+    onReset: vi.fn(),
+    onSearch: vi.fn(done),
+    ...over,
+  }
+  return { ...render(<SingleScanResult {...props} />), props }
+}
+
+/** Kaartinfo in de cache (zoals na een eerder bezoek): uitvoeringen bekend zonder netwerk. */
+function seedInfo(key: string, variants: string[]): void {
+  localStorage.setItem(`tcgdex:card:v7:${key}`, JSON.stringify({ t: Date.now(), v: { key, lang: 'en', name: 'Mew ex', localId: '151', image: null, variants, set: { id: 'sv03.5', name: '151', logo: null } } }))
+}
 
 describe('SingleScanResult', () => {
   it('toont wat er herkend is, met twijfel', () => {
-    render(<SingleScanResult recognition={recognition} candidates={candidates} ownedByKey={new Map()} earlier={null} onChoose={() => {}} onAddAnotherCopy={() => {}} onReset={() => {}} onSearch={noSearch} />)
+    renderSingle()
     expect(screen.getByText('Pikachu', { selector: '.scan-name' })).toBeTruthy()
     expect(screen.getByText(/SV2a, 025\/165, Japanese/)).toBeTruthy()
     expect(screen.getByText(/uncertain, please check/)).toBeTruthy()
   })
 
-  it('kiest een kandidaat of voegt toe zonder koppeling', async () => {
-    const onChoose = vi.fn()
-    render(<SingleScanResult recognition={recognition} candidates={candidates} ownedByKey={new Map([['xx/sv2a-026', 2]])} earlier={null} onChoose={onChoose} onAddAnotherCopy={() => {}} onReset={() => {}} onSearch={noSearch} />)
+  it('beste match staat geselecteerd; Add voegt meteen toe, Edit first opent het formulier', async () => {
+    const { props } = renderSingle({ ownedByKey: new Map([['xx/sv2a-026', 2]]) })
     expect(screen.getByText('Best match')).toBeTruthy()
     expect(screen.getByText('Owned 2×')).toBeTruthy()
-    await userEvent.click(screen.getByRole('button', { name: /Raichu/ }))
-    expect(onChoose).toHaveBeenLastCalledWith(candidates[1])
-    await userEvent.click(screen.getByRole('button', { name: 'Add without link' }))
-    expect(onChoose).toHaveBeenLastCalledWith(null)
+    expect(screen.getByRole('button', { name: /^Pikachu/, pressed: true })).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }))
+    expect(props.onAdd).toHaveBeenLastCalledWith(candidates[0], null)
+    // Andere kaart kiezen en eerst het formulier.
+    await userEvent.click(screen.getByRole('button', { name: /^Raichu/ }))
+    expect(screen.getByRole('button', { name: /^Raichu/, pressed: true })).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: 'Edit first' }))
+    expect(props.onChoose).toHaveBeenLastCalledWith(candidates[1], null)
+    // Zonder koppeling.
+    await userEvent.click(screen.getByRole('button', { name: 'Without link' }))
+    expect(screen.getByText(/without link/, { selector: '.single-pick' })).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }))
+    expect(props.onAdd).toHaveBeenLastCalledWith(null, null)
   })
 
-  it('alleen suggesties met een ander nummer: geen "Best match", wel uitleg', async () => {
-    const onChoose = vi.fn()
+  it('uitvoering: gelezen "reverse" bestaat niet bij deze kaart → de enige die bestaat; eigen keuze gaat mee', async () => {
+    seedInfo('en/sv03.5-151', ['holo'])
+    const mew: Candidate = { ...candidates[0], key: 'en/sv03.5-151', name: 'Mew ex', localId: '151', score: 8 }
+    const { props } = renderSingle({ recognition: { ...recognition, variant: 'reverse' }, candidates: [mew] })
+    await vi.waitFor(() => expect((screen.getByLabelText('Variant') as HTMLSelectElement).value).toBe('holo'))
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }))
+    expect(props.onAdd).toHaveBeenLastCalledWith(mew, 'holo')
+    await userEvent.selectOptions(screen.getByLabelText('Variant'), '')
+    await userEvent.click(screen.getByRole('button', { name: 'Edit first' }))
+    expect(props.onChoose).toHaveBeenLastCalledWith(mew, null)
+  })
+
+  it('toevoegen mislukt: melding, en niet dubbel tegelijk', async () => {
+    let fail: (e: Error) => void = () => {}
+    const onAdd = vi.fn(() => new Promise<void>((_, reject) => (fail = reject)))
+    renderSingle({ onAdd })
+    const add = screen.getByRole('button', { name: 'Add' })
+    await userEvent.click(add)
+    expect((screen.getByRole('button', { name: 'Adding…' }) as HTMLButtonElement).disabled).toBe(true)
+    await userEvent.click(screen.getByRole('button', { name: 'Adding…' }))
+    expect(onAdd).toHaveBeenCalledOnce()
+    fail(new Error('Saving failed: offline'))
+    expect((await screen.findByRole('alert')).textContent).toBe('Saving failed: offline')
+  })
+
+  it('alleen suggesties met een ander nummer: geen "Best match", wel uitleg; zonder koppeling staat klaar', async () => {
     const dedenne: Recognition = { ...recognition, nameEnglish: 'Dedenne', language: 'zh-cn', setCode: 'CSMC', cardNumber: '004', setTotal: '012', confidence: 'high' }
     const guess: Candidate = { key: 'xx/SV8-055', name: '咚咚鼠', localId: '055', setId: 'SV8', setName: '超電突圍', image: null, score: 3, reason: 'Name (咚咚鼠), other number', otherNumber: true }
-    const { container } = render(<SingleScanResult recognition={dedenne} candidates={[guess]} ownedByKey={new Map()} earlier={null} onChoose={onChoose} onAddAnotherCopy={() => {}} onReset={() => {}} onSearch={noSearch} />)
+    const { container, props } = renderSingle({ recognition: dedenne, candidates: [guess] })
     expect(screen.queryByText('Best match')).toBe(null)
     expect(container.querySelector('.candidate.selected')).toBe(null)
     expect(screen.getByText(/No card with number 004 in the catalog \(set CSMC may be missing\)/)).toBeTruthy()
     expect(screen.getByText('Name (咚咚鼠), other number')).toBeTruthy()
-    await userEvent.click(screen.getByRole('button', { name: 'Add without link' }))
-    expect(onChoose).toHaveBeenLastCalledWith(null)
+    expect(screen.getByRole('button', { name: 'Without link', pressed: true })).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }))
+    expect(props.onAdd).toHaveBeenLastCalledWith(null, null)
   })
 
   it('gelezen waarden verbeteren en opnieuw zoeken; fout blijft in het formulier staan', async () => {
     const onSearch = vi.fn<(r: Recognition) => Promise<void>>().mockRejectedValueOnce(new Error('No internet connection')).mockResolvedValueOnce(undefined)
-    render(<SingleScanResult recognition={recognition} candidates={candidates} ownedByKey={new Map()} earlier={null} onChoose={() => {}} onAddAnotherCopy={() => {}} onReset={() => {}} onSearch={onSearch} />)
+    renderSingle({ onSearch })
     await userEvent.click(screen.getByRole('button', { name: 'Correct' }))
     const number = screen.getByLabelText('Number')
     await userEvent.clear(number)
@@ -87,13 +145,12 @@ describe('SingleScanResult', () => {
   })
 
   it('Search again kan niet zonder naam', async () => {
-    const onSearch = vi.fn(noSearch)
-    render(<SingleScanResult recognition={recognition} candidates={candidates} ownedByKey={new Map()} earlier={null} onChoose={() => {}} onAddAnotherCopy={() => {}} onReset={() => {}} onSearch={onSearch} />)
+    const { props } = renderSingle()
     await userEvent.click(screen.getByRole('button', { name: 'Correct' }))
     await userEvent.clear(screen.getByLabelText('Name'))
     expect((screen.getByRole('button', { name: 'Search again' }) as HTMLButtonElement).disabled).toBe(true)
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
-    expect(onSearch).not.toHaveBeenCalled()
+    expect(props.onSearch).not.toHaveBeenCalled()
     expect(screen.queryByLabelText('Name')).toBe(null)
   })
 
@@ -102,20 +159,18 @@ describe('SingleScanResult', () => {
     const price = (trend: number) => ({ idProduct: 1, updated: null, trend, low: null, avg1: null, avg7: null, avg30: null, trendHolo: trend * 10, lowHolo: null, avg1Holo: null, avg7Holo: null, avg30Holo: null })
     keys.forEach((k, i) => localStorage.setItem(`tcgdex:price:v2:${k}`, JSON.stringify({ t: Date.now(), v: price(0.05 * (i + 1)) })))
     const many: Candidate[] = keys.map((key, i) => ({ ...candidates[0], key, localId: String(25 + i), score: 5 - i }))
-    const { container } = render(<SingleScanResult recognition={recognition} candidates={many} ownedByKey={new Map()} earlier={null} onChoose={() => {}} onAddAnotherCopy={() => {}} onReset={() => {}} onSearch={noSearch} />)
+    const { container } = renderSingle({ candidates: many })
     await vi.waitFor(() => expect([...container.querySelectorAll('.cand-price')].map((e) => e.textContent)).toEqual(['€0.05RH €0.50', '€0.10RH €1.00', '€0.15RH €1.50']))
   })
 
   it('vraagt eerst bij een kaart die al in de sessie zit', async () => {
-    const onAddAnotherCopy = vi.fn()
-    const onReset = vi.fn()
-    render(<SingleScanResult recognition={recognition} candidates={[]} ownedByKey={new Map()} earlier={earlier} onChoose={() => {}} onAddAnotherCopy={onAddAnotherCopy} onReset={onReset} onSearch={noSearch} />)
+    const { props } = renderSingle({ candidates: [], earlier })
     expect(screen.getByRole('alert').textContent).toContain('You already added Pikachu #25 in this session')
     expect(screen.getByText('No match found. You can add it without a link.')).toBeTruthy()
     await userEvent.click(screen.getByRole('button', { name: 'Add another copy' }))
     await userEvent.click(screen.getByRole('button', { name: /Skip/ }))
-    expect(onAddAnotherCopy).toHaveBeenCalledOnce()
-    expect(onReset).toHaveBeenCalledOnce()
+    expect(props.onAddAnotherCopy).toHaveBeenCalledOnce()
+    expect(props.onReset).toHaveBeenCalledOnce()
   })
 })
 

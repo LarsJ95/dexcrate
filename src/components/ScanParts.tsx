@@ -1,12 +1,15 @@
 import { useState, type FormEvent, type JSX } from 'react'
+import { useCardInfo } from '../hooks/useCardInfo'
 import { errorText } from '../lib/errors'
 import { autoPick, type Candidate } from '../lib/match'
 import { correctRecognition, type Recognition } from '../lib/scan'
 import type { ScanItem, ScanSession } from '../lib/scanSessions'
-import { LANGUAGE_LABELS, type CardLanguage } from '../lib/types'
+import { LANGUAGE_LABELS, type CardLanguage, type Variant } from '../lib/types'
+import { fitVariant } from '../lib/variantChoice'
 import { CardFace } from './CardFace'
 import { CatalogKeyPicture } from './CatalogCardPicture'
 import { LazyCardPrice } from './LazyCardPrice'
+import { VariantGapNote, VariantSelect } from './VariantSelect'
 
 /** Lopende scansessie (bewaard), of anders wat je net hebt toegevoegd. */
 export function ScanSessionSummary({ session, added, onEnd }: { session: ScanSession | null; added: readonly string[]; onEnd: () => void }): JSX.Element | null {
@@ -130,113 +133,184 @@ interface SingleProps {
   ownedByKey: ReadonlyMap<string, number>
   /** Deze kaart is eerder in de sessie toegevoegd: eerst vragen. */
   earlier: ScanItem | null
-  /** null = toevoegen zonder koppeling. */
-  onChoose: (candidate: Candidate | null) => void
-  onAddAnotherCopy: () => void
+  /** Eerst het formulier openen; kaart null = zonder koppeling. */
+  onChoose: (candidate: Candidate | null, variant: Variant | null) => Promise<void>
+  /** Meteen toevoegen met je standaardwaarden; kaart null = zonder koppeling. */
+  onAdd: (candidate: Candidate | null, variant: Variant | null) => Promise<void>
+  onAddAnotherCopy: () => Promise<void>
   onReset: () => void
   /** Opnieuw zoeken met gecorrigeerde gelezen waarden. */
   onSearch: (r: Recognition) => Promise<void>
 }
 
-/** Resultaat van een losse scan: wat herkend is en de kandidaten om uit te kiezen. */
-export function SingleScanResult({ recognition, candidates, ownedByKey, earlier, onChoose, onAddAnotherCopy, onReset, onSearch }: SingleProps): JSX.Element {
+/**
+ * Resultaat van een losse scan: wat herkend is en de kandidaten. Tikken selecteert; daarna meteen toevoegen
+ * (Add) of eerst het formulier (Edit first). Zonder zekere match staat "Without link" geselecteerd.
+ */
+export function SingleScanResult({ recognition, candidates, ownedByKey, earlier, onChoose, onAdd, onAddAnotherCopy, onReset, onSearch }: SingleProps): JSX.Element {
   const best = autoPick(candidates)
   const [fixing, setFixing] = useState(false)
+  /** Gekozen kaart-sleutel; '' = zonder koppeling. */
+  const [selected, setSelected] = useState(best?.key ?? '')
+  /** undefined = de gelezen uitvoering (passend bij de catalogus); anders je eigen keuze. */
+  const [ownVariant, setOwnVariant] = useState<Variant | null | undefined>(undefined)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const chosen = candidates.find((c) => c.key === selected) ?? null
+  const info = useCardInfo(chosen?.key ?? null)
+  const variant = ownVariant === undefined ? fitVariant(recognition.variant, info?.variants) : ownVariant
+  // Uitvoeringen nog niet bekend: even wachten, anders kan een niet-bestaande uitvoering worden opgeslagen.
+  const loadingInfo = chosen !== null && info === undefined
+
+  function select(key: string): void {
+    setSelected(key)
+    setOwnVariant(undefined)
+  }
+
+  async function run(action: () => Promise<void>, fallback: string): Promise<void> {
+    if (busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      await action()
+    } catch (err) {
+      setError(errorText(err, fallback))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Fragment: de actiebalk is een kind van de pagina, zodat hij (sticky) altijd onderin in beeld staat,
+  // ook als het resultaat nog laag op het scherm begint.
   return (
-    <div className="scan-result">
-      <div className="panel">
-        <div className="sheet-foot">
-          <span className="stat-label">Recognised</span>
-          <span className="spacer" />
-          {!fixing && (
-            <button type="button" className="ghost small-btn" onClick={() => setFixing(true)}>
-              Correct
-            </button>
+    <>
+      <div className="scan-result">
+        <div className="panel">
+          <div className="sheet-foot">
+            <span className="stat-label">Recognised</span>
+            <span className="spacer" />
+            {!fixing && (
+              <button type="button" className="ghost small-btn" onClick={() => setFixing(true)}>
+                Correct
+              </button>
+            )}
+          </div>
+          <p className="scan-name">{recognition.nameEnglish || recognition.namePrinted}</p>
+          <p className="muted small">
+            {[
+              recognition.setCode,
+              recognition.cardNumber && `${recognition.cardNumber}${recognition.setTotal ? `/${recognition.setTotal}` : ''}`,
+              recognition.language ? LANGUAGE_LABELS[recognition.language] : null,
+            ]
+              .filter(Boolean)
+              .join(', ')}
+            {recognition.confidence !== 'high' && ' (uncertain, please check)'}
+          </p>
+          {recognition.notes && <p className="muted small">{recognition.notes}</p>}
+          {fixing && (
+            <ReadFixForm
+              recognition={recognition}
+              onSearch={async (r) => {
+                await onSearch(r)
+                setFixing(false)
+              }}
+              onCancel={() => setFixing(false)}
+            />
           )}
         </div>
-        <p className="scan-name">{recognition.nameEnglish || recognition.namePrinted}</p>
-        <p className="muted small">
-          {[
-            recognition.setCode,
-            recognition.cardNumber && `${recognition.cardNumber}${recognition.setTotal ? `/${recognition.setTotal}` : ''}`,
-            recognition.language ? LANGUAGE_LABELS[recognition.language] : null,
-          ]
-            .filter(Boolean)
-            .join(', ')}
-          {recognition.confidence !== 'high' && ' (uncertain, please check)'}
-        </p>
-        {recognition.notes && <p className="muted small">{recognition.notes}</p>}
-        {fixing && (
-          <ReadFixForm
-            recognition={recognition}
-            onSearch={async (r) => {
-              await onSearch(r)
-              setFixing(false)
-            }}
-            onCancel={() => setFixing(false)}
-          />
+
+        {earlier && (
+          <div className="notice" role="alert">
+            <p>
+              You already added {earlier.name}
+              {earlier.card_number ? ` #${earlier.card_number}` : ''} in this session
+              {earlier.at ? ` at ${new Date(earlier.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : ''}. Is this another copy?
+            </p>
+            <div className="sheet-foot">
+              <button type="button" className="primary" onClick={() => void run(onAddAnotherCopy, 'Adding failed.')} disabled={busy}>
+                Add another copy
+              </button>
+              <button type="button" className="ghost" onClick={onReset}>
+                Skip, it’s the same card
+              </button>
+            </div>
+          </div>
+        )}
+
+        <h2>Pick the right card</h2>
+        {candidates.length === 0 && <p className="muted">No match found. You can add it without a link.</p>}
+        {candidates.length > 0 && !best && (
+          <p className="muted">
+            No card with number {recognition.cardNumber} in the catalog{recognition.setCode ? ` (set ${recognition.setCode} may be missing)` : ''}. These only share the name. None of them? Add it without link.
+          </p>
+        )}
+        <ul className="candidates">
+          {candidates.map((c, i) => {
+            const owned = ownedByKey.get(c.key)
+            return (
+              <li key={c.key}>
+                <button type="button" className={`candidate${c.key === selected ? ' selected' : ''}`} aria-pressed={c.key === selected} onClick={() => select(c.key)}>
+                  <CatalogKeyPicture
+                    cardKey={c.key}
+                    image={c.image}
+                    name={c.name}
+                    quality="low"
+                    alt=""
+                    fallback={<CardFace name={c.name} detail={`${c.setName} #${c.localId}`} />}
+                  />
+                  <span className="cand-name">{c.name}</span>
+                  <span className="muted small">
+                    {c.setName} {c.localId}
+                  </span>
+                  {i < PRICED_CANDIDATES && <LazyCardPrice cardKey={c.key} className="cand-price small" withReverse />}
+                  <span className="cand-reason small">{c === best && !c.noCardData ? 'Best match' : c.reason}</span>
+                  {owned && <span className="small">Owned {owned}×</span>}
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+        {candidates.length > 0 && (
+          <div className="scan-foot">
+            <button type="button" className={selected === '' ? 'primary' : 'ghost'} aria-pressed={selected === ''} onClick={() => select('')}>
+              Without link
+            </button>
+          </div>
         )}
       </div>
 
-      {earlier && (
-        <div className="notice" role="alert">
-          <p>
-            You already added {earlier.name}
-            {earlier.card_number ? ` #${earlier.card_number}` : ''} in this session
-            {earlier.at ? ` at ${new Date(earlier.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : ''}. Is this another copy?
-          </p>
-          <div className="sheet-foot">
-            <button type="button" className="primary" onClick={onAddAnotherCopy}>
-              Add another copy
-            </button>
-            <button type="button" className="ghost" onClick={onReset}>
-              Skip, it’s the same card
-            </button>
-          </div>
-        </div>
-      )}
-
-      <h2>Pick the right card</h2>
-      {candidates.length === 0 && <p className="muted">No match found. You can add it without a link.</p>}
-      {candidates.length > 0 && !best && (
-        <p className="muted">
-          No card with number {recognition.cardNumber} in the catalog{recognition.setCode ? ` (set ${recognition.setCode} may be missing)` : ''}. These only share the name. None of them? Add it without link.
+      <div className="scan-bulk single-actions">
+        <p className="small single-pick">
+          {chosen ? (
+            <>
+              <strong>{chosen.name}</strong> · {chosen.setName} {chosen.localId}
+            </>
+          ) : (
+            <>
+              <strong>{recognition.nameEnglish || recognition.namePrinted || 'Unknown card'}</strong> · without link
+            </>
+          )}
         </p>
-      )}
-      <ul className="candidates">
-        {candidates.map((c, i) => {
-          const owned = ownedByKey.get(c.key)
-          return (
-            <li key={c.key}>
-              <button type="button" className={`candidate${c === best ? ' selected' : ''}`} onClick={() => onChoose(c)}>
-                <CatalogKeyPicture
-                  cardKey={c.key}
-                  image={c.image}
-                  name={c.name}
-                  quality="low"
-                  alt=""
-                  fallback={<CardFace name={c.name} detail={`${c.setName} #${c.localId}`} />}
-                />
-                <span className="cand-name">{c.name}</span>
-                <span className="muted small">
-                  {c.setName} {c.localId}
-                </span>
-                {i < PRICED_CANDIDATES && <LazyCardPrice cardKey={c.key} className="cand-price small" withReverse />}
-                <span className="cand-reason small">{c === best && !c.noCardData ? 'Best match' : c.reason}</span>
-                {owned && <span className="small">Owned {owned}×</span>}
-              </button>
-            </li>
-          )
-        })}
-      </ul>
-      <div className="scan-foot">
-        <button type="button" className="ghost" onClick={() => onChoose(null)}>
-          Add without link
-        </button>
-        <button type="button" className="ghost" onClick={onReset}>
-          Discard
-        </button>
+        <VariantSelect cardKey={chosen?.key ?? null} value={variant} onChange={setOwnVariant} label="Variant" />
+        {chosen && <VariantGapNote cardKey={chosen.key} />}
+        <div className="sheet-foot">
+          <button type="button" className="primary" onClick={() => void run(() => onAdd(chosen, variant), 'Adding failed.')} disabled={busy || loadingInfo}>
+            {busy ? 'Adding…' : 'Add'}
+          </button>
+          <button type="button" onClick={() => void run(() => onChoose(chosen, variant), 'Opening the form failed.')} disabled={busy || loadingInfo}>
+            Edit first
+          </button>
+          <span className="spacer" />
+          <button type="button" className="ghost" onClick={onReset} disabled={busy}>
+            Discard
+          </button>
+        </div>
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
       </div>
-    </div>
+    </>
   )
 }
