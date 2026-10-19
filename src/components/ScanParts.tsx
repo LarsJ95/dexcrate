@@ -1,8 +1,9 @@
-import type { JSX } from 'react'
+import { useState, type FormEvent, type JSX } from 'react'
+import { errorText } from '../lib/errors'
 import { autoPick, type Candidate } from '../lib/match'
-import type { Recognition } from '../lib/scan'
+import { correctRecognition, type Recognition } from '../lib/scan'
 import type { ScanItem, ScanSession } from '../lib/scanSessions'
-import { LANGUAGE_LABELS } from '../lib/types'
+import { LANGUAGE_LABELS, type CardLanguage } from '../lib/types'
 import { CardFace } from './CardFace'
 import { CatalogKeyPicture } from './CatalogCardPicture'
 
@@ -38,6 +39,87 @@ export function ScanSessionSummary({ session, added, onEnd }: { session: ScanSes
   )
 }
 
+const isCardLanguage = (v: string): v is CardLanguage => Object.hasOwn(LANGUAGE_LABELS, v)
+
+interface ReadFixProps {
+  recognition: Recognition
+  /** Zoekt opnieuw in de catalogus; een fout (bv. geen internet) wordt hier getoond. */
+  onSearch: (r: Recognition) => Promise<void>
+  onCancel: () => void
+}
+
+/** Gelezen naam, set, nummer en taal zelf verbeteren en opnieuw zoeken, zonder nieuwe foto of scan. */
+export function ReadFixForm({ recognition, onSearch, onCancel }: ReadFixProps): JSX.Element {
+  const [name, setName] = useState(recognition.nameEnglish || recognition.namePrinted)
+  const [setCode, setSetCode] = useState(recognition.setCode)
+  const [cardNumber, setCardNumber] = useState(recognition.cardNumber)
+  const [setTotal, setSetTotal] = useState(recognition.setTotal)
+  const [language, setLanguage] = useState<CardLanguage | ''>(recognition.language ?? '')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function submit(e: FormEvent<HTMLFormElement>): Promise<void> {
+    e.preventDefault()
+    if (busy || !name.trim()) return
+    setBusy(true)
+    setError(null)
+    try {
+      await onSearch(correctRecognition(recognition, { name, setCode, cardNumber, setTotal, language: language || null }))
+    } catch (err) {
+      setError(errorText(err, 'Searching failed.'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form className="read-fix" onSubmit={(e) => void submit(e)} aria-label="Correct what was read">
+      <div className="form-grid">
+        <label className="wide">
+          Name
+          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={200} required autoComplete="off" />
+        </label>
+        <label>
+          Set code
+          <input value={setCode} onChange={(e) => setSetCode(e.target.value)} maxLength={20} autoCapitalize="characters" autoComplete="off" />
+        </label>
+        <label>
+          Number
+          <input value={cardNumber} onChange={(e) => setCardNumber(e.target.value)} maxLength={30} autoComplete="off" />
+        </label>
+        <label>
+          Of
+          <input value={setTotal} onChange={(e) => setSetTotal(e.target.value)} maxLength={10} inputMode="numeric" autoComplete="off" />
+        </label>
+        <label className="wide">
+          Language
+          <select value={language} onChange={(e) => setLanguage(isCardLanguage(e.target.value) ? e.target.value : '')}>
+            <option value="">Unknown</option>
+            {(Object.keys(LANGUAGE_LABELS) as CardLanguage[]).map((k) => (
+              <option key={k} value={k}>
+                {LANGUAGE_LABELS[k]}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
+      <div className="sheet-foot">
+        <button type="submit" className="primary" disabled={busy || !name.trim()}>
+          {busy ? 'Searching…' : 'Search again'}
+        </button>
+        <button type="button" className="ghost" onClick={onCancel} disabled={busy}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  )
+}
+
 interface SingleProps {
   recognition: Recognition
   candidates: readonly Candidate[]
@@ -48,15 +130,26 @@ interface SingleProps {
   onChoose: (candidate: Candidate | null) => void
   onAddAnotherCopy: () => void
   onReset: () => void
+  /** Opnieuw zoeken met gecorrigeerde gelezen waarden. */
+  onSearch: (r: Recognition) => Promise<void>
 }
 
 /** Resultaat van een losse scan: wat herkend is en de kandidaten om uit te kiezen. */
-export function SingleScanResult({ recognition, candidates, ownedByKey, earlier, onChoose, onAddAnotherCopy, onReset }: SingleProps): JSX.Element {
+export function SingleScanResult({ recognition, candidates, ownedByKey, earlier, onChoose, onAddAnotherCopy, onReset, onSearch }: SingleProps): JSX.Element {
   const best = autoPick(candidates)
+  const [fixing, setFixing] = useState(false)
   return (
     <div className="scan-result">
       <div className="panel">
-        <span className="stat-label">Recognised</span>
+        <div className="sheet-foot">
+          <span className="stat-label">Recognised</span>
+          <span className="spacer" />
+          {!fixing && (
+            <button type="button" className="ghost small-btn" onClick={() => setFixing(true)}>
+              Correct
+            </button>
+          )}
+        </div>
         <p className="scan-name">{recognition.nameEnglish || recognition.namePrinted}</p>
         <p className="muted small">
           {[
@@ -69,6 +162,16 @@ export function SingleScanResult({ recognition, candidates, ownedByKey, earlier,
           {recognition.confidence !== 'high' && ' (uncertain, please check)'}
         </p>
         {recognition.notes && <p className="muted small">{recognition.notes}</p>}
+        {fixing && (
+          <ReadFixForm
+            recognition={recognition}
+            onSearch={async (r) => {
+              await onSearch(r)
+              setFixing(false)
+            }}
+            onCancel={() => setFixing(false)}
+          />
+        )}
       </div>
 
       {earlier && (

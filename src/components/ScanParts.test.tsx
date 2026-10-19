@@ -32,11 +32,13 @@ const candidates: Candidate[] = [
   { key: 'xx/sv2a-026', name: 'Raichu', localId: '026', setId: 'sv2a', setName: '151', image: null, score: 0.4, reason: 'Number close' },
 ]
 
-const earlier: ScanItem = { card_id: 'c1', name: 'Pikachu', set_code: 'MEW', card_number: '25', tcgdex_id: 'xx/sv2a-025', variant: null, quantity: 1, at: '' }
+const noSearch = (): Promise<void> => Promise.resolve()
+
+const earlier: ScanItem ={ card_id: 'c1', name: 'Pikachu', set_code: 'MEW', card_number: '25', tcgdex_id: 'xx/sv2a-025', variant: null, quantity: 1, at: '' }
 
 describe('SingleScanResult', () => {
   it('toont wat er herkend is, met twijfel', () => {
-    render(<SingleScanResult recognition={recognition} candidates={candidates} ownedByKey={new Map()} earlier={null} onChoose={() => {}} onAddAnotherCopy={() => {}} onReset={() => {}} />)
+    render(<SingleScanResult recognition={recognition} candidates={candidates} ownedByKey={new Map()} earlier={null} onChoose={() => {}} onAddAnotherCopy={() => {}} onReset={() => {}} onSearch={noSearch} />)
     expect(screen.getByText('Pikachu', { selector: '.scan-name' })).toBeTruthy()
     expect(screen.getByText(/SV2a, 025\/165, Japanese/)).toBeTruthy()
     expect(screen.getByText(/uncertain, please check/)).toBeTruthy()
@@ -44,7 +46,7 @@ describe('SingleScanResult', () => {
 
   it('kiest een kandidaat of voegt toe zonder koppeling', async () => {
     const onChoose = vi.fn()
-    render(<SingleScanResult recognition={recognition} candidates={candidates} ownedByKey={new Map([['xx/sv2a-026', 2]])} earlier={null} onChoose={onChoose} onAddAnotherCopy={() => {}} onReset={() => {}} />)
+    render(<SingleScanResult recognition={recognition} candidates={candidates} ownedByKey={new Map([['xx/sv2a-026', 2]])} earlier={null} onChoose={onChoose} onAddAnotherCopy={() => {}} onReset={() => {}} onSearch={noSearch} />)
     expect(screen.getByText('Best match')).toBeTruthy()
     expect(screen.getByText('Owned 2×')).toBeTruthy()
     await userEvent.click(screen.getByRole('button', { name: /Raichu/ }))
@@ -57,7 +59,7 @@ describe('SingleScanResult', () => {
     const onChoose = vi.fn()
     const dedenne: Recognition = { ...recognition, nameEnglish: 'Dedenne', language: 'zh-cn', setCode: 'CSMC', cardNumber: '004', setTotal: '012', confidence: 'high' }
     const guess: Candidate = { key: 'xx/SV8-055', name: '咚咚鼠', localId: '055', setId: 'SV8', setName: '超電突圍', image: null, score: 3, reason: 'Name (咚咚鼠), other number', otherNumber: true }
-    const { container } = render(<SingleScanResult recognition={dedenne} candidates={[guess]} ownedByKey={new Map()} earlier={null} onChoose={onChoose} onAddAnotherCopy={() => {}} onReset={() => {}} />)
+    const { container } = render(<SingleScanResult recognition={dedenne} candidates={[guess]} ownedByKey={new Map()} earlier={null} onChoose={onChoose} onAddAnotherCopy={() => {}} onReset={() => {}} onSearch={noSearch} />)
     expect(screen.queryByText('Best match')).toBe(null)
     expect(container.querySelector('.candidate.selected')).toBe(null)
     expect(screen.getByText(/No card with number 004 in the catalog \(set CSMC may be missing\)/)).toBeTruthy()
@@ -66,10 +68,39 @@ describe('SingleScanResult', () => {
     expect(onChoose).toHaveBeenLastCalledWith(null)
   })
 
+  it('gelezen waarden verbeteren en opnieuw zoeken; fout blijft in het formulier staan', async () => {
+    const onSearch = vi.fn<(r: Recognition) => Promise<void>>().mockRejectedValueOnce(new Error('No internet connection')).mockResolvedValueOnce(undefined)
+    render(<SingleScanResult recognition={recognition} candidates={candidates} ownedByKey={new Map()} earlier={null} onChoose={() => {}} onAddAnotherCopy={() => {}} onReset={() => {}} onSearch={onSearch} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Correct' }))
+    const number = screen.getByLabelText('Number')
+    await userEvent.clear(number)
+    await userEvent.type(number, '26/165')
+    await userEvent.selectOptions(screen.getByLabelText('Language'), 'en')
+    await userEvent.click(screen.getByRole('button', { name: 'Search again' }))
+    expect(onSearch).toHaveBeenLastCalledWith({ ...recognition, cardNumber: '26', setTotal: '165', language: 'en', confidence: 'high', notes: '' })
+    expect((await screen.findByRole('alert')).textContent).toBe('No internet connection')
+    // Opnieuw: lukt, formulier sluit.
+    await userEvent.click(screen.getByRole('button', { name: 'Search again' }))
+    expect(onSearch).toHaveBeenCalledTimes(2)
+    expect(screen.queryByRole('form', { name: 'Correct what was read' })).toBe(null)
+    expect(screen.getByRole('button', { name: 'Correct' })).toBeTruthy()
+  })
+
+  it('Search again kan niet zonder naam', async () => {
+    const onSearch = vi.fn(noSearch)
+    render(<SingleScanResult recognition={recognition} candidates={candidates} ownedByKey={new Map()} earlier={null} onChoose={() => {}} onAddAnotherCopy={() => {}} onReset={() => {}} onSearch={onSearch} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Correct' }))
+    await userEvent.clear(screen.getByLabelText('Name'))
+    expect((screen.getByRole('button', { name: 'Search again' }) as HTMLButtonElement).disabled).toBe(true)
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(onSearch).not.toHaveBeenCalled()
+    expect(screen.queryByLabelText('Name')).toBe(null)
+  })
+
   it('vraagt eerst bij een kaart die al in de sessie zit', async () => {
     const onAddAnotherCopy = vi.fn()
     const onReset = vi.fn()
-    render(<SingleScanResult recognition={recognition} candidates={[]} ownedByKey={new Map()} earlier={earlier} onChoose={() => {}} onAddAnotherCopy={onAddAnotherCopy} onReset={onReset} />)
+    render(<SingleScanResult recognition={recognition} candidates={[]} ownedByKey={new Map()} earlier={earlier} onChoose={() => {}} onAddAnotherCopy={onAddAnotherCopy} onReset={onReset} onSearch={noSearch} />)
     expect(screen.getByRole('alert').textContent).toContain('You already added Pikachu #25 in this session')
     expect(screen.getByText('No match found. You can add it without a link.')).toBeTruthy()
     await userEvent.click(screen.getByRole('button', { name: 'Add another copy' }))

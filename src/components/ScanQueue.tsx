@@ -3,12 +3,13 @@ import { addedQuietly } from '../lib/celebrate'
 import { insertCards } from '../lib/db'
 import { draftFromScan } from '../lib/scan'
 import { MAX_QTY, isAmbiguous, isCondition, onlyOtherNumbers, reviewGroups, scannedTwice, summarize, withoutCardData, type QueueItem } from '../lib/scanQueue'
-import { canRetry, getFeedback, getQueue, removeItems, retry, subscribe, undoFeedback, updateItem } from '../lib/scanQueueStore'
+import { canRetry, getFeedback, getQueue, removeItems, retry, searchAgain, subscribe, undoFeedback, updateItem } from '../lib/scanQueueStore'
 import { lookupLang } from '../lib/tcgdex'
 import { CONDITION_LABELS, EMPTY_CARD, LANGUAGE_LABELS, VARIANT_LABELS, type Card, type CardInput, type Condition, type Variant } from '../lib/types'
 import { CardFace } from './CardFace'
 import { CatalogKeyPicture } from './CatalogCardPicture'
 import { IconClose } from './Icons'
+import { ReadFixForm } from './ScanParts'
 import { errorText } from '../lib/errors'
 import { useLoadMore } from '../hooks/useLoadMore'
 import { Loading } from './Loading'
@@ -117,6 +118,8 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
   const [error, setError] = useState<string | null>(null)
   const [confirmClear, setConfirmClear] = useState(false)
   const [done, setDone] = useState<string | null>(null)
+  /** Regel waarvan je de gelezen waarden aan het verbeteren bent. */
+  const [fixingId, setFixingId] = useState<string | null>(null)
   // Lange lijst in stukken tonen (tot 250 foto's); groepen in volgorde: eerst wat je moet nakijken.
   const { count: shownCount, sentinel: moreRef } = useLoadMore(queue.length, 'scan-queue', ROWS_PER_STEP)
   if (queue.length === 0) {
@@ -210,7 +213,17 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
           {ready && isAmbiguous(q) && !onlyOtherNumbers(q) && <p className="queue-why small">Same name and number in more than one set: pick the right one.</p>}
           {ready && withoutCardData(q) && <p className="queue-why small">No card data for this set in the catalog: linked on set and number. Check the number.</p>}
           {ready && twice.has(q.id) && <p className="queue-why small">Scanned twice: same card? Remove one, or keep both if you have two.</p>}
-          {ready && (
+          {ready && q.rec && fixingId === q.id && (
+            <ReadFixForm
+              recognition={q.rec}
+              onSearch={async (r) => {
+                await searchAgain(q.id, r)
+                setFixingId(null)
+              }}
+              onCancel={() => setFixingId(null)}
+            />
+          )}
+          {ready && fixingId !== q.id && (
             <div className="queue-fields">
               <select aria-label={`Match for ${label}`} value={q.chosen} onChange={(e) => updateItem(q.id, { chosen: e.target.value })}>
                 {q.candidates.map((cand) => (
@@ -247,6 +260,11 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
           {owned && <p className="small">Owned {owned}×</p>}
         </div>
         <div className="queue-actions">
+          {ready && q.rec && fixingId !== q.id && (
+            <button type="button" className="ghost small-btn" onClick={() => setFixingId(q.id)}>
+              Correct
+            </button>
+          )}
           {ready && (
             <button type="button" className="ghost small-btn" onClick={() => void draftOf(q).then((d) => onEdit(d, q.id))}>
               Edit

@@ -5,7 +5,7 @@ import { getSet, lookupLang, splitKey, type Lang } from './tcgdex'
 import { plainNumber, toScanResult, type Recognition, type ScanMode, type ScanResult } from './scanResult'
 import { statusFields, type CardInput } from './types'
 
-export { plainNumber, type Recognition, type ScanMode, type ScanResult } from './scanResult'
+export { correctRecognition, plainNumber, scanQuery, type ReadFix, type Recognition, type ScanMode, type ScanResult } from './scanResult'
 
 export interface PreparedImage {
   /** De (verkleinde) foto zelf, om eventueel als eigen kaartfoto te bewaren. */

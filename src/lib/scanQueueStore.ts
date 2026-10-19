@@ -1,7 +1,7 @@
 import { buzz } from './haptics'
 import { autoPick, findScanCandidates } from './match'
 import { deletePhotos, listPhotoIds, loadPhoto, loadQueueData, savePhoto, saveQueueData } from './photoStore'
-import { preparedFromBlob, prepareImage, recognizeCards, type PreparedImage } from './scan'
+import { preparedFromBlob, prepareImage, recognizeCards, scanQuery, type PreparedImage, type Recognition } from './scan'
 import { BLUR_THRESHOLD, photoSharpness } from './sharpness'
 import { MAX_QUEUE, QUEUE_KEY, mergeDuplicate, newItem, parseQueue, withMatch, type QueueItem } from './scanQueue'
 import { lookupLang } from './tcgdex'
@@ -247,7 +247,7 @@ async function process(id: string): Promise<void> {
       return
     }
     patch(id, { status: 'matching', rec })
-    const candidates = await findScanCandidates({ name: rec.nameEnglish, set_code: rec.setCode || null, card_number: rec.cardNumber || null, set_total: rec.setTotal || null }, lookupLang(rec.language)).catch(
+    const candidates = await findScanCandidates(scanQuery(rec), lookupLang(rec.language)).catch(
       (err: unknown) => {
         console.warn('Kaart opzoeken mislukt', err)
         return []
@@ -307,6 +307,18 @@ export function retry(id: string): void {
   if (!images.has(id)) return
   patch(id, { status: 'waiting', error: null })
   pump()
+}
+
+/**
+ * Opnieuw zoeken met door jou gecorrigeerde gelezen waarden (geen nieuwe scan). De regel blijft staan tot er
+ * een antwoord is; mislukt het zoeken, dan blijft alles zoals het was en krijg je de fout.
+ */
+export async function searchAgain(id: string, rec: Recognition): Promise<void> {
+  if (!queue.some((q) => q.id === id && q.status === 'ready')) return
+  const candidates = await findScanCandidates(scanQuery(rec), lookupLang(rec.language))
+  // Item kan intussen verwijderd zijn.
+  if (!queue.some((q) => q.id === id)) return
+  set(mergeDuplicate(queue.map((q) => (q.id === id ? withMatch(q, rec, candidates) : q)), id))
 }
 
 export function updateItem(id: string, p: Partial<Pick<QueueItem, 'chosen' | 'quantity' | 'variant' | 'include'>>): void {

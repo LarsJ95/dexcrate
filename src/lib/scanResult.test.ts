@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { plainNumber, toScanResult } from './scanResult'
+import { correctRecognition, plainNumber, scanQuery, toScanResult, type Recognition } from './scanResult'
 
 describe('toScanResult', () => {
   it('zet het antwoord van de Edge Function om en sorteert op positie', () => {
@@ -29,6 +29,43 @@ describe('toScanResult', () => {
   it('oud of kapot antwoord geeft een duidelijke fout', () => {
     expect(() => toScanResult({ result: { is_card: true } })).toThrow(/latest function/)
     expect(() => toScanResult(null)).toThrow()
+  })
+})
+
+const scanned: Recognition = {
+  position: 3,
+  namePrinted: '咚咚鼠',
+  nameEnglish: 'Dedenne',
+  language: 'zh-tw',
+  setCode: 'CSMC',
+  cardNumber: '004',
+  setTotal: '012',
+  variant: 'holo',
+  confidence: 'medium',
+  notes: 'Number partly hidden.',
+}
+
+describe('scanQuery', () => {
+  it('lege velden worden null', () => {
+    expect(scanQuery(scanned)).toEqual({ name: 'Dedenne', set_code: 'CSMC', card_number: '004', set_total: '012' })
+    expect(scanQuery({ ...scanned, setCode: '', cardNumber: '', setTotal: '' })).toEqual({ name: 'Dedenne', set_code: null, card_number: null, set_total: null })
+  })
+})
+
+describe('correctRecognition', () => {
+  it('neemt je verbeteringen over; twijfel en toelichting vervallen; rest blijft', () => {
+    const r = correctRecognition(scanned, { name: ' Dedenne ', setCode: ' S12 ', cardNumber: '45', setTotal: '98', language: 'zh-cn' })
+    expect(r).toEqual({ ...scanned, nameEnglish: 'Dedenne', setCode: 'S12', cardNumber: '45', setTotal: '98', language: 'zh-cn', confidence: 'high', notes: '' })
+  })
+
+  it('"004/012" in het nummerveld wordt nummer en totaal', () => {
+    const r = correctRecognition(scanned, { name: 'Dedenne', setCode: '', cardNumber: ' 004 / 012 ', setTotal: '', language: null })
+    expect(r).toMatchObject({ setCode: '', cardNumber: '004', setTotal: '012', language: null })
+  })
+
+  it('kapt extreem lange invoer af', () => {
+    const r = correctRecognition(scanned, { name: 'x'.repeat(500), setCode: 'y'.repeat(50), cardNumber: '1'.repeat(50), setTotal: '2'.repeat(50), language: 'en' })
+    expect([r.nameEnglish.length, r.setCode.length, r.cardNumber.length, r.setTotal.length]).toEqual([200, 20, 20, 10])
   })
 })
 
