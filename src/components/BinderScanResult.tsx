@@ -6,6 +6,7 @@ import { draftFromScan, scanQuery, type Recognition } from '../lib/scan'
 import { lookupLang } from '../lib/tcgdex'
 import { CardFace } from './CardFace'
 import { CatalogKeyPicture } from './CatalogCardPicture'
+import { LazyCardPrice } from './LazyCardPrice'
 import { CONDITION_LABELS, EMPTY_CARD, LANGUAGE_LABELS, type Card, type CardInput, type Condition } from '../lib/types'
 import { errorText } from '../lib/errors'
 
@@ -173,6 +174,11 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
                     ))}
                     <option value="">Add without link</option>
                   </select>
+                )}
+                {c && (
+                  <p className="small">
+                    Market <LazyCardPrice cardKey={c.key} className="scan-price" withReverse />
+                  </p>
                 )}
                 {owned && <p className="small">Owned {owned}×</p>}
               </div>

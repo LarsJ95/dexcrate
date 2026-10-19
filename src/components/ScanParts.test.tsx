@@ -97,6 +97,15 @@ describe('SingleScanResult', () => {
     expect(screen.queryByLabelText('Name')).toBe(null)
   })
 
+  it('marktprijs (met reverse holo) bij de bovenste 3 kandidaten, niet bij de rest', async () => {
+    const keys = ['en/sv03.5-025', 'en/sv03.5-026', 'en/sv03.5-027', 'en/sv03.5-028']
+    const price = (trend: number) => ({ idProduct: 1, updated: null, trend, low: null, avg1: null, avg7: null, avg30: null, trendHolo: trend * 10, lowHolo: null, avg1Holo: null, avg7Holo: null, avg30Holo: null })
+    keys.forEach((k, i) => localStorage.setItem(`tcgdex:price:v2:${k}`, JSON.stringify({ t: Date.now(), v: price(0.05 * (i + 1)) })))
+    const many: Candidate[] = keys.map((key, i) => ({ ...candidates[0], key, localId: String(25 + i), score: 5 - i }))
+    const { container } = render(<SingleScanResult recognition={recognition} candidates={many} ownedByKey={new Map()} earlier={null} onChoose={() => {}} onAddAnotherCopy={() => {}} onReset={() => {}} onSearch={noSearch} />)
+    await vi.waitFor(() => expect([...container.querySelectorAll('.cand-price')].map((e) => e.textContent)).toEqual(['€0.05RH €0.50', '€0.10RH €1.00', '€0.15RH €1.50']))
+  })
+
   it('vraagt eerst bij een kaart die al in de sessie zit', async () => {
     const onAddAnotherCopy = vi.fn()
     const onReset = vi.fn()

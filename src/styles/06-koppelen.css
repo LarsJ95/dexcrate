@@ -90,3 +90,10 @@ button.zoom-trigger.link-thumb {
   color: var(--green);
   font-weight: 600;
 }
+
+/* Marktprijs bij scan-kandidaten en gescande regels. */
+.cand-price,
+.scan-price {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
