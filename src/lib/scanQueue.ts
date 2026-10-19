@@ -1,4 +1,4 @@
-import type { Candidate } from './match'
+import { autoPick, type Candidate } from './match'
 import type { Recognition } from './scanResult'
 import { CONDITION_LABELS, LANGUAGE_LABELS, VARIANT_LABELS, type CardLanguage, type Condition, type Variant } from './types'
 
@@ -35,15 +35,16 @@ export function newItem(id: string, thumb: string, at = new Date().toISOString()
 
 /** Herkenning + kandidaten verwerken: beste match kiezen, standaard aanvinken als het leesbaar was. */
 export function withMatch(item: QueueItem, rec: Recognition, candidates: Candidate[]): QueueItem {
+  const best = autoPick(candidates)
   return {
     ...item,
     status: 'ready',
     error: null,
     rec,
     candidates,
-    chosen: candidates[0]?.key ?? '',
+    chosen: best?.key ?? '',
     variant: rec.variant,
-    include: candidates.length > 0 && rec.confidence !== 'low',
+    include: best !== null && rec.confidence !== 'low',
   }
 }
 
@@ -100,6 +101,7 @@ function toCandidate(v: unknown): Candidate | null {
     score: typeof v.score === 'number' ? v.score : 0,
     reason: str(v.reason),
     ...(v.noCardData === true ? { noCardData: true } : {}),
+    ...(v.otherNumber === true ? { otherNumber: true } : {}),
   }
 }
 
@@ -173,7 +175,7 @@ export function reviewGroups(queue: readonly QueueItem[]): { check: QueueItem[];
   for (const q of queue) {
     if (q.status === 'error') out.check.push(q)
     else if (q.status !== 'ready') out.working.push(q)
-    else if (q.candidates.length === 0 || q.rec?.confidence !== 'high' || isAmbiguous(q) || withoutCardData(q) || twice.has(q.id)) out.check.push(q)
+    else if (!autoPick(q.candidates) || q.rec?.confidence !== 'high' || isAmbiguous(q) || withoutCardData(q) || twice.has(q.id)) out.check.push(q)
     else out.good.push(q)
   }
   return out
@@ -191,6 +193,11 @@ export function withoutCardData(q: Pick<QueueItem, 'candidates' | 'chosen'>): bo
 export function isAmbiguous(q: Pick<QueueItem, 'candidates'>): boolean {
   const [a, b] = q.candidates
   return Boolean(a && b) && a.score - b.score < AMBIGUOUS_MARGIN
+}
+
+/** Alleen suggesties met een ander nummer (bv. set ontbreekt in de catalogus): niets vanzelf gekozen. */
+export function onlyOtherNumbers(q: Pick<QueueItem, 'candidates'>): boolean {
+  return q.candidates.length > 0 && !autoPick(q.candidates)
 }
 
 /** Regels met dezelfde gekoppelde kaart als een andere regel (bv. twee keer gefotografeerd, andere variant gelezen). */

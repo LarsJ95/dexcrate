@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Candidate } from './match'
 import type { Recognition } from './scanResult'
-import { isAmbiguous, mergeDuplicate, newItem, parseQueue, reviewGroups, scannedTwice, summarize, withMatch, withoutCardData, type QueueItem } from './scanQueue'
+import { isAmbiguous, mergeDuplicate, newItem, onlyOtherNumbers, parseQueue, reviewGroups, scannedTwice, summarize, withMatch, withoutCardData, type QueueItem } from './scanQueue'
 
 const rec = (over: Partial<Recognition> = {}): Recognition => ({
   position: 1,
@@ -96,5 +96,19 @@ describe('scan-wachtrij', () => {
     const [restored] = parseQueue(JSON.stringify([loose]))
     expect(withoutCardData(restored)).toBe(true)
     expect(withoutCardData(ready('a'))).toBe(false)
+  })
+
+  it('alleen suggesties met een ander nummer: niets gekozen of aangevinkt, nakijken, en blijft zo na herladen', () => {
+    const other = (key: string): Candidate => ({ ...cand(key), score: 3, otherNumber: true })
+    const guess = withMatch(newItem('d', THUMB), rec({ language: 'zh-cn', setCode: 'CSMC', cardNumber: '004' }), [other('zh-cn/SV8-055'), other('zh-cn/SV9-040')])
+    expect(guess).toMatchObject({ chosen: '', include: false })
+    expect(onlyOtherNumbers(guess)).toBe(true)
+    expect(reviewGroups([guess, ready('a')]).check.map((q) => q.id)).toEqual(['d'])
+    // Zonder koppeling niet samenvoegen met een andere regel zonder koppeling.
+    expect(mergeDuplicate([withMatch(newItem('e', THUMB), rec(), [other('x')]), guess], 'd')).toHaveLength(2)
+    const [restored] = parseQueue(JSON.stringify([guess]))
+    expect(onlyOtherNumbers(restored)).toBe(true)
+    expect(onlyOtherNumbers(ready('a'))).toBe(false)
+    expect(onlyOtherNumbers(withMatch(newItem('n', THUMB), rec(), []))).toBe(false)
   })
 })

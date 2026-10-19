@@ -53,6 +53,19 @@ describe('SingleScanResult', () => {
     expect(onChoose).toHaveBeenLastCalledWith(null)
   })
 
+  it('alleen suggesties met een ander nummer: geen "Best match", wel uitleg', async () => {
+    const onChoose = vi.fn()
+    const dedenne: Recognition = { ...recognition, nameEnglish: 'Dedenne', language: 'zh-cn', setCode: 'CSMC', cardNumber: '004', setTotal: '012', confidence: 'high' }
+    const guess: Candidate = { key: 'xx/SV8-055', name: '咚咚鼠', localId: '055', setId: 'SV8', setName: '超電突圍', image: null, score: 3, reason: 'Name (咚咚鼠), other number', otherNumber: true }
+    const { container } = render(<SingleScanResult recognition={dedenne} candidates={[guess]} ownedByKey={new Map()} earlier={null} onChoose={onChoose} onAddAnotherCopy={() => {}} onReset={() => {}} />)
+    expect(screen.queryByText('Best match')).toBe(null)
+    expect(container.querySelector('.candidate.selected')).toBe(null)
+    expect(screen.getByText(/No card with number 004 in the catalog \(set CSMC may be missing\)/)).toBeTruthy()
+    expect(screen.getByText('Name (咚咚鼠), other number')).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: 'Add without link' }))
+    expect(onChoose).toHaveBeenLastCalledWith(null)
+  })
+
   it('vraagt eerst bij een kaart die al in de sessie zit', async () => {
     const onAddAnotherCopy = vi.fn()
     const onReset = vi.fn()
