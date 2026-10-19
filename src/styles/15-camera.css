@@ -47,6 +47,28 @@
   border: 0;
 }
 
+/* Zaklamp: linksboven, geel als hij aan staat. */
+.camera-torch {
+  position: absolute;
+  top: calc(var(--space-3) + env(safe-area-inset-top, 0px));
+  left: var(--space-3);
+  background: var(--camera-control);
+  border: 0;
+  color: var(--white);
+  border-radius: 50%;
+}
+
+.camera-torch:hover:not(:disabled) {
+  background: var(--camera-control-hover);
+  border: 0;
+}
+
+.camera-torch.on,
+.camera-torch.on:hover:not(:disabled) {
+  background: var(--yellow);
+  color: var(--on-yellow);
+}
+
 .camera-bar {
   position: absolute;
   inset: auto 0 0 0;
