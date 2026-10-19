@@ -5,7 +5,7 @@ import { CardDialog } from '../components/CardDialog'
 import { ScanSessionSummary, SingleScanResult } from '../components/ScanParts'
 import { QueueStrip, ScanQueue } from '../components/ScanQueue'
 import { listCards } from '../lib/db'
-import { findCandidates, type Candidate } from '../lib/match'
+import { findScanCandidates, type Candidate } from '../lib/match'
 import { uploadPhoto } from '../lib/photos'
 import { useDbFeature } from '../hooks/useDbFeature'
 import { useNewCardDefaults } from '../hooks/useNewCardDefaults'
@@ -167,7 +167,7 @@ export function ScanPage(): JSX.Element {
       }
       setPhase({ kind: 'working', message: 'Looking up card…' })
       const lang = lookupLang(recognition.language)
-      const candidates = await findCandidates(
+      const candidates = await findScanCandidates(
         { name: recognition.nameEnglish, set_code: recognition.setCode || null, card_number: recognition.cardNumber || null, set_total: recognition.setTotal || null },
         lang,
       )

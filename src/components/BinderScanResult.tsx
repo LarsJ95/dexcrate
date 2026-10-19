@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type JSX } from 'react'
 import { insertCards } from '../lib/db'
 import { addedQuietly } from '../lib/celebrate'
-import { autoPick, findCandidates, type Candidate } from '../lib/match'
+import { autoPick, findScanCandidates, type Candidate } from '../lib/match'
 import { draftFromScan, type Recognition } from '../lib/scan'
 import { lookupLang } from '../lib/tcgdex'
 import { CardFace } from './CardFace'
@@ -40,7 +40,7 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
   useEffect(() => {
     let cancelled = false
     recognitions.forEach((rec, i) => {
-      findCandidates(
+      findScanCandidates(
         { name: rec.nameEnglish, set_code: rec.setCode || null, card_number: rec.cardNumber || null, set_total: rec.setTotal || null },
         lookupLang(rec.language),
       )
