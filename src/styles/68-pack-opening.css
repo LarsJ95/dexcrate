@@ -1,6 +1,9 @@
 /* ---------- Crate: pack opening in een popup (18-10-2026) ---------- */
-.pack-opening {
-  width: min(640px, calc(100vw - 2rem));
+/* Alleen breder dan de telefoon: daar is het een bottom sheet over de volle breedte (05-kaart-popup). */
+@media (min-width: 481px) {
+  .pack-opening {
+    width: min(640px, calc(100vw - 2rem));
+  }
 }
 
 .pack-opening .sheet-head {
