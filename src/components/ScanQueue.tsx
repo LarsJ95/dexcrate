@@ -5,12 +5,13 @@ import { draftFromScan } from '../lib/scan'
 import { MAX_QTY, isAmbiguous, isCondition, onlyOtherNumbers, reviewGroups, scannedTwice, summarize, withoutCardData, type QueueItem } from '../lib/scanQueue'
 import { canRetry, getFeedback, getQueue, removeItems, retry, searchAgain, subscribe, undoFeedback, updateItem } from '../lib/scanQueueStore'
 import { lookupLang } from '../lib/tcgdex'
-import { CONDITION_LABELS, EMPTY_CARD, LANGUAGE_LABELS, VARIANT_LABELS, type Card, type CardInput, type Condition, type Variant } from '../lib/types'
+import { CONDITION_LABELS, EMPTY_CARD, LANGUAGE_LABELS, type Card, type CardInput, type Condition } from '../lib/types'
 import { CardFace } from './CardFace'
 import { CatalogKeyPicture } from './CatalogCardPicture'
 import { IconClose } from './Icons'
 import { LazyCardPrice } from './LazyCardPrice'
 import { ReadFixForm } from './ScanParts'
+import { VariantGapNote, VariantSelect } from './VariantSelect'
 import { errorText } from '../lib/errors'
 import { useLoadMore } from '../hooks/useLoadMore'
 import { Loading } from './Loading'
@@ -214,6 +215,7 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
           {ready && isAmbiguous(q) && !onlyOtherNumbers(q) && <p className="queue-why small">Same name and number in more than one set: pick the right one.</p>}
           {ready && withoutCardData(q) && <p className="queue-why small">No card data for this set in the catalog: linked on set and number. Check the number.</p>}
           {ready && twice.has(q.id) && <p className="queue-why small">Scanned twice: same card? Remove one, or keep both if you have two.</p>}
+          {ready && c && <VariantGapNote cardKey={c.key} />}
           {ready && q.rec && fixingId === q.id && (
             <ReadFixForm
               recognition={q.rec}
@@ -234,14 +236,7 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
                 ))}
                 <option value="">Add without link</option>
               </select>
-              <select aria-label={`Variant of ${label}`} value={q.variant ?? ''} onChange={(e) => updateItem(q.id, { variant: e.target.value ? (e.target.value as Variant) : null })}>
-                <option value="">Variant unknown</option>
-                {(Object.keys(VARIANT_LABELS) as Variant[]).map((v) => (
-                  <option key={v} value={v}>
-                    {VARIANT_LABELS[v]}
-                  </option>
-                ))}
-              </select>
+              <VariantSelect cardKey={c?.key ?? null} value={q.variant} onChange={(variant) => updateItem(q.id, { variant })} label={`Variant of ${label}`} />
               <label className="queue-qty">
                 Qty
                 <input

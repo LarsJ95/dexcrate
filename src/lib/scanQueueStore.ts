@@ -6,6 +6,7 @@ import { BLUR_THRESHOLD, photoSharpness } from './sharpness'
 import { MAX_QUEUE, QUEUE_KEY, mergeDuplicate, newItem, parseQueue, withMatch, type QueueItem } from './scanQueue'
 import { lookupLang } from './tcgdex'
 import { errorText } from './errors'
+import { variantFacts } from './variantChoice'
 
 /**
  * Wachtrij voor snel scannen, buiten React: herkennen loopt door als je even naar een andere pagina gaat.
@@ -253,9 +254,10 @@ async function process(id: string): Promise<void> {
         return []
       },
     )
+    const facts = await variantFacts(autoPick(candidates)?.key)
     // Item kan intussen verwijderd zijn.
     if (!queue.some((q) => q.id === id)) return
-    const matched = queue.map((q) => (q.id === id ? withMatch(q, rec, candidates) : q))
+    const matched = queue.map((q) => (q.id === id ? withMatch(q, rec, candidates, facts) : q))
     const merged = mergeDuplicate(matched, id)
     set(merged)
     dropImage(id)
@@ -316,9 +318,10 @@ export function retry(id: string): void {
 export async function searchAgain(id: string, rec: Recognition): Promise<void> {
   if (!queue.some((q) => q.id === id && q.status === 'ready')) return
   const candidates = await findScanCandidates(scanQuery(rec), lookupLang(rec.language))
+  const facts = await variantFacts(autoPick(candidates)?.key)
   // Item kan intussen verwijderd zijn.
   if (!queue.some((q) => q.id === id)) return
-  set(mergeDuplicate(queue.map((q) => (q.id === id ? withMatch(q, rec, candidates) : q)), id))
+  set(mergeDuplicate(queue.map((q) => (q.id === id ? withMatch(q, rec, candidates, facts) : q)), id))
 }
 
 export function updateItem(id: string, p: Partial<Pick<QueueItem, 'chosen' | 'quantity' | 'variant' | 'include'>>): void {

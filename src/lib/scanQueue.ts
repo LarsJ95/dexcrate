@@ -1,6 +1,7 @@
 import { autoPick, type Candidate } from './match'
 import type { Recognition } from './scanResult'
 import { CONDITION_LABELS, LANGUAGE_LABELS, VARIANT_LABELS, type CardLanguage, type Condition, type Variant } from './types'
+import { fitVariant, type VariantFacts } from './variantChoice'
 
 /**
  * Snel scannen: foto's gaan in een wachtrij en worden op de achtergrond herkend; later in één keer toevoegen.
@@ -24,6 +25,8 @@ export interface QueueItem {
   /** Meenemen bij "Add all". */
   include: boolean
   at: string
+  /** Bij de herkende kaart verschilt de prijs per uitvoering flink: uitvoering even nakijken. */
+  askVariant?: boolean
 }
 
 export const MAX_QUEUE = 250
@@ -33,18 +36,24 @@ export function newItem(id: string, thumb: string, at = new Date().toISOString()
   return { id, thumb, status: 'waiting', error: null, rec: null, candidates: [], chosen: '', quantity: 1, variant: null, include: false, at }
 }
 
-/** Herkenning + kandidaten verwerken: beste match kiezen, standaard aanvinken als het leesbaar was. */
-export function withMatch(item: QueueItem, rec: Recognition, candidates: Candidate[]): QueueItem {
+/**
+ * Herkenning + kandidaten verwerken: beste match kiezen, standaard aanvinken als het leesbaar was.
+ * `facts`: uitvoeringen en prijsverschil van de beste match (zie variantFacts); de gelezen uitvoering moet daarbij passen.
+ */
+export function withMatch(item: QueueItem, rec: Recognition, candidates: Candidate[], facts: VariantFacts | null = null): QueueItem {
   const best = autoPick(candidates)
+  const { askVariant: _old, ...rest } = item
+  void _old
   return {
-    ...item,
+    ...rest,
     status: 'ready',
     error: null,
     rec,
     candidates,
     chosen: best?.key ?? '',
-    variant: rec.variant,
+    variant: fitVariant(rec.variant, best ? facts?.variants : null),
     include: best !== null && rec.confidence !== 'low',
+    ...(best && facts?.askVariant ? { askVariant: true } : {}),
   }
 }
 
@@ -152,6 +161,7 @@ export function parseQueue(raw: string | null): QueueItem[] {
           variant,
           include: ready && r.include === true,
           at: str(r.at),
+          ...(ready && r.askVariant === true ? { askVariant: true } : {}),
         },
       ]
     })
@@ -175,7 +185,7 @@ export function reviewGroups(queue: readonly QueueItem[]): { check: QueueItem[];
   for (const q of queue) {
     if (q.status === 'error') out.check.push(q)
     else if (q.status !== 'ready') out.working.push(q)
-    else if (!autoPick(q.candidates) || q.rec?.confidence !== 'high' || isAmbiguous(q) || withoutCardData(q) || twice.has(q.id)) out.check.push(q)
+    else if (!autoPick(q.candidates) || q.rec?.confidence !== 'high' || isAmbiguous(q) || withoutCardData(q) || twice.has(q.id) || q.askVariant) out.check.push(q)
     else out.good.push(q)
   }
   return out
