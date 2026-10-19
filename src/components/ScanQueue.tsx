@@ -2,6 +2,7 @@ import { useEffect, useState, useSyncExternalStore, type JSX } from 'react'
 import { addedQuietly } from '../lib/celebrate'
 import { insertCards } from '../lib/db'
 import { draftFromScan } from '../lib/scan'
+import { recordChoices, type ChoiceInput } from '../lib/scanMemory'
 import { MAX_QTY, isAmbiguous, isCondition, onlyOtherNumbers, reviewGroups, scannedTwice, summarize, withoutCardData, type QueueItem } from '../lib/scanQueue'
 import { canLookAgain, canRetry, getFeedback, getQueue, lookAgain, removeItems, retry, searchAgain, subscribe, undoFeedback, updateItem } from '../lib/scanQueueStore'
 import { lookupLang } from '../lib/tcgdex'
@@ -104,7 +105,7 @@ interface Props {
   defaultCondition: Condition | null
   onAdded: (rows: Card[]) => void
   /** Eén kaart in het gewone formulier openen; bij opslaan verdwijnt hij uit de wachtrij. */
-  onEdit: (draft: Partial<CardInput>, queueId: string) => void
+  onEdit: (draft: Partial<CardInput>, queueId: string, choice: Omit<ChoiceInput, 'chosen'>) => void
   /** Kaart-sleutels op je wishlist. */
   wished: ReadonlySet<string>
 }
@@ -161,6 +162,8 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
       const fromWishlist = selected.filter((q) => wished.has(q.chosen)).length
       const count = rows.reduce((n, r) => n + r.quantity, 0)
       setDone(`Added ${count} ${count === 1 ? 'card' : 'cards'}${fromWishlist > 0 ? `, ${fromWishlist} from your wishlist ★` : ''}.`)
+      // Andere kaart dan de app voorstelde: onthouden (vóór het weghalen uit de lijst).
+      void recordChoices(selected.map((q) => ({ rec: q.rec, candidates: q.candidates, chosen: q.chosen || null })))
       removeItems(selected.map((q) => q.id))
       onAdded(rows)
       void addedQuietly(rows)
@@ -298,7 +301,7 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
             </button>
           )}
           {ready && (
-            <button type="button" className="ghost small-btn" onClick={() => void draftOf(q).then((d) => onEdit(d, q.id))}>
+            <button type="button" className="ghost small-btn" onClick={() => void draftOf(q).then((d) => onEdit(d, q.id, { rec: q.rec, candidates: q.candidates }))}>
               Edit
             </button>
           )}

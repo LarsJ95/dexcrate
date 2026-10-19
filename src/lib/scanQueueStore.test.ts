@@ -37,6 +37,8 @@ vi.mock('./scan', async () => {
   return { scanQuery, recognizeCards: vi.fn(), prepareImage: vi.fn(), preparedFromBlob: vi.fn() }
 })
 vi.mock('./match', async (importOriginal) => ({ ...(await importOriginal<typeof import('./match')>()), findScanCandidates: vi.fn() }))
+// Eerdere scan-keuzes (scanMemory) lopen via Supabase; hier niet ingelogd → geen keuzes, geen netwerk.
+vi.mock('./supabase', () => ({ supabase: { auth: { getSession: () => Promise.resolve({ data: { session: null } }) } } }))
 // Uitvoeringen opvragen gaat naar TCGdex; hier vast antwoord (geen netwerk in unit-tests).
 vi.mock('./variantChoice', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./variantChoice')>()),

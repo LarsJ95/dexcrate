@@ -6,7 +6,8 @@ import { ScanSessionSummary, SingleScanResult } from '../components/ScanParts'
 import { QueueStrip, ScanQueue } from '../components/ScanQueue'
 import { addedQuietly } from '../lib/celebrate'
 import { insertCards, listCards } from '../lib/db'
-import { findScanCandidates, type Candidate } from '../lib/match'
+import type { Candidate } from '../lib/match'
+import { recordChoices, scanCandidates, type ChoiceInput } from '../lib/scanMemory'
 import { uploadPhoto } from '../lib/photos'
 import { useDbFeature } from '../hooks/useDbFeature'
 import { useNewCardDefaults } from '../hooks/useNewCardDefaults'
@@ -22,7 +23,6 @@ import {
   draftFromScan,
   prepareImage,
   recognizeCards,
-  scanQuery,
   type PreparedImage,
   type Recognition,
   type ScanMode,
@@ -54,7 +54,8 @@ export function ScanPage(): JSX.Element {
   const [cards, setCards] = useState<Card[]>([])
   const [image, setImage] = useState<PreparedImage | null>(null)
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' })
-  const [draft, setDraft] = useState<{ values: Partial<CardInput>; position: number | null; queueId?: string } | null>(null)
+  /** Formulier voor een gescande kaart; `choice` = lezing + kandidaten, om je keuze na opslaan te onthouden. */
+  const [draft, setDraft] = useState<{ values: Partial<CardInput>; position: number | null; queueId?: string; choice?: Omit<ChoiceInput, 'chosen'> } | null>(null)
   const [queueError, setQueueError] = useState<string | null>(null)
   // Snel scannen: scherm aan houden zolang de camera open is of er nog foto's herkend worden.
   const queueBusy = summarize(useSyncExternalStore(subscribe, getQueue)).busy > 0
@@ -177,7 +178,7 @@ export function ScanPage(): JSX.Element {
       }
       setPhase({ kind: 'working', message: 'Looking up card…' })
       const lang = lookupLang(recognition.language)
-      const candidates = await findScanCandidates(scanQuery(recognition), lang)
+      const candidates = await scanCandidates(recognition)
       resultSeq.current += 1
       setPhase({ kind: 'single', recognition, candidates, lang, resultId: resultSeq.current })
     } catch (err) {
@@ -190,7 +191,7 @@ export function ScanPage(): JSX.Element {
   async function searchAgain(r: Recognition): Promise<void> {
     const seq = scanSeq.current
     const lang = lookupLang(r.language)
-    const candidates = await findScanCandidates(scanQuery(r), lang)
+    const candidates = await scanCandidates(r)
     // Intussen een nieuwe foto gemaakt of weggegooid: dit antwoord hoort daar niet meer bij.
     if (seq !== scanSeq.current) return
     setDup(null)
@@ -205,7 +206,7 @@ export function ScanPage(): JSX.Element {
     const recognition = (await recognizeCards(image, 'single', { strong: true })).cards[0]
     if (!recognition) throw new Error('No Pokémon card found, also on a second look. Try a new photo.')
     const lang = lookupLang(recognition.language)
-    const candidates = await findScanCandidates(scanQuery(recognition), lang)
+    const candidates = await scanCandidates(recognition)
     if (seq !== scanSeq.current) return
     setDup(null)
     resultSeq.current += 1
@@ -234,7 +235,7 @@ export function ScanPage(): JSX.Element {
       return
     }
     setDup(null)
-    setDraft({ values: await scanValues(c, r, lang, variant), position: null })
+    setDraft({ values: await scanValues(c, r, lang, variant), position: null, choice: { rec: r, candidates: phase.kind === 'single' ? phase.candidates : [] } })
   }
 
   /** Meteen toevoegen (zonder formulier); daarna de camera weer open als de foto daarvan kwam. Fouten gaan naar het resultaat. */
@@ -249,6 +250,8 @@ export function ScanPage(): JSX.Element {
     rememberAdded(rows)
     void addedQuietly(rows)
     saveScanPhoto(rows, image?.blob ?? null)
+    // Andere kaart dan de app voorstelde: onthouden voor de volgende keer.
+    void recordChoices([{ rec: r, candidates: phase.kind === 'single' ? phase.candidates : [], chosen: c?.key ?? null }])
     const again = lastFromCamera.current
     reset()
     if (again) setCameraOpen(true)
@@ -425,7 +428,7 @@ export function ScanPage(): JSX.Element {
           nextSortOrder={nextSortOrder}
           defaultCondition={newCardDefaults.condition ?? null}
           onAdded={rememberAdded}
-          onEdit={(values, queueId) => setDraft({ values, position: null, queueId })}
+          onEdit={(values, queueId, choice) => setDraft({ values, position: null, queueId, choice })}
           wished={wished}
         />
       )}
@@ -438,7 +441,7 @@ export function ScanPage(): JSX.Element {
           nextSortOrder={nextSortOrder}
           done={donePositions}
           onAdded={rememberAdded}
-          onEdit={(values, position) => setDraft({ values, position })}
+          onEdit={(values, position, choice) => setDraft({ values, position, choice })}
           onCancel={reset}
         />
       )}
@@ -474,6 +477,8 @@ export function ScanPage(): JSX.Element {
           onSaved={(rows) => {
             rememberAdded(rows)
             const position = draft.position
+            // Gekozen koppeling (eventueel in het formulier aangepast) onthouden als die afwijkt van het voorstel.
+            if (draft.choice) void recordChoices([{ ...draft.choice, chosen: rows[0]?.tcgdex_id ?? null }])
             // Uit de snelle wachtrij: die kaart is nu toegevoegd.
             if (draft.queueId) {
               removeItems([draft.queueId])

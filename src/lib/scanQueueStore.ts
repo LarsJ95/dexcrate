@@ -1,10 +1,10 @@
 import { buzz } from './haptics'
-import { autoPick, findScanCandidates } from './match'
+import { autoPick } from './match'
+import { scanCandidates } from './scanMemory'
 import { deletePhotos, listPhotoIds, loadPhoto, loadQueueData, savePhoto, saveQueueData } from './photoStore'
-import { preparedFromBlob, prepareImage, recognizeCards, scanQuery, type PreparedImage, type Recognition } from './scan'
+import { preparedFromBlob, prepareImage, recognizeCards, type PreparedImage, type Recognition } from './scan'
 import { BLUR_THRESHOLD, photoSharpness } from './sharpness'
 import { MAX_QUEUE, QUEUE_KEY, mergeDuplicate, newItem, parseQueue, withMatch, type QueueItem } from './scanQueue'
-import { lookupLang } from './tcgdex'
 import { errorText } from './errors'
 import { variantFacts } from './variantChoice'
 
@@ -260,7 +260,7 @@ async function process(id: string): Promise<void> {
       return
     }
     patch(id, { status: 'matching', rec })
-    const candidates = await findScanCandidates(scanQuery(rec), lookupLang(rec.language)).catch(
+    const candidates = await scanCandidates(rec).catch(
       (err: unknown) => {
         console.warn('Kaart opzoeken mislukt', err)
         return []
@@ -336,7 +336,7 @@ export async function searchAgain(id: string, rec: Recognition): Promise<void> {
 
 /** Kandidaten en uitvoeringen zoeken en in de regel zetten; samengevoegd met een eerdere regel → foto weg. */
 async function applyMatch(id: string, rec: Recognition): Promise<void> {
-  const candidates = await findScanCandidates(scanQuery(rec), lookupLang(rec.language))
+  const candidates = await scanCandidates(rec)
   const facts = await variantFacts(autoPick(candidates)?.key)
   // Item kan intussen verwijderd zijn.
   if (!queue.some((q) => q.id === id)) return
