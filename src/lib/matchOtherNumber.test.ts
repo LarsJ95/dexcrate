@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { autoPick, findCandidates } from './match'
 
 /**
- * Nagebootste TCGdex/PokeAPI: Dedenne CSMC 004/012 (Display Set Gift Box Charizard) staat niet in TCGdex;
- * op naam vindt TCGdex alleen Dedenne 超電突圍 #055 (zo gemeten op 19-10-2026).
+ * Nagebootste TCGdex/PokeAPI: een Dedenne uit een set die geen enkele catalogus kent ("XXMC", verzonnen; zo ging het
+ * met CSMC tot die op 19-10-2026 in de eigen catalogus kwam). Op naam vindt TCGdex alleen Dedenne 超電突圍 #055.
  */
 function fakeFetch(url: string): Response {
   const json = (body: unknown): Response => new Response(JSON.stringify(body), { status: 200 })
@@ -23,7 +23,7 @@ afterEach(() => {
 
 describe('gelezen nummer klopt niet', () => {
   it('set onbekend in de catalogus: alleen een suggestie op naam, niet vanzelf kiezen', async () => {
-    const list = await findCandidates({ name: 'Dedenne', set_code: 'CSMC', card_number: '004', set_total: '012' }, 'zh-cn')
+    const list = await findCandidates({ name: 'Dedenne', set_code: 'XXMC', card_number: '004', set_total: '012' }, 'zh-cn')
     expect(list).toHaveLength(1)
     expect(list[0]).toMatchObject({ key: 'zh-cn/SV8-055', otherNumber: true, reason: 'Name (咚咚鼠), other number' })
     expect(autoPick(list)).toBe(null)
