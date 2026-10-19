@@ -25,6 +25,8 @@ let queue: QueueItem[] = []
 const listeners = new Set<() => void>()
 /** Foto's die nog herkend moeten worden (of opnieuw kunnen), alleen in het geheugen. */
 const images = new Map<string, PreparedImage>()
+/** Regels waarvan de foto op het apparaat staat (IndexedDB): nodig voor "Look again". Weg bij toevoegen of verwijderen. */
+const storedPhotos = new Set<string>()
 const running = new Set<string>()
 
 /** Pas na het laden opslaan: anders overschrijft een lege lijst de bewaarde. */
@@ -150,10 +152,17 @@ async function makeThumb(blob: Blob): Promise<string> {
   return canvas.toDataURL('image/jpeg', 0.7)
 }
 
-function dropImage(id: string): void {
+/** Foto uit het geheugen halen; op het apparaat blijft hij (voor "Look again"). */
+function releaseImage(id: string): void {
   const img = images.get(id)
   if (img) URL.revokeObjectURL(img.previewUrl)
   images.delete(id)
+}
+
+/** Foto helemaal weg: geheugen en apparaat. */
+function dropImage(id: string): void {
+  releaseImage(id)
+  storedPhotos.delete(id)
   deletePhotos([id]).catch((err: unknown) => console.warn('Scanfoto opruimen mislukt', err))
 }
 
@@ -172,6 +181,7 @@ async function restore(): Promise<void> {
       if (blob) images.set(q.id, await preparedFromBlob(blob))
     }
     const known = new Set(queue.map((q) => q.id))
+    for (const id of stored) if (known.has(id)) storedPhotos.add(id)
     await deletePhotos([...stored].filter((id) => !known.has(id)))
   } catch (err) {
     console.warn('Bewaarde scanfoto laden mislukt', err)
@@ -225,8 +235,10 @@ export async function enqueue(file: File, checkBlur = false): Promise<boolean> {
   const thumb = await makeThumb(img.blob)
   const id = crypto.randomUUID()
   images.set(id, img)
-  // Ook op het apparaat bewaren, zodat de foto het afsluiten van de app overleeft.
-  await savePhoto(id, img.blob).catch((err: unknown) => console.warn('Scanfoto lokaal bewaren mislukt', err))
+  // Ook op het apparaat bewaren, zodat de foto het afsluiten van de app overleeft (en voor "Look again").
+  await savePhoto(id, img.blob)
+    .then(() => storedPhotos.add(id))
+    .catch((err: unknown) => console.warn('Scanfoto lokaal bewaren mislukt', err))
   // Pas na alle await's de huidige wachtrij lezen: anders gaan foto's die tegelijk binnenkomen verloren.
   set([...queue, newItem(id, thumb)])
   pump()
@@ -260,7 +272,9 @@ async function process(id: string): Promise<void> {
     const matched = queue.map((q) => (q.id === id ? withMatch(q, rec, candidates, facts) : q))
     const merged = mergeDuplicate(matched, id)
     set(merged)
-    dropImage(id)
+    // Samengevoegd met een eerdere regel: foto niet meer nodig. Anders alleen uit het geheugen (bewaard voor "Look again").
+    if (merged.some((q) => q.id === id)) releaseImage(id)
+    else dropImage(id)
     const best = autoPick(candidates)
     const star = best && wished.has(best.key) ? '★ On your wishlist: ' : ''
     const what = best ? `${star}${best.name} · ${best.setName} #${best.localId}` : `${rec.nameEnglish || rec.namePrinted || 'Unknown card'} (no match)`
@@ -317,11 +331,45 @@ export function retry(id: string): void {
  */
 export async function searchAgain(id: string, rec: Recognition): Promise<void> {
   if (!queue.some((q) => q.id === id && q.status === 'ready')) return
+  await applyMatch(id, rec)
+}
+
+/** Kandidaten en uitvoeringen zoeken en in de regel zetten; samengevoegd met een eerdere regel → foto weg. */
+async function applyMatch(id: string, rec: Recognition): Promise<void> {
   const candidates = await findScanCandidates(scanQuery(rec), lookupLang(rec.language))
   const facts = await variantFacts(autoPick(candidates)?.key)
   // Item kan intussen verwijderd zijn.
   if (!queue.some((q) => q.id === id)) return
-  set(mergeDuplicate(queue.map((q) => (q.id === id ? withMatch(q, rec, candidates, facts) : q)), id))
+  const merged = mergeDuplicate(queue.map((q) => (q.id === id ? withMatch(q, rec, candidates, facts) : q)), id)
+  set(merged)
+  if (!merged.some((q) => q.id === id)) dropImage(id)
+}
+
+/** Kan deze regel nog eens bekeken worden? (De foto staat nog op het apparaat of in het geheugen.) */
+export const canLookAgain = (id: string): boolean => storedPhotos.has(id) || images.has(id)
+
+/**
+ * "Look again": dezelfde foto nog één keer laten lezen door het sterkere model (kost meer dan een gewone scan).
+ * De regel blijft staan tot er een antwoord is; mislukt het, dan blijft alles zoals het was en krijg je de fout.
+ */
+export async function lookAgain(id: string): Promise<void> {
+  if (!queue.some((q) => q.id === id && q.status === 'ready')) return
+  let img = images.get(id) ?? null
+  // Alleen voor deze ene keer uit de opslag geladen: daarna weer loslaten.
+  let temporary = false
+  if (!img) {
+    const blob = await loadPhoto(id)
+    if (!blob) throw new Error('The photo of this scan is no longer on this device. Take it again.')
+    img = await preparedFromBlob(blob)
+    temporary = true
+  }
+  try {
+    const rec = (await recognizeCards(img, 'single', { strong: true })).cards[0]
+    if (!rec) throw new Error('No Pokémon card found, also on a second look. Take the photo again.')
+    await applyMatch(id, rec)
+  } finally {
+    if (temporary) URL.revokeObjectURL(img.previewUrl)
+  }
 }
 
 export function updateItem(id: string, p: Partial<Pick<QueueItem, 'chosen' | 'quantity' | 'variant' | 'include'>>): void {

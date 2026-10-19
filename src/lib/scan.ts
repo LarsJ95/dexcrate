@@ -85,9 +85,10 @@ export async function draftFromScan(r: Recognition, c: Candidate | null, scanLan
   return { ...base, language, variant, tcgdex_id: c.key, set_code: setCode, card_number: plainNumber(c.localId) }
 }
 
-export async function recognizeCards(img: PreparedImage, mode: ScanMode): Promise<ScanResult> {
+/** `strong`: "Look again", meteen met het sterkere (duurdere) model. */
+export async function recognizeCards(img: PreparedImage, mode: ScanMode, { strong = false }: { strong?: boolean } = {}): Promise<ScanResult> {
   const { data, error } = await supabase.functions.invoke('recognize-card', {
-    body: { data: img.data, media_type: img.mediaType, mode },
+    body: { data: img.data, media_type: img.mediaType, mode, ...(strong ? { strong: true } : {}) },
   })
   if (error) {
     // Foutmelding van de functie zelf tonen als die er is.
@@ -101,5 +102,12 @@ export async function recognizeCards(img: PreparedImage, mode: ScanMode): Promis
     }
     throw new Error('Recognition is unavailable. Is the recognize-card function installed?')
   }
+  // Oude functie negeert `strong` en geeft gewoon het goedkope resultaat: dat niet als tweede blik tonen.
+  if (strong && !confirmsStrong(data)) throw new Error(LOOK_AGAIN_OUTDATED)
   return toScanResult(data)
 }
+
+export const LOOK_AGAIN_OUTDATED = '“Look again” needs the latest recognize-card function. Redeploy it in Supabase (see TODO.md).'
+
+/** Antwoord van een functie die "Look again" kent (meldt `strong: true` terug). */
+export const confirmsStrong = (body: unknown): boolean => typeof body === 'object' && body !== null && (body as { strong?: unknown }).strong === true

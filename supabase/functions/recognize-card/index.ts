@@ -1,5 +1,6 @@
 // Supabase Edge Function: herkent een Pokémon-kaart op een foto met Claude.
 // Eerst Claude Haiku 5.5 (goedkoop); bij twijfel of weigering opnieuw met Claude Sonnet 5.5.
+// Met `strong: true` ("Look again" in de app) meteen Sonnet 5.5.
 // Vereist secret ANTHROPIC_API_KEY (Dashboard → Edge Functions → Secrets).
 // Scanlimiet per gebruiker via STAP15 (scan_quota_take).
 import Anthropic from 'npm:@anthropic-ai/sdk@0.130.0'
@@ -231,6 +232,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const data = typeof image?.data === 'string' ? image.data : ''
     const mediaType = MEDIA_TYPES.find((m) => m === image?.media_type)
     const mode: Mode = image?.mode === 'multi' ? 'multi' : 'single'
+    // "Look again" in de app: meteen het sterkere model (de goedkope poging was al gedaan en klopte niet).
+    const strong = image?.strong === true
     if (!mediaType || !data || data.length > MAX_BASE64_CHARS || !/^[A-Za-z0-9+/]+=*$/.test(data)) {
       return json({ error: 'Invalid or too large image.' }, 400, origin)
     }
@@ -247,10 +250,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
     const client = new Anthropic({ apiKey })
 
-    let model: string = PRIMARY_MODEL
-    let { cards, refused } = await recognize(client, PRIMARY_MODEL, mode, mediaType, data)
+    let model: string = strong ? FALLBACK_MODEL : PRIMARY_MODEL
+    let { cards, refused } = await recognize(client, strong ? FALLBACK_MODEL : PRIMARY_MODEL, mode, mediaType, data)
     // Twijfel, onleesbaar of geweigerd → tweede poging met het sterkere model.
-    if (needsFallback(cards, refused, mode)) {
+    if (!strong && needsFallback(cards, refused, mode)) {
       const second = await recognize(client, FALLBACK_MODEL, mode, mediaType, data)
       if (second.cards) {
         cards = second.cards
@@ -264,7 +267,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (!cards) {
       return json({ error: refused ? 'This photo could not be processed.' : 'No card recognised. Try a sharper photo.' }, 422, origin)
     }
-    return json({ cards, model }, 200, origin)
+    // `strong` terugmelden: zo ziet de app dat deze versie van de functie "Look again" kent.
+    return json({ cards, model, ...(strong ? { strong: true } : {}) }, 200, origin)
   } catch (err) {
     console.error('recognize-card', err)
     if (err instanceof Anthropic.RateLimitError) return json({ error: 'Too many scans right now; try again shortly.' }, 429, origin)
