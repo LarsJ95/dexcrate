@@ -198,6 +198,20 @@ export function ScanPage(): JSX.Element {
     setPhase({ kind: 'single', recognition: r, candidates, lang, resultId: resultSeq.current })
   }
 
+  /** "Look again": dezelfde foto nog eens door het sterkere model. Fouten gaan naar het resultaat (dat blijft staan). */
+  async function lookAgain(): Promise<void> {
+    if (!image) return
+    const seq = scanSeq.current
+    const recognition = (await recognizeCards(image, 'single', { strong: true })).cards[0]
+    if (!recognition) throw new Error('No Pokémon card found, also on a second look. Try a new photo.')
+    const lang = lookupLang(recognition.language)
+    const candidates = await findScanCandidates(scanQuery(recognition), lang)
+    if (seq !== scanSeq.current) return
+    setDup(null)
+    resultSeq.current += 1
+    setPhase({ kind: 'single', recognition, candidates, lang, resultId: resultSeq.current })
+  }
+
   /** Al in deze sessie toegevoegd? Dan eerst vragen (zie dup), zodat je niet per ongeluk dezelfde kaart twee keer toevoegt. */
   function earlierFor(c: Candidate | null, r: Recognition, variant: Variant | null): ScanItem | null {
     if (!session) return null
@@ -445,6 +459,7 @@ export function ScanPage(): JSX.Element {
           }}
           onReset={reset}
           onSearch={searchAgain}
+          onLookAgain={image ? lookAgain : null}
         />
       )}
 

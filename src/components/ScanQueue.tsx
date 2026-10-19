@@ -3,7 +3,7 @@ import { addedQuietly } from '../lib/celebrate'
 import { insertCards } from '../lib/db'
 import { draftFromScan } from '../lib/scan'
 import { MAX_QTY, isAmbiguous, isCondition, onlyOtherNumbers, reviewGroups, scannedTwice, summarize, withoutCardData, type QueueItem } from '../lib/scanQueue'
-import { canRetry, getFeedback, getQueue, removeItems, retry, searchAgain, subscribe, undoFeedback, updateItem } from '../lib/scanQueueStore'
+import { canLookAgain, canRetry, getFeedback, getQueue, lookAgain, removeItems, retry, searchAgain, subscribe, undoFeedback, updateItem } from '../lib/scanQueueStore'
 import { lookupLang } from '../lib/tcgdex'
 import { CONDITION_LABELS, EMPTY_CARD, LANGUAGE_LABELS, type Card, type CardInput, type Condition } from '../lib/types'
 import { CardFace } from './CardFace'
@@ -122,6 +122,9 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
   const [done, setDone] = useState<string | null>(null)
   /** Regel waarvan je de gelezen waarden aan het verbeteren bent. */
   const [fixingId, setFixingId] = useState<string | null>(null)
+  /** "Look again" loopt voor deze regels; fouten per regel. */
+  const [looking, setLooking] = useState<ReadonlySet<string>>(new Set())
+  const [lookErrors, setLookErrors] = useState<ReadonlyMap<string, string>>(new Map())
   // Lange lijst in stukken tonen (tot 250 foto's); groepen in volgorde: eerst wat je moet nakijken.
   const { count: shownCount, sentinel: moreRef } = useLoadMore(queue.length, 'scan-queue', ROWS_PER_STEP)
   if (queue.length === 0) {
@@ -165,6 +168,27 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
       setError(errorText(err, 'Adding failed.'))
     } finally {
       setBusy(false)
+    }
+  }
+
+  async function runLookAgain(id: string): Promise<void> {
+    if (looking.has(id)) return
+    setLooking((s) => new Set(s).add(id))
+    setLookErrors((m) => {
+      const next = new Map(m)
+      next.delete(id)
+      return next
+    })
+    try {
+      await lookAgain(id)
+    } catch (err) {
+      setLookErrors((m) => new Map(m).set(id, errorText(err, 'Looking again failed.')))
+    } finally {
+      setLooking((s) => {
+        const next = new Set(s)
+        next.delete(id)
+        return next
+      })
     }
   }
 
@@ -216,6 +240,8 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
           {ready && withoutCardData(q) && <p className="queue-why small">No card data for this set in the catalog: linked on set and number. Check the number.</p>}
           {ready && twice.has(q.id) && <p className="queue-why small">Scanned twice: same card? Remove one, or keep both if you have two.</p>}
           {ready && c && <VariantGapNote cardKey={c.key} />}
+          {looking.has(q.id) && <p className="muted small">Looking again…</p>}
+          {lookErrors.get(q.id) && <p className="error small">{lookErrors.get(q.id)}</p>}
           {ready && q.rec && fixingId === q.id && (
             <ReadFixForm
               recognition={q.rec}
@@ -262,8 +288,13 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
         </div>
         <div className="queue-actions">
           {ready && q.rec && fixingId !== q.id && (
-            <button type="button" className="ghost small-btn" onClick={() => setFixingId(q.id)}>
+            <button type="button" className="ghost small-btn" onClick={() => setFixingId(q.id)} disabled={looking.has(q.id)}>
               Correct
+            </button>
+          )}
+          {ready && canLookAgain(q.id) && fixingId !== q.id && (
+            <button type="button" className="ghost small-btn" onClick={() => void runLookAgain(q.id)} disabled={looking.has(q.id)} title="Read the photo again with the stronger model">
+              Look again
             </button>
           )}
           {ready && (

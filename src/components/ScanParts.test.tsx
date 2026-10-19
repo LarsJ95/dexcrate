@@ -51,6 +51,7 @@ function renderSingle(over: Partial<SingleProps> = {}): ReturnType<typeof render
     onAddAnotherCopy: vi.fn(done),
     onReset: vi.fn(),
     onSearch: vi.fn(done),
+    onLookAgain: null,
     ...over,
   }
   return { ...render(<SingleScanResult {...props} />), props }
@@ -142,6 +143,22 @@ describe('SingleScanResult', () => {
     expect(onSearch).toHaveBeenCalledTimes(2)
     expect(screen.queryByRole('form', { name: 'Correct what was read' })).toBe(null)
     expect(screen.getByRole('button', { name: 'Correct' })).toBeTruthy()
+  })
+
+  it('Look again: alleen met foto; bezig-tekst alleen op die knop; fout zichtbaar', async () => {
+    renderSingle()
+    expect(screen.queryByRole('button', { name: 'Look again' })).toBe(null)
+    cleanup()
+    let fail: (e: Error) => void = () => {}
+    const onLookAgain = vi.fn(() => new Promise<void>((_, reject) => (fail = reject)))
+    renderSingle({ onLookAgain })
+    await userEvent.click(screen.getByRole('button', { name: 'Look again' }))
+    expect(screen.getByRole('button', { name: 'Looking…' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Add' })).toBeTruthy()
+    expect((screen.getByRole('button', { name: 'Add' }) as HTMLButtonElement).disabled).toBe(true)
+    fail(new Error('“Look again” needs the latest recognize-card function.'))
+    expect((await screen.findByRole('alert')).textContent).toMatch(/latest recognize-card/)
+    expect(onLookAgain).toHaveBeenCalledOnce()
   })
 
   it('Search again kan niet zonder naam', async () => {

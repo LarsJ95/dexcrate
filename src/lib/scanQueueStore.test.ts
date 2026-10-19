@@ -25,7 +25,8 @@ const stored = vi.hoisted(() => {
 vi.mock('./photoStore', () => ({
   loadQueueData: vi.fn(() => Promise.resolve(stored)),
   saveQueueData: vi.fn(() => Promise.resolve()),
-  listPhotoIds: vi.fn(() => Promise.resolve([])),
+  // De foto van regel "a" staat nog op het apparaat (voor "Look again").
+  listPhotoIds: vi.fn(() => Promise.resolve(['a'])),
   loadPhoto: vi.fn(() => Promise.resolve(null)),
   savePhoto: vi.fn(() => Promise.resolve()),
   deletePhotos: vi.fn(() => Promise.resolve()),
@@ -43,7 +44,11 @@ vi.mock('./variantChoice', async (importOriginal) => ({
 }))
 
 const { findScanCandidates } = await import('./match')
-const { getQueue, removeItems, searchAgain } = await import('./scanQueueStore')
+const { loadPhoto, deletePhotos } = await import('./photoStore')
+const { preparedFromBlob, recognizeCards } = await import('./scan')
+const { canLookAgain, getQueue, lookAgain, removeItems, searchAgain } = await import('./scanQueueStore')
+// jsdom kent revokeObjectURL niet.
+URL.revokeObjectURL = vi.fn()
 
 const fixed = (over: Partial<Recognition> = {}): Recognition => ({ ...(JSON.parse(stored) as { rec: Recognition }[])[0].rec, setCode: 'S12', cardNumber: '045', setTotal: '098', language: 'zh-tw', ...over })
 const match: Candidate = { key: 'zh-tw/S12-045', name: '咚咚鼠', localId: '045', setId: 'S12', setName: '思維激盪', image: null, score: 8, reason: 'Set and number match' }
@@ -65,6 +70,35 @@ describe('Quick scan: opnieuw zoeken met verbeterde waarden', () => {
     expect(getQueue()[0]).toMatchObject({ id: 'a', status: 'ready', chosen: 'zh-tw/S12-045', include: true, quantity: 2, rec: { setCode: 'S12', language: 'zh-tw' }, variant: null, askVariant: true })
   })
 
+  it('Look again: foto van het apparaat, sterker model; mislukt → regel ongewijzigd', async () => {
+    expect(canLookAgain('a')).toBe(true)
+    const img = { blob: new Blob(['x']), data: 'eA==', mediaType: 'image/jpeg' as const, previewUrl: 'blob:look' }
+    vi.mocked(loadPhoto).mockResolvedValue(img.blob)
+    vi.mocked(preparedFromBlob).mockResolvedValue(img)
+    // Oude functie / fout: niets veranderd, foto weer losgelaten.
+    const before = getQueue()[0]
+    vi.mocked(recognizeCards).mockRejectedValueOnce(new Error('“Look again” needs the latest recognize-card function.'))
+    await expect(lookAgain('a')).rejects.toThrow(/latest recognize-card/)
+    expect(getQueue()[0]).toBe(before)
+    expect(URL.revokeObjectURL).toHaveBeenLastCalledWith('blob:look')
+    // Geen kaart gevonden, ook niet met het sterkere model.
+    vi.mocked(recognizeCards).mockResolvedValueOnce({ cards: [], model: 'claude-sonnet-5-5' })
+    await expect(lookAgain('a')).rejects.toThrow(/second look/)
+    // Gelukt: nieuwe herkenning en match.
+    vi.mocked(recognizeCards).mockResolvedValueOnce({ cards: [fixed({ cardNumber: '045', variant: 'reverse' })], model: 'claude-sonnet-5-5' })
+    vi.mocked(findScanCandidates).mockResolvedValueOnce([match])
+    await lookAgain('a')
+    expect(vi.mocked(recognizeCards)).toHaveBeenLastCalledWith(img, 'single', { strong: true })
+    expect(getQueue()[0]).toMatchObject({ id: 'a', chosen: 'zh-tw/S12-045', variant: 'reverse', quantity: 2 })
+    // Foto blijft bewaard voor nog een keer.
+    expect(canLookAgain('a')).toBe(true)
+  })
+
+  it('Look again zonder foto op het apparaat: duidelijke fout', async () => {
+    vi.mocked(loadPhoto).mockResolvedValueOnce(null)
+    await expect(lookAgain('a')).rejects.toThrow(/no longer on this device/)
+  })
+
   it('regel intussen weg: niets terugzetten', async () => {
     let finish: (c: Candidate[]) => void = () => {}
     vi.mocked(findScanCandidates).mockReturnValueOnce(new Promise((resolve) => (finish = resolve)))
@@ -73,5 +107,8 @@ describe('Quick scan: opnieuw zoeken met verbeterde waarden', () => {
     finish([match])
     await pending
     expect(getQueue()).toHaveLength(0)
+    // Verwijderd: foto ook van het apparaat.
+    expect(vi.mocked(deletePhotos)).toHaveBeenLastCalledWith(['a'])
+    expect(canLookAgain('a')).toBe(false)
   })
 })

@@ -141,20 +141,24 @@ interface SingleProps {
   onReset: () => void
   /** Opnieuw zoeken met gecorrigeerde gelezen waarden. */
   onSearch: (r: Recognition) => Promise<void>
+  /** Dezelfde foto nog eens laten lezen door het sterkere model; null = geen foto meer. */
+  onLookAgain: (() => Promise<void>) | null
 }
 
 /**
  * Resultaat van een losse scan: wat herkend is en de kandidaten. Tikken selecteert; daarna meteen toevoegen
  * (Add) of eerst het formulier (Edit first). Zonder zekere match staat "Without link" geselecteerd.
  */
-export function SingleScanResult({ recognition, candidates, ownedByKey, earlier, onChoose, onAdd, onAddAnotherCopy, onReset, onSearch }: SingleProps): JSX.Element {
+export function SingleScanResult({ recognition, candidates, ownedByKey, earlier, onChoose, onAdd, onAddAnotherCopy, onReset, onSearch, onLookAgain }: SingleProps): JSX.Element {
   const best = autoPick(candidates)
   const [fixing, setFixing] = useState(false)
   /** Gekozen kaart-sleutel; '' = zonder koppeling. */
   const [selected, setSelected] = useState(best?.key ?? '')
   /** undefined = de gelezen uitvoering (passend bij de catalogus); anders je eigen keuze. */
   const [ownVariant, setOwnVariant] = useState<Variant | null | undefined>(undefined)
-  const [busy, setBusy] = useState(false)
+  /** Lopende actie (één tegelijk); null = niets bezig. */
+  const [running, setRunning] = useState<'add' | 'edit' | 'look' | 'copy' | null>(null)
+  const busy = running !== null
   const [error, setError] = useState<string | null>(null)
   const chosen = candidates.find((c) => c.key === selected) ?? null
   const info = useCardInfo(chosen?.key ?? null)
@@ -167,16 +171,16 @@ export function SingleScanResult({ recognition, candidates, ownedByKey, earlier,
     setOwnVariant(undefined)
   }
 
-  async function run(action: () => Promise<void>, fallback: string): Promise<void> {
+  async function run(kind: NonNullable<typeof running>, action: () => Promise<void>, fallback: string): Promise<void> {
     if (busy) return
-    setBusy(true)
+    setRunning(kind)
     setError(null)
     try {
       await action()
     } catch (err) {
       setError(errorText(err, fallback))
     } finally {
-      setBusy(false)
+      setRunning(null)
     }
   }
 
@@ -190,8 +194,13 @@ export function SingleScanResult({ recognition, candidates, ownedByKey, earlier,
             <span className="stat-label">Recognised</span>
             <span className="spacer" />
             {!fixing && (
-              <button type="button" className="ghost small-btn" onClick={() => setFixing(true)}>
+              <button type="button" className="ghost small-btn" onClick={() => setFixing(true)} disabled={busy}>
                 Correct
+              </button>
+            )}
+            {!fixing && onLookAgain && (
+              <button type="button" className="ghost small-btn" onClick={() => void run('look', onLookAgain, 'Looking again failed.')} disabled={busy} title="Read the photo again with the stronger model">
+                {running === 'look' ? 'Looking…' : 'Look again'}
               </button>
             )}
           </div>
@@ -227,7 +236,7 @@ export function SingleScanResult({ recognition, candidates, ownedByKey, earlier,
               {earlier.at ? ` at ${new Date(earlier.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : ''}. Is this another copy?
             </p>
             <div className="sheet-foot">
-              <button type="button" className="primary" onClick={() => void run(onAddAnotherCopy, 'Adding failed.')} disabled={busy}>
+              <button type="button" className="primary" onClick={() => void run('copy', onAddAnotherCopy, 'Adding failed.')} disabled={busy}>
                 Add another copy
               </button>
               <button type="button" className="ghost" onClick={onReset}>
@@ -294,10 +303,10 @@ export function SingleScanResult({ recognition, candidates, ownedByKey, earlier,
         <VariantSelect cardKey={chosen?.key ?? null} value={variant} onChange={setOwnVariant} label="Variant" />
         {chosen && <VariantGapNote cardKey={chosen.key} />}
         <div className="sheet-foot">
-          <button type="button" className="primary" onClick={() => void run(() => onAdd(chosen, variant), 'Adding failed.')} disabled={busy || loadingInfo}>
-            {busy ? 'Adding…' : 'Add'}
+          <button type="button" className="primary" onClick={() => void run('add', () => onAdd(chosen, variant), 'Adding failed.')} disabled={busy || loadingInfo}>
+            {running === 'add' ? 'Adding…' : 'Add'}
           </button>
-          <button type="button" onClick={() => void run(() => onChoose(chosen, variant), 'Opening the form failed.')} disabled={busy || loadingInfo}>
+          <button type="button" onClick={() => void run('edit', () => onChoose(chosen, variant), 'Opening the form failed.')} disabled={busy || loadingInfo}>
             Edit first
           </button>
           <span className="spacer" />
