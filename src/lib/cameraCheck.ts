@@ -1,4 +1,4 @@
-import { backCameras, readTorchMemory, torchSupportOf, writeTorchMemory, type TorchSupport } from './torch'
+import { backCameras, readTorchMemory, thisBrowserCanControlTorch, torchSupportOf, writeTorchMemory, type TorchSupport } from './torch'
 
 /**
  * Cameracheck (Settings → Scanning, 20-10-2026): wat meldt dit toestel per lens aan de browser? Bedoeld om uit te
@@ -18,6 +18,8 @@ export interface LensReport {
 export interface CameraReport {
   browser: string
   imageCapture: boolean
+  /** Kent de browser zaklampbediening (torch of Image Capture)? Nee = ligt aan de browser, niet aan de lens. */
+  browserTorch: boolean
   lenses: LensReport[]
 }
 
@@ -44,7 +46,8 @@ export function reportText(r: CameraReport): string {
     const size = l.maxWidth && l.maxHeight ? `, max ${l.maxWidth}×${l.maxHeight}` : ''
     return `${i + 1}. ${l.label || 'camera'} (${l.facing || 'facing unknown'}): ${l.error ? `could not open (${l.error})` : `${TORCH_TEXT[l.torch]}${size}`}`
   })
-  return [`Dexcrate camera check`, `Browser: ${r.browser}`, `Image Capture: ${r.imageCapture ? 'yes' : 'no'}`, ...lines].join('\n')
+  const verdict = r.browserTorch ? [] : ['This browser cannot control a flashlight at all. Open Dexcrate in Chrome for the flashlight.']
+  return [`Dexcrate camera check`, `Browser: ${r.browser}`, `Image Capture: ${r.imageCapture ? 'yes' : 'no'}`, ...verdict, ...lines].join('\n')
 }
 
 export async function checkCameras(): Promise<CameraReport> {
@@ -79,5 +82,10 @@ export async function checkCameras(): Promise<CameraReport> {
   const withTorch = devices.find((d, i) => back.has(d.deviceId) && lenses[i]?.torch === 'yes') ?? devices.find((d, i) => back.has(d.deviceId) && lenses[i]?.torch === 'maybe')
   if (withTorch) writeTorchMemory({ kind: 'camera', deviceId: withTorch.deviceId })
   else if (readTorchMemory()?.kind !== 'camera') writeTorchMemory({ kind: 'none', at: Date.now() })
-  return { browser: browserName(navigator as Navigator & { userAgentData?: { brands?: { brand: string; version: string }[]; platform?: string } }), imageCapture: typeof (globalThis as { ImageCapture?: unknown }).ImageCapture === 'function', lenses }
+  return {
+    browser: browserName(navigator as Navigator & { userAgentData?: { brands?: { brand: string; version: string }[]; platform?: string } }),
+    imageCapture: typeof (globalThis as { ImageCapture?: unknown }).ImageCapture === 'function',
+    browserTorch: thisBrowserCanControlTorch(),
+    lenses,
+  }
 }

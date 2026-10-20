@@ -15,6 +15,7 @@ describe('reportText', () => {
     const text = reportText({
       browser: 'Google Chrome 148 (Android)',
       imageCapture: true,
+      browserTorch: true,
       lenses: [
         { label: 'camera2 0, facing back', facing: 'environment', torch: 'yes', maxWidth: 4000, maxHeight: 3000, error: null },
         { label: 'camera2 2, facing back', facing: 'environment', torch: 'no', maxWidth: null, maxHeight: null, error: null },
@@ -29,5 +30,12 @@ describe('reportText', () => {
       '2. camera2 2, facing back (environment): flashlight: no',
       '3. camera2 1, facing front (facing unknown): could not open (NotReadableError)',
     ])
+  })
+})
+
+describe('reportText: browser zonder zaklampbediening', () => {
+  it('zegt dat het aan de browser ligt en noemt Chrome (Firefox, gemeten 20-10-2026)', () => {
+    const text = reportText({ browser: 'Firefox 158', imageCapture: false, browserTorch: false, lenses: [] })
+    expect(text).toContain('This browser cannot control a flashlight at all. Open Dexcrate in Chrome for the flashlight.')
   })
 })

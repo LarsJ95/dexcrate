@@ -3,7 +3,7 @@ import { DEFAULT_TUNING, SAMPLE_H, SAMPLE_W, createAutoCapture, type AutoHint } 
 import { frameToSource } from '../lib/cameraCrop'
 import { setPref, usePrefs } from '../lib/devicePrefs'
 import { toGray } from '../lib/sharpness'
-import { backCameras, readTorchMemory, setTorch, torchSupportOf, trackHasTorch, writeTorchMemory, type TorchSupport } from '../lib/torch'
+import { backCameras, isFirefox, readTorchMemory, setTorch, thisBrowserCanControlTorch, torchSupportOf, trackHasTorch, writeTorchMemory, type TorchSupport } from '../lib/torch'
 import { IconClose, IconFlashlight } from './Icons'
 
 interface Props {
@@ -55,7 +55,10 @@ const TORCH_RECHECKS_MS = [0, 500, 1000]
 /** Hoe lang een korte melding in de camera blijft staan. */
 const NOTE_MS = 4500
 
-const NO_TORCH = 'This phone does not let the browser use the flashlight here. Move closer to a lamp; Settings → Scanning → Check camera shows why.'
+/** Waarom de zaklamp niet kan: in Firefox ligt het aan de browser (dan Chrome noemen), anders aan het toestel. */
+const NO_TORCH = isFirefox(navigator.userAgent)
+  ? 'Firefox cannot switch on the flashlight. Open Dexcrate in Chrome to use it.'
+  : 'This phone does not let the browser use the flashlight here. Move closer to a lamp; Settings → Scanning → Check camera shows why.'
 
 /**
  * Camera direct in de app (getUserMedia), zodat er geen keuzemenu "Camera / Bestanden" verschijnt.
@@ -238,7 +241,8 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose, children, 
     if (support === 'no') support = await torchSupportOf(track)
     if (closedRef.current || currentTrack() !== track) return
     setTorchState(support)
-    if (support === 'no' && readTorchMemory() === null && !searched.current) await searchOtherLenses(false)
+    // Browser kan geen zaklamp bedienen (Firefox): niet naar andere lenzen zoeken, dat gaf alleen even zwart beeld.
+    if (support === 'no' && thisBrowserCanControlTorch() && readTorchMemory() === null && !searched.current) await searchOtherLenses(false)
   }
 
   /** Andere achterlenzen proberen; de beste met zaklamp openen en onthouden. Geeft true als er een is. */
@@ -335,7 +339,7 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose, children, 
     try {
       if (torch === 'no') {
         // Op verzoek de andere lenzen proberen (één keer per sessie); anders uitleggen waarom het niet kan.
-        if (searched.current || lenses.length < 2) setNote(NO_TORCH)
+        if (!thisBrowserCanControlTorch() || searched.current || lenses.length < 2) setNote(NO_TORCH)
         else await searchOtherLenses(true)
         return
       }

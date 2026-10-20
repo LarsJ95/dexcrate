@@ -40,6 +40,8 @@ beforeEach(() => {
     configurable: true,
     value: {
       getUserMedia,
+      // Chrome-achtig: kent de zaklamp-constraint.
+      getSupportedConstraints: () => ({ width: true, facingMode: true, torch: true }),
       enumerateDevices: () =>
         Promise.resolve([
           { kind: 'videoinput', deviceId: 'f1', label: 'camera2 1, facing front' },
@@ -99,5 +101,17 @@ describe('zaklamp', () => {
     const lens = await screen.findByRole('button', { name: /Switch lens/ })
     fireEvent.click(lens)
     await waitFor(() => expect(readTorchMemory()).toEqual({ kind: 'camera', deviceId: 'b2' }))
+  })
+
+  it('browser zonder zaklampbediening (Firefox): niet vanzelf lenzen proberen, tikken legt uit', async () => {
+    Object.defineProperty(navigator.mediaDevices, 'getSupportedConstraints', { configurable: true, value: () => ({ width: true, facingMode: true }) })
+    renderCamera()
+    await videoRuns()
+    const button = await screen.findByRole('button', { name: 'Flashlight (not available on this lens)' }, { timeout: 4000 })
+    fireEvent.click(button)
+    expect(await screen.findByRole('status')).toBeTruthy()
+    // Alleen de eerste lens geopend; geen zoektocht langs de andere.
+    expect(getUserMedia).toHaveBeenCalledOnce()
+    expect(readTorchMemory()).toBe(null)
   })
 })
