@@ -1,5 +1,6 @@
 import { useEffect, useRef, type JSX, type ReactNode } from 'react'
 import type { FoilStyle } from '../lib/cardTraits'
+import { REST_POSE, settled } from '../lib/holoMotion'
 import { useMotion } from '../lib/motion'
 
 interface Props {
@@ -27,6 +28,9 @@ export function HoloCard({ foil, children, interactive = false, className }: Pro
   useEffect(() => {
     const el = ref.current
     if (!el || !motion) return
+    // Touchscreen (20-10-2026): geen rustige zwaai in rust. Elk beeldje opnieuw tekenen van de glanslagen gaf in Chrome
+    // op Android zwart flikkeren bij de vergrote kaart; nu beweegt hij alleen onder je vinger en komt dan tot stilstand.
+    const sway = typeof matchMedia !== 'function' || !matchMedia('(pointer: coarse)').matches
     let frame = 0
     let active = false
     let moved = 0
@@ -51,7 +55,8 @@ export function HoloCard({ foil, children, interactive = false, className }: Pro
     }
 
     const tick = (t: number): void => {
-      if (!active) aim(0.5 + Math.sin(t / 1500) * 0.22, 0.5 + Math.sin(t / 2300) * 0.18) // rustige beweging in rust
+      if (!active && sway) aim(0.5 + Math.sin(t / 1500) * 0.22, 0.5 + Math.sin(t / 2300) * 0.18) // rustige beweging in rust
+      if (!active && !sway) Object.assign(target, REST_POSE)
       const k = active ? 0.22 : 0.06
       cur.rx += (target.rx - cur.rx) * k
       cur.ry += (target.ry - cur.ry) * k
@@ -62,20 +67,28 @@ export function HoloCard({ foil, children, interactive = false, className }: Pro
       el.style.setProperty('--mx', `${cur.mx.toFixed(1)}%`)
       el.style.setProperty('--my', `${cur.my.toFixed(1)}%`)
       el.style.setProperty('--hyp', (Math.hypot(cur.mx - 50, cur.my - 50) / 70).toFixed(3))
-      frame = requestAnimationFrame(tick)
+      // Zonder zwaai: stoppen zodra de kaart weer stil ligt; een nieuwe aanraking start hem opnieuw.
+      frame = !sway && !active && settled(cur, target) ? 0 : requestAnimationFrame(tick)
     }
-    frame = requestAnimationFrame(tick)
+    const run = (): void => {
+      if (frame === 0) frame = requestAnimationFrame(tick)
+    }
+    if (sway) run()
 
     const onDown = (e: PointerEvent): void => {
       if (!interactive && e.pointerType !== 'mouse') return
       setActive(true)
+      run()
       moved = 0
       start = [e.clientX, e.clientY]
       if (interactive) el.setPointerCapture(e.pointerId)
       fromPointer(e)
     }
     const onMove = (e: PointerEvent): void => {
-      if (e.pointerType === 'mouse' && !active) setActive(true)
+      if (e.pointerType === 'mouse' && !active) {
+        setActive(true)
+        run()
+      }
       if (!active) return
       if (start) moved = Math.max(moved, Math.hypot(e.clientX - start[0], e.clientY - start[1]))
       fromPointer(e)
@@ -83,6 +96,7 @@ export function HoloCard({ foil, children, interactive = false, className }: Pro
     const onUp = (): void => {
       setActive(false)
       start = null
+      run() // terug naar de rustpositie (en daar stoppen)
     }
     // Na slepen geen tik doorgeven (de vergrote kaart sluit bij een tik).
     const onClick = (e: MouseEvent): void => {
