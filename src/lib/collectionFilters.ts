@@ -25,6 +25,34 @@ export function activeFilterCount(f: ExtraFilters): number {
   return [f.language, f.variant, f.condition, f.illustrator.trim(), f.rarity, f.type, f.suffix, f.link, f.set].filter(Boolean).length
 }
 
+/** Actief filter als korte tekst (chip op de telefoon); `key` = welk veld weer leeg moet bij wegtikken. */
+export interface ChipOf<K extends string> {
+  key: K
+  label: string
+}
+
+/** Zeldzaamheid, type en kaarttype als chips (gedeeld door Collection, Wishlist en Crate). */
+export function catalogFilterChips(f: CatalogFilters): ChipOf<keyof CatalogFilters>[] {
+  const out: ChipOf<keyof CatalogFilters>[] = []
+  if (f.rarity) out.push({ key: 'rarity', label: f.rarity })
+  if (f.type) out.push({ key: 'type', label: f.type })
+  if (f.suffix) out.push({ key: 'suffix', label: f.suffix })
+  return out
+}
+
+/** Collection: actieve extra filters als chips. `setLabel` geeft de naam bij een setfilter. */
+export function extraFilterChips(f: ExtraFilters, setLabel: (key: string) => string): ChipOf<keyof ExtraFilters>[] {
+  const out: ChipOf<keyof ExtraFilters>[] = []
+  if (f.set) out.push({ key: 'set', label: setLabel(f.set) })
+  if (f.language) out.push({ key: 'language', label: f.language === 'none' ? 'Language unknown' : LANGUAGE_LABELS[f.language] })
+  if (f.variant) out.push({ key: 'variant', label: f.variant === 'none' ? 'Variant unknown' : VARIANT_LABELS[f.variant] })
+  if (f.condition) out.push({ key: 'condition', label: f.condition === 'none' ? 'Condition unknown' : CONDITION_LABELS[f.condition] })
+  out.push(...catalogFilterChips(f))
+  if (f.link) out.push({ key: 'link', label: 'Not linked' })
+  if (f.illustrator.trim()) out.push({ key: 'illustrator', label: `Illustrator: ${f.illustrator.trim()}` })
+  return out
+}
+
 /** Wat de catalogusfilters van een kaart nodig hebben. */
 export type CatalogTraits = Pick<CardInfo, 'illustrator' | 'rarity' | 'types' | 'suffix'>
 

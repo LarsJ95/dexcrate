@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { NO_EXTRA_FILTERS, activeFilterCount, matchesExtra, parseView, setKeyOf } from './collectionFilters'
+import { NO_EXTRA_FILTERS, activeFilterCount, extraFilterChips, matchesExtra, parseView, setKeyOf } from './collectionFilters'
 import { EMPTY_CARD } from './types'
 
 const mew = { ...EMPTY_CARD, name: 'Mew ex', language: 'ja' as const, variant: 'holo' as const, condition: 'NM' as const, location_id: 'red' }
@@ -86,5 +86,20 @@ describe('onthouden weergave: ongeldige filterwaarden', () => {
     const fallback = { query: '', filter: 'owned' as const, sort: 'list' as const, extra: NO_EXTRA_FILTERS }
     const v = parseView(JSON.stringify({ extra: { language: 'klingon', variant: 'none', condition: 'NM' } }), ['list'], ['owned'], fallback)
     expect(v.extra).toMatchObject({ language: '', variant: 'none', condition: 'NM' })
+  })
+})
+
+describe('extraFilterChips', () => {
+  it('korte labels in vaste volgorde; onbekend en setnaam', () => {
+    const chips = extraFilterChips({ ...NO_EXTRA_FILTERS, set: 'en/sv03.5', language: 'ja', variant: 'none', rarity: 'Double rare', link: 'unlinked', illustrator: ' Arita ' }, () => '151')
+    expect(chips).toEqual([
+      { key: 'set', label: '151' },
+      { key: 'language', label: 'Japanese' },
+      { key: 'variant', label: 'Variant unknown' },
+      { key: 'rarity', label: 'Double rare' },
+      { key: 'link', label: 'Not linked' },
+      { key: 'illustrator', label: 'Illustrator: Arita' },
+    ])
+    expect(extraFilterChips(NO_EXTRA_FILTERS, () => '')).toEqual([])
   })
 })

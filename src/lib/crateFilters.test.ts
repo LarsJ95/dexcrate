@@ -3,7 +3,7 @@ import type { CrateCard } from './crate'
 
 // crate.ts laadt de Supabase-client; in CI zijn daar geen sleutels voor.
 vi.mock('./supabase', () => ({ supabase: {} }))
-const { NO_CRATE_FILTERS, crateFilterCount, crateSetOptions, matchesCrate, matchesCrateSearch, sortCrate } = await import('./crateFilters')
+const { NO_CRATE_FILTERS, crateFilterChips, crateFilterCount, crateSetOptions, matchesCrate, matchesCrateSearch, sortCrate } = await import('./crateFilters')
 
 const card = (tcgdexId: string, name: string, rarity: string | null, quantity = 1, setName: string | null = 'Set'): CrateCard => ({
   tcgdexId,
@@ -57,6 +57,17 @@ describe('Crate-filters', () => {
     expect(crateSetOptions([mew, zard, pika])).toEqual([
       { key: 'en/sv03.5', label: '151' },
       { key: 'en/sv04.5', label: 'Paldean Fates' },
+    ])
+  })
+})
+
+describe('crateFilterChips', () => {
+  it('set met naam, catalogus, illustrator en dubbelen', () => {
+    const chips = crateFilterChips({ ...NO_CRATE_FILTERS, set: 'en/sv03.5', type: 'Fire', duplicates: true }, (k) => (k === 'en/sv03.5' ? '151' : k))
+    expect(chips).toEqual([
+      { key: 'set', label: '151' },
+      { key: 'type', label: 'Fire' },
+      { key: 'duplicates', label: 'Only duplicates' },
     ])
   })
 })

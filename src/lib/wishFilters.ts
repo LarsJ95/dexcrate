@@ -1,5 +1,5 @@
 import { RARITY_FILTERS, SUFFIX_FILTERS, isEnergyType, type EnergyType } from './cardTraits'
-import { matchesCatalog, type CatalogTraits } from './collectionFilters'
+import { catalogFilterChips, matchesCatalog, type CatalogTraits, type ChipOf } from './collectionFilters'
 import { matchesWords } from './search'
 import { formatEur } from './stats'
 import { setOfKey } from './tcgdex'
@@ -44,6 +44,32 @@ export const NO_WISH_FILTERS: WishFilters = {
 export function activeWishFilterCount(f: WishFilters): number {
   return [f.name.trim(), f.variant, f.language, f.rarity, f.type, f.suffix, f.minPrice !== null, f.maxPrice !== null, f.underMax, f.priority !== null, f.set.trim()].filter(Boolean)
     .length
+}
+
+const PRIORITY_LABELS: Record<1 | 2 | 3, string> = { 1: 'High', 2: 'Normal', 3: 'Low' }
+
+/** Wishlist: actieve filters (en "Show found") als chips (telefoon). */
+export function wishFilterChips(f: WishFilters): ChipOf<keyof WishFilters | 'price'>[] {
+  const out: ChipOf<keyof WishFilters | 'price'>[] = []
+  if (f.name.trim()) out.push({ key: 'name', label: `Name: ${f.name.trim()}` })
+  if (f.variant) out.push({ key: 'variant', label: VARIANT_LABELS[f.variant] })
+  if (f.language) out.push({ key: 'language', label: LANGUAGE_LABELS[f.language] })
+  out.push(...catalogFilterChips(f))
+  if (f.priority !== null) out.push({ key: 'priority', label: `Priority: ${PRIORITY_LABELS[f.priority]}` })
+  if (f.set.trim()) out.push({ key: 'set', label: `Set: ${f.set.trim()}` })
+  if (f.minPrice !== null || f.maxPrice !== null) {
+    const label = f.minPrice !== null && f.maxPrice !== null ? `${formatEur(f.minPrice)}–${formatEur(f.maxPrice)}` : f.minPrice !== null ? `From ${formatEur(f.minPrice)}` : `Up to ${formatEur(f.maxPrice ?? 0)}`
+    out.push({ key: 'price', label })
+  }
+  if (f.underMax) out.push({ key: 'underMax', label: 'Within your max price' })
+  if (f.showFound) out.push({ key: 'showFound', label: 'Showing found cards' })
+  return out
+}
+
+/** Filter achter een chip weer leeg ("price" = beide prijsgrenzen). */
+export function clearWishChip(key: keyof WishFilters | 'price'): Partial<WishFilters> {
+  if (key === 'price') return { minPrice: null, maxPrice: null }
+  return { [key]: NO_WISH_FILTERS[key] }
 }
 
 /** Filters die de kaartinfo uit de catalogus nodig hebben. */

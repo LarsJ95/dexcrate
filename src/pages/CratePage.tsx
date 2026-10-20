@@ -43,7 +43,7 @@ import { digitalSetIds, getSetList } from '../lib/tcgdex'
 import { buzz } from '../lib/haptics'
 import { errorText } from '../lib/errors'
 import { needsCatalog } from '../lib/collectionFilters'
-import { CRATE_SORTS, NO_CRATE_FILTERS, crateFilterCount, crateSetOptions, matchesCrate, matchesCrateSearch, sortCrate, type CrateFilters, type CrateSort } from '../lib/crateFilters'
+import { CRATE_SORTS, NO_CRATE_FILTERS, crateFilterChips, crateFilterCount, crateSetOptions, matchesCrate, matchesCrateSearch, sortCrate, type CrateFilters, type CrateSort } from '../lib/crateFilters'
 import { closeKeyboardOnEnter } from '../lib/keyboard'
 import { useStoredChoice } from '../hooks/useStoredChoice'
 
@@ -424,6 +424,11 @@ export function CratePage(): JSX.Element {
               setFilters(NO_CRATE_FILTERS)
               setQuery('')
             }}
+            chips={crateFilterChips(filters, (key) => setOptions.find((o) => o.key === key)?.label ?? key).map((c) => ({
+              ...c,
+              onRemove: () => setFilters((f) => ({ ...f, [c.key]: NO_CRATE_FILTERS[c.key] })),
+            }))}
+            resultCount={sorted.length}
             toolbar={
               <>
                 <div className="search">
