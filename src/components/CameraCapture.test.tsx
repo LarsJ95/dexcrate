@@ -8,8 +8,12 @@ import { CameraCapture } from './CameraCapture'
  * Nagebootste telefoon met twee achterlenzen (zoals Chrome op Android ze toont): "b2" (groothoek, geen flitser)
  * opent standaard, "b0" (hoofdlens) heeft de zaklamp.
  */
+let trackNo = 0
+
 function fakeTrack(deviceId: string, torch: boolean): MediaStreamTrack {
+  trackNo += 1
   return {
+    id: `${deviceId}-${trackNo}`,
     stop: vi.fn(),
     getSettings: () => ({ deviceId }),
     getCapabilities: () => (torch ? { torch: [true, false] } : {}),
@@ -77,12 +81,23 @@ describe('zaklamp', () => {
     expect(JSON.stringify(getUserMedia.mock.calls[0][0])).toContain('"exact":"b0"')
   })
 
-  it('onlangs al gezocht zonder resultaat: geen lenzen proberen, geen knop', async () => {
+  it('onlangs al gezocht zonder resultaat: niet vanzelf lenzen proberen; knop staat er wel, met uitleg bij tikken', async () => {
     writeTorchMemory({ kind: 'none', at: Date.now() })
     renderCamera()
     await videoRuns()
-    await new Promise((r) => setTimeout(r, 1700))
+    const button = await screen.findByRole('button', { name: 'Flashlight (not available on this lens)' }, { timeout: 4000 })
     expect(getUserMedia).toHaveBeenCalledOnce()
-    expect(screen.queryByRole('button', { name: 'Flashlight' })).toBe(null)
+    // Tikken: deze sessie nog niet gezocht en er zijn meer achterlenzen → nu wel zoeken (op verzoek).
+    fireEvent.click(button)
+    await waitFor(() => expect(readTorchMemory()).toEqual({ kind: 'camera', deviceId: 'b0' }), { timeout: 4000 })
+  })
+
+  it('meer dan één achterlens: lensknop wisselt en onthoudt de lens', async () => {
+    writeTorchMemory({ kind: 'camera', deviceId: 'b0' })
+    renderCamera()
+    await videoRuns()
+    const lens = await screen.findByRole('button', { name: /Switch lens/ })
+    fireEvent.click(lens)
+    await waitFor(() => expect(readTorchMemory()).toEqual({ kind: 'camera', deviceId: 'b2' }))
   })
 })

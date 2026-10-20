@@ -47,11 +47,17 @@
   border: 0;
 }
 
-/* Zaklamp: linksboven, geel als hij aan staat. */
-.camera-torch {
+/* Zaklamp en lensknop linksboven (20-10-2026: zaklamp altijd zichtbaar); geel als hij aan staat. */
+.camera-tools {
   position: absolute;
   top: calc(var(--space-3) + env(safe-area-inset-top, 0px));
   left: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.camera-torch {
   background: var(--camera-control);
   border: 0;
   color: var(--white);
@@ -67,6 +73,22 @@
 .camera-torch.on:hover:not(:disabled) {
   background: var(--yellow);
   color: var(--on-yellow);
+}
+
+/* Deze lens kan het niet (of nog onbekend): zichtbaar maar zachter; tikken legt uit of zoekt een andere lens. */
+.camera-torch.is-unavailable {
+  opacity: 0.55;
+}
+
+button.camera-lens,
+button.camera-lens:hover:not(:disabled) {
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--camera-control);
+  color: var(--white);
+  font-variant-numeric: tabular-nums;
 }
 
 .camera-bar {

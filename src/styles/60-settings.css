@@ -154,3 +154,17 @@
 label.settings-confirm {
   max-width: 260px;
 }
+
+/* Cameracheck (20-10-2026): resultaat per lens, kopieerbaar. */
+.camera-report {
+  max-width: 100%;
+  margin: 0;
+  padding: var(--space-3);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+  font-family: inherit;
+}

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest'
-import { backCameras, readTorchMemory, setTorch, shouldSearchTorch, torchSupported, trackHasTorch, writeTorchMemory } from './torch'
+import { backCameras, photoFlash, readTorchMemory, setTorch, torchSupportOf, torchSupported, trackHasTorch, writeTorchMemory } from './torch'
 
 describe('torchSupported', () => {
   it('spec: lijst booleans met true; ook één boolean true', () => {
@@ -54,11 +54,34 @@ describe('zaklampcamera onthouden', () => {
     expect(readTorchMemory()).toBe(null)
   })
 
-  it('niet steeds opnieuw zoeken als geen camera een zaklamp heeft (14 dagen)', () => {
-    const day = 24 * 60 * 60 * 1000
-    expect(shouldSearchTorch(null)).toBe(true)
-    expect(shouldSearchTorch({ kind: 'camera', deviceId: 'b0' })).toBe(true)
-    expect(shouldSearchTorch({ kind: 'none', at: 0 }, 13 * day)).toBe(false)
-    expect(shouldSearchTorch({ kind: 'none', at: 0 }, 15 * day)).toBe(true)
+})
+
+describe('setTorch: controleren of hij echt aan ging', () => {
+  it('browser meldt een andere stand: fout (dan zegt de knop waarom)', async () => {
+    const track = { applyConstraints: vi.fn(() => Promise.resolve()), getSettings: () => ({ torch: false }) } as unknown as MediaStreamTrack
+    await expect(setTorch(track, true)).rejects.toThrow()
+    const ok = { applyConstraints: vi.fn(() => Promise.resolve()), getSettings: () => ({ torch: true }) } as unknown as MediaStreamTrack
+    await expect(setTorch(ok, true)).resolves.toBeUndefined()
+  })
+})
+
+describe('flitser via de foto-instellingen (Image Capture)', () => {
+  const trackWith = (torch: boolean): MediaStreamTrack => ({ getCapabilities: () => (torch ? { torch: [true, false] } : {}) }) as unknown as MediaStreamTrack
+
+  it('zonder Image Capture: geen flitser; met "flash": misschien', async () => {
+    vi.stubGlobal('ImageCapture', undefined)
+    expect(await photoFlash(trackWith(false))).toBe(false)
+    expect(await torchSupportOf(trackWith(false))).toBe('no')
+    vi.stubGlobal(
+      'ImageCapture',
+      class {
+        getPhotoCapabilities() {
+          return Promise.resolve({ fillLightMode: ['auto', 'off', 'flash'] })
+        }
+      },
+    )
+    expect(await torchSupportOf(trackWith(false))).toBe('maybe')
+    expect(await torchSupportOf(trackWith(true))).toBe('yes')
+    vi.unstubAllGlobals()
   })
 })

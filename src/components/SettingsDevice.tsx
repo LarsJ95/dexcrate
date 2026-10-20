@@ -1,4 +1,5 @@
 import { useState, type JSX } from 'react'
+import { checkCameras, reportText, type CameraReport } from '../lib/cameraCheck'
 import { CHS_DOWNLOAD_MB, downloadChsCatalog, removeChsCatalog, useChsCatalog } from '../lib/chsCatalog'
 import { AUTO_GAPS, setPref, usePrefs, type AutoGap, type ScanModePref, type ThemeChoice } from '../lib/devicePrefs'
 import { errorText } from '../lib/errors'
@@ -96,7 +97,49 @@ export function ScanningSection(): JSX.Element {
         Hold back blurry photos
       </Toggle>
       <ChsCatalogRow />
+      <CameraCheckRow />
     </Section>
+  )
+}
+
+/** Wat meldt dit toestel per lens (zaklamp, resolutie)? Om de zaklamp aan de praat te krijgen; resultaat kopieerbaar. */
+function CameraCheckRow(): JSX.Element {
+  const [state, setState] = useState<{ kind: 'idle' } | { kind: 'busy' } | { kind: 'done'; report: CameraReport } | { kind: 'error'; message: string }>({ kind: 'idle' })
+  const [copied, setCopied] = useState(false)
+  const run = (): void => {
+    setState({ kind: 'busy' })
+    setCopied(false)
+    checkCameras()
+      .then((report) => setState({ kind: 'done', report }))
+      .catch((err: unknown) => setState({ kind: 'error', message: errorText(err, 'The camera could not be opened.') }))
+  }
+  const copy = (text: string): void => {
+    navigator.clipboard
+      .writeText(text)
+      .then(() => setCopied(true))
+      .catch((err: unknown) => console.warn('Kopiëren mislukt', err))
+  }
+  return (
+    <div className="settings-row chs-row">
+      <span className="settings-label">Camera and flashlight</span>
+      <p className="muted small">Shows what this phone tells the browser about each lens. Each lens opens for a moment.</p>
+      <div className="settings-actions">
+        <button type="button" onClick={run} disabled={state.kind === 'busy'}>
+          {state.kind === 'busy' ? 'Checking lenses…' : 'Check camera'}
+        </button>
+        {state.kind === 'done' && (
+          <button type="button" className="ghost" onClick={() => copy(reportText(state.report))}>
+            {copied ? 'Copied' : 'Copy result'}
+          </button>
+        )}
+      </div>
+      {state.kind === 'done' && <pre className="camera-report small">{reportText(state.report)}</pre>}
+      {state.kind === 'error' && (
+        <p className="error small" role="alert">
+          {state.message}
+        </p>
+      )}
+    </div>
   )
 }
 

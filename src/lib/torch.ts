@@ -18,10 +18,47 @@ export function trackHasTorch(track: MediaStreamTrack | undefined): boolean {
   return Boolean(track && typeof track.getCapabilities === 'function' && torchSupported(track.getCapabilities()))
 }
 
-/** Zaklamp aan of uit (als "advanced" constraint, zoals de spec toestaat). */
+/**
+ * Zaklamp aan of uit (als "advanced" constraint, zoals de spec toestaat). Meldt de browser daarna een andere stand,
+ * dan is het niet gelukt: fout, zodat de knop dat kan zeggen in plaats van niets te doen.
+ */
 export async function setTorch(track: MediaStreamTrack, on: boolean): Promise<void> {
   const torch: MediaTrackConstraintSet & { torch: boolean } = { torch: on }
   await track.applyConstraints({ advanced: [torch] })
+  const now = typeof track.getSettings === 'function' ? (track.getSettings() as { torch?: unknown }).torch : undefined
+  if (typeof now === 'boolean' && now !== on) throw new Error('The flashlight did not switch.')
+}
+
+type PhotoCapabilitiesLike = { fillLightMode?: unknown }
+type ImageCaptureCtor = new (track: MediaStreamTrack) => { getPhotoCapabilities(): Promise<PhotoCapabilitiesLike> }
+
+/**
+ * Heeft deze lens een flitser volgens de foto-instellingen (Image Capture, `fillLightMode` "flash" of "auto")?
+ * Sommige toestellen melden `torch` in de track pas nadat dit is opgevraagd, of helemaal niet; dan is de flitser
+ * hier wel te zien en kan de zaklamp toch lukken. Zonder Image Capture (Safari, Firefox): nee.
+ */
+export async function photoFlash(track: MediaStreamTrack): Promise<boolean> {
+  const IC = (globalThis as { ImageCapture?: ImageCaptureCtor }).ImageCapture
+  if (typeof IC !== 'function') return false
+  try {
+    const caps = await new IC(track).getPhotoCapabilities()
+    const modes = Array.isArray(caps.fillLightMode) ? caps.fillLightMode : []
+    return modes.includes('flash') || modes.includes('auto')
+  } catch {
+    return false // lens kan het niet zeggen: geen flitser aannemen
+  }
+}
+
+/** Zaklamp van een lens: 'yes' = te bedienen, 'maybe' = flitser gemeld maar geen torch (proberen kan), 'no'. */
+export type TorchSupport = 'yes' | 'maybe' | 'no'
+
+export async function torchSupportOf(track: MediaStreamTrack | undefined): Promise<TorchSupport> {
+  if (!track) return 'no'
+  if (trackHasTorch(track)) return 'yes'
+  const flash = await photoFlash(track)
+  // Na het opvragen van de foto-instellingen staat torch er op sommige toestellen wel.
+  if (trackHasTorch(track)) return 'yes'
+  return flash ? 'maybe' : 'no'
 }
 
 /**
@@ -32,10 +69,11 @@ export function backCameras(devices: readonly Pick<MediaDeviceInfo, 'kind' | 'la
   return devices.filter((d) => d.kind === 'videoinput' && d.deviceId && /\b(back|rear|environment)\b/i.test(d.label)).map((d) => d.deviceId)
 }
 
-/** Per apparaat onthouden welke camera de zaklamp heeft, of dat geen enkele hem heeft (met tijdstip). */
+/**
+ * Per apparaat onthouden welke lens je gebruikt (met zaklamp, of zelf gekozen met de lensknop), of dat geen lens een
+ * zaklamp heeft (met tijdstip). Bij "geen" zoekt de camera niet meer vanzelf; tikken op de zaklamp probeert het opnieuw.
+ */
 const TORCH_CAMERA_KEY = 'dexcrate:torch-camera'
-/** Geen zaklamp gevonden: zo lang niet opnieuw alle camera's proberen (dat geeft even een zwart beeld). */
-const NO_TORCH_RETRY_MS = 14 * 24 * 60 * 60 * 1000
 
 export type TorchMemory = { kind: 'camera'; deviceId: string } | { kind: 'none'; at: number } | null
 
@@ -61,9 +99,4 @@ export function writeTorchMemory(m: TorchMemory): void {
   } catch (err) {
     console.warn('Zaklampcamera onthouden mislukt', err)
   }
-}
-
-/** Andere camera's proberen? Niet als er onlangs al gezocht is zonder resultaat. */
-export function shouldSearchTorch(m: TorchMemory, now = Date.now()): boolean {
-  return m?.kind !== 'none' || now - m.at > NO_TORCH_RETRY_MS
 }

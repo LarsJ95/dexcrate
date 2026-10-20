@@ -3,7 +3,7 @@ import { DEFAULT_TUNING, SAMPLE_H, SAMPLE_W, createAutoCapture, type AutoHint } 
 import { frameToSource } from '../lib/cameraCrop'
 import { setPref, usePrefs } from '../lib/devicePrefs'
 import { toGray } from '../lib/sharpness'
-import { backCameras, readTorchMemory, setTorch, shouldSearchTorch, trackHasTorch, writeTorchMemory } from '../lib/torch'
+import { backCameras, readTorchMemory, setTorch, torchSupportOf, trackHasTorch, writeTorchMemory, type TorchSupport } from '../lib/torch'
 import { IconClose, IconFlashlight } from './Icons'
 
 interface Props {
@@ -52,6 +52,11 @@ const wait = (ms: number): Promise<void> => new Promise((resolve) => window.setT
 /** Sommige toestellen melden de zaklamp pas even na het starten: zo vaak opnieuw kijken (ms na de vorige keer). */
 const TORCH_RECHECKS_MS = [0, 500, 1000]
 
+/** Hoe lang een korte melding in de camera blijft staan. */
+const NOTE_MS = 4500
+
+const NO_TORCH = 'This phone does not let the browser use the flashlight here. Move closer to a lamp; Settings → Scanning → Check camera shows why.'
+
 /**
  * Camera direct in de app (getUserMedia), zodat er geen keuzemenu "Camera / Bestanden" verschijnt.
  * De browser vraagt één keer toestemming en onthoudt die voor deze site.
@@ -70,12 +75,21 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose, children, 
   const { autoCapture: autoOn, autoGapMs } = usePrefs()
   const [autoHint, setAutoHint] = useState<AutoHint | null>(null)
   const captureRef = useRef<() => void>(() => undefined)
-  // Zaklamp: alleen als de camera hem laat bedienen (veel telefoons, zelden laptops).
-  const [torchAvailable, setTorchAvailable] = useState(false)
+  // Zaklamp (20-10-2026: knop altijd zichtbaar, op verzoek): 'checking' tot bekend is wat deze lens kan.
+  const [torch, setTorchState] = useState<'checking' | TorchSupport>('checking')
   const [torchOn, setTorchOn] = useState(false)
   const torchBusy = useRef(false)
-  // Andere lenzen proberen voor de zaklamp: beeld is dan even zwart.
-  const [searchingTorch, setSearchingTorch] = useState(false)
+  // Andere lenzen proberen of wisselen: beeld is dan even zwart; tekst in de statusregel.
+  const [busyText, setBusyText] = useState<string | null>(null)
+  // Korte melding (bv. waarom de zaklamp niet kan), verdwijnt vanzelf.
+  const [note, setNote] = useState<string | null>(null)
+  // Achterlenzen (na toestemming bekend) en de lens die nu open is.
+  const [lenses, setLenses] = useState<string[]>([])
+  const [lensId, setLensId] = useState<string | null>(null)
+  /** Andere lenzen al geprobeerd in deze sessie (niet steeds opnieuw zwart beeld). */
+  const searched = useRef(false)
+  /** Track waarvoor de zaklamp al bekeken is; een nieuwe lens geeft een nieuwe track. */
+  const checkedTrack = useRef<string | null>(null)
   const closedRef = useRef(false)
 
   function attach(stream: MediaStream): void {
@@ -182,64 +196,95 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose, children, 
     setAutoHint(null)
   }
 
-  const torchChecked = useRef(false)
+  useEffect(() => {
+    if (!note) return
+    const t = window.setTimeout(() => setNote(null), NOTE_MS)
+    return () => window.clearTimeout(t)
+  }, [note])
+
+  const currentTrack = (): MediaStreamTrack | undefined => streamRef.current?.getVideoTracks()[0]
 
   function onVideoReady(): void {
     setReady(true)
-    // Eén keer per keer openen; na wisselen van lens komt dit opnieuw binnen.
-    if (torchChecked.current) return
-    torchChecked.current = true
-    void findTorch().catch((err: unknown) => console.warn('Zaklamp zoeken mislukt', err))
+    void afterStart().catch((err: unknown) => console.warn('Zaklamp bekijken mislukt', err))
   }
 
   /**
-   * Zaklamp vinden. Pas als het beeld loopt weet de browser wat de camera kan, soms pas iets later. Heeft deze lens
-   * er geen, dan de andere achterlenzen proberen (telefoons met meerdere lenzen openen soms een lens zonder
-   * flitser) en de lens met zaklamp onthouden. Niets gevonden: terug naar de eerste lens, en 14 dagen niet opnieuw.
+   * Na het starten van een lens: wat kan de zaklamp? Pas als het beeld loopt weet de browser dat, soms iets later.
+   * Eerste keer ooit en geen zaklamp: de andere achterlenzen proberen (telefoons openen soms een lens zonder flitser).
    */
-  async function findTorch(): Promise<void> {
+  async function afterStart(): Promise<void> {
+    const track = currentTrack()
+    if (!track || checkedTrack.current === track.id) return
+    checkedTrack.current = track.id
+    setTorchOn(false)
+    setTorchState('checking')
+    setLensId(track.getSettings().deviceId ?? null)
+    navigator.mediaDevices
+      .enumerateDevices()
+      .then((devices) => {
+        if (!closedRef.current) setLenses(backCameras(devices))
+      })
+      .catch((err: unknown) => console.warn('Lenzen opvragen mislukt', err))
+    let support: TorchSupport = 'no'
     for (const ms of TORCH_RECHECKS_MS) {
       await wait(ms)
-      if (closedRef.current) return
-      if (trackHasTorch(streamRef.current?.getVideoTracks()[0])) {
-        setTorchAvailable(true)
-        return
+      if (closedRef.current || currentTrack() !== track) return
+      if (trackHasTorch(track)) {
+        support = 'yes'
+        break
       }
     }
-    const memory = readTorchMemory()
-    if (!shouldSearchTorch(memory)) return
-    const first = streamRef.current?.getVideoTracks()[0]?.getSettings().deviceId ?? null
+    if (support === 'no') support = await torchSupportOf(track)
+    if (closedRef.current || currentTrack() !== track) return
+    setTorchState(support)
+    if (support === 'no' && readTorchMemory() === null && !searched.current) await searchOtherLenses(false)
+  }
+
+  /** Andere achterlenzen proberen; de beste met zaklamp openen en onthouden. Geeft true als er een is. */
+  async function searchOtherLenses(userAsked: boolean): Promise<boolean> {
+    searched.current = true
+    const first = currentTrack()?.getSettings().deviceId ?? null
     const others = backCameras(await navigator.mediaDevices.enumerateDevices()).filter((id) => id !== first)
     if (others.length === 0 || closedRef.current) {
       if (!closedRef.current) writeTorchMemory({ kind: 'none', at: Date.now() })
-      return
+      if (userAsked && !closedRef.current) setNote(NO_TORCH)
+      return false
     }
-    setSearchingTorch(true)
+    setBusyText('Looking for the lens with the flashlight…')
     setReady(false)
     try {
       // Op Android kan maar één camera tegelijk open: eerst de huidige sluiten.
       stopStream(streamRef.current)
+      let maybe: { id: string; stream: MediaStream } | null = null
       for (const id of others) {
         const stream = await openCamera(id).catch((err: unknown) => {
           console.warn('Andere lens openen mislukt', err)
           return null
         })
         if (!stream) continue
-        const track = stream.getVideoTracks()[0]
-        const hasTorch = trackHasTorch(track) || (await wait(TORCH_RECHECKS_MS[1]).then(() => trackHasTorch(track)))
         if (closedRef.current) {
           stopStream(stream)
-          return
+          return false
         }
-        if (hasTorch) {
+        await wait(TORCH_RECHECKS_MS[1])
+        const support = await torchSupportOf(stream.getVideoTracks()[0])
+        if (support === 'yes') {
+          if (maybe) stopStream(maybe.stream)
           writeTorchMemory({ kind: 'camera', deviceId: id })
-          setTorchAvailable(true)
           attach(stream)
-          return
+          return true
         }
-        stopStream(stream)
+        if (support === 'maybe' && !maybe) maybe = { id, stream }
+        else stopStream(stream)
+      }
+      if (maybe) {
+        writeTorchMemory({ kind: 'camera', deviceId: maybe.id })
+        attach(maybe.stream)
+        return true
       }
       writeTorchMemory({ kind: 'none', at: Date.now() })
+      if (userAsked) setNote(NO_TORCH)
       try {
         const back = await openCamera(first)
         if (closedRef.current) stopStream(back)
@@ -248,28 +293,67 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose, children, 
         console.error('Camera opnieuw openen mislukt', err)
         if (!closedRef.current) setError('Could not open the camera.')
       }
+      return false
     } finally {
-      if (!closedRef.current) setSearchingTorch(false)
+      if (!closedRef.current) setBusyText(null)
+    }
+  }
+
+  /** Volgende achterlens (sommige lenzen stellen scherper op dichtbij, of hebben de flitser). Onthouden. */
+  async function switchLens(): Promise<void> {
+    if (lenses.length < 2 || busyText) return
+    const next = lenses[(Math.max(0, lenses.indexOf(lensId ?? '')) + 1) % lenses.length]
+    setBusyText('Switching lens…')
+    setReady(false)
+    stopStream(streamRef.current)
+    try {
+      const stream = await openCamera(next)
+      if (closedRef.current) {
+        stopStream(stream)
+        return
+      }
+      writeTorchMemory({ kind: 'camera', deviceId: next })
+      attach(stream)
+    } catch (err) {
+      console.warn('Lens wisselen mislukt', err)
+      setNote('Could not switch to that lens.')
+      try {
+        attach(await openCamera(lensId))
+      } catch (err2) {
+        console.error('Camera opnieuw openen mislukt', err2)
+        if (!closedRef.current) setError('Could not open the camera.')
+      }
+    } finally {
+      if (!closedRef.current) setBusyText(null)
     }
   }
 
   async function toggleTorch(): Promise<void> {
-    const track = streamRef.current?.getVideoTracks()[0]
     // Dubbel tikken: niet twee keer tegelijk schakelen.
-    if (!track || torchBusy.current) return
+    if (torch === 'checking' || torchBusy.current || busyText) return
     torchBusy.current = true
     try {
+      if (torch === 'no') {
+        // Op verzoek de andere lenzen proberen (één keer per sessie); anders uitleggen waarom het niet kan.
+        if (searched.current || lenses.length < 2) setNote(NO_TORCH)
+        else await searchOtherLenses(true)
+        return
+      }
+      const track = currentTrack()
+      if (!track) return
       await setTorch(track, !torchOn)
       setTorchOn(!torchOn)
     } catch (err) {
-      // Werkt toch niet op dit toestel: knop weghalen in plaats van een knop die niets doet.
       console.warn('Zaklamp schakelen mislukt', err)
-      setTorchAvailable(false)
+      setTorchState('no')
       setTorchOn(false)
+      setNote(NO_TORCH)
     } finally {
       torchBusy.current = false
     }
   }
+
+  const lensNo = Math.max(0, lenses.indexOf(lensId ?? '')) + 1
 
   return (
     <div className="camera" role="dialog" aria-modal="true" aria-label="Camera">
@@ -279,10 +363,24 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose, children, 
       <button type="button" className="camera-close icon-btn" onClick={onClose} aria-label="Close camera">
         <IconClose />
       </button>
-      {torchAvailable && !error && (
-        <button type="button" className={`camera-torch icon-btn${torchOn ? ' on' : ''}`} onClick={() => void toggleTorch()} aria-pressed={torchOn} aria-label="Flashlight">
-          <IconFlashlight />
-        </button>
+      {!error && (
+        <div className="camera-tools">
+          <button
+            type="button"
+            className={`camera-torch icon-btn${torchOn ? ' on' : ''}${torch === 'no' ? ' is-unavailable' : ''}`}
+            onClick={() => void toggleTorch()}
+            disabled={torch === 'checking' || busyText !== null}
+            aria-pressed={torchOn}
+            aria-label={torch === 'no' ? 'Flashlight (not available on this lens)' : 'Flashlight'}
+          >
+            <IconFlashlight />
+          </button>
+          {lenses.length > 1 && (
+            <button type="button" className="camera-lens" onClick={() => void switchLens()} disabled={busyText !== null} aria-label={`Switch lens (now ${lensNo} of ${lenses.length})`}>
+              Lens {lensNo}/{lenses.length}
+            </button>
+          )}
+        </div>
       )}
 
       {error && (
@@ -297,9 +395,9 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose, children, 
       {flash > 0 && <div key={flash} className="camera-flash" aria-hidden="true" />}
 
       <div className="camera-bar">
-        {searchingTorch && (
-          <p className="auto-status" aria-live="polite">
-            Looking for the lens with the flashlight…
+        {(busyText ?? note) && (
+          <p className="auto-status" role="status">
+            {busyText ?? note}
           </p>
         )}
         {autoActive && autoHint && (
