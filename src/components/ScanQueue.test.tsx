@@ -84,6 +84,9 @@ describe('ScanQueue: compacte scanregel', () => {
     renderQueue()
     const hound = within(rowOf('Houndoom'))
     expect(hound.getByText('太晶盛聚 #107')).toBeTruthy()
+    // Zeker: geen "Read as …"; bij twijfel wel (S5).
+    expect(hound.queryByText(/Read as/)).toBe(null)
+    expect(within(rowOf('Abra')).getByText('Read as #062 · Chinese (simplified)')).toBeTruthy()
     expect(hound.queryByRole('group', { name: 'Card for Houndoom' })).toBe(null)
     expect(hound.queryByRole('button', { name: 'Correct' })).toBe(null)
     await userEvent.click(hound.getByRole('button', { name: 'More' }))

@@ -3,11 +3,12 @@ import { addedQuietly } from '../lib/celebrate'
 import { insertCards } from '../lib/db'
 import { autoPick } from '../lib/match'
 import { draftFromScan } from '../lib/scan'
+import { readLabel } from '../lib/scanResult'
 import { recordChoices, type ChoiceInput } from '../lib/scanMemory'
 import { isAmbiguous, isCondition, onlyOtherNumbers, reviewGroups, scannedTwice, summarize, withoutCardData, type QueueItem } from '../lib/scanQueue'
 import { canLookAgain, canRetry, getFeedback, getQueue, lookAgain, removeItems, retry, searchAgain, subscribe, undoFeedback, updateItem } from '../lib/scanQueueStore'
 import { lookupLang } from '../lib/tcgdex'
-import { CONDITION_LABELS, EMPTY_CARD, LANGUAGE_LABELS, type Card, type CardInput, type Condition } from '../lib/types'
+import { CONDITION_LABELS, EMPTY_CARD, type Card, type CardInput, type Condition } from '../lib/types'
 import { CardFace } from './CardFace'
 import { CatalogKeyPicture } from './CatalogCardPicture'
 import { ChsCatalogNotice } from './ChsCatalogNotice'
@@ -275,12 +276,8 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
           )}
           {q.status === 'error' && <p className="error small">{q.error}</p>}
           {!ready && q.status !== 'error' && <p className="muted small">{STATUS_TEXT[q.status]}</p>}
-          {q.rec && (
-            <p className="muted small">
-              Read: {[q.rec.setCode, q.rec.cardNumber, q.rec.language ? LANGUAGE_LABELS[q.rec.language] : null].filter(Boolean).join(', ') || 'unreadable'}
-              {q.rec.confidence !== 'high' && ' (uncertain)'}
-            </p>
-          )}
+          {/* Wat de scan las alleen bij twijfel (S5): bij een zekere match zegt de kaart genoeg. */}
+          {q.rec && (q.rec.confidence !== 'high' || needsPick(q)) && <p className="muted small">{readLabel(q.rec)}</p>}
         </div>
         <button type="button" className="ghost icon-btn queue-remove" onClick={() => removeItems([q.id])} aria-label={`Remove ${label}`}>
           <IconClose size={16} />

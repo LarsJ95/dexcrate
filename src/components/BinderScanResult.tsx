@@ -5,13 +5,14 @@ import { onChsCatalogReady } from '../lib/chsCatalog'
 import { autoPick, type Candidate } from '../lib/match'
 import { recordChoices, scanCandidates, type ChoiceInput } from '../lib/scanMemory'
 import { draftFromScan, type Recognition } from '../lib/scan'
+import { readLabel } from '../lib/scanResult'
 import { lookupLang } from '../lib/tcgdex'
 import { CardFace } from './CardFace'
 import { CatalogKeyPicture } from './CatalogCardPicture'
 import { ChsCatalogNotice } from './ChsCatalogNotice'
 import { LazyCardPrice } from './LazyCardPrice'
 import { VariantGapNote, VariantSelect } from './VariantSelect'
-import { CONDITION_LABELS, EMPTY_CARD, LANGUAGE_LABELS, type Card, type CardInput, type Condition, type Variant } from '../lib/types'
+import { CONDITION_LABELS, EMPTY_CARD, type Card, type CardInput, type Condition, type Variant } from '../lib/types'
 import { errorText } from '../lib/errors'
 import { fitVariant, variantFacts } from '../lib/variantChoice'
 
@@ -180,13 +181,8 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
                 <p className="tile-name">
                   {r.rec.position}. {label}
                 </p>
-                <p className="muted small">
-                  Read:{' '}
-                  {[r.rec.setCode, r.rec.cardNumber, r.rec.language ? LANGUAGE_LABELS[r.rec.language] : null]
-                    .filter(Boolean)
-                    .join(', ') || 'unreadable'}
-                  {r.rec.confidence !== 'high' && ' (uncertain)'}
-                </p>
+                {/* Wat de scan las alleen bij twijfel (S5). */}
+                {(r.rec.confidence !== 'high' || (r.candidates !== undefined && !autoPick(r.candidates))) && <p className="muted small">{readLabel(r.rec)}</p>}
                 {r.candidates && r.candidates.length > 0 && (
                   <select
                     aria-label={`Match for ${label}`}

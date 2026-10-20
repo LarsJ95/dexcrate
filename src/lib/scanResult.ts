@@ -57,6 +57,16 @@ export function toScanResult(body: unknown): ScanResult {
 /** "001" → "1", zoals de rest van de collectie. */
 export const plainNumber = (n: string): string => (/^\d+$/.test(n) ? String(Number.parseInt(n, 10)) : n)
 
+/**
+ * Wat de scan las, kort: "Read as SV8 #062 · Chinese (simplified) (uncertain)". Alleen tonen bij twijfel (audit S5,
+ * 20-10-2026): bij een zekere match zie je de kaart zelf al.
+ */
+export function readLabel(r: Pick<Recognition, 'setCode' | 'cardNumber' | 'language' | 'confidence'>): string {
+  const card = [r.setCode, r.cardNumber ? `#${r.cardNumber}` : ''].filter(Boolean).join(' ')
+  const parts = [card, r.language ? LANGUAGE_LABELS[r.language] : ''].filter(Boolean)
+  return `${parts.length > 0 ? `Read as ${parts.join(' · ')}` : 'Nothing readable'}${r.confidence !== 'high' ? ' (uncertain)' : ''}`
+}
+
 /** Zoekvraag voor de catalogus bij een herkende kaart. */
 export function scanQuery(r: Recognition): MatchQuery {
   return { name: r.nameEnglish, name_printed: r.namePrinted || null, set_code: r.setCode || null, card_number: r.cardNumber || null, set_total: r.setTotal || null }
