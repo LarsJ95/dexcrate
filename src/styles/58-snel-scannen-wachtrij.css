@@ -96,84 +96,281 @@
   padding: 1px 3px;
 }
 
-.queue-photos {
-  display: flex;
-  gap: var(--space-1);
+/* ---------- Scanregel compact (audit S1–S3, 20-10-2026) ----------
+   Kop: vinkje · jouw foto + match · naam, set, prijs · ×. Daaronder over de volle breedte: kandidaten (alleen bij
+   twijfel of na "More"), uitvoering + aantal + More, en de acties. Doel ±150 px per kaart op een telefoon. */
+.queue-row {
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
   align-items: start;
+  gap: var(--space-2) var(--space-3);
 }
 
-img.queue-own {
-  width: 44px;
-  aspect-ratio: 63 / 88;
-  object-fit: cover;
-  border-radius: 4px;
-  opacity: 0.85;
+/* 09-scannen zet knoppen in een scanregel op de telefoon in kolom 2; in de wachtrij staat alles op zijn plek. */
+.queue-row > .queue-photos {
+  grid-column: 2;
 }
 
-.queue-fields {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  align-items: end;
+.queue-row > .queue-remove {
+  grid-column: 4;
+  justify-self: end;
+  margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) 0 0;
 }
 
-.queue-fields select {
+.queue-row > .queue-wide {
+  grid-column: 1 / -1;
   min-width: 0;
-  max-width: 100%;
 }
 
-/* Match-keuze over de volle breedte; uitvoering en aantal eronder. */
-.queue-fields select:first-child {
-  flex: 1 1 100%;
-}
-
-.queue-fields select:nth-child(2) {
-  flex: 1 1 140px;
-}
-
-label.queue-qty {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-label.queue-qty input {
-  width: 64px;
-}
-
-.queue-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: start;
-  gap: var(--space-1);
+/* Keuzelijsten zijn van zichzelf zo breed als hun langste optie; dat mag de regel en de pagina niet oprekken. */
+.queue-row select,
+.queue-bulk select {
+  width: 0;
+  min-width: 0;
 }
 
 .queue-row.is-error {
   border-color: color-mix(in oklab, var(--red) 50%, var(--line));
 }
 
-.queue-row {
-  grid-template-columns: auto auto minmax(0, 1fr) auto;
+/* Jouw foto en de match naast elkaar; tikken = groot vergelijken. */
+button.queue-photos,
+button.queue-photos:hover:not(:disabled) {
+  display: flex;
+  gap: var(--space-1);
   align-items: start;
+  padding: 0;
+  border: 0;
+  background: none;
 }
 
-.queue-photos .scan-thumb {
-  width: 64px;
+img.queue-own,
+.queue-photos .scan-thumb img,
+.queue-photos .scan-thumb .card-img {
+  width: 40px;
+  aspect-ratio: 63 / 88;
+  object-fit: cover;
+  border-radius: var(--radius-xs);
 }
 
-@media (max-width: 560px) {
-  /* Telefoon: acties onder de info, foto's kleiner. */
-  .queue-row {
-    grid-template-columns: auto auto minmax(0, 1fr);
-  }
+.queue-photos .scan-thumb .card-face-name {
+  display: none;
+}
 
-  .queue-actions {
-    grid-column: 3;
-  }
+.queue-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-2);
+  margin: 0;
+  color: var(--ink-soft);
+}
 
-  img.queue-own {
-    display: none;
-  }
+.queue-meta > * + *::before {
+  content: '·';
+  margin-right: var(--space-2);
+  color: var(--muted);
+}
+
+.queue-fields {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.queue-fields select {
+  flex: 0 1 320px;
+  min-width: 0;
+}
+
+.queue-more-btn {
+  flex: none;
+}
+
+.queue-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Aantal: − [1] +, in één kader. */
+.qty-stepper {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+}
+
+.qty-stepper button.icon-btn {
+  border: 0;
+}
+
+.qty-stepper input {
+  width: 3ch;
+  min-width: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  appearance: textfield;
+}
+
+.qty-stepper input::-webkit-inner-spin-button,
+.qty-stepper input::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+/* Kandidaten als foto's om op te tikken (S3); "No link" en "More…" gestapeld ernaast, zodat alles op één rij past. */
+.queue-pick {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+}
+
+button.queue-cand {
+  display: grid;
+  flex: none;
+  justify-items: center;
+  align-content: start;
+  gap: 2px;
+  width: 72px;
+  padding: var(--space-1);
+  border: 2px solid transparent;
+  background: var(--surface-2);
+}
+
+.queue-pick-other {
+  display: grid;
+  /* Telefoon: wat er over is; groot scherm niet breder dan nodig. */
+  flex: 0 1 240px;
+  align-content: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+button.queue-cand[aria-pressed='true'],
+button.queue-nolink[aria-pressed='true'] {
+  border-color: var(--accent-line);
+  background: var(--surface-3);
+}
+
+.queue-cand img,
+.queue-cand .card-img {
+  width: 44px;
+  aspect-ratio: 63 / 88;
+  object-fit: contain;
+  border-radius: var(--radius-xs);
+}
+
+.queue-cand .card-face {
+  padding: 8%;
+}
+
+.queue-cand .card-face-name,
+.queue-cand .card-face-detail {
+  display: none;
+}
+
+.queue-cand-set {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-small);
+  color: var(--ink-soft);
+}
+
+button.queue-nolink {
+  border-width: 2px;
+}
+
+.queue-row select.queue-more {
+  width: 100%;
+}
+
+/* Onderbalk op één regel (S4). */
+.scan-bulk.queue-bulk {
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+}
+
+/* Conditie: label klein boven de waarde, samen één vak zo hoog als de knoppen. */
+.queue-cond {
+  position: relative;
+  display: grid;
+  flex: 0 1 320px;
+  min-width: 0;
+}
+
+.queue-cond-label {
+  position: absolute;
+  top: 4px;
+  left: var(--space-3);
+  font-size: var(--fs-label);
+  line-height: 1.1;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.queue-bulk .queue-cond select {
+  width: 100%;
+  height: var(--control-h);
+  padding-top: 18px;
+  padding-bottom: 0;
+  line-height: 1.2;
+}
+
+.queue-notes {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.queue-notes:empty {
+  display: none;
+}
+
+.queue-bulk > button {
+  flex: none;
+}
+
+.queue-bulk-ask {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 600;
+}
+
+/* Vergelijken: jouw foto en de kaart groot naast elkaar. */
+.queue-compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.queue-compare figure {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: center;
+  align-content: start;
+  margin: 0;
+  min-width: 0;
+}
+
+.queue-compare img,
+.queue-compare .card-img {
+  width: 100%;
+  aspect-ratio: 63 / 88;
+  object-fit: contain;
+  border-radius: var(--radius-card);
+}
+
+.queue-compare figcaption {
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 /* Lijst niet laten meegroeien met lange keuzelijsten (anders steekt hij op de telefoon uit). */
