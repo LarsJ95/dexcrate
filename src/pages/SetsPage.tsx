@@ -5,6 +5,7 @@ import { SetIcon } from '../components/SetIcon'
 import { listCards } from '../lib/db'
 import { hpLevel } from '../lib/trainer'
 import { looksLikeAbbr, suggestSets } from '../lib/setSearch'
+import { STORED_SCOPES, openingScope, type SetScope } from '../lib/setsScope'
 import { digitalSetIds, getSetList, LANGS, resolveSetId, setOfKey, type Lang, type SetSummary } from '../lib/tcgdex'
 import type { Card } from '../lib/types'
 import { Loading } from '../components/Loading'
@@ -14,7 +15,6 @@ import { errorText } from '../lib/errors'
 
 type SortKey = 'newest' | 'oldest' | 'progress' | 'name'
 const SORT_KEYS: readonly SortKey[] = ['newest', 'oldest', 'progress', 'name']
-type Scope = 'all' | 'owned' | 'almost' | 'complete'
 
 interface Row {
   setId: string
@@ -58,7 +58,8 @@ export function SetsPage(): JSX.Element {
   const [sets, setSets] = useState<{ lang: Lang; list: Map<string, SetSummary>; digital: Set<string> } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [cardsError, setCardsError] = useState<string | null>(null)
-  const [scope, setScope] = useState<Scope>('all')
+  // Je keuze onthouden; zonder keuze opent de lijst op je eigen sets als je er een paar hebt (B1, zie openingScope).
+  const [storedScope, setScope] = useStoredChoice<SetScope | 'auto'>('dexcrate:sets-scope', STORED_SCOPES, 'auto')
   const [sort, setSort] = useStoredChoice<SortKey>('dexcrate:sets-sort', SORT_KEYS, 'newest')
   const [query, setQuery] = useState('')
   const [suggestOpen, setSuggestOpen] = useState(false)
@@ -132,6 +133,9 @@ export function SetsPage(): JSX.Element {
     }
     return out
   }, [sets, lang, owned])
+
+  const startedCount = useMemo(() => rows.filter((r) => r.owned > 0).length, [rows])
+  const scope = openingScope(storedScope, startedCount)
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
