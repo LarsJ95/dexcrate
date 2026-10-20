@@ -26,18 +26,22 @@ export interface Candidate {
   noCardData?: boolean
   /** Het gelezen nummer past niet bij deze kaart (bv. een set die de catalogus niet kent): alleen een suggestie. */
   otherNumber?: boolean
+  /** Set en nummer kloppen, maar de catalogus heeft daar een andere kaart (andere naam): alleen een suggestie. */
+  nameDiffers?: boolean
   /** Je koos deze kaart eerder bij dezelfde lezing (zie scanMemory); staat daarom bovenaan. */
   remembered?: boolean
 }
 
-/** Kandidaat die de app zelf mag kiezen: de bovenste, behalve als het gelezen nummer daar niet bij past. */
+/** Kandidaat die de app zelf mag kiezen: de bovenste, behalve als het gelezen nummer of de naam daar niet bij past. */
 export function autoPick(candidates: readonly Candidate[]): Candidate | null {
   const top = candidates[0]
-  return top && !top.otherNumber ? top : null
+  return top && !top.otherNumber && !top.nameDiffers ? top : null
 }
 
 export interface MatchQuery {
   name: string
+  /** Naam zoals gedrukt (scan), in de taal van de kaart: om een set+nummer-match bij Aziatische kaarten te controleren. */
+  name_printed?: string | null
   set_code: string | null
   card_number: string | null
   /** Getal na de schuine streep op de kaart ("165" bij 151/165): onderscheidt sets met dezelfde naam en hetzelfde nummer. */
@@ -112,6 +116,61 @@ export function catalogLocalId(number: string): string {
   return /^\d+$/.test(n) ? String(Number.parseInt(n, 10)).padStart(3, '0') : n
 }
 
+/** De scan verwart Vereenvoudigd en Traditioneel Chinees soms; dan ook in de andere taal zoeken. */
+const SIBLING_LANG: Partial<Record<Lang, Lang>> = { 'zh-cn': 'zh-tw', 'zh-tw': 'zh-cn' }
+
+/** Kern van een Aziatische kaartnaam: "玛俐的莫鲁贝可" → "莫鲁贝可", "太阳伊布ex" → "太阳伊布", "マリィのモルペコ" → "モルペコ". */
+export function baseLocalName(name: string): string {
+  let n = stripLangTag(name).normalize('NFKC').replace(/\s+/g, '').toLowerCase()
+  n = n.replace(/(ex|gx|vmax|vstar|v-union|v|break)$/, '')
+  const owner = Math.max(n.lastIndexOf('的'), n.lastIndexOf('の'))
+  if (owner > 0 && owner < n.length - 1) n = n.slice(owner + 1)
+  return n.replace(/^(超级|超級|メガ)/, '')
+}
+
+/** Aandeel gedeelde tekens (0–1): trainerkaarten in het andere Chinese schrift, "紧急滑板" ↔ "緊急滑板" = 0,75. */
+function sharedChars(a: string, b: string): number {
+  const x = [...a]
+  const y = [...b]
+  if (!x.length || !y.length) return 0
+  const inB = new Set(y)
+  return x.filter((ch) => inB.has(ch)).length / Math.max(x.length, y.length)
+}
+
+/** Onder dit aandeel gedeelde tekens is een trainerkaart een andere kaart. */
+const MIN_SHARED_CHARS = 0.6
+
+export type NameCheck = 'same' | 'differs' | 'unknown'
+
+/**
+ * Past de catalogusnaam van een Aziatische kaart bij de gelezen kaart? Vergelijkt met de vertaalde Pokémon-naam
+ * (PokeAPI, beide Chinese schriften) en de gedrukte naam. Nodig omdat TCGdex onder Vereenvoudigd Chinees ook
+ * Traditioneel-Chinese sets heeft (gecontroleerd 20-10-2026: SV8 #062 = 棄世猴, terwijl de scan Abra las).
+ */
+export async function checkLocalName(q: Pick<MatchQuery, 'name' | 'name_printed'>, lang: Lang, catalogName: string): Promise<NameCheck> {
+  const typed = q.name.trim()
+  // Eigen catalogus (bv. CSMC, Gem Packs) heeft Engelse namen: gewoon vergelijken met de Engelse naam.
+  if (!isNonLatin(catalogName)) {
+    if (!typed || isNonLatin(typed)) return 'unknown'
+    return nameSimilarity(stripLangTag(typed), catalogName) >= MIN_NAME_SIMILARITY ? 'same' : 'differs'
+  }
+  const card = baseLocalName(catalogName)
+  if (!card) return 'unknown'
+  const langs = [lang, SIBLING_LANG[lang]].filter((l): l is Lang => l !== undefined)
+  const translated = !typed
+    ? []
+    : isNonLatin(typed)
+      ? [typed]
+      : (await Promise.all(langs.map((l) => translateName(typed, l)))).filter((n): n is string => n !== null)
+  const printed = q.name_printed?.trim() ?? ''
+  if ([...translated, printed].some((n) => n && baseLocalName(n) === card)) return 'same'
+  // Pokémon met een bekende vertaling: alleen dezelfde naam telt (來悲茶 is niet 來悲粗茶).
+  if (translated.length > 0) return 'differs'
+  // Trainer of item: de gedrukte naam kan in het andere schrift staan.
+  if (printed) return sharedChars(baseLocalName(printed), card) >= MIN_SHARED_CHARS ? 'same' : 'differs'
+  return 'unknown'
+}
+
 /**
  * Veel Japanse en Chinese sets staan wel in TCGdex, maar zonder kaartenlijst (gecontroleerd 18-10-2026: 68 van
  * 186 Japanse en 49 van 57 Chinese sets). Dan toch een kandidaat op set + nummer, zodat de kaart bij de set hoort;
@@ -143,21 +202,34 @@ export async function findCandidates(q: MatchQuery, lang: Lang): Promise<Candida
   const byKey = new Map<string, Omit<Candidate, 'setName'>>()
 
   const readNumber = Boolean(q.card_number?.trim())
-  const add = (card: SetCard, setId: string, score: number, reason: string, numberMatches: boolean): void => {
+  const add = (card: SetCard, setId: string, score: number, reason: string, numberMatches: boolean, nameDiffers = false): void => {
     const key = `${lang}/${card.id}`
     const existing = byKey.get(key)
     if (!existing || existing.score < score) {
-      byKey.set(key, { key, name: card.name, localId: card.localId, setId, image: card.image, score, reason, ...(readNumber && !numberMatches ? { otherNumber: true } : {}) })
+      byKey.set(key, {
+        key,
+        name: card.name,
+        localId: card.localId,
+        setId,
+        image: card.image,
+        score,
+        reason,
+        ...(readNumber && !numberMatches ? { otherNumber: true } : {}),
+        ...(nameDiffers ? { nameDiffers: true } : {}),
+      })
     }
   }
 
   const expectedSet = q.set_code ? await resolveSetId(lang, q.set_code) : null
   if (q.set_code && q.card_number) {
     const exact = await findExact(lang, q.set_code, q.card_number)
-    if (exact) {
-      // Buitenlandse namen zijn niet te vergelijken met de Engelse naam uit de Excel.
-      const sim = lang === 'en' ? nameSimilarity(stripLangTag(q.name), exact.name) : 1
+    if (exact && lang === 'en') {
+      const sim = nameSimilarity(stripLangTag(q.name), exact.name)
       add(exact, exact.setId, 4 + sim * 4, sim >= MIN_NAME_SIMILARITY ? 'Set and number match' : 'Set and number match, name differs', true)
+    } else if (exact) {
+      // Andere naam op dit nummer: onder de kaarten die op naam gevonden worden, en nooit vanzelf gekozen.
+      if ((await checkLocalName(q, lang, exact.name)) === 'differs') add(exact, exact.setId, 2, `Other card at this number: ${exact.name}`, true, true)
+      else add(exact, exact.setId, 8, 'Set and number match', true)
     } else if (lang !== 'en' && expectedSet) {
       const loose = await setNumberCandidate(lang, expectedSet, q)
       if (loose) byKey.set(loose.key, loose)
@@ -217,9 +289,6 @@ export async function findCandidates(q: MatchQuery, lang: Lang): Promise<Candida
     .map((c) => ({ ...c, setName: sets.get(c.setId)?.name ?? c.setId }))
 }
 
-/** De scan verwart Vereenvoudigd en Traditioneel Chinees soms; dan ook in de andere taal zoeken. */
-const SIBLING_LANG: Partial<Record<Lang, Lang>> = { 'zh-cn': 'zh-tw', 'zh-tw': 'zh-cn' }
-
 /**
  * Kandidaten voor een gescande kaart. Eerst in de gelezen taal; zit daar geen kaart met het gelezen nummer bij,
  * dan ook in de verwante taal (zh-cn ↔ zh-tw). Kaarten mét het nummer uit die taal komen bovenaan; suggesties
@@ -248,6 +317,7 @@ export async function resolveTcgdexIds<T extends CardInput>(items: readonly T[])
         const card = await findExact(lang, it.set_code, it.card_number)
         if (!card) return it
         if (lang === 'en' && nameSimilarity(stripLangTag(it.name), card.name) < MIN_NAME_SIMILARITY) return it
+        if (lang !== 'en' && (await checkLocalName({ name: it.name }, lang, card.name)) === 'differs') return it
         return { ...it, tcgdex_id: card.key }
       } catch (err) {
         console.error(`Koppelen mislukt voor ${it.name}`, err)

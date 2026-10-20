@@ -4,7 +4,7 @@ import { scanCandidates } from './scanMemory'
 import { deletePhotos, listPhotoIds, loadPhoto, loadQueueData, savePhoto, saveQueueData } from './photoStore'
 import { preparedFromBlob, prepareImage, recognizeCards, type PreparedImage, type Recognition } from './scan'
 import { BLUR_THRESHOLD, photoSharpness } from './sharpness'
-import { MAX_QUEUE, QUEUE_KEY, mergeDuplicate, newItem, parseQueue, withMatch, type QueueItem } from './scanQueue'
+import { MATCHER_VERSION, MAX_QUEUE, QUEUE_KEY, isOutdated, mergeDuplicate, needsRematch, newItem, parseQueue, withMatch, type QueueItem } from './scanQueue'
 import { errorText } from './errors'
 import { variantFacts } from './variantChoice'
 
@@ -193,6 +193,22 @@ async function restore(): Promise<void> {
   }
   restored = true
   pump()
+  void rematchOutdated()
+}
+
+/**
+ * Het opzoeken is verbeterd sinds deze regels herkend werden: opnieuw opzoeken met wat de scan las (geen nieuwe
+ * scan, kost niets). Regels waar je zelf een andere kaart koos blijven zoals ze zijn. Mislukt het (offline), dan
+ * bij de volgende start opnieuw.
+ */
+async function rematchOutdated(): Promise<void> {
+  if (!navigator.onLine) return
+  for (const q of queue.filter(needsRematch)) {
+    if (!q.rec) continue
+    await applyMatch(q.id, q.rec).catch((err: unknown) => console.warn('Opnieuw opzoeken mislukt', err))
+  }
+  const kept = new Set(queue.filter((q) => isOutdated(q) && !needsRematch(q)).map((q) => q.id))
+  if (kept.size > 0) set(queue.map((q) => (kept.has(q.id) ? { ...q, matcher: MATCHER_VERSION } : q)))
 }
 
 if (typeof window !== 'undefined') {

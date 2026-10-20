@@ -59,7 +59,7 @@ export const plainNumber = (n: string): string => (/^\d+$/.test(n) ? String(Numb
 
 /** Zoekvraag voor de catalogus bij een herkende kaart. */
 export function scanQuery(r: Recognition): MatchQuery {
-  return { name: r.nameEnglish, set_code: r.setCode || null, card_number: r.cardNumber || null, set_total: r.setTotal || null }
+  return { name: r.nameEnglish, name_printed: r.namePrinted || null, set_code: r.setCode || null, card_number: r.cardNumber || null, set_total: r.setTotal || null }
 }
 
 export interface ReadFix {
@@ -76,9 +76,12 @@ export interface ReadFix {
  */
 export function correctRecognition(r: Recognition, fix: ReadFix): Recognition {
   const [num, ofTotal] = fix.cardNumber.split('/').map((s) => s.trim())
+  const name = fix.name.trim().slice(0, 200)
   return {
     ...r,
-    nameEnglish: fix.name.trim().slice(0, 200),
+    // Andere naam ingevuld: de gedrukte naam van de scan hoort dan niet meer bij deze kaart.
+    namePrinted: name === r.nameEnglish ? r.namePrinted : '',
+    nameEnglish: name,
     language: fix.language,
     setCode: fix.setCode.trim().slice(0, 20),
     cardNumber: (num ?? '').slice(0, 20),

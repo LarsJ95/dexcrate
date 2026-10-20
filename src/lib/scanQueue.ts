@@ -27,10 +27,24 @@ export interface QueueItem {
   at: string
   /** Bij de herkende kaart verschilt de prijs per uitvoering flink: uitvoering even nakijken. */
   askVariant?: boolean
+  /** Versie van het opzoeken waarmee de kandidaten gevonden zijn (zie MATCHER_VERSION); ontbreekt = 1. */
+  matcher?: number
 }
 
 export const MAX_QUEUE = 250
 export const MAX_QTY = 99
+
+/**
+ * Ophogen als het opzoeken beter wordt: bewaarde regels worden dan opnieuw opgezocht (geen nieuwe scan).
+ * 2 = naamcontrole bij Aziatische kaarten (20-10-2026).
+ */
+export const MATCHER_VERSION = 2
+
+/** Herkend met een oudere versie van het opzoeken. */
+export const isOutdated = (q: QueueItem): boolean => q.status === 'ready' && q.rec !== null && (q.matcher ?? 1) < MATCHER_VERSION
+
+/** Mag opnieuw opgezocht worden: verouderd, en je koos zelf geen andere kaart dan de app. */
+export const needsRematch = (q: QueueItem): boolean => isOutdated(q) && q.chosen === (autoPick(q.candidates)?.key ?? '')
 
 export function newItem(id: string, thumb: string, at = new Date().toISOString()): QueueItem {
   return { id, thumb, status: 'waiting', error: null, rec: null, candidates: [], chosen: '', quantity: 1, variant: null, include: false, at }
@@ -54,6 +68,7 @@ export function withMatch(item: QueueItem, rec: Recognition, candidates: Candida
     variant: fitVariant(rec.variant, best ? facts?.variants : null),
     include: best !== null && rec.confidence !== 'low',
     ...(best && facts?.askVariant ? { askVariant: true } : {}),
+    matcher: MATCHER_VERSION,
   }
 }
 
@@ -111,6 +126,7 @@ function toCandidate(v: unknown): Candidate | null {
     reason: str(v.reason),
     ...(v.noCardData === true ? { noCardData: true } : {}),
     ...(v.otherNumber === true ? { otherNumber: true } : {}),
+    ...(v.nameDiffers === true ? { nameDiffers: true } : {}),
     ...(v.remembered === true ? { remembered: true } : {}),
   }
 }
@@ -163,6 +179,7 @@ export function parseQueue(raw: string | null): QueueItem[] {
           include: ready && r.include === true,
           at: str(r.at),
           ...(ready && r.askVariant === true ? { askVariant: true } : {}),
+          ...(typeof r.matcher === 'number' && Number.isInteger(r.matcher) ? { matcher: r.matcher } : {}),
         },
       ]
     })

@@ -238,7 +238,7 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
               {q.rec.confidence !== 'high' && ' (uncertain)'}
             </p>
           )}
-          {ready && onlyOtherNumbers(q) && <p className="queue-why small">No card with this number in the catalog: the suggestions only share the name. Pick one, or add it without link.</p>}
+          {ready && onlyOtherNumbers(q) && <p className="queue-why small">No sure match. Pick a card, or add it without link.</p>}
           {ready && isAmbiguous(q) && !onlyOtherNumbers(q) && <p className="queue-why small">Same name and number in more than one set: pick the right one.</p>}
           {ready && withoutCardData(q) && <p className="queue-why small">No card data for this set in the catalog: linked on set and number. Check the number.</p>}
           {ready && twice.has(q.id) && <p className="queue-why small">Scanned twice: same card? Remove one, or keep both if you have two.</p>}
