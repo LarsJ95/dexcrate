@@ -13,8 +13,8 @@ const MORE = '__more'
  * Kaart kiezen door op een foto te tikken (audit S3, 20-10-2026): sneller en beter te herkennen dan een keuzelijst
  * met (Chinese) namen. "No link" voegt toe zonder koppeling; "More…" toont alle kandidaten.
  */
-export function CandidateStrip({ item, label, onChoose }: { item: QueueItem; label: string; onChoose: (key: string) => void }): JSX.Element {
-  const shown = stripCandidates(item.candidates, item.chosen)
+export function CandidateStrip({ candidates, chosen, label, onChoose }: { candidates: readonly Candidate[]; chosen: string; label: string; onChoose: (key: string) => void }): JSX.Element {
+  const shown = stripCandidates(candidates, chosen)
   return (
     <div className="queue-pick" role="group" aria-label={`Card for ${label}`}>
       {shown.map((c) => (
@@ -22,7 +22,7 @@ export function CandidateStrip({ item, label, onChoose }: { item: QueueItem; lab
           key={c.key}
           type="button"
           className="queue-cand"
-          aria-pressed={c.key === item.chosen}
+          aria-pressed={c.key === chosen}
           onClick={() => onChoose(c.key)}
           aria-label={`${c.name}, ${c.setName} #${c.localId}`}
           title={`${c.name}, ${c.setName} #${c.localId}${c.reason ? ` (${c.reason})` : ''}`}
@@ -33,15 +33,15 @@ export function CandidateStrip({ item, label, onChoose }: { item: QueueItem; lab
         </button>
       ))}
       <div className="queue-pick-other">
-        <button type="button" className="queue-nolink small-btn" aria-pressed={item.chosen === ''} onClick={() => onChoose('')}>
+        <button type="button" className="queue-nolink small-btn" aria-pressed={chosen === ''} onClick={() => onChoose('')}>
           No link
         </button>
-        {item.candidates.length > shown.length && (
+        {candidates.length > shown.length && (
           <select className="queue-more" aria-label={`All matches for ${label}`} value={MORE} onChange={(e) => e.target.value !== MORE && onChoose(e.target.value)}>
             <option value={MORE} disabled hidden>
               More…
             </option>
-            {item.candidates.map((c) => (
+            {candidates.map((c) => (
               <option key={c.key} value={c.key}>
                 {c.name}, {c.setName} #{c.localId}
               </option>
