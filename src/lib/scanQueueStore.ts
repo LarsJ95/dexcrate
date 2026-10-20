@@ -4,7 +4,8 @@ import { scanCandidates } from './scanMemory'
 import { deletePhotos, listPhotoIds, loadPhoto, loadQueueData, savePhoto, saveQueueData } from './photoStore'
 import { preparedFromBlob, prepareImage, recognizeCards, type PreparedImage, type Recognition } from './scan'
 import { BLUR_THRESHOLD, photoSharpness } from './sharpness'
-import { MATCHER_VERSION, MAX_QUEUE, QUEUE_KEY, isOutdated, mergeDuplicate, needsRematch, newItem, parseQueue, withMatch, type QueueItem } from './scanQueue'
+import { MATCHER_VERSION, MAX_QUEUE, QUEUE_KEY, isOutdated, mergeDuplicate, needsRematch, newItem, parseQueue, rematchAfterChs, withMatch, type QueueItem } from './scanQueue'
+import { onChsCatalogReady } from './chsCatalog'
 import { errorText } from './errors'
 import { variantFacts } from './variantChoice'
 
@@ -203,13 +204,20 @@ async function restore(): Promise<void> {
  */
 async function rematchOutdated(): Promise<void> {
   if (!navigator.onLine) return
-  for (const q of queue.filter(needsRematch)) {
-    if (!q.rec) continue
-    await applyMatch(q.id, q.rec).catch((err: unknown) => console.warn('Opnieuw opzoeken mislukt', err))
-  }
+  await rematch(needsRematch)
   const kept = new Set(queue.filter((q) => isOutdated(q) && !needsRematch(q)).map((q) => q.id))
   if (kept.size > 0) set(queue.map((q) => (kept.has(q.id) ? { ...q, matcher: MATCHER_VERSION } : q)))
 }
+
+async function rematch(which: (q: QueueItem) => boolean): Promise<void> {
+  for (const q of queue.filter(which)) {
+    if (!q.rec) continue
+    await applyMatch(q.id, q.rec).catch((err: unknown) => console.warn('Opnieuw opzoeken mislukt', err))
+  }
+}
+
+// Chinese catalogus net binnen: Chinese regels zonder eigen keuze opnieuw opzoeken (geen nieuwe scan).
+if (typeof window !== 'undefined') onChsCatalogReady(() => void queueLoaded.then(() => rematch(rematchAfterChs)))
 
 if (typeof window !== 'undefined') {
   void restore()

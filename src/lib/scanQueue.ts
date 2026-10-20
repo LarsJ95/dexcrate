@@ -36,9 +36,14 @@ export const MAX_QTY = 99
 
 /**
  * Ophogen als het opzoeken beter wordt: bewaarde regels worden dan opnieuw opgezocht (geen nieuwe scan).
- * 2 = naamcontrole bij Aziatische kaarten (20-10-2026).
+ * 2 = naamcontrole bij Aziatische kaarten (20-10-2026); 3 = Vereenvoudigd-Chinese catalogus en zoeken op gedrukte
+ * naam bij trainers (20-10-2026).
  */
-export const MATCHER_VERSION = 2
+export const MATCHER_VERSION = 3
+
+/** Chinese regel die je niet zelf hebt aangepast: opnieuw opzoeken zodra de Chinese catalogus binnen is. */
+export const rematchAfterChs = (q: QueueItem): boolean =>
+  q.status === 'ready' && (q.rec?.language === 'zh-cn' || q.rec?.language === 'zh-tw') && q.chosen === (autoPick(q.candidates)?.key ?? '')
 
 /** Herkend met een oudere versie van het opzoeken. */
 export const isOutdated = (q: QueueItem): boolean => q.status === 'ready' && q.rec !== null && (q.matcher ?? 1) < MATCHER_VERSION

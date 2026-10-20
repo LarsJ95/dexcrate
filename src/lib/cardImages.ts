@@ -31,8 +31,22 @@ export function ptcgCardUrl(ptcgSetId: string | null | undefined, setId: string,
 
 // --- Plaatjes-URL's uit TCGdex, Limitless (Aziatisch) en TCGplayer ---
 
+/** Al een volledig bestand (bv. de Chinese catalogus: PNG van ±250 KB), geen TCGdex-basis zonder extensie. */
+const isFileUrl = (base: string): boolean => /^https:\/\/.+\.(png|jpe?g|webp)$/i.test(base)
+
+/**
+ * Verkleinde versie (±20 KB WebP) via wsrv.nl, een gratis beeld-CDN: voor rasters en lijsten. Valt die weg, dan
+ * probeert de weergave het volledige bestand (zie fileImageSources).
+ */
+export const thumbnailUrl = (url: string): string => `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=250&output=webp`
+
+function fileImageSources(url: string, quality: 'low' | 'high'): string[] {
+  return quality === 'low' ? [thumbnailUrl(url), url] : [url]
+}
+
 export function imageUrl(base: string | null, quality: 'low' | 'high'): string | null {
-  return base ? `${base}/${quality}.webp` : null
+  if (!base) return null
+  return isFileUrl(base) ? fileImageSources(base, quality)[0] : `${base}/${quality}.webp`
 }
 
 /**
@@ -61,8 +75,11 @@ export function imageCandidates(
   tcgplayerId?: number | null,
 ): string[] {
   const out: string[] = []
-  const tcgdex = imageUrl(base, quality)
-  if (tcgdex) out.push(tcgdex)
+  if (base && isFileUrl(base)) out.push(...fileImageSources(base, quality))
+  else {
+    const tcgdex = imageUrl(base, quality)
+    if (tcgdex) out.push(tcgdex)
+  }
   if (lang === 'ja' || lang === 'zh-tw' || lang === 'ko') {
     const jp = limitlessJpUrl(setId, localId, quality)
     if (jp) out.push(jp)
@@ -75,7 +92,7 @@ export function imageCandidates(
 /** Plaatjes voor een kaart-sleutel ("ja/SV8-107") zonder eerst de kaartdetails op te halen. */
 export function imageCandidatesForKey(key: string, base: string | null, quality: 'low' | 'high'): string[] {
   const s = setOfKey(key)
-  if (!s) return base ? [imageUrl(base, quality) as string] : []
+  if (!s) return base ? (isFileUrl(base) ? fileImageSources(base, quality) : [imageUrl(base, quality) as string]) : []
   const localId = s.cardId.slice(s.setId.length + 1)
   return imageCandidates(s.lang, s.setId, localId, base, quality)
 }

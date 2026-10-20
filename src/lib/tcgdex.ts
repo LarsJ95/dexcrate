@@ -5,6 +5,7 @@ import { parseCardGame, type CardGame } from './cardGame'
 import { parseTcgplayer, type TcgplayerPrice } from './valuation'
 import { parseDexId, parseRarity, parseSuffix, parseTypes, type EnergyType } from './cardTraits'
 import { isLocalKey, localCardInfo, localSet, localSetIdForAbbr, localSetSummaries, searchLocal } from './localCatalog'
+import { chsCardInfo, chsHasCard, chsSearch, chsSetData, chsSetSummaries } from './chsCatalog'
 
 /** Talen met eigen sets/nummering in TCGdex. */
 export const LANGS = ['en', 'ja', 'zh-cn', 'zh-tw', 'ko'] as const
@@ -181,8 +182,16 @@ const fetchSet = memo(async (k: string): Promise<{ summary: SetSummary; cards: S
   }
 })
 
-export function getSet(lang: Lang, setId: string): Promise<{ summary: SetSummary; cards: SetCard[] } | null> {
-  return fetchSet(`${lang}|${setId}`)
+/**
+ * Vereenvoudigd Chinees: eerst de catalogus op dit apparaat (chsCatalog), want TCGdex heeft daar geen kaartenlijsten.
+ * Buiten de memo's, zodat een net gedownloade catalogus meteen meetelt. De eigen catalogus (localCatalog) gaat voor.
+ */
+async function chsSetFor(lang: Lang, setId: string): Promise<{ summary: SetSummary; cards: SetCard[] } | null> {
+  return lang === 'zh-cn' && !localSet(setId, lang) ? chsSetData(setId) : null
+}
+
+export async function getSet(lang: Lang, setId: string): Promise<{ summary: SetSummary; cards: SetCard[] } | null> {
+  return (await chsSetFor(lang, setId)) ?? fetchSet(`${lang}|${setId}`)
 }
 
 /** Setcode uit de Excel → TCGdex set-id. Engels via officiële afkorting (MEW, OBF), anders het id zelf. */
@@ -196,7 +205,9 @@ const fetchSetId = memo(async (k: string): Promise<string | null> => {
   return found[0].id
 })
 
-export function resolveSetId(lang: Lang, code: string): Promise<string | null> {
+export async function resolveSetId(lang: Lang, code: string): Promise<string | null> {
+  const chs = await chsSetFor(lang, code.trim())
+  if (chs) return chs.summary.id
   // Japanse set-ids zijn hoofdlettergevoelig (bv. "S8b"); Engelse afkortingen niet.
   return fetchSetId(`${lang}|${lang === 'en' ? code.trim().toUpperCase() : code.trim()}`)
 }
@@ -218,8 +229,19 @@ const fetchSetList = memo(async (lang: string): Promise<Map<string, SetSummary>>
   return map
 })
 
-export function getSetList(lang: Lang): Promise<Map<string, SetSummary>> {
-  return fetchSetList(lang)
+export async function getSetList(lang: Lang): Promise<Map<string, SetSummary>> {
+  const list = await fetchSetList(lang)
+  if (lang !== 'zh-cn') return list
+  const chs = await chsSetSummaries()
+  if (chs.length === 0) return list
+  const merged = new Map(list)
+  for (const s of chs) {
+    if (localSet(s.id, lang)) continue
+    // Set die TCGdex ook kent (zonder kaarten): diens naam en logo, onze telling.
+    const known = merged.get(s.id)
+    merged.set(s.id, known ? { ...s, name: known.name, logo: known.logo } : s)
+  }
+  return merged
 }
 
 const fetchSeriesSetIds = memo(async (k: string): Promise<Set<string>> => {
@@ -275,7 +297,11 @@ export async function searchCards(lang: Lang, name: string, filters: CardQueryFi
   const suffix = lang !== 'en' && filters.suffix ? filters.suffix : null
   // Eigen catalogus erbij, alleen op (Engelse) naam: zeldzaamheid en achtervoegsel kent hij niet.
   const local = !filters.rarity && !filters.suffix ? searchLocal(q, filters.type, lang) : []
-  return [...cards.filter((c) => !digital.has(setIdOf(c)) && (!suffix || c.name.endsWith(suffix))), ...local]
+  // Vereenvoudigd Chinees op dit apparaat, op Chinese naam. Ook voor sets uit de eigen catalogus (Gem Packs met
+  // Engelse namen): zelfde sleutel ("zh-cn/CBB4C-1502"), dus dubbele kaarten maar één keer.
+  const chs = lang === 'zh-cn' ? await chsSearch(q, filters) : []
+  const seen = new Set<string>()
+  return [...cards.filter((c) => !digital.has(setIdOf(c)) && (!suffix || c.name.endsWith(suffix))), ...local, ...chs].filter((c) => !seen.has(c.id) && Boolean(seen.add(c.id)))
 }
 
 export function matchNumber(cards: readonly SetCard[], printed: string): SetCard | undefined {
@@ -385,8 +411,9 @@ export async function getSetAbbr(lang: Lang, setId: string): Promise<string | nu
 /** Kaartdetails uit de API; één request per kaart per sessie, gedeeld door info en prijs. */
 const fetchCardRaw = memo(async (key: string): Promise<Record<string, unknown> | null> => {
   const parts = splitKey(key)
-  // Eigen catalogus: TCGdex kent de kaart niet (en heeft dus ook geen prijs).
+  // Eigen catalogus: TCGdex kent de kaart niet (en heeft dus ook geen prijs). Chinese catalogus idem.
   if (!parts || isLocalKey(key)) return null
+  if (parts.lang === 'zh-cn' && (await chsHasCard(key))) return null
   const data = await getJson(`${API}/${parts.lang}/cards/${encodeURIComponent(parts.cardId)}`)
   return isRecord(data) ? data : null
 })
@@ -526,7 +553,12 @@ const fetchCardInfo = memo(async (key: string): Promise<CardInfo | null> => {
   return info
 })
 
-export function getCardInfo(key: string): Promise<CardInfo | null> {
+export async function getCardInfo(key: string): Promise<CardInfo | null> {
+  // Buiten de memo: een net gedownloade Chinese catalogus telt meteen mee.
+  if (key.startsWith('zh-cn/') && !isLocalKey(key)) {
+    const chs = await chsCardInfo(key)
+    if (chs) return chs
+  }
   return fetchCardInfo(key)
 }
 

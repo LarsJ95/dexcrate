@@ -239,8 +239,11 @@ export async function findCandidates(q: MatchQuery, lang: Lang): Promise<Candida
   // Aziatische kaarten: Engelse naam vertalen (Morpeko → 莫鲁贝可), of zelf getypte naam direct gebruiken.
   if (lang !== 'en') {
     const typed = q.name.trim()
-    const localName = isNonLatin(typed) ? typed : await translateName(typed, lang)
-    if (localName) {
+    const printed = q.name_printed?.trim() ?? ''
+    // Ook de gedrukte naam: trainers hebben geen vertaling ("紧急滑板" = Rescue Board), en de Vereenvoudigd-Chinese
+    // kaart wijkt soms af van PokeAPI (Sinistea: kaart 斯魔茶, PokeAPI 来悲茶).
+    const names = isNonLatin(typed) ? [typed] : [await translateName(typed, lang), isNonLatin(printed) ? printed : null]
+    for (const localName of new Set(names.filter((n): n is string => Boolean(n)))) {
       for (const card of await searchCards(lang, localName)) {
         const setId = setIdOf(card)
         const num = sameNumber(q.card_number, card.localId)

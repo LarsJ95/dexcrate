@@ -71,7 +71,10 @@ export default defineConfig({
             urlPattern: ({ url }) =>
               url.origin === 'https://assets.tcgdex.net' ||
               url.origin === 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com' ||
-              url.origin === 'https://tcgplayer-cdn.tcgplayer.com',
+              url.origin === 'https://tcgplayer-cdn.tcgplayer.com' ||
+              // Chinese catalogus (src/lib/chsCatalog.ts): foto's per vaste versie, en de verkleinde versies.
+              (url.origin === 'https://cdn.jsdelivr.net' && url.pathname.startsWith('/gh/duanxr/PTCG-CHS-Datasets@')) ||
+              url.origin === 'https://wsrv.nl',
             handler: 'CacheFirst',
             options: {
               cacheName: 'tcgdex-images',

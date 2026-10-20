@@ -6,7 +6,8 @@ import { ScanSessionSummary, SingleScanResult } from '../components/ScanParts'
 import { QueueStrip, ScanQueue } from '../components/ScanQueue'
 import { addedQuietly } from '../lib/celebrate'
 import { insertCards, listCards } from '../lib/db'
-import type { Candidate } from '../lib/match'
+import { autoPick, type Candidate } from '../lib/match'
+import { onChsCatalogReady } from '../lib/chsCatalog'
 import { recordChoices, scanCandidates, type ChoiceInput } from '../lib/scanMemory'
 import { uploadPhoto } from '../lib/photos'
 import { useDbFeature } from '../hooks/useDbFeature'
@@ -198,6 +199,23 @@ export function ScanPage(): JSX.Element {
     resultSeq.current += 1
     setPhase({ kind: 'single', recognition: r, candidates, lang, resultId: resultSeq.current })
   }
+
+  // Chinese catalogus net binnen: een Chinese kaart zonder zekere match opnieuw opzoeken (geen nieuwe scan).
+  const phaseRef = useRef(phase)
+  const searchAgainRef = useRef(searchAgain)
+  useEffect(() => {
+    phaseRef.current = phase
+    searchAgainRef.current = searchAgain
+  })
+  useEffect(
+    () =>
+      onChsCatalogReady(() => {
+        const p = phaseRef.current
+        if (p.kind !== 'single' || (p.lang !== 'zh-cn' && p.lang !== 'zh-tw') || autoPick(p.candidates)) return
+        searchAgainRef.current(p.recognition).catch((err: unknown) => console.warn('Opnieuw opzoeken mislukt', err))
+      }),
+    [],
+  )
 
   /** "Look again": dezelfde foto nog eens door het sterkere model. Fouten gaan naar het resultaat (dat blijft staan). */
   async function lookAgain(): Promise<void> {
