@@ -3,7 +3,7 @@ import { DEFAULT_TUNING, SAMPLE_H, SAMPLE_W, createAutoCapture, type AutoHint } 
 import { frameToSource } from '../lib/cameraCrop'
 import { setPref, usePrefs } from '../lib/devicePrefs'
 import { toGray } from '../lib/sharpness'
-import { setTorch, trackHasTorch } from '../lib/torch'
+import { backCameras, readTorchMemory, setTorch, shouldSearchTorch, trackHasTorch, writeTorchMemory } from '../lib/torch'
 import { IconClose, IconFlashlight } from './Icons'
 
 interface Props {
@@ -31,7 +31,26 @@ const AUTO_TEXT: Record<AutoHint, string> = {
   capture: 'Got it. Next card',
 }
 
+/** Hoge resolutie voor kleine tekst; met deviceId een vaste lens (die met de zaklamp), anders de achterkant. */
+function videoConstraints(deviceId: string | null): MediaTrackConstraints {
+  const size = { width: { ideal: 2560 }, height: { ideal: 1920 } }
+  return deviceId ? { ...size, deviceId: { exact: deviceId } } : { ...size, facingMode: { ideal: 'environment' } }
+}
 
+const openCamera = (deviceId: string | null): Promise<MediaStream> => navigator.mediaDevices.getUserMedia({ video: videoConstraints(deviceId), audio: false })
+
+const stopStream = (s: MediaStream | null): void => s?.getTracks().forEach((t) => t.stop())
+
+function playStream(video: HTMLVideoElement | null, stream: MediaStream): void {
+  if (!video) return
+  video.srcObject = stream
+  video.play().catch((err: unknown) => console.warn('Video afspelen mislukt', err))
+}
+
+const wait = (ms: number): Promise<void> => new Promise((resolve) => window.setTimeout(resolve, ms))
+
+/** Sommige toestellen melden de zaklamp pas even na het starten: zo vaak opnieuw kijken (ms na de vorige keer). */
+const TORCH_RECHECKS_MS = [0, 500, 1000]
 
 /**
  * Camera direct in de app (getUserMedia), zodat er geen keuzemenu "Camera / Bestanden" verschijnt.
@@ -55,36 +74,44 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose, children, 
   const [torchAvailable, setTorchAvailable] = useState(false)
   const [torchOn, setTorchOn] = useState(false)
   const torchBusy = useRef(false)
+  // Andere lenzen proberen voor de zaklamp: beeld is dan even zwart.
+  const [searchingTorch, setSearchingTorch] = useState(false)
+  const closedRef = useRef(false)
+
+  function attach(stream: MediaStream): void {
+    streamRef.current = stream
+    playStream(videoRef.current, stream)
+  }
 
   useEffect(() => {
-    let cancelled = false
+    closedRef.current = false
     if (typeof navigator.mediaDevices?.getUserMedia !== 'function') return
-    navigator.mediaDevices
-      .getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 2560 }, height: { ideal: 1920 } },
-        audio: false,
+    // Eerder gevonden lens met zaklamp meteen openen; bestaat die niet meer, dan gewoon de achterkant.
+    const memory = readTorchMemory()
+    const remembered = memory?.kind === 'camera' ? memory.deviceId : null
+    openCamera(remembered)
+      .catch((err: unknown) => {
+        if (!remembered) throw err
+        writeTorchMemory(null)
+        return openCamera(null)
       })
       .then((stream) => {
-        if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop())
+        if (closedRef.current) {
+          stopStream(stream)
           return
         }
         streamRef.current = stream
-        const video = videoRef.current
-        if (video) {
-          video.srcObject = stream
-          video.play().catch((err: unknown) => console.warn('Video afspelen mislukt', err))
-        }
+        playStream(videoRef.current, stream)
       })
       .catch((err: unknown) => {
         console.error('Camera openen mislukt', err)
-        if (cancelled) return
+        if (closedRef.current) return
         const denied = err instanceof DOMException && (err.name === 'NotAllowedError' || err.name === 'SecurityError')
         setError(denied ? 'Camera access was blocked. Allow it in your browser settings, or choose a photo.' : 'Could not open the camera.')
       })
     return () => {
-      cancelled = true
-      streamRef.current?.getTracks().forEach((t) => t.stop())
+      closedRef.current = true
+      stopStream(streamRef.current)
       streamRef.current = null
     }
   }, [])
@@ -155,10 +182,75 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose, children, 
     setAutoHint(null)
   }
 
+  const torchChecked = useRef(false)
+
   function onVideoReady(): void {
     setReady(true)
-    // Pas als het beeld loopt weet de browser zeker wat de camera kan.
-    setTorchAvailable(trackHasTorch(streamRef.current?.getVideoTracks()[0]))
+    // Eén keer per keer openen; na wisselen van lens komt dit opnieuw binnen.
+    if (torchChecked.current) return
+    torchChecked.current = true
+    void findTorch().catch((err: unknown) => console.warn('Zaklamp zoeken mislukt', err))
+  }
+
+  /**
+   * Zaklamp vinden. Pas als het beeld loopt weet de browser wat de camera kan, soms pas iets later. Heeft deze lens
+   * er geen, dan de andere achterlenzen proberen (telefoons met meerdere lenzen openen soms een lens zonder
+   * flitser) en de lens met zaklamp onthouden. Niets gevonden: terug naar de eerste lens, en 14 dagen niet opnieuw.
+   */
+  async function findTorch(): Promise<void> {
+    for (const ms of TORCH_RECHECKS_MS) {
+      await wait(ms)
+      if (closedRef.current) return
+      if (trackHasTorch(streamRef.current?.getVideoTracks()[0])) {
+        setTorchAvailable(true)
+        return
+      }
+    }
+    const memory = readTorchMemory()
+    if (!shouldSearchTorch(memory)) return
+    const first = streamRef.current?.getVideoTracks()[0]?.getSettings().deviceId ?? null
+    const others = backCameras(await navigator.mediaDevices.enumerateDevices()).filter((id) => id !== first)
+    if (others.length === 0 || closedRef.current) {
+      if (!closedRef.current) writeTorchMemory({ kind: 'none', at: Date.now() })
+      return
+    }
+    setSearchingTorch(true)
+    setReady(false)
+    try {
+      // Op Android kan maar één camera tegelijk open: eerst de huidige sluiten.
+      stopStream(streamRef.current)
+      for (const id of others) {
+        const stream = await openCamera(id).catch((err: unknown) => {
+          console.warn('Andere lens openen mislukt', err)
+          return null
+        })
+        if (!stream) continue
+        const track = stream.getVideoTracks()[0]
+        const hasTorch = trackHasTorch(track) || (await wait(TORCH_RECHECKS_MS[1]).then(() => trackHasTorch(track)))
+        if (closedRef.current) {
+          stopStream(stream)
+          return
+        }
+        if (hasTorch) {
+          writeTorchMemory({ kind: 'camera', deviceId: id })
+          setTorchAvailable(true)
+          attach(stream)
+          return
+        }
+        stopStream(stream)
+      }
+      writeTorchMemory({ kind: 'none', at: Date.now() })
+      try {
+        const back = await openCamera(first)
+        if (closedRef.current) stopStream(back)
+        else attach(back)
+      } catch (err) {
+        console.error('Camera opnieuw openen mislukt', err)
+        if (!closedRef.current) setError('Could not open the camera.')
+      }
+    } finally {
+      if (!closedRef.current) setSearchingTorch(false)
+    }
   }
 
   async function toggleTorch(): Promise<void> {
@@ -205,6 +297,11 @@ export function CameraCapture({ wide, onCapture, onPickFile, onClose, children, 
       {flash > 0 && <div key={flash} className="camera-flash" aria-hidden="true" />}
 
       <div className="camera-bar">
+        {searchingTorch && (
+          <p className="auto-status" aria-live="polite">
+            Looking for the lens with the flashlight…
+          </p>
+        )}
         {autoActive && autoHint && (
           <p className="auto-status" aria-live="polite">
             Auto: {AUTO_TEXT[autoHint]}
