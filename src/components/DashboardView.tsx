@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type JSX, type ReactNode } from 'react'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { useCountUp } from '../hooks/useCountUp'
+import { PHONE_QUERY, useMediaQuery } from '../hooks/useMediaQuery'
+import { PhoneFold, PhoneSlot } from './PhoneFold'
 import { marketValueOf, summarizeMarket, topMovers, type Mover, type PriceMap, type SeriesPoint } from '../lib/prices'
 import { speciesName } from '../lib/runner'
 import { setOfKey } from '../lib/tcgdex'
@@ -110,6 +112,8 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
   const market = useMemo(() => summarizeMarket(cards, prices), [cards, prices])
   const movers = useMemo(() => topMovers(cards, prices), [cards, prices])
   const shownValue = useCountUp(pricesLoading ? null : market.owned.value)
+  // Telefoon: Sales inklapbaar, dan staat de titel in de kop van het blok (O1).
+  const phone = useMediaQuery(PHONE_QUERY)
 
   // Pokémon-laag: typekleur, Pokédex, partner en badges uit de kaartinfo (7 dagen gecachet).
   const ownedCards = useMemo(() => cards.filter((c) => c.ownership === 'owned' && c.kind === 'card'), [cards])
@@ -230,29 +234,37 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
         {series && series.length >= 2 && <LineChart points={series} label="Value history" valueLabel="Value" height={130} />}
       </div>
 
-      {/* Eerst het (compacte) overzicht van wat je hebt, daarna je duurste kaarten (volgorde op verzoek 18-10-2026). */}
-      {breakdown}
+      {/* Eerst het (compacte) overzicht van wat je hebt, daarna je duurste kaarten (volgorde op verzoek 18-10-2026).
+          dash-slot: op groot scherm onzichtbaar (display: contents); op de telefoon een eigen volgorde (O1, 20-10-2026). */}
+      {breakdown && <PhoneSlot className="dash-slot slot-breakdown">{breakdown}</PhoneSlot>}
 
       {!pricesLoading && movers.valuable[0] && (
-        <Spotlight
-          item={movers.valuable[0]}
-          others={movers.valuable.slice(1, 5)}
-          price={movers.valuable[0].card.tcgdex_id ? (prices.get(movers.valuable[0].card.tcgdex_id) ?? null) : null}
-          onOpenCard={onOpenCard}
-          fallbackType={favourite}
-        />
+        <PhoneSlot className="dash-slot slot-spotlight">
+          <Spotlight
+            item={movers.valuable[0]}
+            others={movers.valuable.slice(1, 5)}
+            price={movers.valuable[0].card.tcgdex_id ? (prices.get(movers.valuable[0].card.tcgdex_id) ?? null) : null}
+            onOpenCard={onOpenCard}
+            fallbackType={favourite}
+          />
+        </PhoneSlot>
       )}
 
       {!pricesLoading && (
         <div className="movers">
-          <MoverList title="Gainers" flavor="It's super effective!" items={movers.up} empty="No clear risers." onOpenCard={onOpenCard} />
-          <MoverList title="Losers" flavor="It's not very effective…" items={movers.down} empty="No clear fallers." onOpenCard={onOpenCard} />
+          <PhoneSlot className="dash-slot slot-gainers">
+            <MoverList title="Gainers" flavor="It's super effective!" items={movers.up} empty="No clear risers." onOpenCard={onOpenCard} />
+          </PhoneSlot>
+          <PhoneSlot className="dash-slot slot-losers">
+            <MoverList title="Losers" flavor="It's not very effective…" items={movers.down} empty="No clear fallers." onOpenCard={onOpenCard} />
+          </PhoneSlot>
           {/* Duurste kaarten staan al in de spotlight erboven; hier wat je goed kunt kopen (18-10-2026). */}
-          {deals}
+          {deals && <PhoneSlot className="dash-slot slot-deals">{deals}</PhoneSlot>}
         </div>
       )}
 
-      <h2 className="section-title">Sales</h2>
+      <PhoneFold id="overview-sales" title="Sales" summary={`${signedEur(stats.net)} net`} className="dash-slot slot-sales">
+      {!phone && <h2 className="section-title">Sales</h2>}
 
       <div className="stat-row is-compact">
         <a className="stat" href="#/collection">
@@ -323,23 +335,32 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
           <dd>{formatEur(stats.avgForSale)}</dd>
         </div>
       </dl>
+      </PhoneFold>
       </div>
 
       {/* Trainer-zijkolom: op brede schermen rechts, anders direct onder het hoofdpaneel. */}
       <aside className="dash-rail" aria-label="Trainer">
-        <TrainerCard
-          name={trainer}
-          cards={cardCount}
-          species={dex.caught}
-          setsStarted={setsStarted}
-          since={since}
-          badges={badgeList}
-          onOpenBadges={() => setBadgeCaseOpen(true)}
-          level={level}
-        />
-        <PokedexPanel progress={dex} loading={infosLoading} onOpenRegion={setRegion} />
-        <SetsNearlyComplete ownedKeys={ownedKeys} />
-        <RecentlyAdded cards={cards} prices={prices} onOpenCard={onOpenCard} />
+        <PhoneFold id="overview-trainer" title="Trainer card" summary={`Lv. ${level.level} · ${countLabel(badgesEarned, 'badge', 'badges')}`} className="dash-slot slot-trainer">
+          <TrainerCard
+            name={trainer}
+            cards={cardCount}
+            species={dex.caught}
+            setsStarted={setsStarted}
+            since={since}
+            badges={badgeList}
+            onOpenBadges={() => setBadgeCaseOpen(true)}
+            level={level}
+          />
+        </PhoneFold>
+        <PhoneFold id="overview-pokedex" title="Pokédex" summary={`${dex.caught} / ${dex.total} caught`} className="dash-slot slot-pokedex">
+          <PokedexPanel progress={dex} loading={infosLoading} onOpenRegion={setRegion} />
+        </PhoneFold>
+        <PhoneSlot className="dash-slot slot-nearly">
+          <SetsNearlyComplete ownedKeys={ownedKeys} />
+        </PhoneSlot>
+        <PhoneSlot className="dash-slot slot-recent">
+          <RecentlyAdded cards={cards} prices={prices} onOpenCard={onOpenCard} />
+        </PhoneSlot>
       </aside>
       {badgeCaseOpen && <BadgeCase badges={badgeList} secrets={secrets} onClose={() => setBadgeCaseOpen(false)} />}
       {region !== null && <PokedexSheet gen={region} caught={caught} onClose={() => setRegion(null)} onOpenCard={(id) => onOpenCard?.(id)} />}
