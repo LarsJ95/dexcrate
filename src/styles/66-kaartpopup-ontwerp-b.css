@@ -345,13 +345,39 @@
   gap: var(--space-3);
 }
 
-.other-prints a {
+.other-prints li {
   display: grid;
+  align-content: start;
+  gap: var(--space-1);
+}
+
+/* Tikken = groot bekijken (20-10-2026); de set via de link eronder. */
+button.other-print,
+button.other-print:hover:not(:disabled) {
+  display: grid;
+  justify-items: start;
   gap: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
   color: inherit;
+  text-align: left;
+  font-weight: 400;
+}
+
+button.other-print:hover:not(:disabled) .small:first-of-type {
+  text-decoration: underline;
+}
+
+a.other-print-set {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 600;
+  color: var(--accent-line);
   text-decoration: none;
 }
 
-.other-prints a:hover .small:first-of-type {
+a.other-print-set:hover {
   text-decoration: underline;
 }
