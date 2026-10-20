@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { correctRecognition, plainNumber, scanQuery, toScanResult, type Recognition } from './scanResult'
+import { correctRecognition, plainNumber, readLabel, scanQuery, toScanResult, type Recognition } from './scanResult'
 
 describe('toScanResult', () => {
   it('zet het antwoord van de Edge Function om en sorteert op positie', () => {
@@ -84,5 +84,13 @@ describe('plainNumber', () => {
   it('haalt voorloopnullen weg, laat promo-nummers staan', () => {
     expect(plainNumber('007')).toBe('7')
     expect(plainNumber('SV13')).toBe('SV13')
+  })
+})
+
+describe('readLabel', () => {
+  it('kort: set, nummer, taal; twijfel erachter; niets gelezen', () => {
+    expect(readLabel(scanned)).toBe('Read as CSMC #004 · Chinese (traditional) (uncertain)')
+    expect(readLabel({ ...scanned, confidence: 'high', setCode: '' })).toBe('Read as #004 · Chinese (traditional)')
+    expect(readLabel({ setCode: '', cardNumber: '', language: null, confidence: 'low' })).toBe('Nothing readable (uncertain)')
   })
 })
