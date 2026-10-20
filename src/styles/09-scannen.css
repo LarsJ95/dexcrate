@@ -210,3 +210,86 @@
 .read-fix .form-grid .wide {
   grid-column: 1 / -1;
 }
+
+/* ---------- Scanmodi als tegels (20-10-2026, gekozen door de gebruiker) ----------
+   Eén tik start de camera. Huidige modus bovenaan, groot en geel; de andere twee naast elkaar eronder. */
+.scan-modes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+button.scan-mode {
+  display: grid;
+  /* Eén kolom over de volle breedte: knoppen centreren van zichzelf (justify-content), dan schoof korte tekst naar het midden. */
+  grid-template-columns: minmax(0, 1fr);
+  justify-content: stretch;
+  align-content: start;
+  justify-items: start;
+  gap: var(--space-1);
+  min-height: 96px;
+  padding: var(--space-4);
+  border-radius: var(--radius-l);
+  text-align: left;
+  font-weight: 400;
+}
+
+button.scan-mode.is-main {
+  grid-column: 1 / -1;
+  min-height: 104px;
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: var(--on-yellow);
+}
+
+button.scan-mode.is-main:hover:not(:disabled) {
+  background: var(--yellow-hover);
+  border-color: var(--yellow-hover);
+}
+
+.scan-mode-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 1.1rem;
+  font-weight: 800;
+  font-stretch: var(--stretch-display);
+}
+
+.is-main .scan-mode-title {
+  font-size: 1.3rem;
+}
+
+.scan-mode-text {
+  font-size: var(--fs-small);
+  color: var(--ink-soft);
+}
+
+.is-main .scan-mode-text {
+  color: var(--on-yellow);
+}
+
+button.scan-files {
+  justify-self: center;
+}
+
+/* Groot scherm: drie naast elkaar, de huidige het breedst. */
+@media (min-width: 768px) {
+  .scan-modes {
+    grid-template-columns: 2fr 1fr 1fr;
+  }
+
+  button.scan-mode.is-main {
+    grid-column: auto;
+  }
+}
+
+/* Kleine tegels: titel op één regel (niet uitgerekt), iets minder binnenruimte. */
+button.scan-mode:not(.is-main) {
+  padding: var(--space-3);
+}
+
+.scan-mode:not(.is-main) .scan-mode-title {
+  font-stretch: 100%;
+  white-space: nowrap;
+}
