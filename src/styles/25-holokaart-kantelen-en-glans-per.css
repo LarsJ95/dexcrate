@@ -99,3 +99,22 @@
 [data-motion='off'] .holo-card {
   transform: none;
 }
+
+/* Touchscreen (20-10-2026, zwart flikkeren in Chrome op Android bij de vergrote kaart): minder zware lagen. Geen
+   filter op de glanslaag (elk filter is een extra tussenlaag op de GPU) en geen vaste laag via will-change; de
+   lagen mengen binnen de kaart (isolation). Zonder filter is de glans feller, daarom de sterkte ±0,6×. */
+@media (pointer: coarse) {
+  .holo-card {
+    --foil-strength: 0.15;
+    will-change: auto;
+    isolation: isolate;
+  }
+
+  .holo-card.is-tilting {
+    --foil-strength: 0.33;
+  }
+
+  .holo-card .holo-foil {
+    filter: none;
+  }
+}
