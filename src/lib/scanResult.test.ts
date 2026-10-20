@@ -47,8 +47,14 @@ const scanned: Recognition = {
 
 describe('scanQuery', () => {
   it('lege velden worden null', () => {
-    expect(scanQuery(scanned)).toEqual({ name: 'Dedenne', set_code: 'CSMC', card_number: '004', set_total: '012' })
-    expect(scanQuery({ ...scanned, setCode: '', cardNumber: '', setTotal: '' })).toEqual({ name: 'Dedenne', set_code: null, card_number: null, set_total: null })
+    expect(scanQuery(scanned)).toEqual({ name: 'Dedenne', name_printed: '咚咚鼠', set_code: 'CSMC', card_number: '004', set_total: '012' })
+    expect(scanQuery({ ...scanned, namePrinted: '', setCode: '', cardNumber: '', setTotal: '' })).toEqual({
+      name: 'Dedenne',
+      name_printed: null,
+      set_code: null,
+      card_number: null,
+      set_total: null,
+    })
   })
 })
 
@@ -56,6 +62,11 @@ describe('correctRecognition', () => {
   it('neemt je verbeteringen over; twijfel en toelichting vervallen; rest blijft', () => {
     const r = correctRecognition(scanned, { name: ' Dedenne ', setCode: ' S12 ', cardNumber: '45', setTotal: '98', language: 'zh-cn' })
     expect(r).toEqual({ ...scanned, nameEnglish: 'Dedenne', setCode: 'S12', cardNumber: '45', setTotal: '98', language: 'zh-cn', confidence: 'high', notes: '' })
+  })
+
+  it('andere naam: de gedrukte naam van de scan vervalt (anders telt die nog bij het controleren)', () => {
+    const r = correctRecognition(scanned, { name: 'Pikachu', setCode: 'S12', cardNumber: '45', setTotal: '', language: 'zh-cn' })
+    expect(r.namePrinted).toBe('')
   })
 
   it('"004/012" in het nummerveld wordt nummer en totaal', () => {

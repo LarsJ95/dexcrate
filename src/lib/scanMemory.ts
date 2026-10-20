@@ -110,8 +110,9 @@ export async function withMemory(r: Recognition, found: Candidate[]): Promise<Ca
   if (!chosen || autoPick(found)?.key === chosen) return found
   const c = await candidateFor(chosen, found)
   if (!c) return found
-  const { otherNumber: _other, ...rest } = c
+  const { otherNumber: _other, nameDiffers: _name, ...rest } = c
   void _other
+  void _name
   const top: Candidate = { ...rest, score: Math.max(c.score, ...found.map((f) => f.score)) + 1, reason: 'Your earlier choice', remembered: true }
   return [top, ...found.filter((f) => f.key !== chosen)].slice(0, 12)
 }

@@ -250,7 +250,7 @@ export function SingleScanResult({ recognition, candidates, ownedByKey, earlier,
         {candidates.length === 0 && <p className="muted">No match found. You can add it without a link.</p>}
         {candidates.length > 0 && !best && (
           <p className="muted">
-            No card with number {recognition.cardNumber} in the catalog{recognition.setCode ? ` (set ${recognition.setCode} may be missing)` : ''}. These only share the name. None of them? Add it without link.
+            No sure match for #{recognition.cardNumber}{recognition.setCode ? ` (set ${recognition.setCode} may be missing from the catalog)` : ''}. Pick a card below, or add it without link.
           </p>
         )}
         <ul className="candidates">

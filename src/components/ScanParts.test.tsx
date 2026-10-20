@@ -120,7 +120,7 @@ describe('SingleScanResult', () => {
     const { container, props } = renderSingle({ recognition: dedenne, candidates: [guess] })
     expect(screen.queryByText('Best match')).toBe(null)
     expect(container.querySelector('.candidate.selected')).toBe(null)
-    expect(screen.getByText(/No card with number 004 in the catalog \(set CSMC may be missing\)/)).toBeTruthy()
+    expect(screen.getByText(/No sure match for #004 \(set CSMC may be missing from the catalog\)/)).toBeTruthy()
     expect(screen.getByText('Name (咚咚鼠), other number')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Without link', pressed: true })).toBeTruthy()
     await userEvent.click(screen.getByRole('button', { name: 'Add' }))

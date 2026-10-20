@@ -18,7 +18,8 @@ const stored = vi.hoisted(() => {
     notes: '',
   }
   const guess = { key: 'zh-cn/SV8-055', name: '咚咚鼠', localId: '055', setId: 'SV8', setName: '超電突圍', image: null, score: 3, reason: '', otherNumber: true }
-  const item = { id: 'a', thumb: 'data:image/jpeg;base64,AAAA', status: 'ready', error: null, rec, candidates: [guess], chosen: '', quantity: 2, variant: 'holo', include: false, at: '2026-10-19T10:00:00.000Z' }
+  // matcher 999: met de nieuwste zoekversie gevonden, dus niet vanzelf opnieuw opzoeken (zie scanQueueRematch.test.ts).
+  const item = { id: 'a', thumb: 'data:image/jpeg;base64,AAAA', status: 'ready', error: null, rec, candidates: [guess], chosen: '', quantity: 2, variant: 'holo', include: false, at: '2026-10-19T10:00:00.000Z', matcher: 999 }
   return JSON.stringify([item])
 })
 
@@ -67,7 +68,7 @@ describe('Quick scan: opnieuw zoeken met verbeterde waarden', () => {
   it('gevonden: nieuwe kandidaten, gekozen en aangevinkt; aantal blijft', async () => {
     vi.mocked(findScanCandidates).mockResolvedValueOnce([match])
     await searchAgain('a', fixed())
-    expect(vi.mocked(findScanCandidates)).toHaveBeenLastCalledWith({ name: 'Dedenne', set_code: 'S12', card_number: '045', set_total: '098' }, 'zh-tw')
+    expect(vi.mocked(findScanCandidates)).toHaveBeenLastCalledWith({ name: 'Dedenne', name_printed: '咚咚鼠', set_code: 'S12', card_number: '045', set_total: '098' }, 'zh-tw')
     // Gelezen "holo" bestaat niet bij deze kaart (normal/reverse) → onbekend; prijs verschilt → nakijken.
     expect(getQueue()[0]).toMatchObject({ id: 'a', status: 'ready', chosen: 'zh-tw/S12-045', include: true, quantity: 2, rec: { setCode: 'S12', language: 'zh-tw' }, variant: null, askVariant: true })
   })
