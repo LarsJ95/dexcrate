@@ -228,6 +228,16 @@ export function isAmbiguous(q: Pick<QueueItem, 'candidates'>): boolean {
   return Boolean(a && b) && a.score - b.score < AMBIGUOUS_MARGIN
 }
 
+/** Zoveel kandidaten als foto in een scanregel; de rest via "More…". */
+const STRIP_SIZE = 3
+
+/** Kandidaten als foto's in een scanregel: de beste drie; een elders gekozen kaart neemt de laatste plek. */
+export function stripCandidates(candidates: readonly Candidate[], chosen: string): Candidate[] {
+  const top = candidates.slice(0, STRIP_SIZE)
+  const picked = chosen && !top.some((c) => c.key === chosen) ? candidates.find((c) => c.key === chosen) : undefined
+  return picked ? [...top.slice(0, STRIP_SIZE - 1), picked] : top
+}
+
 /** Alleen suggesties met een ander nummer (bv. set ontbreekt in de catalogus): niets vanzelf gekozen. */
 export function onlyOtherNumbers(q: Pick<QueueItem, 'candidates'>): boolean {
   return q.candidates.length > 0 && !autoPick(q.candidates)

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { Candidate } from './match'
 import type { Recognition } from './scanResult'
 import type { Variant } from './types'
-import { isAmbiguous, mergeDuplicate, newItem, onlyOtherNumbers, parseQueue, reviewGroups, scannedTwice, summarize, withMatch, withoutCardData, type QueueItem } from './scanQueue'
+import { isAmbiguous, mergeDuplicate, newItem, onlyOtherNumbers, parseQueue, reviewGroups, scannedTwice, stripCandidates, summarize, withMatch, withoutCardData, type QueueItem } from './scanQueue'
 
 const rec = (over: Partial<Recognition> = {}): Recognition => ({
   position: 1,
@@ -128,5 +128,15 @@ describe('scan-wachtrij', () => {
     expect(onlyOtherNumbers(restored)).toBe(true)
     expect(onlyOtherNumbers(ready('a'))).toBe(false)
     expect(onlyOtherNumbers(withMatch(newItem('n', THUMB), rec(), []))).toBe(false)
+  })
+})
+
+describe('stripCandidates', () => {
+  const list = ['a', 'b', 'c', 'd', 'e'].map(cand)
+  it('de beste drie; een elders gekozen kaart neemt de laatste plek', () => {
+    expect(stripCandidates(list, '').map((c) => c.key)).toEqual(['a', 'b', 'c'])
+    expect(stripCandidates(list, 'b').map((c) => c.key)).toEqual(['a', 'b', 'c'])
+    expect(stripCandidates(list, 'e').map((c) => c.key)).toEqual(['a', 'b', 'e'])
+    expect(stripCandidates(list.slice(0, 1), 'x').map((c) => c.key)).toEqual(['a'])
   })
 })
