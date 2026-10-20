@@ -30,11 +30,15 @@ export async function run({ base }) {
     await page.reload()
     await page.goto(`${base}#/collection`, 3500)
 
-    // Ver naar beneden: de volgende reeks kaarten laadt erbij.
-    for (const y of [4000, 7000, 9000]) {
-      await page.ev(`(window.scrollTo(0, ${y}), 1)`)
-      await sleep(700)
+    // Naar beneden tot de volgende reeks kaarten erbij laadt (CI is trager: blijven proberen, max. ±12 s).
+    const tiles = () => page.ev(`document.querySelectorAll('.binder > li').length`)
+    for (let i = 0; i < 24 && (await tiles()) <= 48; i++) {
+      await page.ev(`(window.scrollTo(0, document.documentElement.scrollHeight), 1)`)
+      await sleep(500)
     }
+    // Dan een vaste plek ergens in de lijst, voorbij de eerste 48 kaarten.
+    await page.ev(`(window.scrollTo(0, Math.round(document.documentElement.scrollHeight * 0.6)), 1)`)
+    await sleep(800)
     const before = await page.ev(`({ y: Math.round(window.scrollY), tiles: document.querySelectorAll('.binder > li').length })`)
     assert.ok(before.tiles > 48, `niet meer dan de eerste 48 kaarten geladen (${before.tiles})`)
     assert.ok(before.y > 5000, `niet ver genoeg gescrold (${before.y})`)
