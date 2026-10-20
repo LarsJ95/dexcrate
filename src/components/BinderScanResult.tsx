@@ -6,6 +6,8 @@ import { autoPick, type Candidate } from '../lib/match'
 import { recordChoices, scanCandidates, type ChoiceInput } from '../lib/scanMemory'
 import { draftFromScan, type Recognition } from '../lib/scan'
 import { readLabel } from '../lib/scanResult'
+import { isAmbiguous } from '../lib/scanQueue'
+import { CandidateStrip } from './ScanQueueParts'
 import { lookupLang } from '../lib/tcgdex'
 import { CardFace } from './CardFace'
 import { CatalogKeyPicture } from './CatalogCardPicture'
@@ -30,6 +32,9 @@ interface Props {
 
 const isChinese = (rec: Recognition): boolean => rec.language === 'zh-cn' || rec.language === 'zh-tw'
 
+/** Moet je zelf de kaart kiezen? Dan staan de kandidaten meteen als foto's in beeld. */
+const needsPick = (candidates: readonly Candidate[]): boolean => !autoPick(candidates) || isAmbiguous({ candidates: [...candidates] })
+
 interface Row {
   rec: Recognition
   /** undefined = nog aan het zoeken */
@@ -46,6 +51,14 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
   const [condition, setCondition] = useState<Condition | ''>('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  /** Kaarten met "More" open: kandidaten en Edit zichtbaar. */
+  const [expanded, setExpanded] = useState<ReadonlySet<number>>(new Set())
+  const toggleExpanded = (position: number): void =>
+    setExpanded((s) => {
+      const next = new Set(s)
+      if (!next.delete(position)) next.add(position)
+      return next
+    })
 
   // Chinese catalogus net binnen: opnieuw zoeken (regels die je zelf aanpaste blijven zoals ze zijn).
   const [catalogRound, setCatalogRound] = useState(0)
@@ -150,13 +163,18 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
       </h2>
       {rows.some((r) => isChinese(r.rec) && r.candidates !== undefined && !autoPick(r.candidates)) && <ChsCatalogNotice />}
 
+      {/* Zelfde compacte regel als Quick scan (audit B2, 20-10-2026); een binderfoto heeft geen eigen foto per kaart. */}
       <ul className="binder-scan">
         {open.map((r) => {
           const c = candidateOf(r)
           const owned = c ? ownedByKey.get(c.key) : undefined
           const label = r.rec.nameEnglish || r.rec.namePrinted || `Card ${r.rec.position}`
+          const found = r.candidates !== undefined
+          const pick = found && needsPick(r.candidates ?? [])
+          const more = expanded.has(r.rec.position)
+          const showStrip = found && (r.candidates ?? []).length > 0 && (pick || more)
           return (
-            <li key={r.rec.position} className={`scan-row${r.include ? ' on' : ''}`}>
+            <li key={r.rec.position} className={`scan-row queue-row${r.include ? ' on' : ''}`}>
               <label className="scan-check">
                 <input
                   type="checkbox"
@@ -165,52 +183,66 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
                   aria-label={`Add ${label}`}
                 />
               </label>
-              <span className="scan-thumb">
-                {(() => {
-                  const face = (
-                    <CardFace
-                      name={c?.name ?? label}
-                      detail={c ? `${c.setName} #${c.localId}` : [r.rec.setCode, r.rec.cardNumber].filter(Boolean).join(' ')}
-                      loading={r.candidates === undefined}
-                    />
-                  )
-                  return c ? <CatalogKeyPicture cardKey={c.key} image={c.image} name={c.name} quality="low" alt="" fallback={face} /> : face
-                })()}
+              <span className="queue-photos">
+                <span className="scan-thumb">
+                  {c ? (
+                    <CatalogKeyPicture cardKey={c.key} image={c.image} name={c.name} quality="low" alt="" fallback={<CardFace name={c.name} detail={`#${c.localId}`} />} />
+                  ) : (
+                    <CardFace name={label} detail={r.rec.cardNumber ? `#${r.rec.cardNumber}` : undefined} loading={!found} />
+                  )}
+                </span>
               </span>
               <div className="scan-info">
                 <p className="tile-name">
                   {r.rec.position}. {label}
                 </p>
-                {/* Wat de scan las alleen bij twijfel (S5). */}
-                {(r.rec.confidence !== 'high' || (r.candidates !== undefined && !autoPick(r.candidates))) && <p className="muted small">{readLabel(r.rec)}</p>}
-                {r.candidates && r.candidates.length > 0 && (
-                  <select
-                    aria-label={`Match for ${label}`}
-                    value={r.chosen}
-                    onChange={(e) => update(r.rec.position, { chosen: e.target.value })}
-                  >
-                    {r.candidates.map((cand) => (
-                      <option key={cand.key} value={cand.key}>
-                        {cand.name}, {cand.setName} {cand.localId}
-                      </option>
-                    ))}
-                    <option value="">Add without link</option>
-                  </select>
-                )}
-                {r.candidates !== undefined && (
-                  <VariantSelect cardKey={c?.key ?? null} value={r.variant} onChange={(variant) => update(r.rec.position, { variant })} label={`Variant of ${label}`} />
-                )}
-                {c && <VariantGapNote cardKey={c.key} />}
-                {c && (
-                  <p className="small">
-                    Market <LazyCardPrice cardKey={c.key} className="scan-price" withReverse />
+                {!found && <p className="muted small">Looking up…</p>}
+                {/* Bij twijfel zonder keuze zegt de knop "No link" in de strook al wat er gebeurt. */}
+                {found && (c || !showStrip) && (
+                  <p className="queue-meta small">
+                    {c ? (
+                      <>
+                        <span>
+                          {c.setName} #{c.localId}
+                        </span>
+                        <LazyCardPrice cardKey={c.key} className="scan-price" withReverse />
+                      </>
+                    ) : (
+                      <span>Without link</span>
+                    )}
+                    {owned && <span>Owned {owned}×</span>}
                   </p>
                 )}
-                {owned && <p className="small">Owned {owned}×</p>}
+                {/* Wat de scan las alleen bij twijfel (S5). */}
+                {(r.rec.confidence !== 'high' || pick) && <p className="muted small">{readLabel(r.rec)}</p>}
               </div>
-              <button type="button" className="ghost" onClick={() => void edit(r)} disabled={r.candidates === undefined}>
-                Edit
-              </button>
+              {found && (
+                <div className="queue-wide queue-notes">
+                  {pick && <p className="queue-why small">Not sure: tap the right card.</p>}
+                  {c && <VariantGapNote cardKey={c.key} />}
+                </div>
+              )}
+              {showStrip && (
+                <div className="queue-wide">
+                  {/* Zelf gekozen: dan wil je hem ook toevoegen. */}
+                  <CandidateStrip candidates={r.candidates ?? []} chosen={r.chosen} label={label} onChoose={(chosen) => update(r.rec.position, { chosen, include: true })} />
+                </div>
+              )}
+              {found && (
+                <div className="queue-wide queue-fields">
+                  <VariantSelect cardKey={c?.key ?? null} value={r.variant} onChange={(variant) => update(r.rec.position, { variant })} label={`Variant of ${label}`} />
+                  <button type="button" className="ghost small-btn queue-more-btn" aria-expanded={more} onClick={() => toggleExpanded(r.rec.position)}>
+                    {more ? 'Less' : 'More'}
+                  </button>
+                </div>
+              )}
+              {found && more && (
+                <div className="queue-wide queue-actions">
+                  <button type="button" className="ghost small-btn" onClick={() => void edit(r)}>
+                    Edit
+                  </button>
+                </div>
+              )}
             </li>
           )
         })}
@@ -219,18 +251,20 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
       {open.length === 0 ? (
         <p className="success" role="status">All cards from this photo are done.</p>
       ) : (
-        <div className="scan-bulk">
-          <label>
-            Condition
+        <div className="scan-bulk queue-bulk">
+          <label className="queue-cond">
+            <span className="queue-cond-label">Condition</span>
             <select value={condition} onChange={(e) => setCondition(e.target.value as Condition | '')}>
               <option value="">Unknown</option>
               {(Object.keys(CONDITION_LABELS) as Condition[]).map((k) => (
-                <option key={k} value={k}>{CONDITION_LABELS[k]}</option>
+                <option key={k} value={k}>
+                  {CONDITION_LABELS[k]}
+                </option>
               ))}
             </select>
           </label>
-          <button type="button" onClick={() => void addSelected()} disabled={busy || searching || selected.length === 0}>
-            {busy ? 'Adding…' : searching ? 'Looking up…' : `Add ${selected.length} to collection`}
+          <button type="button" className="primary" onClick={() => void addSelected()} disabled={busy || searching || selected.length === 0}>
+            {busy ? 'Adding…' : searching ? 'Looking up…' : `Add ${selected.length}`}
           </button>
           <button type="button" className="ghost" onClick={onCancel} disabled={busy}>
             Discard

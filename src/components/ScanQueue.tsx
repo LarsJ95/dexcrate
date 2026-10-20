@@ -310,7 +310,7 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
         {showStrip && (
           <div className="queue-wide">
             {/* Zelf gekozen: dan wil je hem ook toevoegen (anders nog een tik op het vinkje). */}
-            <CandidateStrip item={q} label={label} onChoose={(chosen) => updateItem(q.id, { chosen, include: true })} />
+            <CandidateStrip candidates={q.candidates} chosen={q.chosen} label={label} onChoose={(chosen) => updateItem(q.id, { chosen, include: true })} />
           </div>
         )}
         {ready && !fixing && (
