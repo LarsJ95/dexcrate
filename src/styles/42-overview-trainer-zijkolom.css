@@ -180,3 +180,118 @@ a.mover:hover {
     align-self: stretch;
   }
 }
+
+/* ---------- Overview op de telefoon: eigen volgorde en inklapbare blokken (audit O1, 20-10-2026) ----------
+   De plaatsen (dash-slot, PhoneSlot/PhoneFold) bestaan alleen op de telefoon; groter scherm blijft ongewijzigd.
+   Telefoon: eerst waarde en grafiek, dan wat om actie vraagt (Wishlist deals, Sets almost complete), dan je kaarten,
+   dan Trainer card, Pokédex en Sales als inklapbare blokken. */
+@media (max-width: 480px) {
+  .page.dashboard .dash-rail,
+  .page.dashboard .movers {
+    display: contents;
+  }
+
+  .page.dashboard .dash-slot {
+    display: grid;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+
+  .page.dashboard .slot-deals {
+    order: 2;
+  }
+
+  .page.dashboard .slot-nearly {
+    order: 3;
+  }
+
+  .page.dashboard .slot-breakdown {
+    order: 4;
+  }
+
+  .page.dashboard .slot-spotlight {
+    order: 5;
+  }
+
+  .page.dashboard .slot-gainers {
+    order: 6;
+  }
+
+  .page.dashboard .slot-losers {
+    order: 7;
+  }
+
+  .page.dashboard .slot-recent {
+    order: 8;
+  }
+
+  .page.dashboard .slot-trainer {
+    order: 9;
+  }
+
+  .page.dashboard .slot-pokedex {
+    order: 10;
+  }
+
+  .page.dashboard .slot-sales {
+    order: 11;
+  }
+}
+
+/* Inklapbaar blok (PhoneFold): kop als balk met titel, samenvatting en pijltje; inhoud eronder. */
+.phone-fold {
+  display: grid;
+  gap: var(--space-3);
+}
+
+button.phone-fold-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  text-align: left;
+}
+
+.phone-fold-title {
+  font-weight: 800;
+  font-stretch: var(--stretch-display);
+}
+
+.phone-fold-summary {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.phone-fold-head svg {
+  transition: transform 150ms ease-out;
+}
+
+.phone-fold.is-open .phone-fold-head svg {
+  transform: rotate(180deg);
+}
+
+.phone-fold-body {
+  display: grid;
+  gap: var(--gap-section);
+  min-width: 0;
+}
+
+[data-motion='off'] .phone-fold-head svg {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .phone-fold-head svg {
+    transition: none;
+  }
+}
