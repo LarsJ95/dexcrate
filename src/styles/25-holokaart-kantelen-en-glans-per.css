@@ -117,4 +117,17 @@
   .holo-card .holo-foil {
     filter: none;
   }
+
+  /* Tweede stap (20-10-2026: flikkerde nog tijdens kantelen met de vinger): geen mengmodus. Mengen met de kaart eronder
+     is per beeldje het zware deel; nu gewone doorzichtige lagen. De lichtvlek zonder de donkere rand (die was alleen
+     bedoeld voor "overlay"), anders wordt de kaart aan de randen grauw. */
+  .holo-card .holo-foil,
+  .holo-card .holo-glare,
+  [data-foil='gold'] .holo-glare {
+    mix-blend-mode: normal;
+  }
+
+  .holo-card .holo-glare {
+    background: radial-gradient(farthest-corner circle at var(--mx) var(--my), var(--glare-1) 0%, var(--glare-2) 28%, transparent 70%);
+  }
 }
