@@ -6,7 +6,22 @@ import { draftFromScan } from '../lib/scan'
 import { readLabel } from '../lib/scanResult'
 import { recordChoices, type ChoiceInput } from '../lib/scanMemory'
 import { isAmbiguous, isCondition, onlyOtherNumbers, reviewGroups, scannedTwice, summarize, withoutCardData, type QueueItem } from '../lib/scanQueue'
-import { canLookAgain, canRetry, getFeedback, getQueue, lookAgain, removeItems, retry, searchAgain, subscribe, undoFeedback, updateItem } from '../lib/scanQueueStore'
+import {
+  canLookAgain,
+  canRetry,
+  getFeedback,
+  getQueue,
+  getRemoved,
+  lookAgain,
+  removeItems,
+  removeWithUndo,
+  retry,
+  searchAgain,
+  subscribe,
+  undoFeedback,
+  undoRemove,
+  updateItem,
+} from '../lib/scanQueueStore'
 import { lookupLang } from '../lib/tcgdex'
 import { CONDITION_LABELS, EMPTY_CARD, type Card, type CardInput, type Condition } from '../lib/types'
 import { CardFace } from './CardFace'
@@ -148,7 +163,21 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
     })
   // Lange lijst in stukken tonen (tot 250 foto's); groepen in volgorde: eerst wat je moet nakijken.
   const { count: shownCount, sentinel: moreRef } = useLoadMore(queue.length, 'scan-queue', ROWS_PER_STEP)
+  const removedInfo = useSyncExternalStore(subscribe, getRemoved)
+  /** Net weggehaald met ×: terughalen kan nog even (G1). */
+  const undo = removedInfo && (
+    <div className="queue-undo" role="status">
+      <span>
+        Removed {removedInfo.label}
+        {removedInfo.count > 1 ? ` and ${removedInfo.count - 1} more` : ''}.
+      </span>
+      <button type="button" className="small-btn" onClick={undoRemove}>
+        Undo
+      </button>
+    </div>
+  )
   if (queue.length === 0) {
+    if (undo) return <div className="scan-bulk queue-bulk">{undo}</div>
     return done ? (
       <p className="success" role="status">
         {done}
@@ -279,7 +308,7 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
           {/* Wat de scan las alleen bij twijfel (S5): bij een zekere match zegt de kaart genoeg. */}
           {q.rec && (q.rec.confidence !== 'high' || needsPick(q)) && <p className="muted small">{readLabel(q.rec)}</p>}
         </div>
-        <button type="button" className="ghost icon-btn queue-remove" onClick={() => removeItems([q.id])} aria-label={`Remove ${label}`}>
+        <button type="button" className="ghost icon-btn queue-remove" onClick={() => removeWithUndo([q.id])} aria-label={`Remove ${label}`}>
           <IconClose size={16} />
         </button>
         {/* Waarom nakijken: over de volle breedte, dan past het meestal op één regel. */}
@@ -394,6 +423,7 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
 
       {/* Onderbalk op één regel (audit S4): onderin is ruimte kostbaar, alleen de hoofdactie valt op. */}
       <div className="scan-bulk queue-bulk">
+        {undo}
         {confirmClear ? (
           <>
             <span className="queue-bulk-ask">

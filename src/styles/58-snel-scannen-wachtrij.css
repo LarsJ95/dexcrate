@@ -303,7 +303,9 @@ button.queue-nolink {
 .queue-cond {
   position: relative;
   display: grid;
-  flex: 0 1 320px;
+  /* Basis 0: past naast "Add" en Clear, ook als de Undo-melding de balk laat afbreken. */
+  flex: 1 1 0;
+  max-width: 320px;
   min-width: 0;
 }
 
@@ -336,6 +338,26 @@ button.queue-nolink {
 
 .queue-bulk > button {
   flex: none;
+}
+
+/* "Removed … · Undo" boven de knoppen, in dezelfde vaste balk (G1). */
+.scan-bulk.queue-bulk:has(.queue-undo) {
+  flex-wrap: wrap;
+}
+
+.queue-undo {
+  display: flex;
+  flex: 1 0 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-width: 0;
+  font-weight: 600;
+}
+
+.queue-undo > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .queue-bulk-ask {

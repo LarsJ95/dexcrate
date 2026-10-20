@@ -407,3 +407,57 @@ export function removeItems(ids: readonly string[]): void {
   for (const id of drop) dropImage(id)
   set(queue.filter((q) => !drop.has(q.id)))
 }
+
+// --- Weghalen met "Undo" (audit G1, 20-10-2026) ---
+
+/** Zo lang kun je een weggehaalde scan terughalen; pas daarna wordt de foto gewist. */
+export const UNDO_MS = 5000
+
+/** Wat er net is weggehaald, voor de melding "Removed … · Undo". */
+export interface RemovedInfo {
+  count: number
+  label: string
+}
+
+let removed: { items: { item: QueueItem; index: number }[]; timer: number } | null = null
+let removedInfo: RemovedInfo | null = null
+
+export const getRemoved = (): RemovedInfo | null => removedInfo
+
+const itemLabel = (q: QueueItem): string => q.rec?.nameEnglish || q.rec?.namePrinted || 'Photo'
+
+/** Regels weghalen met de mogelijkheid om terug te halen; foto's blijven tot UNDO_MS voorbij is. */
+export function removeWithUndo(ids: readonly string[]): void {
+  finishRemove()
+  const drop = new Set(ids)
+  const items = queue.flatMap((item, index) => (drop.has(item.id) ? [{ item, index }] : []))
+  if (items.length === 0) return
+  removed = { items, timer: window.setTimeout(finishRemove, UNDO_MS) }
+  removedInfo = { count: items.length, label: itemLabel(items[0].item) }
+  set(queue.filter((q) => !drop.has(q.id)))
+}
+
+/** Tijd voorbij (of een nieuwe verwijdering): nu echt wissen, ook de foto's. */
+function finishRemove(): void {
+  if (!removed) return
+  window.clearTimeout(removed.timer)
+  for (const { item } of removed.items) dropImage(item.id)
+  removed = null
+  removedInfo = null
+  for (const l of listeners) l()
+}
+
+/** Terughalen op de oude plek. Een regel die nog herkend werd, gaat opnieuw in de wachtrij (de foto is er nog). */
+export function undoRemove(): void {
+  if (!removed) return
+  window.clearTimeout(removed.timer)
+  const next = [...queue]
+  for (const { item, index } of [...removed.items].sort((a, b) => a.index - b.index)) {
+    const back = item.status === 'ready' || item.status === 'error' ? item : { ...item, status: 'waiting' as const }
+    next.splice(Math.min(index, next.length), 0, back)
+  }
+  removed = null
+  removedInfo = null
+  set(next)
+  pump()
+}
