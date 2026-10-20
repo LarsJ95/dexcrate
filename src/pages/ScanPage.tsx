@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type Change
 import { BinderScanResult } from '../components/BinderScanResult'
 import { CameraCapture } from '../components/CameraCapture'
 import { CardDialog } from '../components/CardDialog'
+import { IconBinder, IconCamera, IconCards } from '../components/Icons'
 import { ScanSessionSummary, SingleScanResult } from '../components/ScanParts'
 import { QueueStrip, ScanQueue } from '../components/ScanQueue'
 import { addedQuietly } from '../lib/celebrate'
@@ -17,7 +18,6 @@ import { summarize } from '../lib/scanQueue'
 import { enqueue, getQueue, removeItems, setWishedKeys, subscribe } from '../lib/scanQueueStore'
 import { useWakeLock } from '../hooks/useWakeLock'
 import { getPrefs } from '../lib/devicePrefs'
-import { markHintSeen, readSeenHints } from '../lib/scanHints'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import { listWishlist } from '../lib/wishlist'
 import { closeSession, earlierInSession, hasScanSessions, itemsFromRows, openSession, saveSessionItems, startSession, type ScanItem, type ScanSession } from '../lib/scanSessions'
@@ -43,18 +43,22 @@ type Phase =
 /** 'queue' = snel scannen: foto na foto, herkennen op de achtergrond, later in één keer toevoegen. */
 type PageMode = ScanMode | 'queue'
 
-const MODE_HINT: Record<PageMode, string> = {
-  queue: 'Photograph card after card; recognition runs in the background. Check and add them all at once when you are done.',
-  single: 'Photograph one card straight on, with the bottom edge readable.',
-  multi: 'Photograph a full binder page from straight above, without glare on the sleeves.',
-}
+/**
+ * Scanmodi als tegels (gekozen 20-10-2026): één tik start de camera in die modus. De modus die je nu gebruikt staat
+ * bovenaan en het grootst; de korte tekst vervangt de vroegere uitleg boven de keuzeknoppen.
+ */
+const MODES: readonly { key: PageMode; title: string; text: string }[] = [
+  { key: 'queue', title: 'Quick scan', text: 'Card after card; check and add them all at the end.' },
+  { key: 'single', title: 'Single card', text: 'One card, added straight away.' },
+  { key: 'multi', title: 'Binder page', text: 'A whole binder page in one photo.' },
+]
+
+const MODE_ICON: Record<PageMode, (p: { size?: number }) => JSX.Element> = { queue: IconCamera, single: IconCards, multi: IconBinder }
 
 export function ScanPage(): JSX.Element {
   const inputRef = useRef<HTMLInputElement>(null)
   const [cameraOpen, setCameraOpen] = useState(false)
   const [mode, setMode] = useState<PageMode>(() => getPrefs().scanMode)
-  /** Modi waarvan je de uitleg niet meer nodig hebt (S5). */
-  const [hintsSeen, setHintsSeen] = useState<ReadonlySet<string>>(readSeenHints)
   const [cards, setCards] = useState<Card[]>([])
   const [image, setImage] = useState<PreparedImage | null>(null)
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' })
@@ -138,15 +142,18 @@ export function ScanPage(): JSX.Element {
 
   const nextSortOrder = cards.reduce((m, c) => Math.max(m, c.sort_order), -1) + 1
 
-  /** Deze modus is gebruikt: de uitleg bovenaan voortaan weglaten (S5). */
-  function hintDone(): void {
-    if (!hintsSeen.has(mode)) setHintsSeen(markHintSeen(mode))
+  /** Tegel aangetikt: in die modus de camera openen (een andere modus begint met een schone lei). */
+  function startMode(key: PageMode): void {
+    if (key !== mode) {
+      setMode(key)
+      reset()
+    }
+    setCameraOpen(true)
   }
 
   function onFile(e: ChangeEvent<HTMLInputElement>): void {
     const files = [...(e.target.files ?? [])]
     e.target.value = ''
-    if (files.length > 0) hintDone()
     if (mode === 'queue') {
       // Snel scannen: meerdere foto's tegelijk kiezen mag.
       for (const f of files) addToQueue(f)
@@ -341,32 +348,26 @@ export function ScanPage(): JSX.Element {
       <div className="page-head">
         <div>
           <h1>Scan</h1>
-          {!hintsSeen.has(mode) && <p className="muted">{MODE_HINT[mode]}</p>}
         </div>
       </div>
 
-      <div className="segmented" role="group" aria-label="Scan mode">
-        {(
-          [
-            ['queue', 'Quick scan'],
-            ['single', 'Single card'],
-            ['multi', 'Binder page'],
-          ] as const
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            aria-pressed={mode === key}
-            disabled={busy}
-            onClick={() => {
-              setMode(key)
-              reset()
-            }}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="scan-modes" role="group" aria-label="Start scanning">
+        {[...MODES].sort((a, b) => Number(b.key === mode) - Number(a.key === mode)).map((m) => {
+          const Icon = MODE_ICON[m.key]
+          return (
+            <button key={m.key} type="button" className={`scan-mode${m.key === mode ? ' is-main' : ''}`} disabled={busy} onClick={() => startMode(m.key)}>
+              <span className="scan-mode-title">
+                <Icon size={m.key === mode ? 22 : 18} />
+                {m.title}
+              </span>
+              <span className="scan-mode-text">{m.text}</span>
+            </button>
+          )
+        })}
       </div>
+      <button type="button" className="ghost scan-files" disabled={busy} onClick={() => inputRef.current?.click()}>
+        Or choose photos from files
+      </button>
 
       <input
         ref={inputRef}
@@ -391,23 +392,14 @@ export function ScanPage(): JSX.Element {
         </p>
       )}
 
-      {mode === 'queue' && (
-        <div className="scan-actions queue-start">
-          <button type="button" className="scan-button" onClick={() => setCameraOpen(true)}>
-            Take photos
-          </button>
-          <button type="button" className="ghost" onClick={() => inputRef.current?.click()}>
-            Choose from files
-          </button>
-          {queueError && (
-            <p className="error" role="alert">
-              {queueError}
-            </p>
-          )}
-        </div>
+      {mode === 'queue' && queueError && (
+        <p className="error queue-error" role="alert">
+          {queueError}
+        </p>
       )}
 
-      {mode !== 'queue' && (
+      {/* Losse kaart of binderpagina: de foto en de stand pas zodra er een foto is (eerst alleen de tegels). */}
+      {mode !== 'queue' && (image || phase.kind !== 'idle') && (
         <div className="scan-stage">
           {image ? (
             <img className={`scan-photo${mode === 'multi' ? ' wide' : ''}`} src={image.previewUrl} alt="Your photo" />
@@ -415,20 +407,19 @@ export function ScanPage(): JSX.Element {
             <div className={`scan-photo empty${mode === 'multi' ? ' wide' : ''}`} aria-hidden="true" />
           )}
           <div className="scan-actions">
-            <button type="button" className="scan-button" onClick={() => setCameraOpen(true)} disabled={busy}>
-              {phase.kind === 'idle' ? 'Take photo' : 'New photo'}
-            </button>
-            <button type="button" className="ghost" onClick={() => inputRef.current?.click()} disabled={busy}>
-              Choose from files
-            </button>
+            {busy && <p aria-live="polite">{phase.message}</p>}
+            {phase.kind === 'error' && <p className="error" role="alert">{phase.message}</p>}
+            {!busy && (
+              <button type="button" className="ghost" onClick={() => setCameraOpen(true)}>
+                New photo
+              </button>
+            )}
             {v2 && mode === 'single' && (
               <label className="check">
                 <input type="checkbox" checked={keepPhoto} onChange={(e) => setKeepPhoto(e.target.checked)} />
                 Also save this scan as a photo of the card
               </label>
             )}
-            {busy && <p aria-live="polite">{phase.message}</p>}
-            {phase.kind === 'error' && <p className="error" role="alert">{phase.message}</p>}
           </div>
         </div>
       )}
@@ -439,7 +430,6 @@ export function ScanPage(): JSX.Element {
           crop={mode !== 'multi'}
           autoCapture={mode === 'queue'}
           onCapture={(file) => {
-            hintDone()
             if (mode === 'queue') addToQueue(file, true)
             else void processPhoto(file, mode, true)
           }}

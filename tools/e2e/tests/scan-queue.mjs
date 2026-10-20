@@ -40,7 +40,7 @@ export async function run({ base }) {
       c.toBlob((b) => {
         const dt = new DataTransfer(); dt.items.add(new File([b], 'kaart.jpg', { type: 'image/jpeg' }))
         const input = document.querySelector('input[type=file]'); input.files = dt.files; input.dispatchEvent(new Event('change', { bubbles: true }))
-        setTimeout(() => res(document.querySelector('.queue-start .error')?.textContent ?? null), 2500)
+        setTimeout(() => res(document.querySelector('.queue-error')?.textContent ?? null), 2500)
       }, 'image/jpeg', 0.8)
     })`
     assert.equal(await page.ev(addPhoto), null, 'foto 250 gaf een foutmelding')
