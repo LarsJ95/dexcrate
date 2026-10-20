@@ -6,9 +6,10 @@ const LOAD_AHEAD = '800px'
 /**
  * Lange lijsten in stukken tonen: eerst `page` items, en meer zodra het einde in beeld komt.
  * Een andere `resetKey` (bv. andere zoekterm of sortering) begint weer bij het begin.
+ * `initial`: meteen zoveel tonen (terugkomen op een pagina waar je al verder was, zie useScrollMemory).
  */
-export function useLoadMore(total: number, resetKey: string, page: number): { count: number; sentinel: RefObject<HTMLDivElement | null> } {
-  const [shown, setShown] = useState({ key: resetKey, count: page })
+export function useLoadMore(total: number, resetKey: string, page: number, initial = 0): { count: number; sentinel: RefObject<HTMLDivElement | null> } {
+  const [shown, setShown] = useState({ key: resetKey, count: Math.max(page, initial) })
   const count = shown.key === resetKey ? shown.count : page
   const sentinel = useRef<HTMLDivElement | null>(null)
 

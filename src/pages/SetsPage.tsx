@@ -10,6 +10,7 @@ import { digitalSetIds, getSetList, LANGS, resolveSetId, setOfKey, type Lang, ty
 import type { Card } from '../lib/types'
 import { Loading } from '../components/Loading'
 import { closeKeyboardOnEnter } from '../lib/keyboard'
+import { useSavedScroll, useScrollMemory } from '../hooks/useScrollMemory'
 import { useStoredChoice } from '../hooks/useStoredChoice'
 import { errorText } from '../lib/errors'
 
@@ -133,6 +134,10 @@ export function SetsPage(): JSX.Element {
     }
     return out
   }, [sets, lang, owned])
+
+  // Terug uit een set: weer op dezelfde plek in de lijst (useScrollMemory).
+  const scrollSaved = useSavedScroll('sets')
+  useScrollMemory('sets', scrollSaved, rows.length > 0, 0)
 
   const startedCount = useMemo(() => rows.filter((r) => r.owned > 0).length, [rows])
   const scope = openingScope(storedScope, startedCount)
