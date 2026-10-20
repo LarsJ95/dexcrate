@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest'
-import { backCameras, photoFlash, readTorchMemory, setTorch, torchSupportOf, torchSupported, trackHasTorch, writeTorchMemory } from './torch'
+import { backCameras, browserCanControlTorch, isFirefox, photoFlash, readTorchMemory, setTorch, torchSupportOf, torchSupported, trackHasTorch, writeTorchMemory } from './torch'
 
 describe('torchSupported', () => {
   it('spec: lijst booleans met true; ook één boolean true', () => {
@@ -83,5 +83,16 @@ describe('flitser via de foto-instellingen (Image Capture)', () => {
     expect(await torchSupportOf(trackWith(false))).toBe('maybe')
     expect(await torchSupportOf(trackWith(true))).toBe('yes')
     vi.unstubAllGlobals()
+  })
+})
+
+describe('browser en zaklamp', () => {
+  it('alleen met torch-constraint of Image Capture; Firefox herkend', () => {
+    expect(browserCanControlTorch({ supported: { width: true, torch: true }, imageCapture: false })).toBe(true)
+    expect(browserCanControlTorch({ supported: { width: true }, imageCapture: true })).toBe(true)
+    // Firefox 158 op Android: geen van beide.
+    expect(browserCanControlTorch({ supported: { width: true, facingMode: true }, imageCapture: false })).toBe(false)
+    expect(isFirefox('Mozilla/5.0 (Android 16; Mobile; rv:158.0) Gecko/158.0 Firefox/158.0')).toBe(true)
+    expect(isFirefox('Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 Chrome/148.0 Mobile Safari/537.36')).toBe(false)
   })
 })

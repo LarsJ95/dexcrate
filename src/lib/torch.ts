@@ -29,6 +29,24 @@ export async function setTorch(track: MediaStreamTrack, on: boolean): Promise<vo
   if (typeof now === 'boolean' && now !== on) throw new Error('The flashlight did not switch.')
 }
 
+/**
+ * Kan deze browser een zaklamp überhaupt bedienen? Alleen als hij de constraint `torch` kent of Image Capture heeft.
+ * Firefox heeft geen van beide (gemeten 20-10-2026 met de cameracheck op Firefox 158 / Android 16: geen torch op
+ * 6 lenzen; MDN: Image Capture in Firefox alleen achter een vlag). Dan is zoeken naar een andere lens zinloos.
+ */
+export function browserCanControlTorch(env: { supported?: Record<string, unknown> | null; imageCapture: boolean }): boolean {
+  return env.supported?.torch === true || env.imageCapture
+}
+
+/** Huidige browser (zie browserCanControlTorch). */
+export function thisBrowserCanControlTorch(): boolean {
+  const supported = typeof navigator.mediaDevices?.getSupportedConstraints === 'function' ? (navigator.mediaDevices.getSupportedConstraints() as Record<string, unknown>) : null
+  return browserCanControlTorch({ supported, imageCapture: typeof (globalThis as { ImageCapture?: unknown }).ImageCapture === 'function' })
+}
+
+/** Firefox (ook op Android): de browser die de zaklamp niet laat bedienen; dan noemt de melding Chrome. */
+export const isFirefox = (userAgent: string): boolean => /\bFirefox\//.test(userAgent)
+
 type PhotoCapabilitiesLike = { fillLightMode?: unknown }
 type ImageCaptureCtor = new (track: MediaStreamTrack) => { getPhotoCapabilities(): Promise<PhotoCapabilitiesLike> }
 
