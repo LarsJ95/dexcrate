@@ -22,7 +22,8 @@ const CARD_FIELDS = {
     language: { type: 'string', enum: LANGUAGES },
     set_code: {
       type: 'string',
-      description: 'Gedrukte setafkorting linksonder (bv. "MEW", "OBF", "SV8"); leeg als niet zichtbaar. NIET de regulation mark.',
+      description:
+        'Gedrukte setafkorting linksonder, volledig (bv. "MEW", "OBF", "SV8a", Vereenvoudigd Chinees "CSV9.5C", "CBB4C"); leeg als niet zichtbaar. NIET de regulation mark.',
     },
     card_number: { type: 'string', description: 'Kaartnummer vóór de schuine streep (bv. "151" bij 151/165); leeg als onleesbaar.' },
     set_total: { type: 'string', description: 'Getal na de schuine streep (bv. "165"); leeg als afwezig.' },
@@ -66,6 +67,8 @@ const MULTI_SCHEMA = {
 
 const RULES = `- Lees naam, setafkorting en kaartnummer letterlijk van de kaart (onderrand). Gok geen setcode die je niet kunt lezen.
 - De regulation mark (losse letter in een kadertje) is geen setcode.
+- Vereenvoudigd-Chinese kaarten (zh-cn) hebben eigen setcodes die op "C" eindigen, bv. "CSV9.5C", "CSV8C", "CS6.5C", "CBB4C". Neem de hele code over, met punt en de "C" aan het eind; maak er geen Japanse code van ("SV8a", "SV8") en gok niet op basis van de illustratie.
+- Gem Pack (宝石包, code "CBB…C") drukt het nummer als soort + uitvoering, bv. "11 01/07": card_number = "1101" (zonder spatie), set_total = "07".
 - language bij Chinese kaarten: kijk naar de tekens, niet naar de illustratie. "zh-cn" = Vereenvoudigd Chinees (vasteland China; bv. 宝可梦, 闪, 电, 龙, 击), "zh-tw" = Traditioneel Chinees (Taiwan/Hongkong; bv. 寶可夢, 閃, 電, 龍, 擊).
 - variant: "reverse" alleen als het glimmende patroon over de hele kaart behalve de illustratie loopt; "holo" als alleen de illustratie glimt; anders "normal" of "unknown".
 - confidence: "high" alleen als naam én nummer goed leesbaar zijn.
