@@ -298,7 +298,7 @@ export function CollectionPage(): JSX.Element {
               />
               <SearchClear value={query} onClear={() => setQuery('')} />
             </div>
-            <div className="segmented" role="group" aria-label="Status">
+            <div className="segmented status-filter" role="group" aria-label="Status">
               {FILTERS.map(([key, label]) => (
                 <button key={key} type="button" aria-pressed={filter === key} onClick={() => setFilter(key)}>
                   {label} <span className="count">{counts[key]}</span>
