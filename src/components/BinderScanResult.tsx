@@ -205,7 +205,7 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
                         <span>
                           {c.setName} #{c.localId}
                         </span>
-                        <LazyCardPrice cardKey={c.key} className="scan-price" withReverse />
+                        <LazyCardPrice cardKey={c.key} className="scan-price" withReverse hideEmpty />
                       </>
                     ) : (
                       <span>Without link</span>

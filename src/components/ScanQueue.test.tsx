@@ -84,6 +84,8 @@ describe('ScanQueue: compacte scanregel', () => {
     renderQueue()
     const hound = within(rowOf('Houndoom'))
     expect(hound.getByText('太晶盛聚 #107')).toBeTruthy()
+    // Geen marktprijs (Chinese kaart): geen losse "–" in de regel.
+    expect(rowOf('Houndoom').querySelector('.queue-meta')?.textContent).not.toContain('–')
     // Zeker: geen "Read as …"; bij twijfel wel (S5).
     expect(hound.queryByText(/Read as/)).toBe(null)
     expect(within(rowOf('Abra')).getByText('Read as #062 · Chinese (simplified)')).toBeTruthy()
