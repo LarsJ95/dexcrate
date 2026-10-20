@@ -1,6 +1,7 @@
 import { useEffect, useState, useSyncExternalStore, type JSX } from 'react'
 import { addedQuietly } from '../lib/celebrate'
 import { insertCards } from '../lib/db'
+import { autoPick } from '../lib/match'
 import { draftFromScan } from '../lib/scan'
 import { recordChoices, type ChoiceInput } from '../lib/scanMemory'
 import { MAX_QTY, isAmbiguous, isCondition, onlyOtherNumbers, reviewGroups, scannedTwice, summarize, withoutCardData, type QueueItem } from '../lib/scanQueue'
@@ -9,6 +10,7 @@ import { lookupLang } from '../lib/tcgdex'
 import { CONDITION_LABELS, EMPTY_CARD, LANGUAGE_LABELS, type Card, type CardInput, type Condition } from '../lib/types'
 import { CardFace } from './CardFace'
 import { CatalogKeyPicture } from './CatalogCardPicture'
+import { ChsCatalogNotice } from './ChsCatalogNotice'
 import { IconClose } from './Icons'
 import { LazyCardPrice } from './LazyCardPrice'
 import { ReadFixForm } from './ScanParts'
@@ -28,6 +30,9 @@ const STATUS_TEXT: Record<QueueItem['status'], string> = {
 function useScanQueue(): QueueItem[] {
   return useSyncExternalStore(subscribe, getQueue)
 }
+
+/** Chinese kaart zonder zekere match: daar kan de Chinese catalogus helpen. */
+const chineseUnsure = (q: QueueItem): boolean => q.status === 'ready' && (q.rec?.language === 'zh-cn' || q.rec?.language === 'zh-tw') && !autoPick(q.candidates)
 
 const FEEDBACK_MS = 4000
 
@@ -333,6 +338,7 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
           {s.failed > 0 ? `, ${s.failed} failed` : ''}
         </span>
       </div>
+      {queue.some(chineseUnsure) && <ChsCatalogNotice />}
 
       {(
         [

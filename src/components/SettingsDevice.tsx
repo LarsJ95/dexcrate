@@ -1,5 +1,7 @@
 import { useState, type JSX } from 'react'
+import { CHS_DOWNLOAD_MB, downloadChsCatalog, removeChsCatalog, useChsCatalog } from '../lib/chsCatalog'
 import { AUTO_GAPS, setPref, usePrefs, type AutoGap, type ScanModePref, type ThemeChoice } from '../lib/devicePrefs'
+import { errorText } from '../lib/errors'
 import { setMotionPreference, useMotion, useMotionPreference } from '../lib/motion'
 import { STARTERS, setPartnerChoice, usePartner, usePartnerChoice } from '../lib/partner'
 import { spriteUrls } from '../lib/runner'
@@ -93,6 +95,48 @@ export function ScanningSection(): JSX.Element {
       <Toggle checked={prefs.blurCheck} onChange={(v) => setPref('blurCheck', v)} hint="Clearly blurry camera photos are not sent; you can still choose to use them.">
         Hold back blurry photos
       </Toggle>
+      <ChsCatalogRow />
     </Section>
+  )
+}
+
+const dateText = (iso: string): string => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+
+/** Vereenvoudigd-Chinese catalogus op dit apparaat: status, downloaden, bijwerken, weghalen. */
+function ChsCatalogRow(): JSX.Element {
+  const status = useChsCatalog()
+  const [error, setError] = useState<string | null>(null)
+  const run = (work: () => Promise<void>): void => {
+    setError(null)
+    work().catch((err: unknown) => setError(errorText(err, 'That did not work.')))
+  }
+  const busy = status.kind === 'downloading' || status.kind === 'loading'
+  return (
+    <div className="settings-row chs-row">
+      <span className="settings-label">Chinese (simplified) cards</span>
+      <p className="muted small">
+        {status.kind === 'ready'
+          ? `${status.cards.toLocaleString('en-GB')} cards, downloaded ${dateText(status.fetchedAt)}.${status.updateAvailable ? ' A newer version is available.' : ''} Checked every 2 weeks; on Wi-Fi it updates by itself.`
+          : status.kind === 'downloading'
+            ? `Downloading… ${Math.round((status.loaded / Math.max(1, status.total)) * 100)}%`
+            : `Needed to recognise Simplified Chinese cards. Downloads once to this device (${CHS_DOWNLOAD_MB} MB); on Wi-Fi it starts by itself when you scan one.`}{' '}
+        Card data: Pokémon / Pokémon Shanghai, via PTCG-CHS-Datasets (non-commercial use).
+      </p>
+      <div className="settings-actions">
+        <button type="button" onClick={() => run(downloadChsCatalog)} disabled={busy}>
+          {status.kind === 'ready' ? 'Update now' : 'Download'}
+        </button>
+        {status.kind === 'ready' && (
+          <button type="button" className="ghost" onClick={() => run(removeChsCatalog)}>
+            Remove
+          </button>
+        )}
+      </div>
+      {(error ?? (status.kind === 'error' ? status.message : null)) && (
+        <p className="error small" role="alert">
+          {error ?? (status.kind === 'error' ? status.message : '')}
+        </p>
+      )}
+    </div>
   )
 }

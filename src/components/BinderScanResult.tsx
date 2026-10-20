@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState, type JSX } from 'react'
+import { useEffect, useMemo, useRef, useState, type JSX } from 'react'
 import { insertCards } from '../lib/db'
 import { addedQuietly } from '../lib/celebrate'
+import { onChsCatalogReady } from '../lib/chsCatalog'
 import { autoPick, type Candidate } from '../lib/match'
 import { recordChoices, scanCandidates, type ChoiceInput } from '../lib/scanMemory'
 import { draftFromScan, type Recognition } from '../lib/scan'
 import { lookupLang } from '../lib/tcgdex'
 import { CardFace } from './CardFace'
 import { CatalogKeyPicture } from './CatalogCardPicture'
+import { ChsCatalogNotice } from './ChsCatalogNotice'
 import { LazyCardPrice } from './LazyCardPrice'
 import { VariantGapNote, VariantSelect } from './VariantSelect'
 import { CONDITION_LABELS, EMPTY_CARD, LANGUAGE_LABELS, type Card, type CardInput, type Condition, type Variant } from '../lib/types'
@@ -25,6 +27,8 @@ interface Props {
   onCancel: () => void
 }
 
+const isChinese = (rec: Recognition): boolean => rec.language === 'zh-cn' || rec.language === 'zh-tw'
+
 interface Row {
   rec: Recognition
   /** undefined = nog aan het zoeken */
@@ -42,10 +46,20 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Chinese catalogus net binnen: opnieuw zoeken (regels die je zelf aanpaste blijven zoals ze zijn).
+  const [catalogRound, setCatalogRound] = useState(0)
+  useEffect(() => onChsCatalogReady(() => setCatalogRound((n) => n + 1)), [])
+  const rowsRef = useRef(rows)
+  useEffect(() => {
+    rowsRef.current = rows
+  })
+
   // Per kaart kandidaten zoeken (TCGdex-verzoeken worden centraal begrensd).
   useEffect(() => {
     let cancelled = false
     recognitions.forEach((rec, i) => {
+      const row = rowsRef.current[i]
+      if (catalogRound > 0 && (!isChinese(rec) || !row?.candidates || row.chosen !== (autoPick(row.candidates)?.key ?? ''))) return
       scanCandidates(rec)
         .catch((err: unknown) => {
           console.error(`Zoeken mislukt voor kaart ${rec.position}`, err)
@@ -74,7 +88,7 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
     return () => {
       cancelled = true
     }
-  }, [recognitions])
+  }, [recognitions, catalogRound])
 
   const [added, setAdded] = useState<ReadonlySet<number>>(new Set())
   const open = useMemo(
@@ -133,6 +147,7 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
       <h2>
         {recognitions.length} {recognitions.length === 1 ? 'card' : 'cards'} found
       </h2>
+      {rows.some((r) => isChinese(r.rec) && r.candidates !== undefined && !autoPick(r.candidates)) && <ChsCatalogNotice />}
 
       <ul className="binder-scan">
         {open.map((r) => {

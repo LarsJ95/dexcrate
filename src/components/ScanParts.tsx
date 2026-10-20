@@ -8,6 +8,7 @@ import { LANGUAGE_LABELS, type CardLanguage, type Variant } from '../lib/types'
 import { fitVariant } from '../lib/variantChoice'
 import { CardFace } from './CardFace'
 import { CatalogKeyPicture } from './CatalogCardPicture'
+import { ChsCatalogNotice } from './ChsCatalogNotice'
 import { LazyCardPrice } from './LazyCardPrice'
 import { VariantGapNote, VariantSelect } from './VariantSelect'
 
@@ -253,6 +254,7 @@ export function SingleScanResult({ recognition, candidates, ownedByKey, earlier,
             No sure match for #{recognition.cardNumber}{recognition.setCode ? ` (set ${recognition.setCode} may be missing from the catalog)` : ''}. Pick a card below, or add it without link.
           </p>
         )}
+        {!best && (recognition.language === 'zh-cn' || recognition.language === 'zh-tw') && <ChsCatalogNotice />}
         <ul className="candidates">
           {candidates.map((c, i) => {
             const owned = ownedByKey.get(c.key)

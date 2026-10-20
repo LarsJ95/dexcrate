@@ -1,3 +1,4 @@
+import { wantChsCatalog } from './chsCatalog'
 import { autoPick, findScanCandidates, type Candidate } from './match'
 import { scanQuery, type Recognition } from './scanResult'
 import { getCardInfo, lookupLang } from './tcgdex'
@@ -119,7 +120,13 @@ export async function withMemory(r: Recognition, found: Candidate[]): Promise<Ca
 
 /** Kandidaten voor een herkende kaart: catalogus (met taal-terugval) plus je eerdere keuze. */
 export async function scanCandidates(r: Recognition): Promise<Candidate[]> {
-  return withMemory(r, await findScanCandidates(scanQuery(r), lookupLang(r.language)))
+  const lang = lookupLang(r.language)
+  const found = await findScanCandidates(scanQuery(r), lang)
+  // Chinese kaart zonder zekere match: de Vereenvoudigd-Chinese catalogus ophalen als dat vanzelf mag (wifi).
+  if ((lang === 'zh-cn' || lang === 'zh-tw') && !autoPick(found)) {
+    void wantChsCatalog().catch((err: unknown) => console.warn('Chinese catalogus ophalen mislukt', err))
+  }
+  return withMemory(r, found)
 }
 
 export interface ChoiceInput {
