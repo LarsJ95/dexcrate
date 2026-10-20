@@ -29,7 +29,7 @@ const QUEUE: QueueItem[] = [
   { ...base, id: 'b', rec: rec('Houndoom'), candidates: [cand('zh-cn/CSV9.5C-107', '黑鲁加', '107')], chosen: 'zh-cn/CSV9.5C-107', quantity: 2, include: true },
 ]
 
-const store = vi.hoisted(() => ({ updateItem: vi.fn(), removeItems: vi.fn() }))
+const store = vi.hoisted(() => ({ updateItem: vi.fn(), removeItems: vi.fn(), removeWithUndo: vi.fn() }))
 vi.mock('../lib/scanQueueStore', () => ({
   subscribe: () => () => undefined,
   getQueue: () => QUEUE,
@@ -37,6 +37,9 @@ vi.mock('../lib/scanQueueStore', () => ({
   undoFeedback: vi.fn(),
   updateItem: store.updateItem,
   removeItems: store.removeItems,
+  removeWithUndo: store.removeWithUndo,
+  undoRemove: vi.fn(),
+  getRemoved: () => null,
   canLookAgain: () => true,
   canRetry: () => false,
   lookAgain: vi.fn(),
@@ -54,6 +57,7 @@ const { ScanQueue } = await import('./ScanQueue')
 beforeEach(() => {
   store.updateItem.mockClear()
   store.removeItems.mockClear()
+  store.removeWithUndo.mockClear()
 })
 afterEach(cleanup)
 
@@ -104,8 +108,9 @@ describe('ScanQueue: compacte scanregel', () => {
     expect(store.updateItem).toHaveBeenLastCalledWith('b', { quantity: 3 })
     await userEvent.click(hound.getByRole('button', { name: 'One less' }))
     expect(store.updateItem).toHaveBeenLastCalledWith('b', { quantity: 1 })
+    // × haalt weg met de mogelijkheid tot terughalen (G1).
     await userEvent.click(hound.getByRole('button', { name: 'Remove Houndoom' }))
-    expect(store.removeItems).toHaveBeenLastCalledWith(['b'])
+    expect(store.removeWithUndo).toHaveBeenLastCalledWith(['b'])
   })
 
   it('foto\'s aantikken: jouw foto en de kaart groot naast elkaar', async () => {
