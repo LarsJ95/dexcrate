@@ -133,18 +133,28 @@
 
   /* Collection-status (audit C1, 20-10-2026): vijf knoppen passen niet op één regel; "Sold" en "All" vielen buiten
      beeld. Raster van drie kolommen, zodat alle vijf zichtbaar zijn. */
+  /* 20-10-2026 (gebruiker: "rare uitlijning"): 2 brede knoppen bovenaan (Owned, In collection), 3 smalle eronder
+     (For sale, Sold, All). Zo past elk label op één regel en is er geen lege plek; 6 kolommen, elke knop 3 of 2 breed. */
   .filters > .segmented.status-filter {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     height: auto;
     overflow: visible;
   }
 
+  /* Label nooit afbreken; past het getal niet meer (heel groot aantal, smal scherm), dan gecentreerd eronder. */
   .segmented.status-filter > button {
+    grid-column: span 2;
+    flex-wrap: wrap;
+    column-gap: var(--space-2);
+    row-gap: 0;
     min-width: 0;
-    padding-inline: var(--space-2);
-    white-space: normal;
-    line-height: 1.2;
+    padding-inline: var(--space-1);
+    white-space: nowrap;
+  }
+
+  .segmented.status-filter > button:nth-child(-n + 2) {
+    grid-column: span 3;
   }
 
   /* Er staan filters aan: knop valt op, ook als de chips uit beeld zijn gescrold. */
