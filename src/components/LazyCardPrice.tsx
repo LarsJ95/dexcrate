@@ -9,13 +9,15 @@ interface Props {
   className: string
   /** Ook de reverse-holoprijs tonen als die bestaat ("€0.23 · RH €1.30"), zodat uitvoeringen te onderscheiden zijn. */
   withReverse?: boolean
+  /** Geen prijs bekend: niets tonen in plaats van "–" (bv. in een regel met "·" ertussen). Het element blijft, leeg. */
+  hideEmpty?: boolean
 }
 
 /**
  * Cardmarket-marktprijs (standaarduitvoering) onder een kaart in een raster.
  * Pas ophalen als de kaart (bijna) in beeld komt; prijzen worden 6 uur gecachet.
  */
-export function LazyCardPrice({ cardKey, className, withReverse = false }: Props): JSX.Element {
+export function LazyCardPrice({ cardKey, className, withReverse = false, hideEmpty = false }: Props): JSX.Element {
   const ref = useRef<HTMLSpanElement>(null)
   // Zonder IntersectionObserver (oude browser) meteen laden.
   const [seen, setSeen] = useState(() => typeof IntersectionObserver === 'undefined')
@@ -34,6 +36,8 @@ export function LazyCardPrice({ cardKey, className, withReverse = false }: Props
   const price = useCardPrice(seen ? cardKey : null)
   const mv = marketValue(price ?? null, null)
   const rh = withReverse ? marketValue(price ?? null, 'reverse') : null
+  // Leeg element (geen tekst): zo kan de opmaak het verbergen, en blijft de waarnemer werken zolang hij laadt.
+  if (hideEmpty && seen && price !== undefined && !mv && !rh) return <span ref={ref} className={className} />
   return (
     <span ref={ref} className={className}>
       {!seen || price === undefined ? '…' : mv ? formatEur(mv.value) : '–'}

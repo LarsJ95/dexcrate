@@ -164,6 +164,11 @@ img.queue-own,
   color: var(--ink-soft);
 }
 
+/* Geen prijs (bv. Vereenvoudigd-Chinese kaarten): leeg element weg, dan ook geen losse "·". */
+.queue-meta > :empty {
+  display: none;
+}
+
 .queue-meta > * + *::before {
   content: '·';
   margin-right: var(--space-2);

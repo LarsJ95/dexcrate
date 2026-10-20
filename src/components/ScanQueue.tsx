@@ -266,7 +266,7 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
                   <span>
                     {c.setName} #{c.localId}
                   </span>
-                  <LazyCardPrice cardKey={c.key} className="scan-price" withReverse />
+                  <LazyCardPrice cardKey={c.key} className="scan-price" withReverse hideEmpty />
                 </>
               ) : (
                 <span>Without link</span>
