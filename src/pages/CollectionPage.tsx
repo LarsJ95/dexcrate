@@ -25,6 +25,7 @@ import { closeKeyboardOnEnter } from '../lib/keyboard'
 import { FILTERS, VIEW_KEY, comparePrice, matchesFilter, readView, relevantPrice, type SortKey, type StatusFilter } from '../lib/collectionView'
 import { useSetOptions } from '../hooks/useSetOptions'
 import { useLoadMore } from '../hooks/useLoadMore'
+import { useSavedScroll, useScrollMemory } from '../hooks/useScrollMemory'
 import { OFFLINE_TEXT, errorText, isNetworkError } from '../lib/errors'
 
 /** Zoveel kaarten per keer tonen; meer zodra je bij het einde komt. */
@@ -237,7 +238,10 @@ export function CollectionPage(): JSX.Element {
   useDragSwap(binderRef, sortable, onSwap)
 
   // Lange collecties in stukken tonen (sneller op de telefoon); opnieuw beginnen bij andere filters of sortering.
-  const { count: shownCount, sentinel: moreRef } = useLoadMore(visible.length, `${query}|${filter}|${sort}|${JSON.stringify(extra)}`, CARDS_PER_STEP)
+  // Terug op deze pagina (bv. na een set): evenveel kaarten tonen en terug naar dezelfde plek (useScrollMemory).
+  const scrollSaved = useSavedScroll('collection')
+  const { count: shownCount, sentinel: moreRef } = useLoadMore(visible.length, `${query}|${filter}|${sort}|${JSON.stringify(extra)}`, CARDS_PER_STEP, scrollSaved?.count)
+  useScrollMemory('collection', scrollSaved, cards !== null, shownCount)
 
   const editingCard = editing?.id ? (cards?.find((c) => c.id === editing.id) ?? null) : null
   const nextSortOrder = (cards ?? []).reduce((m, c) => Math.max(m, c.sort_order), -1) + 1
