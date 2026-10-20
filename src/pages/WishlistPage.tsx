@@ -22,11 +22,13 @@ import { listWishlist, ownedForWish, type WishlistInput, type WishlistItem } fro
 import {
   NO_WISH_FILTERS,
   activeWishFilterCount,
+  clearWishChip,
   describeWishFilters,
   matchesWishFilters,
   needsWishCatalog,
   needsWishPrices,
   sameWishFilters,
+  wishFilterChips,
   type WishFilters,
 } from '../lib/wishFilters'
 import {
@@ -344,6 +346,9 @@ export function WishlistPage(): JSX.Element {
           setFilters(NO_WISH_FILTERS)
           setQuery('')
         }}
+        chips={wishFilterChips(filters).map((c) => ({ ...c, onRemove: () => setFilter(clearWishChip(c.key)) }))}
+        resultCount={items ? visible.length : undefined}
+        resultNoun={['wish', 'wishes']}
         actions={
           <>
             {canUpdateList && (

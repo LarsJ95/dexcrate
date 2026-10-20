@@ -131,8 +131,10 @@
     height: var(--control-h);
   }
 
-  .filter-panel:not(.is-open) {
-    display: none;
+  /* Er staan filters aan: knop valt op, ook als de chips uit beeld zijn gescrold. */
+  .filter-toggle.has-active {
+    border-color: var(--accent-line);
+    color: var(--ink);
   }
 
   .filter-grid {
@@ -142,4 +144,53 @@
   .toolbar-sort {
     margin-left: 0;
   }
+}
+
+/* ---------- Telefoon: actieve filters als chips, filters in een venster van onderaf (20-10-2026) ---------- */
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+button.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 100%;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-s);
+  font-size: var(--fs-small);
+  font-weight: 600;
+}
+
+.filter-chip > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Vaste voet in het filtervenster: "Show N cards" altijd onder de duim, ook bij een lange lijst velden. */
+.filter-sheet-foot {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.filter-sheet-foot > .primary {
+  width: 100%;
+}
+
+.filter-sheet-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }

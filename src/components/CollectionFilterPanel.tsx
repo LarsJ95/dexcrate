@@ -1,6 +1,6 @@
 import type { Dispatch, JSX, ReactNode, SetStateAction } from 'react'
 import type { SetOption } from '../hooks/useSetOptions'
-import type { ExtraFilters } from '../lib/collectionFilters'
+import { NO_EXTRA_FILTERS, extraFilterChips, type ExtraFilters } from '../lib/collectionFilters'
 import { CONDITION_LABELS, LANGUAGE_LABELS, VARIANT_LABELS } from '../lib/types'
 import { CatalogFilterFields } from './CatalogFilterFields'
 import { FilterPanel } from './FilterPanel'
@@ -15,12 +15,16 @@ interface Props {
   /** Er staat een filter of zoekterm aan. */
   canClear: boolean
   onClear: () => void
+  /** Aantal kaarten met deze filters (knop "Show N cards" op de telefoon). */
+  resultCount?: number
 }
 
 /** Extra filters in Collection: set, taal, uitvoering, conditie, catalogus, koppeling en illustrator. */
-export function CollectionFilterPanel({ toolbar, extra, setExtra, setOptions, activeCount, canClear, onClear }: Props): JSX.Element {
+export function CollectionFilterPanel({ toolbar, extra, setExtra, setOptions, activeCount, canClear, onClear, resultCount }: Props): JSX.Element {
+  const setLabel = (key: string): string => setOptions.find((o) => o.key === key)?.label ?? key
+  const chips = extraFilterChips(extra, setLabel).map((c) => ({ ...c, onRemove: () => setExtra((f) => ({ ...f, [c.key]: NO_EXTRA_FILTERS[c.key] })) }))
   return (
-    <FilterPanel toolbar={toolbar} activeCount={activeCount} canClear={canClear} onClear={onClear}>
+    <FilterPanel toolbar={toolbar} activeCount={activeCount} canClear={canClear} onClear={onClear} chips={chips} resultCount={resultCount}>
       <label className="span-2">
         Set
         <select value={extra.set} onChange={(e) => setExtra((f) => ({ ...f, set: e.target.value }))}>

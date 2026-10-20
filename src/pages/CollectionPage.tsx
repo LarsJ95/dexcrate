@@ -325,6 +325,7 @@ export function CollectionPage(): JSX.Element {
           setExtra(NO_EXTRA_FILTERS)
           setQuery('')
         }}
+        resultCount={cards ? visibleCount : undefined}
       />
 
       {lastBulk && (

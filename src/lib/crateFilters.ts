@@ -1,5 +1,5 @@
 import { rarityMatches, rarityRule, type EnergyType } from './cardTraits'
-import { matchesCatalog, needsCatalog, type CatalogTraits } from './collectionFilters'
+import { catalogFilterChips, matchesCatalog, needsCatalog, type CatalogTraits, type ChipOf } from './collectionFilters'
 import type { CrateCard } from './crate'
 import { setOfKey } from './tcgdex'
 
@@ -25,6 +25,16 @@ export const CRATE_SORTS: readonly CrateSort[] = ['newest', 'rarity', 'name', 's
 
 export function crateFilterCount(f: CrateFilters): number {
   return [f.set, f.rarity, f.type, f.suffix, f.illustrator.trim(), f.duplicates].filter(Boolean).length
+}
+
+/** Crate: actieve filters als chips (telefoon). */
+export function crateFilterChips(f: CrateFilters, setLabel: (key: string) => string): ChipOf<keyof CrateFilters>[] {
+  const out: ChipOf<keyof CrateFilters>[] = []
+  if (f.set) out.push({ key: 'set', label: setLabel(f.set) })
+  out.push(...catalogFilterChips(f))
+  if (f.illustrator.trim()) out.push({ key: 'illustrator', label: `Illustrator: ${f.illustrator.trim()}` })
+  if (f.duplicates) out.push({ key: 'duplicates', label: 'Only duplicates' })
+  return out
 }
 
 /** Set van een Crate-kaart voor het setfilter ("en/sv03.5"). */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { NO_WISH_FILTERS, activeWishFilterCount, matchesWishFilters, parseWishFilters, sameWishFilters, type WishRow } from './wishFilters'
+import { NO_WISH_FILTERS, activeWishFilterCount, clearWishChip, matchesWishFilters, parseWishFilters, sameWishFilters, wishFilterChips, type WishRow } from './wishFilters'
 
 const item: WishRow = { name: 'Pikachu ex', variant: 'holo', language: 'en', set_code: 'SCR', priority: 1, max_price: 10, tcgdex_id: 'en/sv07-148' }
 const ctx = { found: false, market: 7.5, info: { illustrator: null, rarity: 'Illustration rare', types: ['Water' as const], suffix: null } }
@@ -43,5 +43,17 @@ describe('wishlist-filters', () => {
     expect(parseWishFilters('kapot')).toEqual(NO_WISH_FILTERS)
     expect(activeWishFilterCount({ ...NO_WISH_FILTERS, maxPrice: 10, showFound: true })).toBe(1)
     expect(sameWishFilters({ ...NO_WISH_FILTERS, set: 'SCR' }, { ...NO_WISH_FILTERS, set: 'SCR ' })).toBe(true)
+  })
+})
+
+describe('wishFilterChips', () => {
+  it('prijsbereik als één chip, die beide grenzen wist', () => {
+    const chips = wishFilterChips({ ...NO_WISH_FILTERS, minPrice: 5, maxPrice: 20, priority: 1, showFound: true })
+    expect(chips.map((c) => c.key)).toEqual(['priority', 'price', 'showFound'])
+    expect(chips[0].label).toBe('Priority: High')
+    expect(chips[1].label).toMatch(/5.*20/)
+    expect(clearWishChip('price')).toEqual({ minPrice: null, maxPrice: null })
+    expect(clearWishChip('priority')).toEqual({ priority: null })
+    expect(wishFilterChips({ ...NO_WISH_FILTERS, maxPrice: 3 })[0].label).toMatch(/^Up to /)
   })
 })
