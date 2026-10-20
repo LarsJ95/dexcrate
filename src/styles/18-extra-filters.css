@@ -131,6 +131,22 @@
     height: var(--control-h);
   }
 
+  /* Collection-status (audit C1, 20-10-2026): vijf knoppen passen niet op één regel; "Sold" en "All" vielen buiten
+     beeld. Raster van drie kolommen, zodat alle vijf zichtbaar zijn. */
+  .filters > .segmented.status-filter {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    height: auto;
+    overflow: visible;
+  }
+
+  .segmented.status-filter > button {
+    min-width: 0;
+    padding-inline: var(--space-2);
+    white-space: normal;
+    line-height: 1.2;
+  }
+
   /* Er staan filters aan: knop valt op, ook als de chips uit beeld zijn gescrold. */
   .filter-toggle.has-active {
     border-color: var(--accent-line);
