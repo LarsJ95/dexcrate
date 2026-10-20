@@ -17,6 +17,7 @@ import { summarize } from '../lib/scanQueue'
 import { enqueue, getQueue, removeItems, setWishedKeys, subscribe } from '../lib/scanQueueStore'
 import { useWakeLock } from '../hooks/useWakeLock'
 import { getPrefs } from '../lib/devicePrefs'
+import { markHintSeen, readSeenHints } from '../lib/scanHints'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import { listWishlist } from '../lib/wishlist'
 import { closeSession, earlierInSession, hasScanSessions, itemsFromRows, openSession, saveSessionItems, startSession, type ScanItem, type ScanSession } from '../lib/scanSessions'
@@ -52,6 +53,8 @@ export function ScanPage(): JSX.Element {
   const inputRef = useRef<HTMLInputElement>(null)
   const [cameraOpen, setCameraOpen] = useState(false)
   const [mode, setMode] = useState<PageMode>(() => getPrefs().scanMode)
+  /** Modi waarvan je de uitleg niet meer nodig hebt (S5). */
+  const [hintsSeen, setHintsSeen] = useState<ReadonlySet<string>>(readSeenHints)
   const [cards, setCards] = useState<Card[]>([])
   const [image, setImage] = useState<PreparedImage | null>(null)
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' })
@@ -135,9 +138,15 @@ export function ScanPage(): JSX.Element {
 
   const nextSortOrder = cards.reduce((m, c) => Math.max(m, c.sort_order), -1) + 1
 
+  /** Deze modus is gebruikt: de uitleg bovenaan voortaan weglaten (S5). */
+  function hintDone(): void {
+    if (!hintsSeen.has(mode)) setHintsSeen(markHintSeen(mode))
+  }
+
   function onFile(e: ChangeEvent<HTMLInputElement>): void {
     const files = [...(e.target.files ?? [])]
     e.target.value = ''
+    if (files.length > 0) hintDone()
     if (mode === 'queue') {
       // Snel scannen: meerdere foto's tegelijk kiezen mag.
       for (const f of files) addToQueue(f)
@@ -332,7 +341,7 @@ export function ScanPage(): JSX.Element {
       <div className="page-head">
         <div>
           <h1>Scan</h1>
-          <p className="muted">{MODE_HINT[mode]}</p>
+          {!hintsSeen.has(mode) && <p className="muted">{MODE_HINT[mode]}</p>}
         </div>
       </div>
 
@@ -429,7 +438,11 @@ export function ScanPage(): JSX.Element {
           wide={mode === 'multi'}
           crop={mode !== 'multi'}
           autoCapture={mode === 'queue'}
-          onCapture={(file) => (mode === 'queue' ? addToQueue(file, true) : void processPhoto(file, mode, true))}
+          onCapture={(file) => {
+            hintDone()
+            if (mode === 'queue') addToQueue(file, true)
+            else void processPhoto(file, mode, true)
+          }}
           onPickFile={() => {
             setCameraOpen(false)
             inputRef.current?.click()
