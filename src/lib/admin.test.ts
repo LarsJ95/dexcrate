@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const rpc = vi.fn()
 vi.mock('./supabase', () => ({ supabase: { rpc: (...args: unknown[]) => rpc(...args) } }))
-const { grantCratePoints, grantInputError, isAdmin, listAdminUsers, toAdminAction, toAdminUser } = await import('./admin')
+const { MissingStepError, getScanStats, grantCratePoints, grantInputError, isAdmin, isBanned, listAdminUsers, toAdminAction, toAdminRules, toAdminUser } = await import('./admin')
+const { actionText } = await import('./adminText')
 
 beforeEach(() => rpc.mockReset())
 
@@ -33,7 +34,11 @@ describe('omzetten', () => {
       cards: 12,
       cratePoints: 640,
       scans24h: 3,
+      scans30d: 0,
       errors7d: 0,
+      scanPerMinute: null,
+      scanPerDay: null,
+      bannedUntil: null,
     })
     expect(toAdminUser({ email: 'zonder id' })).toBeNull()
     expect(toAdminUser(null)).toBeNull()
@@ -44,9 +49,32 @@ describe('omzetten', () => {
       createdAt: 't',
       adminEmail: null,
       targetEmail: 'b@b.nl',
+      action: 'grant_points',
       points: -200,
       reason: 'correctie',
+      details: null,
     })
+  })
+  it('regels: ontbrekend of kapot = startwaarden van STAP22 (Great 200)', () => {
+    const r = toAdminRules({ daily: 300, packs: { great: 'x', master: 900 }, craft: null })
+    expect(r.daily).toBe(300)
+    expect(r.packs.great).toBe(200)
+    expect(r.packs.master).toBe(900)
+    expect(r.craft.special).toBe(600)
+    expect(toAdminRules(null).trade_factor).toBe(2)
+  })
+  it('geblokkeerd alleen als de datum in de toekomst ligt', () => {
+    const now = Date.parse('2026-10-21T12:00:00Z')
+    expect(isBanned({ bannedUntil: '2126-01-01T00:00:00Z' }, now)).toBe(true)
+    expect(isBanned({ bannedUntil: '2026-10-20T00:00:00Z' }, now)).toBe(false)
+    expect(isBanned({ bannedUntil: null }, now)).toBe(false)
+  })
+  it('logregels als tekst', () => {
+    const base = { id: 'x', createdAt: 't', adminEmail: 'a', targetEmail: 'b@b.nl', points: null, reason: 'r', details: null }
+    expect(actionText({ ...base, action: 'grant_points', points: 50 })).toBe('+50 pts · b@b.nl')
+    expect(actionText({ ...base, action: 'set_scan_limit', details: { per_minute: null, per_day: 2 } })).toBe('Scan limit 40/min, 2/day · b@b.nl')
+    expect(actionText({ ...base, action: 'set_scan_limit', details: { per_minute: null, per_day: null } })).toBe('Scan limit default · b@b.nl')
+    expect(actionText({ ...base, action: 'invite', targetEmail: null, details: { email: 'new@x.nl' } })).toBe('Invited new@x.nl')
   })
 })
 
@@ -56,6 +84,12 @@ describe('database', () => {
     expect(await isAdmin()).toBe(false)
     rpc.mockResolvedValueOnce({ data: true, error: null })
     expect(await isAdmin()).toBe(true)
+  })
+  it('functie van STAP22 ontbreekt: zeg welke STAP', async () => {
+    rpc.mockResolvedValueOnce({ data: null, error: { code: 'PGRST202', message: 'Could not find the function' } })
+    const err = await getScanStats().catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(MissingStepError)
+    expect((err as Error).message).toMatch(/STAP22/)
   })
   it('geweigerd door de database: duidelijke fout', async () => {
     rpc.mockResolvedValueOnce({ data: null, error: { code: '42501', message: 'Not allowed' } })

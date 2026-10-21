@@ -10,7 +10,7 @@
   gap: var(--space-3);
 }
 
-.admin-grant .admin-wide {
+.admin .admin-wide {
   grid-column: span 2;
 }
 
@@ -54,7 +54,112 @@
 }
 
 @media (max-width: 480px) {
-  .admin-grant .admin-wide {
+  .admin .admin-wide {
     grid-column: 1 / -1;
   }
+}
+
+/* Details per gebruiker (STAP22): puntengeschiedenis, fouten, scanlimiet. */
+.admin-detail {
+  display: grid;
+  gap: var(--space-3);
+  width: 100%;
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+}
+
+.admin-detail h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.admin-mini {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-1);
+  max-height: 320px;
+  overflow-y: auto;
+  /* Ruimte voor de schuifbalk, anders valt de tekst rechts eronder. */
+  padding-right: var(--space-2);
+}
+
+.admin-mini li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px var(--space-2);
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-mini li > .wide {
+  grid-column: 1 / -1;
+  overflow-wrap: anywhere;
+}
+
+.admin-mini pre {
+  grid-column: 1 / -1;
+  margin: 0;
+  max-height: 140px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.875rem;
+}
+
+/* Scans per dag als balkjes; 14 regels, geen eigen schuifvak. */
+.admin-mini.admin-scans {
+  max-height: none;
+  overflow: visible;
+  padding-right: 0;
+}
+
+.admin-scans li {
+  display: grid;
+  grid-template-columns: 7.5em minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.admin-scans .meter {
+  height: 8px;
+}
+
+.admin-rules fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.admin-rules legend {
+  padding: 0;
+  margin-bottom: var(--space-2);
+  font-weight: 700;
+}
+
+/* Mededeling voor alle gebruikers (bovenaan de pagina). */
+.announcement {
+  margin-bottom: var(--space-4);
+}
+
+.announcement > .notice {
+  margin: 0;
+  padding-right: calc(var(--space-4) + var(--space-4) + 44px);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.announcement.is-warning > .notice {
+  border-left-color: var(--amber);
+}
+
+.chip.is-blocked {
+  color: var(--red);
+  border-color: var(--red);
 }

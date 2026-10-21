@@ -12,6 +12,7 @@ import { NavBadge, SideNav } from './SideNav'
 import { useNavCounts } from '../hooks/useNavCounts'
 import { useBackdrop } from '../hooks/useBackdrop'
 import { useOnline } from '../hooks/useOnline'
+import { AnnouncementBanner } from './AnnouncementBanner'
 import { useOfflineDataTime } from '../lib/offlineCache'
 
 interface Props {
@@ -125,6 +126,7 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
       </header>
 
       <main className="main">
+        <AnnouncementBanner />
         {(!online || savedAt !== null) && (
           <p className="notice offline-notice" role="status">
             {online ? 'No connection to the server. ' : 'You’re offline. '}
