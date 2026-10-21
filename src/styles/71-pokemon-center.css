@@ -77,20 +77,6 @@ button.primary:active:not(:disabled) {
   translate: 0 3px;
 }
 
-/* Actief menu-item als gele pil. */
-.side-nav a[aria-current='page']:not(.side-scan, .side-crate) {
-  background: var(--yellow);
-  color: var(--on-yellow);
-}
-
-.side-nav a[aria-current='page']:not(.side-scan, .side-crate) svg {
-  color: var(--on-yellow);
-}
-
-.side-nav a[aria-current='page']:not(.side-scan, .side-crate)::before {
-  content: none;
-}
-
 /* Kaarten met een zachte schaduw. */
 .tile-open {
   box-shadow: var(--shadow-card);
