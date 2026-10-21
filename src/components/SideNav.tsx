@@ -100,7 +100,7 @@ export function SideNav({ route, counts, collapsed }: Props): JSX.Element {
                       return (
                         <li key={pinKey(p)}>
                           <a href={href} aria-current={hash === href ? 'page' : undefined} title={p.name}>
-                            {p.name}
+                            <span className="side-sub-name">{p.name}</span>
                             {p.lang !== 'en' && <span className="side-sub-lang">{PIN_LANG[p.lang]}</span>}
                           </a>
                         </li>
