@@ -15,6 +15,7 @@ import { addWishlistItem, deleteWishlistItem, updateWishlistItem, type WishlistI
 import { setItemLists } from '../lib/wishlistLists'
 import { CardmarketLink } from './CardmarketLink'
 import { LinkPicker } from './LinkPicker'
+import { ListChoice } from './ListChoice'
 import { Sheet } from './Sheet'
 
 interface Props {
@@ -90,13 +91,6 @@ export function WishlistDialog({ item, initial, onClose, onSaved, onDeleted, lis
   const [chosenLists, setChosenLists] = useState<ReadonlySet<string>>(() => (ownLists ? readLastLists() : new Set(inLists ?? [])))
   // Wens opgeslagen, maar in de lijst zetten mislukte: dan alleen nog sluiten (niet nog eens opslaan).
   const [savedOnly, setSavedOnly] = useState<WishlistItem | null>(null)
-  const toggleList = (id: string, on: boolean): void =>
-    setChosenLists((cur) => {
-      const next = new Set(cur)
-      if (on) next.add(id)
-      else next.delete(id)
-      return next
-    })
   const [busy, setBusy] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -290,19 +284,7 @@ export function WishlistDialog({ item, initial, onClose, onSaved, onDeleted, lis
           <textarea value={notes} maxLength={2000} rows={2} onChange={(e) => setNotes(e.target.value)} />
         </label>
 
-        {lists.length > 0 && (
-          <fieldset className="form-group">
-            <legend>Your lists</legend>
-            <div className="filter-checks">
-              {lists.map((l) => (
-                <label key={l.id} className="check">
-                  <input type="checkbox" checked={chosenLists.has(l.id)} onChange={(e) => toggleList(l.id, e.target.checked)} />
-                  {l.name}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        )}
+        {lists.length > 0 && <ListChoice legend="Your lists" lists={lists} chosen={chosenLists} onChange={setChosenLists} />}
 
         {error && (
           <p className="error" role="alert">

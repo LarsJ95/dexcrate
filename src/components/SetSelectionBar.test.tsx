@@ -96,8 +96,8 @@ describe('SetSelectionBar: wishlist', () => {
     render(<SetSelectionBar {...base} selected={cardsOf(3)} />)
     await userEvent.click(screen.getByRole('button', { name: 'Wishlist' }))
     expect(await screen.findByText('3 selected: 2 new, 1 already on your wishlist.')).toBeTruthy()
-    expect(screen.queryByRole('checkbox', { name: 'Cheap deals' })).toBeNull()
-    await userEvent.click(await screen.findByRole('checkbox', { name: 'Birthday' }))
+    expect(screen.queryByRole('radio', { name: 'Cheap deals' })).toBeNull()
+    await userEvent.click(await screen.findByRole('radio', { name: 'Birthday' }))
     await userEvent.click(screen.getByRole('button', { name: 'Add 2 to wishlist' }))
 
     expect(db.addWishlistItems).toHaveBeenCalledTimes(1)
