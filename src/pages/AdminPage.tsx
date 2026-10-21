@@ -1,19 +1,13 @@
 import { useEffect, useMemo, useState, type FormEvent, type JSX } from 'react'
+import { AnnouncementPanel, CrateRulesPanel, ScansPanel, UserDetail } from '../components/AdminParts'
 import { IconSearch } from '../components/Icons'
 import { Loading } from '../components/Loading'
 import { SearchClear } from '../components/SearchClear'
 import { useIsAdmin } from '../hooks/useIsAdmin'
-import { REASON_MAX, grantCratePoints, grantInputError, listAdminActions, listAdminUsers, type AdminAction, type AdminUser } from '../lib/admin'
+import { actionText, plural, when } from '../lib/adminText'
+import { REASON_MAX, grantCratePoints, grantInputError, isBanned, listAdminActions, listAdminUsers, type AdminAction, type AdminUser } from '../lib/admin'
 import { errorText } from '../lib/errors'
 import { closeKeyboardOnEnter } from '../lib/keyboard'
-
-const when = (iso: string | null): string => {
-  if (!iso) return 'never'
-  const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? '–' : d.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })
-}
-
-const plural = (n: number, one: string, many: string): string => `${n.toLocaleString('en-GB')} ${n === 1 ? one : many}`
 
 /**
  * Beheer (STAP21, 21-10-2026): gebruikers bekijken en Crate points toekennen of afhalen, met reden en logboek.
@@ -30,6 +24,7 @@ export function AdminPage(): JSX.Element {
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
+  const [open, setOpen] = useState<string | null>(null)
 
   // Na elke actie opnieuw laden (lijst en logboek); de teller start het effect hieronder.
   const [version, setVersion] = useState(0)
@@ -183,22 +178,34 @@ export function AdminPage(): JSX.Element {
                 <div className="admin-user-main">
                   <strong className="admin-email">{u.email}</strong>
                   {u.isAdmin && <span className="chip">Admin</span>}
+                  {isBanned(u) && <span className="chip is-blocked">Blocked</span>}
                 </div>
                 <span className="muted small">
                   Joined {when(u.createdAt)} · last sign-in {when(u.lastSignInAt)}
                 </span>
                 <span className="small">
-                  {plural(u.cards, 'card', 'cards')} · {plural(u.cratePoints, 'Crate point', 'Crate points')} · {plural(u.scans24h, 'scan', 'scans')} in 24 h ·{' '}
-                  {plural(u.errors7d, 'error', 'errors')} in 7 days
+                  {plural(u.cards, 'card', 'cards')} · {plural(u.cratePoints, 'Crate point', 'Crate points')} · {plural(u.scans24h, 'scan', 'scans')} in 24 h
+                  {u.scans30d > 0 ? ` (${u.scans30d.toLocaleString('en-GB')} in 30 days)` : ''} · {plural(u.errors7d, 'error', 'errors')} in 7 days
+                  {u.scanPerDay !== null || u.scanPerMinute !== null ? ` · own scan limit ${u.scanPerMinute ?? 40}/min, ${u.scanPerDay ?? 500}/day` : ''}
                 </span>
-                <button type="button" className="small-btn" onClick={() => pick(u)}>
-                  Crate points…
-                </button>
+                <div className="settings-actions">
+                  <button type="button" className="small-btn" onClick={() => pick(u)}>
+                    Crate points…
+                  </button>
+                  <button type="button" className="small-btn" aria-expanded={open === u.id} onClick={() => setOpen(open === u.id ? null : u.id)}>
+                    {open === u.id ? 'Hide details' : 'Details'}
+                  </button>
+                </div>
+                {open === u.id && <UserDetail user={u} onChanged={() => setVersion((v) => v + 1)} />}
               </li>
             ))}
           </ul>
         )}
       </section>
+
+      <CrateRulesPanel />
+      <ScansPanel />
+      <AnnouncementPanel onSaved={() => setVersion((v) => v + 1)} />
 
       <section className="panel" aria-labelledby="admin-log-title">
         <h2 id="admin-log-title" className="panel-title">
@@ -211,13 +218,7 @@ export function AdminPage(): JSX.Element {
             {actions.map((a) => (
               <li key={a.id}>
                 <span className="muted small">{when(a.createdAt)}</span>
-                <span>
-                  <strong className={a.points !== null && a.points < 0 ? 'error' : 'success'}>
-                    {a.points !== null && a.points > 0 ? '+' : ''}
-                    {a.points?.toLocaleString('en-GB') ?? '–'} pts
-                  </strong>{' '}
-                  {a.targetEmail ?? '(deleted user)'}
-                </span>
+                <strong className={a.action === 'grant_points' ? (a.points !== null && a.points < 0 ? 'error' : 'success') : undefined}>{actionText(a)}</strong>
                 <span className="muted small">
                   “{a.reason}” · by {a.adminEmail ?? '(deleted admin)'}
                 </span>
