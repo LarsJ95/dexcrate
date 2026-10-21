@@ -33,7 +33,7 @@ export function SetSelectionBar({ lang, setCode, selected, shownCount, allShownS
   // Product-id's alvast ophalen (gecachet), zodat de links bij de klik klaarstaan; nog onbekend = zoeklink.
   const prices = useCardPrices(keys, true)
   const [wishOpen, setWishOpen] = useState(false)
-  const [tabs, setTabs] = useState<{ urls: string[]; opened: number } | null>(null)
+  const [tabs, setTabs] = useState<string[] | null>(null)
   const [status, setStatus] = useState('')
   const n = selected.length
 
@@ -41,13 +41,10 @@ export function SetSelectionBar({ lang, setCode, selected, shownCount, allShownS
     const urls = selected.map((c) => cardmarketUrlFor(c, lang, prices.get(`${lang}/${c.id}`)?.idProduct ?? null))
     if (urls.length === 0) return
     setStatus('')
-    // Veel tabbladen: eerst vragen. Anders meteen openen; blokkeert de browser er een, dan verder in het venster.
-    if (urls.length >= MANY_TABS) {
-      setTabs({ urls, opened: 0 })
-      return
-    }
-    const opened = openTabs(urls)
-    if (opened < urls.length) setTabs({ urls, opened })
+    // Eén kaart: meteen. Meer: eerst kiezen (allemaal tegelijk of één voor één), anders lijkt het alsof alleen de
+    // eerste opent terwijl de browser de rest blokkeert (21-10-2026, feedback gebruiker).
+    if (urls.length === 1 && openTabs(urls) === 1) return
+    setTabs(urls)
   }
 
   return (
@@ -100,7 +97,7 @@ export function SetSelectionBar({ lang, setCode, selected, shownCount, allShownS
           }}
         />
       )}
-      {tabs && <CardmarketTabsSheet urls={tabs.urls} opened={tabs.opened} onClose={() => setTabs(null)} />}
+      {tabs && <CardmarketTabsSheet urls={tabs} onClose={() => setTabs(null)} />}
     </div>
   )
 }
@@ -227,63 +224,78 @@ function SetWishSheet({ lang, setCode, cards, onClose, onSaved }: WishProps): JS
 
 interface TabsProps {
   urls: readonly string[]
-  /** Al geopend (0 = nog vragen). */
-  opened: number
   onClose: () => void
 }
 
-/** Veel Cardmarket-tabbladen: eerst vragen; blokkeert de browser ze, dan pop-ups toestaan of één voor één. */
-function CardmarketTabsSheet({ urls, opened: start, onClose }: TabsProps): JSX.Element {
-  const [opened, setOpened] = useState(start)
+/**
+ * Meerdere Cardmarket-tabbladen: eerst kiezen tussen allemaal tegelijk (werkt alleen met pop-ups toegestaan) en
+ * één voor één. Blokkeert de browser bij "allemaal", dan meteen zeggen hoeveel er opengingen en verder één voor één.
+ */
+function CardmarketTabsSheet({ urls, onClose }: TabsProps): JSX.Element {
+  const [mode, setMode] = useState<'choose' | 'all' | 'one'>('choose')
+  const [opened, setOpened] = useState(0)
   const [stuck, setStuck] = useState(false)
   const total = urls.length
+  const host = window.location.hostname
 
-  function open(count: number): void {
+  function open(count: number, next: 'all' | 'one'): void {
     const n = openTabs(urls.slice(opened, opened + count))
     if (opened + n >= total) {
       onClose()
       return
     }
+    setMode(next)
     setOpened(opened + n)
     setStuck(n === 0)
   }
 
   return (
     <Sheet title="Open on Cardmarket" onClose={onClose}>
-      {opened === 0 && !stuck ? (
+      {mode === 'choose' ? (
         <>
-          <p>Open {total} Cardmarket pages, each in its own tab?</p>
-          <p className="muted small">That is a lot of tabs at once. If your browser blocks them, you can allow pop-ups for this site or open them one at a time.</p>
+          <p>Open {total} Cardmarket pages, each in its own tab.</p>
+          <p className="muted small">
+            Most browsers open only one tab per tap. To open them all at once, first allow pop-ups for {host} (icon in the address bar, or your
+            browser’s site settings).{total >= MANY_TABS ? ' That is a lot of tabs at once.' : ''}
+          </p>
         </>
       ) : (
         <>
           <p>
-            {opened} of {total} tabs opened.
+            {opened} of {total} tabs opened.{mode === 'all' ? ' Your browser blocked the others.' : ''}
           </p>
-          <p className="muted small">
-            Your browser opens only one tab per tap. To open them all at once, allow pop-ups for {window.location.hostname} (icon in the address bar,
-            or your browser’s site settings) and tap “Try again”. Or open them one at a time.
-          </p>
+          {mode === 'all' && (
+            <p className="muted small">
+              Allow pop-ups for {host} (icon in the address bar, or your browser’s site settings) and tap “Try again”, or open them one at a time.
+            </p>
+          )}
         </>
       )}
       {stuck && (
         <p className="error" role="alert">
-          The browser blocked this tab too. Allow pop-ups for {window.location.hostname} and try again.
+          The browser blocked this tab. Allow pop-ups for {host} and try again.
         </p>
       )}
       <footer className="sheet-foot">
-        {opened === 0 && !stuck ? (
-          <button type="button" className="primary" onClick={() => open(total)}>
-            Open {total} tabs
-          </button>
+        {mode === 'choose' ? (
+          <>
+            <button type="button" className="primary" onClick={() => open(total, 'all')}>
+              Open all {total} at once
+            </button>
+            <button type="button" onClick={() => open(1, 'one')}>
+              One at a time
+            </button>
+          </>
         ) : (
           <>
-            <button type="button" className="primary" onClick={() => open(1)}>
+            <button type="button" className="primary" onClick={() => open(1, mode)}>
               Open next ({opened + 1} of {total})
             </button>
-            <button type="button" onClick={() => open(total - opened)}>
-              Try again
-            </button>
+            {mode === 'all' && (
+              <button type="button" onClick={() => open(total - opened, 'all')}>
+                Try again
+              </button>
+            )}
           </>
         )}
         <button type="button" onClick={onClose}>
