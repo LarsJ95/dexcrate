@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type JSX } from 'react'
 import { CardFace } from '../components/CardFace'
 import { CrateCardSheet, CrateTilePrice } from '../components/CrateCardSheet'
-import { CrateOverview } from '../components/CrateOverview'
+import { CrateOverview, CrateStats } from '../components/CrateOverview'
 import { CatalogKeyPicture } from '../components/CatalogCardPicture'
 import { HoloCard } from '../components/HoloCard'
 import { PackOpening } from '../components/PackOpening'
@@ -11,6 +11,7 @@ import { IconCrate, IconSearch } from '../components/Icons'
 import { Loading } from '../components/Loading'
 import { RaritySymbols } from '../components/RaritySymbols'
 import { SearchClear } from '../components/SearchClear'
+import { useCardPrices } from '../hooks/useCardPrices'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { useDbFeature } from '../hooks/useDbFeature'
 import { ENERGY_TYPES, foilStyleFor, isEnergyType, type EnergyType } from '../lib/cardTraits'
@@ -38,6 +39,7 @@ import {
 import { energyColor } from '../lib/energy'
 import { LOCAL_SET_IDS } from '../lib/localCatalog'
 import { showMoment } from '../lib/moments'
+import { marketValue } from '../lib/prices'
 import { digitalSetIds, getSetList } from '../lib/tcgdex'
 import { buzz } from '../lib/haptics'
 import { errorText } from '../lib/errors'
@@ -253,6 +255,9 @@ export function CratePage(): JSX.Element {
   // Type, kaarttype en illustrator staan in de catalogus: alleen ophalen als erop gefilterd wordt.
   const catalogKeys = useMemo(() => (cards ?? []).map((c) => c.tcgdexId), [cards])
   const infos = useCatalogInfos(catalogKeys, needsCatalog({ ...filters, rarity: '' }))
+  // Prijs per exemplaar voor de statistiekbalk en het overzicht; ontbreekt zolang hij laadt, null = geen prijs.
+  const cardPrices = useCardPrices(catalogKeys, true)
+  const prices = useMemo(() => new Map([...cardPrices].map(([id, p]) => [id, marketValue(p, null)?.value ?? null] as const)), [cardPrices])
   const setOptions = useMemo(() => crateSetOptions(cards ?? []), [cards])
   const sorted = useMemo(
     () => sortCrate((cards ?? []).filter((c) => matchesCrateSearch(c, query) && matchesCrate(c, filters, infos.get(c.tcgdexId))), sort),
@@ -263,7 +268,7 @@ export function CratePage(): JSX.Element {
   const extras = (cards ?? []).reduce((n, c) => n + (c.quantity - 1) * tradeValue(c.rarity, rules.tradeFactor), 0)
   const extraCopies = (cards ?? []).reduce((n, c) => n + c.quantity - 1, 0)
 
-  // Alle dubbelen inruilen (met bevestigen): in Cards boven de kaarten, in Overview in de statistiekbalk.
+  // Alle dubbelen inruilen (met bevestigen): in de statistiekbalk bovenaan.
   const tradeAll =
     extras > 0 ? (
       <div className="crate-trade-all" role="group" aria-label="Trade in duplicates">
@@ -315,7 +320,7 @@ export function CratePage(): JSX.Element {
             <p className="crate-points">{points === null ? '…' : points.toLocaleString('en-IE')}</p>
           </div>
         </section>
-
+        {cards && cards.length > 0 && <CrateStats cards={cards} prices={prices} tradeFactor={rules.tradeFactor} tradeAll={tradeAll} />}
 
         <ul className="crate-packs" aria-label="Packs">
         {packsByCost(rules).map((kind) => {
@@ -427,7 +432,6 @@ export function CratePage(): JSX.Element {
             </div>
           )}
         </div>
-        {view === 'cards' && tradeAll}
         {view === 'cards' && cards && cards.length > 1 && (
           <FilterPanel
             activeCount={activeFilters}
@@ -494,9 +498,9 @@ export function CratePage(): JSX.Element {
         {view === 'overview' && cards && (
           <CrateOverview
             cards={cards}
+            prices={prices}
             onOpen={setOpened}
             tradeFactor={rules.tradeFactor}
-            tradeAll={tradeAll}
             rules={rules}
             points={points ?? 0}
             onBought={(p) => {
