@@ -39,13 +39,6 @@
   background: radial-gradient(120% 140% at 100% 0%, color-mix(in oklab, var(--yellow) 26%, transparent), transparent 55%), var(--surface);
 }
 
-/* Paginatitel met een pokéball-streep (rood, zwart, geel). */
-.page h1 {
-  display: inline-block;
-  padding-bottom: 6px;
-  background: linear-gradient(90deg, var(--ball-red) 0 46%, var(--ball-line) 46% 54%, var(--yellow) 54%) bottom / 100% 6px no-repeat;
-}
-
 /* Kopjes met een kleine pokéball ervoor. */
 .panel-title,
 .section-title {
