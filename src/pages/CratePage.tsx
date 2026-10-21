@@ -317,7 +317,10 @@ export function CratePage(): JSX.Element {
           </span>
           <div>
             <span className="stat-label">Crate points</span>
-            <p className="crate-points">{points === null ? '…' : points.toLocaleString('en-IE')}</p>
+            {/* Aantal tekens voor de lettergrootte: grote getallen worden kleiner in plaats van uit het vak te lopen. */}
+            <p className="crate-points" style={{ '--pts-len': (points ?? 0).toLocaleString('en-IE').length } as CSSProperties}>
+              {points === null ? '…' : points.toLocaleString('en-IE')}
+            </p>
           </div>
         </section>
         {cards && cards.length > 0 && <CrateStats cards={cards} prices={prices} tradeFactor={rules.tradeFactor} tradeAll={tradeAll} />}
