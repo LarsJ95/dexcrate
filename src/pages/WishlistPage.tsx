@@ -12,7 +12,7 @@ import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { useCardPrices } from '../hooks/useCardPrices'
 import { useDbFeature } from '../hooks/useDbFeature'
 import { WishlistListSheet } from '../components/WishlistListSheet'
-import { IconEdit, IconPlus, IconSearch } from '../components/Icons'
+import { IconEdit, IconPlus, IconSearch, IconStar, IconTag } from '../components/Icons'
 import { SearchClear } from '../components/SearchClear'
 import { WishlistDialog } from '../components/WishlistDialog'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
@@ -77,11 +77,13 @@ export function WishlistPage(): JSX.Element {
   const setFilter = (patch: Partial<WishFilters>): void => setFilters((f) => ({ ...f, ...patch }))
   const { language } = filters
   const wishKeys = useMemo(() => (items ?? []).flatMap((i) => (i.tcgdex_id ? [i.tcgdex_id] : [])), [items])
-  const infos = useCatalogInfos(wishKeys, needsWishCatalog(filters))
-  const prices = useCardPrices(wishKeys, needsWishPrices(filters))
   // Slimme lijsten (STAP10): opgeslagen filters.
   const listsEnabled = useDbFeature(hasWishlistLists, 'wishlist-lists')
   const [lists, setLists] = useState<WishlistList[]>([])
+  // Prijzen en kaartinfo ook als een slimme lijst ze nodig heeft: anders klopt het aantal op de lijsttegel niet.
+  const smartFilters = lists.filter((l) => l.kind === 'smart').map((l) => l.filters)
+  const infos = useCatalogInfos(wishKeys, needsWishCatalog(filters) || smartFilters.some(needsWishCatalog))
+  const prices = useCardPrices(wishKeys, needsWishPrices(filters) || smartFilters.some(needsWishPrices))
   const [activeListId, setActiveListId] = useState<string | null>(null)
   const [listSheet, setListSheet] = useState<WishlistList | 'new' | 'new-manual' | null>(null)
   // Eigen lijsten (STAP17): zelf gekozen wensen per lijst.
@@ -227,6 +229,30 @@ export function WishlistPage(): JSX.Element {
     return matches(r.item, query) && matchesWishFilters(r.item, filters, { found: r.found, market, info })
   })
   const foundCount = rows.filter((r) => r.found).length
+  // Aantal wensen per lijst, voor de lijsttegels (21-10-2026: lijsten moesten duidelijker); null = nog aan het laden.
+  const listCounts = useMemo(() => {
+    const counts = new Map<string, number | null>()
+    const pricesReady = wishKeys.every((k) => prices.has(k))
+    const infosReady = wishKeys.every((k) => infos.has(k))
+    for (const l of lists) {
+      if (l.kind === 'smart' && ((needsWishPrices(l.filters) && !pricesReady) || (needsWishCatalog(l.filters) && !infosReady))) {
+        counts.set(l.id, null)
+        continue
+      }
+      counts.set(
+        l.id,
+        l.kind === 'manual'
+          ? rows.filter((r) => members.get(l.id)?.has(r.item.id)).length
+          : rows.filter((r) => {
+              const key = r.item.tcgdex_id
+              const market = !key ? null : prices.has(key) ? (marketValue(prices.get(key) ?? null, r.item.variant)?.value ?? null) : undefined
+              const info = !key ? null : infos.has(key) ? (infos.get(key) ?? null) : undefined
+              return matchesWishFilters(r.item, l.filters, { found: r.found, market, info })
+            }).length,
+      )
+    }
+    return counts
+  }, [lists, rows, members, prices, infos, wishKeys])
   const wishedKeys = useMemo(() => new Set((items ?? []).flatMap((i) => (i.tcgdex_id ? [i.tcgdex_id] : []))), [items])
   const ownedCounts = useMemo(() => {
     const map = new Map<string, number>()
@@ -301,34 +327,66 @@ export function WishlistPage(): JSX.Element {
       </div>
 
       {(lists.length > 0 || listsEnabled === true) && (
-        <div className="wish-lists">
-          <div className="segmented" role="group" aria-label="Lists">
-            <button type="button" aria-pressed={activeList === null} onClick={() => chooseList(null)}>
-              All wishes
-            </button>
-            {lists.map((l) => (
-              <button key={l.id} type="button" aria-pressed={activeList?.id === l.id} onClick={() => chooseList(l)} title={describeWishFilters(l.filters)}>
-                {l.name}
+        <section className="wish-lists" aria-labelledby="wish-lists-title">
+          <div className="wish-lists-head">
+            <h2 id="wish-lists-title" className="section-title">
+              Your lists
+            </h2>
+            {listsEnabled === true && (
+              <button type="button" className="small-btn" onClick={newManualList}>
+                <IconPlus size={16} />
+                New list
               </button>
-            ))}
+            )}
           </div>
-          {activeList?.kind === 'manual' && (
-            <button type="button" className="small-btn" onClick={() => setPicking(true)}>
-              Choose wishes
+          <div className="wish-list-tiles" role="group" aria-label="Lists">
+            <button type="button" className="wish-list-tile" aria-pressed={activeList === null} onClick={() => chooseList(null)}>
+              <span className="wish-list-icon" aria-hidden="true">
+                <IconStar size={18} />
+              </span>
+              <span className="wish-list-text">
+                <strong>All wishes</strong>
+                <span className="small">
+                  {rows.length} {rows.length === 1 ? 'wish' : 'wishes'}
+                </span>
+              </span>
             </button>
+            {lists.map((l) => {
+              const n = listCounts.get(l.id)
+              return (
+                <button key={l.id} type="button" className="wish-list-tile" aria-pressed={activeList?.id === l.id} onClick={() => chooseList(l)}>
+                  <span className="wish-list-icon" aria-hidden="true">
+                    {l.kind === 'manual' ? <IconTag size={18} /> : <IconSearch size={18} />}
+                  </span>
+                  <span className="wish-list-text">
+                    <strong>{l.name}</strong>
+                    <span className="small">
+                      {n === null || n === undefined ? '…' : `${n} ${n === 1 ? 'wish' : 'wishes'}`} · {l.kind === 'manual' ? 'picked by you' : describeWishFilters(l.filters) || 'filters'}
+                    </span>
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+          {lists.length === 0 && (
+            <p className="muted small">Make a list: tap “New list” and pick wishes, or set filters below and choose “Save as new list”.</p>
           )}
           {activeList && (
-            <button type="button" className="ghost small-btn" onClick={() => setListSheet(activeList)}>
-              Rename or remove
-            </button>
+            <div className="wish-list-actions">
+              <span className="small">
+                <strong>{activeList.name}</strong>: {activeList.kind === 'manual' ? 'a list you fill yourself.' : 'updates itself from its filters.'}
+              </span>
+              {activeList.kind === 'manual' && (
+                <button type="button" className="small-btn" onClick={() => setPicking(true)}>
+                  Choose wishes
+                </button>
+              )}
+              <button type="button" className="ghost small-btn" onClick={() => setListSheet(activeList)}>
+                Rename or remove
+              </button>
+            </div>
           )}
-          {listsEnabled === true && (
-            <button type="button" className="ghost small-btn" onClick={newManualList}>
-              <IconPlus size={16} />
-              New list
-            </button>
-          )}
-        </div>
+        </section>
       )}
 
       <FilterPanel

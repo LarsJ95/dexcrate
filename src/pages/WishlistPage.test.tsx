@@ -126,7 +126,7 @@ describe('WishlistPage', () => {
 
   it('slimme lijst zet zijn filters; aanpassen biedt "Update"', async () => {
     await renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: 'High only' }))
+    await userEvent.click(await screen.findByRole('button', { name: /^High only/ }))
     expect(names()).toEqual(['Squirtle'])
     await userEvent.selectOptions(screen.getByLabelText('Priority'), '')
     expect(screen.getByRole('button', { name: 'Update “High only”' })).toBeTruthy()
@@ -134,7 +134,7 @@ describe('WishlistPage', () => {
 
   it('eigen lijst toont alleen de gekozen wensen, zonder "Update", met "Choose wishes"', async () => {
     await renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: 'Binder page' }))
+    await userEvent.click(await screen.findByRole('button', { name: /^Binder page/ }))
     expect(names()).toEqual(['Old Promo'])
     await userEvent.selectOptions(screen.getByLabelText('Priority'), '1')
     expect(screen.queryByRole('button', { name: /Update/ })).toBeNull()
