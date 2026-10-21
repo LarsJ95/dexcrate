@@ -2,6 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from 'rea
 import { CardDialog } from '../components/CardDialog'
 import { BulkEditDialog, type BulkChange } from '../components/BulkEditDialog'
 import { CardTile } from '../components/CardTile'
+import { CardRow } from '../components/CardRow'
+import { ViewToggle } from '../components/ViewToggle'
+import { useStoredChoice } from '../hooks/useStoredChoice'
+import { LIST_VIEWS, type ListView } from '../lib/listView'
 import { NO_EXTRA_FILTERS, activeFilterCount, isUnlinked, matchesExtra, needsCatalog, type ExtraFilters } from '../lib/collectionFilters'
 import { CollectionFilterPanel } from '../components/CollectionFilterPanel'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
@@ -208,8 +212,10 @@ export function CollectionPage(): JSX.Element {
 
   // Slepen: twee kaarten wisselen van plek in je eigen volgorde (opgeslagen in sort_order).
   const binderRef = useRef<HTMLUListElement>(null)
+  // Grote kaarten of lijst (21-10-2026, op verzoek), per apparaat onthouden.
+  const [layout, setLayout] = useStoredChoice<ListView>('dexcrate:collection-layout', LIST_VIEWS, 'grid')
   const savingOrder = useRef(false)
-  const sortable = (sort === 'list' || sort === 'newest') && selected === null && cards !== null
+  const sortable = layout === 'grid' && (sort === 'list' || sort === 'newest') && selected === null && cards !== null
   const swapCards = useCallback(
     async (fromId: string, toId: string): Promise<void> => {
       if (!cards || savingOrder.current) return
@@ -274,6 +280,7 @@ export function CollectionPage(): JSX.Element {
           )}
         </div>
         <div className="head-actions">
+          <ViewToggle value={layout} onChange={setLayout} />
           {salesTracked && (
             <button type="button" onClick={() => setSelected((s) => (s === null ? new Set() : null))} aria-pressed={selected !== null}>
               {selected === null ? 'Select' : 'Done'}
@@ -385,20 +392,28 @@ export function CollectionPage(): JSX.Element {
           Drag a card onto another card to swap them. On a touch screen, hold a card first. With the keyboard: Alt and the left or right arrow.
         </p>
       )}
-      <ul ref={binderRef} className={`binder${sortable ? ' is-sortable' : ''}`} aria-describedby={sortable ? 'binder-order-help' : undefined}>
-        {visible.slice(0, shownCount).map((c) => (
-          <CardTile
-            key={c.id}
-            card={c}
-            market={marketById.get(c.id)}
-            onOpen={open}
-            onToggleSold={onToggle}
-            busy={pending.has(c.id)}
-            selected={selected === null ? undefined : selected.has(c.id)}
-            salesTracked={salesTracked}
-          />
-        ))}
-      </ul>
+      {layout === 'list' ? (
+        <ul className="tx-list card-rows">
+          {visible.slice(0, shownCount).map((c) => (
+            <CardRow key={c.id} card={c} market={marketById.get(c.id)} onOpen={open} selected={selected === null ? undefined : selected.has(c.id)} />
+          ))}
+        </ul>
+      ) : (
+        <ul ref={binderRef} className={`binder${sortable ? ' is-sortable' : ''}`} aria-describedby={sortable ? 'binder-order-help' : undefined}>
+          {visible.slice(0, shownCount).map((c) => (
+            <CardTile
+              key={c.id}
+              card={c}
+              market={marketById.get(c.id)}
+              onOpen={open}
+              onToggleSold={onToggle}
+              busy={pending.has(c.id)}
+              selected={selected === null ? undefined : selected.has(c.id)}
+              salesTracked={salesTracked}
+            />
+          ))}
+        </ul>
+      )}
       {visible.length > shownCount && (
         <div ref={moreRef} className="catalog-more">
           <Loading text={`Loading more cards… (${visible.length - shownCount} left)`} />

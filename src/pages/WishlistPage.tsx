@@ -4,6 +4,10 @@ import { CatalogResults } from '../components/CatalogResults'
 import { SetCardSheet } from '../components/SetCardSheet'
 import { WishFilterFields } from '../components/WishFilterFields'
 import { WishRow } from '../components/WishRow'
+import { WishTile } from '../components/WishTile'
+import { ViewToggle } from '../components/ViewToggle'
+import { LIST_VIEWS, type ListView } from '../lib/listView'
+import { useStoredChoice } from '../hooks/useStoredChoice'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { useCardPrices } from '../hooks/useCardPrices'
 import { useDbFeature } from '../hooks/useDbFeature'
@@ -63,6 +67,8 @@ function sheetCardOf(item: WishlistItem): { lang: Lang; key: string; card: SetCa
 /** Wishlist: wat je zoekt, met wat je al hebt (of onderweg is) en de marktprijs. */
 export function WishlistPage(): JSX.Element {
   const enabled = useWishlistEnabled()
+  // Lijst of grote kaarten (21-10-2026, op verzoek), per apparaat onthouden.
+  const [layout, setLayout] = useStoredChoice<ListView>('dexcrate:wishlist-layout', LIST_VIEWS, 'list')
   const [items, setItems] = useState<WishlistItem[] | null>(null)
   const [cards, setCards] = useState<Card[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -285,10 +291,13 @@ export function WishlistPage(): JSX.Element {
             </p>
           )}
         </div>
-        <button type="button" className="primary fab" onClick={() => openNew()}>
-          <IconPlus size={18} />
-          Add card
-        </button>
+        <div className="head-actions">
+          <ViewToggle value={layout} onChange={setLayout} />
+          <button type="button" className="primary fab" onClick={() => openNew()}>
+            <IconPlus size={18} />
+            Add card
+          </button>
+        </div>
       </div>
 
       {(lists.length > 0 || listsEnabled === true) && (
@@ -394,20 +403,34 @@ export function WishlistPage(): JSX.Element {
         </p>
       )}
 
-      {visible.length > 0 && (
-        <ul className="tx-list">
-          {visible.map(({ item, owned, incoming, found }) => (
-            <WishRow
-              key={item.id}
-              item={item}
-              owned={owned}
-              incoming={incoming}
-              found={found}
-              onOpen={() => (sheetCardOf(item) ? setViewingWish(item.id) : setEditing(item))}
-            />
-          ))}
-        </ul>
-      )}
+      {visible.length > 0 &&
+        (layout === 'grid' ? (
+          <ul className="binder wish-grid">
+            {visible.map(({ item, owned, incoming, found }) => (
+              <WishTile
+                key={item.id}
+                item={item}
+                owned={owned}
+                incoming={incoming}
+                found={found}
+                onOpen={() => (sheetCardOf(item) ? setViewingWish(item.id) : setEditing(item))}
+              />
+            ))}
+          </ul>
+        ) : (
+          <ul className="tx-list">
+            {visible.map(({ item, owned, incoming, found }) => (
+              <WishRow
+                key={item.id}
+                item={item}
+                owned={owned}
+                incoming={incoming}
+                found={found}
+                onOpen={() => (sheetCardOf(item) ? setViewingWish(item.id) : setEditing(item))}
+              />
+            ))}
+          </ul>
+        ))}
 
       {searching && (
         <CatalogResults

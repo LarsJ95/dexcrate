@@ -12,7 +12,7 @@ import type { WishlistItem } from '../lib/wishlist'
 const PRIORITY: Record<1 | 2 | 3, string> = { 1: 'High priority', 2: '', 3: 'Low priority' }
 
 /** Marktprijs van de gezochte uitvoering, met "onder je maximum" als hulp. */
-function WishPrice({ item }: { item: WishlistItem }): JSX.Element | null {
+export function WishPrice({ item }: { item: WishlistItem }): JSX.Element | null {
   const price = useCardPrice(item.tcgdex_id)
   if (!item.tcgdex_id) return null
   const market = marketValue(price, item.variant)
@@ -23,7 +23,7 @@ function WishPrice({ item }: { item: WishlistItem }): JSX.Element | null {
 }
 
 /** Cardmarket-knop naast een wens: productpagina als de kaart gekoppeld is, anders zoeken op naam en nummer. */
-function WishCardmarket({ item }: { item: WishlistItem }): JSX.Element {
+export function WishCardmarket({ item }: { item: WishlistItem }): JSX.Element {
   const price = useCardPrice(item.tcgdex_id)
   return <CardmarketLink idProduct={price?.idProduct ?? null} searchText={[item.name, item.card_number].filter(Boolean).join(' ')} language={cardLanguageOf(item.language, item.tcgdex_id)} compact />
 }
