@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('./supabase', () => ({ supabase: {} }))
-const { GREAT_SLOT, HIT_SLOT, MISSING_FIRST, OLD_RULES, RARE_SLOT, canAfford, crateSetProgress, packCost, packSlots, packsByCost, pickSetCard, setPackSlots, toRules, tradeValue } = await import('./crate')
+const { GREAT_SLOT, HIT_SLOT, MISSING_FIRST, OLD_RULES, RARE_SLOT, canAfford, craftClassOf, craftCost, crateSetProgress, packCost, packSlots, packsByCost, pickSetCard, setPackSlots, toRules, tradeValue } = await import('./crate')
 
 describe('Crate-pakje', () => {
   it('kansen per vak tellen op tot 1', () => {
@@ -38,10 +38,23 @@ describe('Crate-pakje', () => {
   })
   it('regels uit de database (STAP18), kapot antwoord = oude regels', () => {
     const rules = toRules({ daily: 100, trade_factor: 2, crate_set: 500, packs: { booster: 100, great: 300, master: 1000, set: 200, type: 300 } })
-    expect(rules).toEqual({ daily: 100, tradeFactor: 2, crateSet: 500, packs: { booster: 100, great: 300, master: 1000, set: 200, type: 300 } })
+    expect(rules).toEqual({ daily: 100, tradeFactor: 2, crateSet: 500, packs: { booster: 100, great: 300, master: 1000, set: 200, type: 300 }, craft: {} })
     expect(canAfford(rules, 'set', 200, false)).toBe(true)
     expect(toRules(null)).toBe(OLD_RULES)
     expect(toRules({ packs: { set: -5, booster: 'x' } }).packs).toEqual({})
+  })
+  it('gericht kopen (STAP22/23): prijs per klasse zoals de database', () => {
+    const rules = toRules({ packs: {}, craft: { common: 40, uncommon: 60, rare: 100, double: 200, illustration: 300, special: 600, bogus: 1 } })
+    expect(rules.craft).toEqual({ common: 40, uncommon: 60, rare: 100, double: 200, illustration: 300, special: 600 })
+    expect(craftCost(rules, 'Common')).toBe(40)
+    expect(craftCost(rules, 'Holo Rare')).toBe(100)
+    expect(craftCost(rules, 'Ultra Rare')).toBe(200)
+    expect(craftCost(rules, 'Illustration rare')).toBe(300)
+    expect(craftCost(rules, 'Hyper rare')).toBe(600)
+    expect(craftCost(rules, 'Secret Rare')).toBe(600)
+    expect(craftCost(rules, null)).toBeNull()
+    expect(craftClassOf('Promo')).toBeNull()
+    expect(craftCost(OLD_RULES, 'Common')).toBeNull()
   })
   it('inruilwaarde volgens zeldzaamheid, met factor', () => {
     expect(tradeValue('Hyper rare')).toBe(30)

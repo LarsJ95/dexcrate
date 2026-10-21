@@ -1,3 +1,4 @@
+import { FunctionsHttpError } from '@supabase/supabase-js'
 import { rarityMatches, rarityRule, type EnergyType } from './cardTraits'
 import { supabase } from './supabase'
 import { getSet, getSetList, getSetRarities, searchCards, setIdOf, setOfKey, type SetCard } from './tcgdex'
@@ -6,6 +7,8 @@ import type { WishlistInput } from './wishlist'
 /**
  * Crate-game (STAP11): Crate points verdienen met je echte collectie en er virtuele pakjes mee openen.
  * Punten en virtuele kaarten veranderen alleen via databasefuncties; de app leest en vraagt aan.
+ * Sinds STAP23 (21-10-2026) trekt de Edge Function "crate" de pakjes en telt de database de punten zelf;
+ * zonder die functie (of zonder STAP23) werkt de app nog op de oude manier.
  */
 
 export const PACK_SIZE = 10
@@ -29,9 +32,33 @@ export interface CrateRules {
   /** Punten voor een complete set in je Crate; null = bestaat nog niet. */
   crateSet: number | null
   packs: Partial<Record<PackKind, number>>
+  /** Prijs voor een ontbrekende kaart per klasse (STAP22/23); leeg = kan nog niet. */
+  craft: Partial<Record<CraftClass, number>>
 }
 
-export const OLD_RULES: CrateRules = { daily: 50, tradeFactor: 1, crateSet: null, packs: { booster: 100, great: 300, master: 1000 } }
+/** Prijsklassen voor gericht kopen (zelfde als crate_craft_class in de database). */
+export type CraftClass = 'common' | 'uncommon' | 'rare' | 'double' | 'illustration' | 'special'
+const CRAFT_CLASSES: readonly CraftClass[] = ['common', 'uncommon', 'rare', 'double', 'illustration', 'special']
+
+/** Klasse van een zeldzaamheid; null = niet te koop (onbekend, promo ...). */
+export function craftClassOf(rarity: string | null | undefined): CraftClass | null {
+  const rank = rarityRule(rarity).rank
+  if (rank === 1) return 'common'
+  if (rank === 2) return 'uncommon'
+  if (rank >= 3 && rank <= 4) return 'rare'
+  if (rank >= 5 && rank <= 6) return 'double'
+  if (rank === 7) return 'illustration'
+  if (rank >= 8) return 'special'
+  return null
+}
+
+/** Prijs van een ontbrekende kaart, of null als hij niet te koop is. */
+export function craftCost(rules: CrateRules, rarity: string | null | undefined): number | null {
+  const c = craftClassOf(rarity)
+  return c ? (rules.craft[c] ?? null) : null
+}
+
+export const OLD_RULES: CrateRules = { daily: 50, tradeFactor: 1, crateSet: null, packs: { booster: 100, great: 300, master: 1000 }, craft: {} }
 
 /** Kosten van een pakje, of null als die soort (nog) niet bestaat. */
 export const packCost = (rules: CrateRules, pack: PackKind): number | null => rules.packs[pack] ?? null
@@ -58,11 +85,19 @@ export function toRules(v: unknown): CrateRules {
     if (typeof cost === 'number' && Number.isInteger(cost) && cost >= 0) packs[kind] = cost
   }
   const pos = (x: unknown, fallback: number): number => (typeof x === 'number' && Number.isFinite(x) && x > 0 ? x : fallback)
+  const craft: Partial<Record<CraftClass, number>> = {}
+  if (isRecord(v.craft)) {
+    for (const c of CRAFT_CLASSES) {
+      const cost = v.craft[c]
+      if (typeof cost === 'number' && Number.isInteger(cost) && cost > 0) craft[c] = cost
+    }
+  }
   return {
     daily: pos(v.daily, OLD_RULES.daily),
     tradeFactor: pos(v.trade_factor, 1),
     crateSet: typeof v.crate_set === 'number' && v.crate_set > 0 ? v.crate_set : null,
     packs,
+    craft,
   }
 }
 
@@ -126,8 +161,48 @@ function toWallet(v: unknown): CrateWallet & { earned: number } {
   return { points: num(o.points), freePack: o.free_pack === true, earned: num(o.earned) }
 }
 
-/** Punten bijwerken: kaarten, verkopen, aankopen, nieuwe Pokédex-soorten en de dagbonus (eenmalig per stuk). */
+// --- Server (STAP23): Edge Function "crate" ---
+
+export const CRATE_SERVER_MISSING = 'This needs the crate function and STAP23 in Supabase (see TODO.md).'
+
+let serverCheck: Promise<boolean> | null = null
+
+/** Staat de Edge Function "crate" er en is STAP23 gedraaid? Eén keer per sessie; netwerkfout = later opnieuw. */
+export function hasCrateServer(): Promise<boolean> {
+  serverCheck ??= (async () => {
+    const { data, error } = await supabase.functions.invoke('crate', { body: { action: 'health' } })
+    if (!error) return isRecord(data) && data.db === true
+    const ctx: unknown = error instanceof FunctionsHttpError ? error.context : null
+    if (!(ctx instanceof Response && ctx.status === 404)) {
+      serverCheck = null
+      console.warn('Crate-functie controleren mislukt', error)
+    }
+    return false
+  })()
+  return serverCheck
+}
+
+async function crateServer(body: Record<string, unknown>, what: string): Promise<Record<string, unknown>> {
+  const { data, error } = await supabase.functions.invoke('crate', { body })
+  if (error) {
+    const ctx: unknown = error instanceof FunctionsHttpError ? error.context : null
+    if (ctx instanceof Response) {
+      if (ctx.status === 404) throw new Error(CRATE_SERVER_MISSING)
+      const res: unknown = await ctx.json().catch(() => null)
+      const msg = isRecord(res) ? res.error : null
+      if (typeof msg === 'string') throw new Error(msg)
+    }
+    throw new Error(`${what}: the crate function is unavailable.`)
+  }
+  return isRecord(data) ? data : {}
+}
+
+/**
+ * Punten bijwerken: kaarten, verkopen, aankopen, nieuwe Pokédex-soorten, complete sets en de dagbonus (eenmalig per stuk).
+ * Met de server rekent de database alles zelf uit (`bonus` en `dexIds` worden dan genegeerd).
+ */
 export async function syncCrate(bonus: Record<string, number>, dexIds: readonly number[]): Promise<CrateWallet & { earned: number }> {
+  if (await hasCrateServer()) return toWallet(await crateServer({ action: 'sync' }, 'Updating Crate points failed'))
   const { data, error } = await supabase.rpc('crate_sync', { p_bonus: bonus, p_dex: [...new Set(dexIds)].filter((d) => d >= 1 && d <= 1025) })
   if (error) throw new Error(`Updating Crate points failed: ${error.message}`)
   return toWallet(data)
@@ -135,6 +210,7 @@ export async function syncCrate(bonus: Record<string, number>, dexIds: readonly 
 
 /** Set compleet: 250 punten, één keer per set ("en/sv03.5"). */
 export async function crateSetComplete(setKey: string): Promise<number> {
+  if (await hasCrateServer()) return (await syncCrate({}, [])).earned
   const { data, error } = await supabase.rpc('crate_set_complete', { p_set: setKey })
   if (error) throw new Error(`Crate points for the set failed: ${error.message}`)
   return num(data)
@@ -143,6 +219,29 @@ export async function crateSetComplete(setKey: string): Promise<number> {
 /** Functie bestaat (nog) niet in de database: STAP12/STAP18 niet gedraaid. */
 function missingFunction(error: { code?: string; message: string }): boolean {
   return error.code === 'PGRST202' || /could not find the function/i.test(error.message)
+}
+
+/** Pakje openen: met de server trekt die de kaarten; anders trekt de app ze (oude manier). */
+export async function openPack(pack: PackKind, choice: PackChoice = {}): Promise<CrateWallet & { cost: number; pulls: PackPull[] }> {
+  if (await hasCrateServer()) {
+    const r = await crateServer({ action: 'open', pack, setId: choice.setId, type: choice.type }, 'Opening the pack failed')
+    const pulls = (Array.isArray(r.pulls) ? r.pulls : []).flatMap((p: unknown): PackPull[] =>
+      isRecord(p) && typeof p.tcgdex_id === 'string' && typeof p.name === 'string'
+        ? [{ tcgdex_id: p.tcgdex_id, name: p.name, image: typeof p.image === 'string' ? p.image : null, rarity: typeof p.rarity === 'string' ? p.rarity : '', set_name: typeof p.set_name === 'string' ? p.set_name : null }]
+        : [],
+    )
+    if (pulls.length === 0) throw new Error('Opening the pack failed: no cards came back.')
+    return { points: num(r.points), freePack: r.free_pack === true, cost: num(r.cost), pulls }
+  }
+  const pulls = await drawPack(pack, choice)
+  return { ...(await openCratePack(pulls, pack)), pulls }
+}
+
+/** Ontbrekende kaart gericht kopen (alleen met de server: die zoekt kaart en zeldzaamheid zelf op). */
+export async function craftCard(tcgdexId: string): Promise<{ points: number; cost: number }> {
+  if (!(await hasCrateServer())) throw new Error(CRATE_SERVER_MISSING)
+  const r = await crateServer({ action: 'craft', tcgdexId }, 'Buying the card failed')
+  return { points: num(r.points), cost: num(r.cost) }
 }
 
 export async function openCratePack(cards: readonly PackPull[], pack: PackKind = 'booster'): Promise<CrateWallet & { cost: number }> {
@@ -210,6 +309,7 @@ export async function crateWishInitial(tcgdexId: string, name: string): Promise<
 
 /** Complete set in je Crate (STAP18): punten, één keer per set ("en/sv03.5"). 0 = nog niet compleet of al gekregen. */
 export async function crateSetDone(setKey: string, total: number): Promise<number> {
+  if (await hasCrateServer()) return (await syncCrate({}, [])).earned
   const { data, error } = await supabase.rpc('crate_set_done', { p_set: setKey, p_total: total })
   if (error) throw new Error(`Crate points for the set failed: ${error.message}`)
   return num(data)
