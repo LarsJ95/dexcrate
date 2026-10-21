@@ -60,7 +60,7 @@ describe('omzetten', () => {
     expect(r.daily).toBe(300)
     expect(r.packs.great).toBe(200)
     expect(r.packs.master).toBe(900)
-    expect(r.craft.special).toBe(600)
+    expect(r.craft.special).toBe(1800)
     expect(toAdminRules(null).trade_factor).toBe(2)
   })
   it('geblokkeerd alleen als de datum in de toekomst ligt', () => {

@@ -23,7 +23,6 @@ import { SettingsPage } from '../pages/SettingsPage'
 import { AdminPage } from '../pages/AdminPage'
 import { TransactionsPage } from '../pages/TransactionsPage'
 import { WishlistPage } from '../pages/WishlistPage'
-import { PhotosPage } from '../pages/PhotosPage'
 import { CratePage } from '../pages/CratePage'
 import { ScanPage } from '../pages/ScanPage'
 import { SetBinderPage } from '../pages/SetBinderPage'
@@ -345,11 +344,10 @@ export function Preview(): JSX.Element {
       </Shell>
     )
   }
-  if (page === 'more' || page === 'photos' || page === 'backup' || page === 'settings' || page === 'wishlist' || page === 'transactions' || page === 'import' || page === 'crate' || page === 'admin' || extraPage === 'collectionpage') {
+  if (page === 'more' || page === 'backup' || page === 'settings' || page === 'wishlist' || page === 'transactions' || page === 'import' || page === 'crate' || page === 'admin' || extraPage === 'collectionpage') {
     return (
       <Shell route={page} email="demo@example.com" theme={theme} onToggleTheme={noop} onSignOut={noop}>
         {page === 'more' && <MorePage />}
-        {page === 'photos' && <PhotosPage />}
         {page === 'backup' && <BackupPage />}
         {page === 'settings' && <SettingsPage />}
         {page === 'wishlist' && <WishlistPage />}

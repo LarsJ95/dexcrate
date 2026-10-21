@@ -21,6 +21,7 @@ import { computeStats, formatEur, type Bucket } from '../lib/stats'
 import { thumbPath, type Card } from '../lib/types'
 import { CardImage } from './CardImage'
 import { ChangeBadge } from './ChangeBadge'
+import { CrateTeaser } from './CrateTeaser'
 import { LineChart } from './LineChart'
 import { Spotlight } from './Spotlight'
 
@@ -233,6 +234,9 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
         )}
         {series && series.length >= 2 && <LineChart points={series} label="Value history" valueLabel="Value" height={130} />}
       </div>
+
+      {/* Crate-tegel direct onder de waarde (21-10-2026): het spel moet opvallen. */}
+      <CrateTeaser />
 
       {/* Eerst het (compacte) overzicht van wat je hebt, daarna je duurste kaarten (volgorde op verzoek 18-10-2026).
           dash-slot: op groot scherm onzichtbaar (display: contents); op de telefoon een eigen volgorde (O1, 20-10-2026). */}

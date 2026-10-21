@@ -166,13 +166,6 @@ export async function deletePhoto(photo: CardPhoto): Promise<void> {
   await removeFiles([photo.path, photo.thumb_path, original].filter((p): p is string => Boolean(p)))
 }
 
-/** Foto's die nog aan geen kaart gekoppeld zijn, nieuwste eerst. */
-export async function listInboxPhotos(): Promise<CardPhoto[]> {
-  const { data, error } = await supabase.from(TABLE).select(COLUMNS).is('card_id', null).order('created_at', { ascending: false })
-  if (error) throw new Error(friendlyPhotoError(`Loading photos failed: ${error.message}`))
-  return (data as unknown[]).flatMap((r) => toPhoto(r) ?? [])
-}
-
 // --- Ondertekende links, gebundeld opgevraagd (één verzoek voor een hele lijst) ---
 
 const urlCache = new Map<string, { url: string; at: number }>()

@@ -5,16 +5,19 @@ import type { Card, CardInput } from './types'
 import { wishDeals } from './wishDeals'
 import type { WishlistItem } from './wishlist'
 
+/** Menu-items met een getal. */
+export type BadgeKey = 'collection' | 'wishlist'
+
 export interface NavCounts {
   /** Kaarten in bezit die nog niet aan de catalogus gekoppeld zijn (geen foto, prijs of set). */
   collection: number
   /** Wensen waarvan de marktprijs nu binnen je max. prijs valt. */
   wishlist: number
-  /** Foto's in de inbox die nog bij geen kaart horen. */
-  photos: number
+  /** Crate-stand voor het menu-item (null = geen Crate of onbekend). */
+  crate: { points: number; freePack: boolean } | null
 }
 
-export const NO_COUNTS: NavCounts = { collection: 0, wishlist: 0, photos: 0 }
+export const NO_COUNTS: NavCounts = { collection: 0, wishlist: 0, crate: null }
 
 export function unlinkedCount(cards: readonly Pick<Card, 'kind' | 'tcgdex_id' | 'status'>[]): number {
   return cards.filter((c) => c.status !== 'sold' && isUnlinked(c)).length
