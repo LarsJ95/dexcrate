@@ -59,8 +59,8 @@ export function SetsPage(): JSX.Element {
   const [sets, setSets] = useState<{ lang: Lang; list: Map<string, SetSummary>; digital: Set<string> } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [cardsError, setCardsError] = useState<string | null>(null)
-  // Je keuze onthouden; zonder keuze opent de lijst op je eigen sets als je er een paar hebt (B1, zie openingScope).
-  const [storedScope, setScope] = useStoredChoice<SetScope | 'auto'>('dexcrate:sets-scope', STORED_SCOPES, 'auto')
+  // Je keuze onthouden; zonder keuze opent de lijst op alle sets. Nieuwe sleutel (v2, 21-10-2026): een oude "Started" telt niet meer.
+  const [storedScope, setScope] = useStoredChoice<SetScope | 'auto'>('dexcrate:sets-scope:v2', STORED_SCOPES, 'auto')
   const [sort, setSort] = useStoredChoice<SortKey>('dexcrate:sets-sort', SORT_KEYS, 'newest')
   const [query, setQuery] = useState('')
   const [suggestOpen, setSuggestOpen] = useState(false)
@@ -139,8 +139,7 @@ export function SetsPage(): JSX.Element {
   const scrollSaved = useSavedScroll('sets')
   useScrollMemory('sets', scrollSaved, rows.length > 0, 0)
 
-  const startedCount = useMemo(() => rows.filter((r) => r.owned > 0).length, [rows])
-  const scope = openingScope(storedScope, startedCount)
+  const scope = openingScope(storedScope)
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()

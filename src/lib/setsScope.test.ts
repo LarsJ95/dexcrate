@@ -2,14 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { openingScope } from './setsScope'
 
 describe('openingScope', () => {
-  it('nog niets gekozen: Started vanaf 3 sets met kaarten, anders alles', () => {
-    expect(openingScope('auto', 0)).toBe('all')
-    expect(openingScope('auto', 2)).toBe('all')
-    expect(openingScope('auto', 3)).toBe('owned')
+  it('nog niets gekozen: alle sets (op verzoek, 21-10-2026)', () => {
+    expect(openingScope('auto')).toBe('all')
   })
 
   it('eigen keuze gaat altijd voor', () => {
-    expect(openingScope('all', 12)).toBe('all')
-    expect(openingScope('complete', 0)).toBe('complete')
+    expect(openingScope('owned')).toBe('owned')
+    expect(openingScope('complete')).toBe('complete')
   })
 })

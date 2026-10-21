@@ -156,6 +156,19 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 }
 const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0)
 
+/**
+ * Stand voor het menu en Overview: punten en of het gratis pakje van vandaag er nog is, zonder punten bij te werken.
+ * null = geen Crate (STAP11 niet gedraaid). De database rekent dagen in UTC (current_date).
+ */
+export async function getCrateStatus(): Promise<{ points: number; freePack: boolean } | null> {
+  if (!(await hasCrate())) return null
+  const { data, error } = await supabase.from('crate_wallet').select('points, last_free_pack').maybeSingle()
+  if (error) throw new Error(`Loading your Crate points failed: ${error.message}`)
+  if (!isRecord(data)) return { points: 0, freePack: true }
+  const last = typeof data.last_free_pack === 'string' ? data.last_free_pack : null
+  return { points: num(data.points), freePack: last === null || last < new Date().toISOString().slice(0, 10) }
+}
+
 function toWallet(v: unknown): CrateWallet & { earned: number } {
   const o = isRecord(v) ? v : {}
   return { points: num(o.points), freePack: o.free_pack === true, earned: num(o.earned) }
@@ -237,11 +250,16 @@ export async function openPack(pack: PackKind, choice: PackChoice = {}): Promise
   return { ...(await openCratePack(pulls, pack)), pulls }
 }
 
-/** Ontbrekende kaart gericht kopen (alleen met de server: die zoekt kaart en zeldzaamheid zelf op). */
-export async function craftCard(tcgdexId: string): Promise<{ points: number; cost: number }> {
+/** Ontbrekende kaart gericht kopen (alleen met de server: die zoekt kaart en zeldzaamheid zelf op). `card` = wat je kreeg. */
+export async function craftCard(tcgdexId: string): Promise<{ points: number; cost: number; card: PackPull | null }> {
   if (!(await hasCrateServer())) throw new Error(CRATE_SERVER_MISSING)
   const r = await crateServer({ action: 'craft', tcgdexId }, 'Buying the card failed')
-  return { points: num(r.points), cost: num(r.cost) }
+  const c = isRecord(r.card) ? r.card : null
+  const card: PackPull | null =
+    c && typeof c.tcgdex_id === 'string' && typeof c.name === 'string'
+      ? { tcgdex_id: c.tcgdex_id, name: c.name, image: typeof c.image === 'string' ? c.image : null, rarity: typeof c.rarity === 'string' ? c.rarity : '', set_name: typeof c.set_name === 'string' ? c.set_name : null }
+      : null
+  return { points: num(r.points), cost: num(r.cost), card }
 }
 
 export async function openCratePack(cards: readonly PackPull[], pack: PackKind = 'booster'): Promise<CrateWallet & { cost: number }> {

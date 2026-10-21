@@ -126,7 +126,7 @@ export function toAdminRules(v: unknown): AdminCrateRules {
   const packs = isRecord(o.packs) ? o.packs : {}
   const craft = isRecord(o.craft) ? o.craft : {}
   const PACK_DEFAULTS = { booster: 100, great: 200, master: 1000, set: 150, type: 300 }
-  const CRAFT_DEFAULTS = { common: 40, uncommon: 60, rare: 100, double: 200, illustration: 300, special: 600 }
+  const CRAFT_DEFAULTS = { common: 120, uncommon: 180, rare: 300, double: 600, illustration: 900, special: 1800 }
   return {
     daily: int(o.daily, 150),
     trade_factor: int(o.trade_factor, 2),

@@ -4,14 +4,10 @@ export type SetScope = 'all' | 'owned' | 'almost' | 'complete'
 /** Opgeslagen keuze; 'auto' = nog niets gekozen. */
 export const STORED_SCOPES: readonly (SetScope | 'auto')[] = ['auto', 'all', 'owned', 'almost', 'complete']
 
-/** Vanaf zoveel sets met kaarten opent de lijst op "Started". */
-export const MIN_STARTED = 3
-
 /**
- * Waarmee de setlijst opent (audit B1, 20-10-2026): je eigen keuze als je die ooit maakte; anders "Started" zodra je in
- * minstens 3 sets kaarten hebt (dan zoek je meestal een van je eigen sets), en anders alles.
+ * Waarmee de setlijst opent: je eigen keuze als je die maakte, anders alle sets (21-10-2026, op verzoek; was sinds
+ * audit B1 "Started" vanaf 3 sets met kaarten).
  */
-export function openingScope(stored: SetScope | 'auto', startedCount: number): SetScope {
-  if (stored !== 'auto') return stored
-  return startedCount >= MIN_STARTED ? 'owned' : 'all'
+export function openingScope(stored: SetScope | 'auto'): SetScope {
+  return stored === 'auto' ? 'all' : stored
 }

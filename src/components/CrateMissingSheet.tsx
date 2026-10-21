@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, type JSX } from 'react'
-import { CRATE_SERVER_MISSING, craftCard, craftCost, hasCrateServer, type CrateRules } from '../lib/crate'
+import { CRATE_SERVER_MISSING, craftCard, craftCost, hasCrateServer, type CrateRules, type PackPull } from '../lib/crate'
 import { errorText } from '../lib/errors'
 import { getSet, getSetRarities, type SetCard } from '../lib/tcgdex'
 import { CardFace } from './CardFace'
 import { CatalogKeyPicture } from './CatalogCardPicture'
+import { CraftReveal } from './CraftReveal'
 import { Loading } from './Loading'
 import { RaritySymbols } from './RaritySymbols'
 import { Sheet } from './Sheet'
@@ -32,6 +33,8 @@ export function CrateMissingSheet({ setKey, setName, owned, rules, points, onBou
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [balance, setBalance] = useState(points)
+  // Gekochte kaart groot onthullen (zoals bij een pakje).
+  const [revealed, setRevealed] = useState<{ card: PackPull; cost: number } | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -56,7 +59,7 @@ export function CrateMissingSheet({ setKey, setName, owned, rules, points, onBou
     [cards, owned, bought],
   )
 
-  async function buy(c: SetCard): Promise<void> {
+  async function buy(c: SetCard & { rarity: string | null }): Promise<void> {
     if (busy) return
     const key = `en/${c.id}`
     setBusy(key)
@@ -65,6 +68,7 @@ export function CrateMissingSheet({ setKey, setName, owned, rules, points, onBou
       const r = await craftCard(key)
       setBought((s) => new Set(s).add(key))
       setBalance(r.points)
+      setRevealed({ card: r.card ?? { tcgdex_id: key, name: c.name, image: c.image, rarity: c.rarity ?? '', set_name: setName }, cost: r.cost })
       onBought(r.points)
     } catch (err) {
       setError(errorText(err, 'Buying the card failed.'))
@@ -75,6 +79,7 @@ export function CrateMissingSheet({ setKey, setName, owned, rules, points, onBou
 
   return (
     <Sheet title={`Missing from ${setName}`} onClose={onClose}>
+      {revealed && <CraftReveal card={revealed.card} cost={revealed.cost} onClose={() => setRevealed(null)} />}
       <p className="muted small">
         Buy one card you do not have yet. You have {balance.toLocaleString('en-GB')} Crate points.
       </p>

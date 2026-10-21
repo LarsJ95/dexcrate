@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { listCards } from '../lib/db'
 import { NO_COUNTS, dealsWithinMax, unlinkedCount, wishesWithMax, type NavCounts } from '../lib/navCounts'
-import { listInboxPhotos } from '../lib/photos'
+import { getCrateStatus } from '../lib/crate'
 import { getCardPrice, type CardmarketPrice } from '../lib/tcgdex'
 import { hasWishlist, listWishlist } from '../lib/wishlist'
 
@@ -11,10 +11,8 @@ let cached: { at: number; promise: Promise<NavCounts> } | null = null
 
 async function load(): Promise<NavCounts> {
   const cards = await listCards()
-  // Elk getal los: mislukt er één (bv. oude database zonder foto-inbox), dan blijven de andere staan.
-  const photos = listInboxPhotos()
-    .then((rows) => rows.length)
-    .catch(() => 0)
+  // Elk getal los: mislukt er één (bv. oude database zonder Crate), dan blijven de andere staan.
+  const crate = getCrateStatus().catch(() => null)
   const wishlist = (async () => {
     if (!(await hasWishlist())) return 0
     const items = await listWishlist()
@@ -27,7 +25,7 @@ async function load(): Promise<NavCounts> {
     )
     return dealsWithinMax(items, cards, prices)
   })().catch(() => 0)
-  return { collection: unlinkedCount(cards), wishlist: await wishlist, photos: await photos }
+  return { collection: unlinkedCount(cards), wishlist: await wishlist, crate: await crate }
 }
 
 /** Menu-getallen; telt opnieuw bij het wisselen van pagina als de vorige telling ouder is dan een minuut. */

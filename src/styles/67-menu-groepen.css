@@ -50,6 +50,86 @@
   content: none;
 }
 
+/* Crate (21-10-2026, keuze gebruiker: het spel moet opvallen): kleurige knop direct onder Scan, met je punten en
+   "Free" zolang het gratis pakje van vandaag er nog is. Kleuren van het Master pack (paars) en Water (blauw). */
+.side-nav a.side-crate,
+a.more-crate {
+  background: linear-gradient(120deg, color-mix(in oklab, var(--energy-psychic) 78%, var(--ball-line)), color-mix(in oklab, var(--energy-water) 72%, var(--ball-line)));
+  color: var(--white);
+  font-weight: 800;
+}
+
+.side-nav a.side-crate:hover,
+a.more-crate:hover {
+  background: linear-gradient(120deg, color-mix(in oklab, var(--energy-psychic) 88%, var(--ball-line)), color-mix(in oklab, var(--energy-water) 82%, var(--ball-line)));
+  color: var(--white);
+}
+
+.side-nav a.side-crate svg,
+.side-nav a.side-crate[aria-current='page'] svg,
+a.more-crate svg {
+  color: var(--gold-a);
+}
+
+.side-nav a.side-crate[aria-current='page'] {
+  color: var(--white);
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--energy-psychic);
+}
+
+.side-nav a.side-crate::before,
+.side-nav a.side-crate::after {
+  content: none;
+}
+
+.side-crate-text {
+  display: grid;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.side-crate-sub {
+  font-size: var(--fs-small);
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.side-crate-free {
+  margin-left: auto;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--yellow);
+  color: var(--on-yellow);
+  font-size: var(--fs-small);
+  font-weight: 800;
+}
+
+.shell.is-collapsed .side-crate-free {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  width: 10px;
+  height: 10px;
+  padding: 0;
+}
+
+.shell.is-collapsed .side-crate-free > [aria-hidden='true'] {
+  display: none;
+}
+
+a.more-crate {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-l);
+  text-decoration: none;
+}
+
+a.more-crate .more-text strong {
+  font-size: 1.1rem;
+  font-stretch: var(--stretch-display);
+}
+
 /* Getal: alleen als er iets te doen is. Staat het pokébal-stipje er ook, dan komt dat erachter. */
 .nav-badge {
   display: inline-grid;
@@ -210,4 +290,62 @@ a.icon-link[aria-current='page'] {
 
 .more-text .muted {
   font-weight: 500;
+}
+
+/* Crate-tegel op Overview: direct onder de waarde (ook op de telefoon), zelfde kleuren als het menu-item. */
+a.crate-teaser {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-l);
+  background: linear-gradient(120deg, color-mix(in oklab, var(--energy-psychic) 78%, var(--ball-line)), color-mix(in oklab, var(--energy-water) 72%, var(--ball-line)));
+  color: var(--white);
+  text-decoration: none;
+}
+
+a.crate-teaser:hover {
+  background: linear-gradient(120deg, color-mix(in oklab, var(--energy-psychic) 88%, var(--ball-line)), color-mix(in oklab, var(--energy-water) 82%, var(--ball-line)));
+  color: var(--white);
+}
+
+.crate-teaser-coin {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--gold-a), var(--yellow) 55%, var(--gold-b));
+  color: var(--on-yellow);
+}
+
+.crate-teaser-text {
+  display: grid;
+  min-width: 0;
+}
+
+.crate-teaser-text strong {
+  font-size: 1.05rem;
+  font-stretch: var(--stretch-display);
+}
+
+.crate-teaser-go {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--yellow);
+  color: var(--on-yellow);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.dash-main > .crate-teaser {
+  order: 1;
+}
+
+/* Brede schermen: alle Overview-blokken staan in DOM-volgorde (order 0); de tegel blijft dan direct onder de waarde. */
+@media (min-width: 2200px) {
+  .dash-main > .crate-teaser {
+    order: 0;
+  }
 }

@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { SideNav } from './SideNav'
 
 // Zelf gedefinieerd: lib/navCounts laadt (via de wishlist) de Supabase-client.
-const NO_COUNTS = { collection: 0, wishlist: 0, photos: 0 }
+const NO_COUNTS = { collection: 0, wishlist: 0, crate: null }
 
 afterEach(() => {
   cleanup()
@@ -13,22 +13,29 @@ afterEach(() => {
 })
 
 describe('SideNav', () => {
-  it('Scan als eerste knop, daarna groepen met kopje; Import en Backup staan er niet in', () => {
+  it('Scan als eerste knop, Crate eronder, daarna groepen met kopje; geen Photo inbox, Import of Backup', () => {
     render(<SideNav route="overview" counts={NO_COUNTS} collapsed={false} />)
     const links = screen.getAllByRole('link')
     expect(links[0].textContent).toBe('Scan cards')
-    expect(screen.getAllByRole('heading').map((h) => h.textContent)).toEqual(['My cards', 'Trade', 'Extras'])
-    expect(screen.getByRole('link', { name: 'Photo inbox' })).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Crate game' })).toBeTruthy()
+    expect(links[1].textContent).toBe('Crate game')
+    expect(screen.getAllByRole('heading').map((h) => h.textContent)).toEqual(['My cards', 'Trade'])
+    expect(screen.queryByRole('link', { name: /Photo inbox/ })).toBeNull()
     expect(screen.queryByRole('link', { name: /Import|Backup/ })).toBeNull()
     expect(screen.getByRole('link', { name: 'Overview' }).getAttribute('aria-current')).toBe('page')
   })
 
   it('getal alleen als er iets te doen is, met uitleg voor schermlezers', () => {
-    render(<SideNav route="overview" counts={{ collection: 3, wishlist: 0, photos: 1 }} collapsed={false} />)
+    render(<SideNav route="overview" counts={{ collection: 3, wishlist: 0, crate: null }} collapsed={false} />)
     expect(screen.getByRole('link', { name: 'Collection, 3 cards not linked yet' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Wishlist' })).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Photo inbox, 1 photo to link to a card' })).toBeTruthy()
+  })
+
+  it('Crate: punten en "Free" zolang het gratis pakje van vandaag er nog is', () => {
+    render(<SideNav route="overview" counts={{ collection: 0, wishlist: 0, crate: { points: 1250, freePack: true } }} collapsed={false} />)
+    expect(screen.getByRole('link', { name: /^Crate game, ?1,250 pts, free pack ready$/ })).toBeTruthy()
+    cleanup()
+    render(<SideNav route="overview" counts={{ collection: 0, wishlist: 0, crate: { points: 40, freePack: false } }} collapsed={false} />)
+    expect(screen.getByRole('link', { name: /^Crate game, ?40 pts$/ })).toBeTruthy()
   })
 
   it('Sets zonder snelkoppelingen naar recente sets (op verzoek weg, 18-10-2026)', () => {

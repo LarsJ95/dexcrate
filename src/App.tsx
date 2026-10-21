@@ -17,7 +17,6 @@ const BackupPage = lazy(() => import('./pages/BackupPage').then((m) => ({ defaul
 const CollectionPage = lazy(() => import('./pages/CollectionPage').then((m) => ({ default: m.CollectionPage })))
 const ImportPage = lazy(() => import('./pages/ImportPage').then((m) => ({ default: m.ImportPage })))
 const MorePage = lazy(() => import('./pages/MorePage').then((m) => ({ default: m.MorePage })))
-const PhotosPage = lazy(() => import('./pages/PhotosPage').then((m) => ({ default: m.PhotosPage })))
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })))
 const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })))
 const TransactionsPage = lazy(() => import('./pages/TransactionsPage').then((m) => ({ default: m.TransactionsPage })))
@@ -74,7 +73,6 @@ function App(): JSX.Element {
             {route === 'wishlist' && <WishlistPage />}
             {route === 'crate' && <CratePage />}
             {route === 'transactions' && <TransactionsPage />}
-            {route === 'photos' && <PhotosPage />}
             {route === 'import' && <ImportPage />}
             {route === 'backup' && <BackupPage />}
             {route === 'settings' && <SettingsPage />}
