@@ -27,15 +27,9 @@ function clearAppCache(): number {
   return removed
 }
 
-export function AccountSection(): JSX.Element {
+/** E-mailadres van wie er is ingelogd (null zolang het laadt). */
+function useSignedInEmail(): string | null {
   const [email, setEmail] = useState<string | null>(null)
-  const [pw, setPw] = useState({ next: '', again: '' })
-  const [pwState, setPwState] = useState<{ ok: boolean; text: string } | null>(null)
-  const [pwBusy, setPwBusy] = useState(false)
-  const [confirmClear, setConfirmClear] = useState(false)
-  const [update, setUpdate] = useState<string | null>(null)
-  const admin = useIsAdmin() === true
-
   useEffect(() => {
     let cancelled = false
     supabase.auth
@@ -49,25 +43,17 @@ export function AccountSection(): JSX.Element {
       cancelled = true
     }
   }, [])
+  return email
+}
 
-  async function changePassword(e: FormEvent<HTMLFormElement>): Promise<void> {
-    e.preventDefault()
-    if (pwBusy) return
-    if (pw.next.length < MIN_PASSWORD) return setPwState({ ok: false, text: `Use at least ${MIN_PASSWORD} characters.` })
-    if (pw.next !== pw.again) return setPwState({ ok: false, text: 'The two passwords are not the same.' })
-    setPwBusy(true)
-    setPwState(null)
-    try {
-      const { error } = await supabase.auth.updateUser({ password: pw.next })
-      if (error) throw error
-      setPw({ next: '', again: '' })
-      setPwState({ ok: true, text: 'Password changed.' })
-    } catch (err) {
-      setPwState({ ok: false, text: isNetworkError(err) ? OFFLINE_TEXT : err instanceof Error ? `Changing the password failed: ${err.message}` : 'Changing the password failed.' })
-    } finally {
-      setPwBusy(false)
-    }
-  }
+/**
+ * Bovenaan Settings (21-10-2026, op verzoek: update-knop bovenaan, logische volgorde): wie er is ingelogd, de versie
+ * met "Check for updates", en uitloggen.
+ */
+export function AccountSummary(): JSX.Element {
+  const email = useSignedInEmail()
+  const [update, setUpdate] = useState<string | null>(null)
+  const [checking, setChecking] = useState(false)
 
   async function signOut(): Promise<void> {
     const { error } = await supabase.auth.signOut()
@@ -75,52 +61,53 @@ export function AccountSection(): JSX.Element {
   }
 
   async function lookForUpdate(): Promise<void> {
+    if (checking) return
+    setChecking(true)
     setUpdate('Checking…')
     try {
       const r = await checkForUpdate()
       setUpdate(r === 'updating' ? 'A new version is loading…' : r === 'latest' ? 'You have the latest version.' : 'Updates are not available here.')
     } catch (err) {
       setUpdate(isNetworkError(err) ? OFFLINE_TEXT : err instanceof Error ? `Checking failed: ${err.message}` : 'Checking failed.')
+    } finally {
+      setChecking(false)
     }
   }
 
   const built = new Date(__APP_BUILD__)
   return (
-    <Section title="Account and data" scope="account">
-      <div className="settings-row">
-        <span className="settings-label">Signed in as</span>
+    <section className="panel settings-summary" aria-label="Your account and app version">
+      <div className="settings-summary-who">
+        <span className="stat-label">Signed in as</span>
         <strong className="settings-value">{email ?? '…'}</strong>
+      </div>
+      <div className="settings-summary-app">
+        <span className="stat-label">App version</span>
+        <span>{Number.isNaN(built.getTime()) ? 'Unknown date' : built.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+        {update && (
+          <span className="small" role="status">
+            {update}
+          </span>
+        )}
+      </div>
+      <div className="settings-actions settings-summary-actions">
+        <button type="button" className="primary" onClick={() => void lookForUpdate()} disabled={checking}>
+          Check for updates
+        </button>
         <button type="button" onClick={() => void signOut()}>
           Sign out
         </button>
       </div>
+    </section>
+  )
+}
 
-      <form className="settings-password" onSubmit={(e) => void changePassword(e)} noValidate>
-        <h3 className="settings-subtitle">Change password</h3>
-        <input type="email" autoComplete="username" value={email ?? ''} readOnly hidden />
-        <div className="form-grid">
-          <label>
-            New password
-            <input type="password" autoComplete="new-password" minLength={MIN_PASSWORD} value={pw.next} onChange={(e) => setPw((p) => ({ ...p, next: e.target.value }))} />
-          </label>
-          <label>
-            Repeat new password
-            <input type="password" autoComplete="new-password" minLength={MIN_PASSWORD} value={pw.again} onChange={(e) => setPw((p) => ({ ...p, again: e.target.value }))} />
-          </label>
-        </div>
-        <div className="settings-actions">
-          <button type="submit" disabled={pwBusy || !pw.next}>
-            {pwBusy ? 'Saving…' : 'Change password'}
-          </button>
-          {pwState && (
-            <span className={pwState.ok ? 'success' : 'error'} role={pwState.ok ? 'status' : 'alert'}>
-              {pwState.text}
-            </span>
-          )}
-        </div>
-      </form>
-
-      <h3 className="settings-subtitle">Data</h3>
+/** Je gegevens: back-up, import, beheer (alleen beheerders) en de app-cache op dit apparaat. */
+export function DataSection(): JSX.Element {
+  const [confirmClear, setConfirmClear] = useState(false)
+  const admin = useIsAdmin() === true
+  return (
+    <Section id="settings-data" title="Data" scope="account" intro="Download everything as a backup, or bring cards in from a spreadsheet or another app.">
       <div className="settings-actions">
         <a className="button-link" href="#/backup">
           Backup and restore
@@ -133,6 +120,9 @@ export function AccountSection(): JSX.Element {
             Admin
           </a>
         )}
+      </div>
+      <h3 className="settings-subtitle">This device</h3>
+      <div className="settings-actions">
         {confirmClear ? (
           <>
             <span className="small">Clear stored card info and prices on this device? They are fetched again.</span>
@@ -156,19 +146,61 @@ export function AccountSection(): JSX.Element {
           </button>
         )}
       </div>
+    </Section>
+  )
+}
 
-      <h3 className="settings-subtitle">App</h3>
-      <div className="settings-actions">
-        <span className="muted small">Version of {Number.isNaN(built.getTime()) ? 'unknown date' : built.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}</span>
-        <button type="button" onClick={() => void lookForUpdate()}>
-          Check for updates
-        </button>
-        {update && (
-          <span className="small" role="status">
-            {update}
-          </span>
-        )}
-      </div>
+/** Wachtwoord wijzigen. */
+export function PasswordSection(): JSX.Element {
+  const email = useSignedInEmail()
+  const [pw, setPw] = useState({ next: '', again: '' })
+  const [pwState, setPwState] = useState<{ ok: boolean; text: string } | null>(null)
+  const [pwBusy, setPwBusy] = useState(false)
+
+  async function changePassword(e: FormEvent<HTMLFormElement>): Promise<void> {
+    e.preventDefault()
+    if (pwBusy) return
+    if (pw.next.length < MIN_PASSWORD) return setPwState({ ok: false, text: `Use at least ${MIN_PASSWORD} characters.` })
+    if (pw.next !== pw.again) return setPwState({ ok: false, text: 'The two passwords are not the same.' })
+    setPwBusy(true)
+    setPwState(null)
+    try {
+      const { error } = await supabase.auth.updateUser({ password: pw.next })
+      if (error) throw error
+      setPw({ next: '', again: '' })
+      setPwState({ ok: true, text: 'Password changed.' })
+    } catch (err) {
+      setPwState({ ok: false, text: isNetworkError(err) ? OFFLINE_TEXT : err instanceof Error ? `Changing the password failed: ${err.message}` : 'Changing the password failed.' })
+    } finally {
+      setPwBusy(false)
+    }
+  }
+
+  return (
+    <Section id="settings-password" title="Password" scope="account">
+      <form className="settings-password" onSubmit={(e) => void changePassword(e)} noValidate>
+        <input type="email" autoComplete="username" value={email ?? ''} readOnly hidden />
+        <div className="form-grid">
+          <label>
+            New password
+            <input type="password" autoComplete="new-password" minLength={MIN_PASSWORD} value={pw.next} onChange={(e) => setPw((p) => ({ ...p, next: e.target.value }))} />
+          </label>
+          <label>
+            Repeat new password
+            <input type="password" autoComplete="new-password" minLength={MIN_PASSWORD} value={pw.again} onChange={(e) => setPw((p) => ({ ...p, again: e.target.value }))} />
+          </label>
+        </div>
+        <div className="settings-actions">
+          <button type="submit" disabled={pwBusy || !pw.next}>
+            {pwBusy ? 'Saving…' : 'Change password'}
+          </button>
+          {pwState && (
+            <span className={pwState.ok ? 'success' : 'error'} role={pwState.ok ? 'status' : 'alert'}>
+              {pwState.text}
+            </span>
+          )}
+        </div>
+      </form>
     </Section>
   )
 }
@@ -208,7 +240,7 @@ export function ResetSection(): JSX.Element {
   }
 
   return (
-    <Section title="Reset account" scope="account">
+    <Section id="settings-reset" title="Reset account" scope="account">
       <div className="settings-danger">
         <p>
           Start over from scratch. This permanently deletes <strong>all your cards, photos, sales and purchases, wishlist, goals, scan history and your Crate</strong> (points,

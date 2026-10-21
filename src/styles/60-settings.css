@@ -168,3 +168,67 @@ label.settings-confirm {
   background: var(--surface-2);
   font-family: inherit;
 }
+
+/* Bovenaan (21-10-2026, opnieuw ingedeeld op verzoek): wie, versie en de knoppen Check for updates / Sign out. */
+.settings-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  align-items: center;
+  gap: var(--space-3) var(--space-5);
+}
+
+.settings-summary-who,
+.settings-summary-app {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.settings-summary-who .settings-value {
+  overflow-wrap: anywhere;
+}
+
+.settings-summary-actions {
+  justify-content: flex-end;
+}
+
+/* Snelknoppen naar de secties; op de telefoon één rij om te vegen. */
+.settings-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+button.settings-jump-chip {
+  min-height: 36px;
+  cursor: pointer;
+}
+
+button.settings-jump-chip:hover:not(:disabled) {
+  background: var(--surface-3);
+  color: var(--ink);
+}
+
+.settings-section {
+  scroll-margin-top: var(--space-6);
+}
+
+.settings-head h2:focus {
+  outline: none;
+}
+
+@media (max-width: 480px) {
+  .settings-jump {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  button.settings-jump-chip {
+    flex: none;
+  }
+
+  .settings-summary-actions {
+    justify-content: flex-start;
+  }
+}
