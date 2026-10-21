@@ -1,0 +1,60 @@
+/* ---------- Beheer (#/admin, STAP21, 21-10-2026) ---------- */
+.admin {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+}
+
+.admin .panel {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.admin-grant .admin-wide {
+  grid-column: span 2;
+}
+
+.admin-users,
+.admin-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+
+.admin-users li,
+.admin-log li {
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-users li:last-child,
+.admin-log li:last-child {
+  border-bottom: 0;
+}
+
+.admin-users .small-btn {
+  margin-top: var(--space-1);
+}
+
+.admin-user-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+/* Lange e-mailadressen breken af in plaats van de pagina breder te maken. */
+.admin-email {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+  .admin-grant .admin-wide {
+    grid-column: 1 / -1;
+  }
+}

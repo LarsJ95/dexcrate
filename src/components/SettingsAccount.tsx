@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent, type JSX } from 'react'
+import { useIsAdmin } from '../hooks/useIsAdmin'
 import { resetAccount } from '../lib/accountReset'
 import { checkForUpdate } from '../lib/appUpdate'
 import { supabase } from '../lib/supabase'
@@ -33,6 +34,7 @@ export function AccountSection(): JSX.Element {
   const [pwBusy, setPwBusy] = useState(false)
   const [confirmClear, setConfirmClear] = useState(false)
   const [update, setUpdate] = useState<string | null>(null)
+  const admin = useIsAdmin() === true
 
   useEffect(() => {
     let cancelled = false
@@ -126,6 +128,11 @@ export function AccountSection(): JSX.Element {
         <a className="button-link" href="#/import">
           Import
         </a>
+        {admin && (
+          <a className="button-link" href="#/admin">
+            Admin
+          </a>
+        )}
         {confirmClear ? (
           <>
             <span className="small">Clear stored card info and prices on this device? They are fetched again.</span>

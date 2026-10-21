@@ -20,6 +20,7 @@ import { CollectionPage } from '../pages/CollectionPage'
 import { ImportPage } from '../pages/ImportPage'
 import { MorePage } from '../pages/MorePage'
 import { SettingsPage } from '../pages/SettingsPage'
+import { AdminPage } from '../pages/AdminPage'
 import { TransactionsPage } from '../pages/TransactionsPage'
 import { WishlistPage } from '../pages/WishlistPage'
 import { PhotosPage } from '../pages/PhotosPage'
@@ -344,7 +345,7 @@ export function Preview(): JSX.Element {
       </Shell>
     )
   }
-  if (page === 'more' || page === 'photos' || page === 'backup' || page === 'settings' || page === 'wishlist' || page === 'transactions' || page === 'import' || page === 'crate' || extraPage === 'collectionpage') {
+  if (page === 'more' || page === 'photos' || page === 'backup' || page === 'settings' || page === 'wishlist' || page === 'transactions' || page === 'import' || page === 'crate' || page === 'admin' || extraPage === 'collectionpage') {
     return (
       <Shell route={page} email="demo@example.com" theme={theme} onToggleTheme={noop} onSignOut={noop}>
         {page === 'more' && <MorePage />}
@@ -355,6 +356,7 @@ export function Preview(): JSX.Element {
         {page === 'transactions' && <TransactionsPage />}
         {page === 'import' && <ImportPage />}
         {page === 'crate' && <CratePage />}
+        {page === 'admin' && <AdminPage />}
         {extraPage === 'collectionpage' && <CollectionPage />}
       </Shell>
     )
