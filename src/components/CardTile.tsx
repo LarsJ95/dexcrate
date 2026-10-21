@@ -1,6 +1,5 @@
 import { memo, useEffect, useState, type CSSProperties, type JSX } from 'react'
 import { useCardInfo } from '../hooks/useCardInfo'
-import { foilStyleFor } from '../lib/cardTraits'
 import { energyColor } from '../lib/energy'
 import type { MarketValue } from '../lib/prices'
 import { motionAllowed } from '../lib/motion'
@@ -9,7 +8,6 @@ import { formatEur } from '../lib/stats'
 import { CONDITION_LABELS, VARIANT_LABELS, canToggleSold, statusBadge, thumbPath, type Card } from '../lib/types'
 import { CardImage } from './CardImage'
 import { ChangeBadge } from './ChangeBadge'
-import { Foil } from './Foil'
 import { IconCheck } from './Icons'
 import { RaritySymbols } from './RaritySymbols'
 import { CardSetSymbol } from './SetIcon'
@@ -81,7 +79,6 @@ function CardTileBase({ card, market, onOpen, onToggleSold, busy, selected, sale
       <button type="button" className="tile-open" onClick={() => onOpen(card.id)} aria-pressed={selecting ? selected : undefined}>
         <CardImage tcgdexId={card.tcgdex_id} kind={card.kind} name={card.name} photoPath={thumbPath(card)}
           detail={[card.set_code, card.card_number && `#${card.card_number}`].filter(Boolean).join(' ')} />
-        {card.status !== 'sold' && <Foil foil={foilStyleFor(card.variant, info?.rarity)} seed={card.id} />}
         {statusBadge(card) && <span className={`status-badge ${card.status}`}>{statusBadge(card)}</span>}
         {card.quantity > 1 && <span className="qty-badge">{card.quantity}×</span>}
         {selected && (

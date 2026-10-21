@@ -186,23 +186,6 @@
   --brand-card-accent-from: rgb(255 203 5 / 0.35);
   --brand-card-accent-to: rgb(255 203 5 / 0.08);
 
-  /* Holo-glans (DESIGN.md §9). */
-  --foil-holo-1: rgb(255 255 255 / 0.55);
-  --foil-holo-2: rgb(255 225 140 / 0.5);
-  --foil-holo-3: rgb(150 210 255 / 0.5);
-  --foil-rev-1: rgb(255 120 200 / 0.3);
-  --foil-rev-2: rgb(255 230 120 / 0.32);
-  --foil-rev-3: rgb(120 255 200 / 0.3);
-  --foil-rev-4: rgb(120 180 255 / 0.32);
-  --foil-rev-5: rgb(200 140 255 / 0.3);
-  --foil-sp-1: rgb(255 59 122 / 0.45);
-  --foil-sp-2: rgb(255 184 0 / 0.45);
-  --foil-sp-3: rgb(77 255 158 / 0.45);
-  --foil-sp-4: rgb(51 214 255 / 0.45);
-  --foil-sp-5: rgb(140 91 255 / 0.45);
-  --foil-gold-1: rgb(255 231 160 / 0.5);
-  --foil-gold-2: rgb(255 247 214 / 0.75);
-
   /* Kantelende holokaart: glans per zeldzaamheid (DESIGN.md §9). */
   --glare-1: rgb(255 255 255 / 0.6);
   --glare-2: rgb(255 255 255 / 0.12);

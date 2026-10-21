@@ -43,24 +43,6 @@
   z-index: 2;
 }
 
-/* 7 s cyclus: ±1,5 s glans, daarna rust. */
-@keyframes foil-sweep {
-  0%,
-  72% {
-    transform: translateX(-45%) rotate(0.001deg);
-  }
-  94%,
-  100% {
-    transform: translateX(45%) rotate(0.001deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .foil {
-    display: none;
-  }
-}
-
 /* Lange titels: kolom nooit breder dan de popup; titel max. 2 regels. */
 .sheet-body {
   grid-template-columns: minmax(0, 1fr);

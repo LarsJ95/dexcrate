@@ -59,13 +59,6 @@ if (params.get('v4') === '1') overrideValuationsForPreview(true)
 // ?v3=1: doen alsof STAP5 (transacties) gedraaid is.
 if (params.get('v3') === '1') overrideTransactionsForPreview(true)
 
-// ?freeze=1: holo-glans midden in de beweging stilzetten, voor screenshots.
-if (params.get('freeze') === '1') {
-  const style = document.createElement('style')
-  style.textContent = '.foil::before{animation-delay:-5.8s!important;animation-play-state:paused!important}'
-  document.head.appendChild(style)
-}
-
 let n = 0
 function demo(patch: Partial<CardInput>): Card {
   n += 1
