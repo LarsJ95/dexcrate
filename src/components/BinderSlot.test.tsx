@@ -70,6 +70,21 @@ describe('BinderSlot', () => {
     expect(onOpen).toHaveBeenCalledWith(card)
   })
 
+  it('tijdens selecteren: "Select …", ingedrukt-status en vinkje; tikken geeft de kaart door', async () => {
+    const onOpen = vi.fn()
+    const { container, rerender } = render(<BinderSlot {...base} states={[state(null, 1)]} selected={false} onOpen={onOpen} />)
+    const button = screen.getByRole('button', { name: 'Select Pikachu #025 (missing)' })
+    expect(button.getAttribute('aria-pressed')).toBe('false')
+    await userEvent.click(button)
+    expect(onOpen).toHaveBeenCalledWith(card)
+    rerender(<BinderSlot {...base} states={[state(null, 1)]} selected onOpen={onOpen} />)
+    expect(container.querySelector('li')?.className).toBe('slot missing is-selected')
+    expect(button.getAttribute('aria-pressed')).toBe('true')
+    expect(container.querySelector('.select-badge')).toBeTruthy()
+    rerender(<BinderSlot {...base} states={[state(null, 1)]} onOpen={onOpen} />)
+    expect(screen.getByRole('button', { name: 'View Pikachu #025 (missing)' }).getAttribute('aria-pressed')).toBeNull()
+  })
+
   it('sorteren op waarde toont de marktwaarde van de kaart', () => {
     render(<BinderSlot {...base} states={[state(null, 0)]} sort="value" values={{ prices: new Map([[card.id, 4]]) }} />)
     expect(screen.getByText('€4.00')).toBeTruthy()

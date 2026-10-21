@@ -1,0 +1,34 @@
+/* ---------- Sets: kaarten selecteren (21-10-2026, op verzoek): wishlist of Cardmarket voor alle gekozen kaarten ---------- */
+.slot.is-selected {
+  box-shadow:
+    inset 0 0 0 1px var(--line),
+    0 0 0 3px var(--accent-line);
+}
+
+/* Gekozen ontbrekende kaart: in kleur zoals bij hover, zodat je ziet wat je koos. */
+.slot.missing.is-selected .card-img {
+  filter: grayscale(0.35) brightness(0.98);
+  opacity: 0.85;
+}
+
+/* Vinkje rechtsboven op de kaart (de prijs staat onderaan). */
+.slot .select-badge {
+  top: var(--space-2);
+  bottom: auto;
+}
+
+/* Meer knoppen dan in Collection: op een smal scherm mag de balk twee regels worden. */
+.set-select-bar {
+  flex-wrap: wrap;
+}
+
+.select-status {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--fs-small);
+  color: var(--ink-soft);
+}
+
+.select-status:empty {
+  display: none;
+}

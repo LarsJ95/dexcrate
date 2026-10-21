@@ -15,6 +15,7 @@ import { BinderToolbar, CostPanel, GoalStats, SetProgressSplit, type BinderShow 
 import { GoalSheet } from '../components/GoalSheet'
 import { IconArrowLeft } from '../components/Icons'
 import { SetCardSheet, type SheetNav } from '../components/SetCardSheet'
+import { SetSelectionBar } from '../components/SetSelectionBar'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { useSetRarities } from '../hooks/useSetRarities'
 import { useSetValues } from '../hooks/useSetValues'
@@ -71,6 +72,8 @@ export function SetBinderPage({ param }: Props): JSX.Element {
   const [skipFirst, setSkipFirst] = useState(readSkipFirst)
   const [cost, setCost] = useState<Cost | null>(null)
   const [openCard, setOpenCard] = useState<SetCard | null>(null)
+  // Kaarten selecteren (wishlist, Cardmarket); null = niet aan het selecteren.
+  const [selected, setSelected] = useState<ReadonlySet<string> | null>(null)
   // Na het bewerken van een exemplaar opnieuw laden (aantallen, voortgang, dubbelen).
   const [reloadKey, setReloadKey] = useState(0)
   // Elke set begint in setvolgorde; een andere sortering geldt alleen voor deze set (niet onthouden).
@@ -304,6 +307,20 @@ export function SetBinderPage({ param }: Props): JSX.Element {
           onNext: i < visible.length - 1 ? () => setOpenCard(visible[i + 1]) : null,
         }
 
+  // Tikken op een kaart: kaartvenster openen, of tijdens selecteren de kaart aan- of uitzetten.
+  function openOrSelect(card: SetCard): void {
+    if (selected === null) {
+      setOpenCard(card)
+      return
+    }
+    setSelected((s) => {
+      const next = new Set(s)
+      if (next.has(card.id)) next.delete(card.id)
+      else next.add(card.id)
+      return next
+    })
+  }
+
   const isComplete = progress !== null && progress.total > 0 && progress.done >= progress.total
 
   // Set compleet: één keer vieren; niet meer compleet, dan mag het later opnieuw.
@@ -356,6 +373,8 @@ export function SetBinderPage({ param }: Props): JSX.Element {
   const missingCount = progress.total - progress.done
   const variantGoal = goal.variants.length > 0
   const unit = variantGoal ? 'versions' : 'cards'
+  const selectedCards = selected === null ? [] : data.cards.filter((c) => selected.has(c.id))
+  const allShownSelected = selected !== null && visible.length > 0 && visible.every((c) => selected.has(c.id))
   const goalText = [
     variantGoal ? goal.variants.map((v) => VARIANT_LABELS[v]).join(', ') : null,
     goal.languages.length > 0 ? `${goal.languages.length === 1 ? 'language' : 'languages'}: ${goal.languages.join(', ')}` : null,
@@ -382,11 +401,18 @@ export function SetBinderPage({ param }: Props): JSX.Element {
           </p>
           {goalText.length > 0 && <p className="muted small">Goal: {goalText.join('; ')}</p>}
         </div>
-        {goalsEnabled && isLang(lang) && (
-          <button type="button" onClick={() => setGoalOpen(true)}>
-            Goal settings
-          </button>
-        )}
+        <div className="head-actions">
+          {isLang(lang) && data.cards.length > 0 && (
+            <button type="button" onClick={() => setSelected((s) => (s === null ? new Set() : null))} aria-pressed={selected !== null}>
+              {selected === null ? 'Select' : 'Done'}
+            </button>
+          )}
+          {goalsEnabled && isLang(lang) && (
+            <button type="button" onClick={() => setGoalOpen(true)}>
+              Goal settings
+            </button>
+          )}
+        </div>
       </div>
 
       <div
@@ -520,13 +546,28 @@ export function SetBinderPage({ param }: Props): JSX.Element {
                   sort={sort}
                   values={values}
                   newIndex={newIds.has(c.id) ? [...newIds].indexOf(c.id) : null}
-                  onOpen={setOpenCard}
+                  onOpen={openOrSelect}
+                  selected={selected === null ? undefined : selected.has(c.id)}
                 />
               ))}
             </ul>
           </section>
         ))}
       </div>
+
+      {selected !== null && isLang(lang) && (
+        <SetSelectionBar
+          lang={lang}
+          setCode={data.summary.abbr ?? data.summary.id}
+          selected={selectedCards}
+          shownCount={visible.length}
+          allShownSelected={allShownSelected}
+          onSelectAll={() => setSelected((s) => new Set([...(s ?? []), ...visible.map((c) => c.id)]))}
+          onClear={() => setSelected(new Set())}
+          onDone={() => setSelected(null)}
+          wishlist={goalsEnabled}
+        />
+      )}
     </section>
   )
 }

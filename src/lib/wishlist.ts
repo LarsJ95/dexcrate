@@ -135,6 +135,15 @@ export async function addWishlistItem(input: WishlistInput): Promise<WishlistIte
   return item
 }
 
+/** Meerdere wensen in één verzoek (kaarten selecteren in een set). */
+export async function addWishlistItems(inputs: readonly WishlistInput[]): Promise<WishlistItem[]> {
+  if (inputs.length === 0) return []
+  const { data, error } = await supabase.from('wishlist_items').insert([...inputs]).select('*')
+  if (error) throw new Error(`Adding to the wishlist failed: ${error.message}`)
+  // Opgeslagen is opgeslagen: een onleesbare regel niet als fout melden (anders sla je opnieuw, dubbel, op).
+  return (Array.isArray(data) ? data : []).flatMap((r: unknown) => toItem(r) ?? [])
+}
+
 export async function updateWishlistItem(id: string, patch: Partial<WishlistInput>): Promise<WishlistItem> {
   const { data, error } = await supabase.from('wishlist_items').update(patch).eq('id', id).select('*').single()
   if (error) throw new Error(`Saving failed: ${error.message}`)
