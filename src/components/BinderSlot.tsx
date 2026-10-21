@@ -7,6 +7,7 @@ import { isLang, type SetCard } from '../lib/tcgdex'
 import { VARIANT_LABELS, type Variant } from '../lib/types'
 import { CardFace } from './CardFace'
 import { CatalogCardPicture } from './CatalogCardPicture'
+import { IconCheck } from './Icons'
 import { LazyCardPrice } from './LazyCardPrice'
 
 interface Props {
@@ -23,10 +24,13 @@ interface Props {
   /** Nieuw sinds het vorige bezoek: springt in zijn vak; index = volgorde van springen. */
   newIndex: number | null
   onOpen: (card: SetCard) => void
+  /** Aan het selecteren: of deze kaart gekozen is; undefined = niet aan het selecteren (tikken opent de kaart). */
+  selected?: boolean
 }
 
 /** Eén vak in de setbinder. */
-export function BinderSlot({ card: c, lang, setId, qty, states, cost, sort, values, newIndex, onOpen }: Props): JSX.Element {
+export function BinderSlot({ card: c, lang, setId, qty, states, cost, sort, values, newIndex, onOpen, selected }: Props): JSX.Element {
+  const selecting = selected !== undefined
   const inGoal = states.length > 0
   const complete = inGoal && states.every((st) => st.missing === 0)
   // Prijs van wat er van deze kaart nog ontbreekt (alleen als alle prijzen bekend zijn).
@@ -49,14 +53,15 @@ export function BinderSlot({ card: c, lang, setId, qty, states, cost, sort, valu
   const isNew = newIndex !== null
   return (
     <li
-      className={`slot${complete ? ' have' : ' missing'}${inGoal ? '' : ' outside'}${isNew ? ' is-new' : ''}`}
+      className={`slot${complete ? ' have' : ' missing'}${inGoal ? '' : ' outside'}${isNew ? ' is-new' : ''}${selected ? ' is-selected' : ''}`}
       style={isNew ? ({ '--pop-delay': `${newIndex * 120}ms` } as CSSProperties) : undefined}
     >
       <button
         type="button"
         className="slot-open"
         onClick={() => onOpen(c)}
-        aria-label={`View ${c.name} #${c.localId}${complete ? '' : inGoal ? ' (missing)' : ' (not in goal)'}`}
+        aria-pressed={selecting ? selected : undefined}
+        aria-label={`${selecting ? 'Select' : 'View'} ${c.name} #${c.localId}${complete ? '' : inGoal ? ' (missing)' : ' (not in goal)'}`}
       >
         {isLang(lang) ? (
           <CatalogCardPicture
@@ -99,6 +104,11 @@ export function BinderSlot({ card: c, lang, setId, qty, states, cost, sort, valu
           <LazyCardPrice cardKey={`${lang}/${c.id}`} className="slot-price" withReverse />
         ) : null}
         {qty && qty > 1 ? <span className="qty-badge">{qty}×</span> : null}
+        {selected && (
+          <span className="select-badge" aria-hidden="true">
+            <IconCheck size={18} />
+          </span>
+        )}
       </button>
     </li>
   )
