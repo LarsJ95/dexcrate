@@ -4,7 +4,9 @@
   color: var(--ink);
 }
 
+/* minmax(0, 1fr): een lange setnaam mag de kolom niet breder maken dan het menu (22-10-2026); hij wordt ingekort met "…". */
 .side-nav ul.side-sub {
+  grid-template-columns: minmax(0, 1fr);
   gap: 0;
   margin: 2px 0 var(--space-1) calc(var(--space-3) + 20px + var(--space-3));
   padding-left: var(--space-2);
@@ -15,11 +17,16 @@
   display: flex;
   gap: var(--space-2);
   align-items: baseline;
+  min-width: 0;
   padding: var(--space-1) var(--space-2);
   font-size: var(--fs-small);
   font-weight: 600;
-  white-space: nowrap;
+}
+
+.side-sub-name {
+  min-width: 0;
   overflow: hidden;
+  white-space: nowrap;
   text-overflow: ellipsis;
 }
 
