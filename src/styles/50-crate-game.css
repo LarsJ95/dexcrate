@@ -6,12 +6,15 @@
 }
 
 .crate-wallet {
+  container-type: inline-size;
   display: flex;
   align-items: center;
   gap: var(--space-4);
 }
 
+/* Muntje houdt zijn maat (21-10-2026: vanaf 100.000 punten kneep het getal hem plat). */
 .crate-coin {
+  flex: none;
   display: grid;
   place-items: center;
   width: 64px;
@@ -22,8 +25,11 @@
   box-shadow: inset 0 -4px 0 rgb(0 0 0 / 0.18), var(--shadow-float);
 }
 
+/* Past altijd naast het muntje: ruimte (vak min muntje en tussenruimte) gedeeld door het aantal tekens
+   (een teken is ongeveer 0,74 em breed); nooit groter dan voorheen. */
 .crate-points {
-  font-size: clamp(2rem, 5vw, 3rem);
+  font-size: max(1.25rem, min(clamp(2rem, 5vw, 3rem), calc((100cqi - 64px - var(--space-4)) / (var(--pts-len, 3) * 0.74))));
+  white-space: nowrap;
   font-weight: 900;
   font-stretch: var(--stretch-display);
   line-height: 1;
