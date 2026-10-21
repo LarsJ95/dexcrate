@@ -136,4 +136,14 @@
   .holo-card .holo-glare {
     background: radial-gradient(farthest-corner circle at var(--mx) var(--my), var(--glare-1) 0%, var(--glare-2) 28%, transparent 70%);
   }
+
+  /* Derde stap (21-10-2026, schermopname: de vergrote kaart was tijdens kantelen af en toe één beeldje helemaal weg).
+     Glans en lichtvlek zaten in dezelfde laag als de kaartfoto, dus elk beeldje werd de foto op volle scherpte opnieuw
+     getekend; was dat niet op tijd klaar, dan ontbrak de kaart. Nu elk een eigen laag en de kaart vast op de GPU:
+     de foto wordt tijdens kantelen niet meer opnieuw getekend. */
+  .holo-card.is-interactive,
+  .holo-card.is-interactive .holo-foil,
+  .holo-card.is-interactive .holo-glare {
+    will-change: transform;
+  }
 }
