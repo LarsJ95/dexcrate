@@ -1,0 +1,71 @@
+/* ---------- Vastgezette sets (21-10-2026, op verzoek): in het menu onder Sets, op telefoon bovenaan Sets ---------- */
+/* Sets is actief, maar de open set staat als subregel gemarkeerd. */
+.side-nav a[aria-current='true'] {
+  color: var(--ink);
+}
+
+.side-nav ul.side-sub {
+  gap: 0;
+  margin: 2px 0 var(--space-1) calc(var(--space-3) + 20px + var(--space-3));
+  padding-left: var(--space-2);
+  border-left: 1px solid var(--line);
+}
+
+.side-nav .side-sub a {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.side-nav .side-sub a::before,
+.side-nav .side-sub a::after {
+  content: none;
+}
+
+.side-sub-lang {
+  flex: none;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* Knop op de setpagina: ster gevuld als de set vastzit. */
+button.pin-set[aria-pressed='true'] svg {
+  color: var(--accent-line);
+  fill: currentColor;
+}
+
+/* Telefoon en tablet (geen zijmenu): rij bovenaan de Sets-pagina, zijwaarts te vegen. */
+.pinned-sets {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+a.pinned-chip {
+  display: inline-flex;
+  flex: none;
+  gap: var(--space-1);
+  align-items: center;
+  border-radius: var(--radius-pill);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+a.pinned-chip svg {
+  color: var(--accent-line);
+  fill: currentColor;
+}
+
+@media (min-width: 1024px) {
+  .pinned-sets {
+    display: none;
+  }
+}
