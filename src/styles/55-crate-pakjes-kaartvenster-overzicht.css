@@ -443,11 +443,31 @@ button.th-sort:hover:not(:disabled) {
 
 .crate-missing li {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--space-3);
   align-items: center;
   padding: var(--space-2) 0;
   border-bottom: 1px solid var(--line);
+}
+
+/* Foto en naam samen: tikken = kaart groot (21-10-2026). */
+button.crate-missing-open,
+button.crate-missing-open:hover:not(:disabled) {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: center;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+}
+
+button.crate-missing-open:hover:not(:disabled) strong {
+  text-decoration: underline;
 }
 
 .crate-missing-img .card-img,

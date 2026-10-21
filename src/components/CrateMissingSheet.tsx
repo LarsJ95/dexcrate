@@ -3,7 +3,10 @@ import { CRATE_SERVER_MISSING, craftCard, craftCost, hasCrateServer, type CrateR
 import { errorText } from '../lib/errors'
 import { getSet, getSetRarities, type SetCard } from '../lib/tcgdex'
 import { CardFace } from './CardFace'
+import { foilStyleFor } from '../lib/cardTraits'
 import { CatalogKeyPicture } from './CatalogCardPicture'
+import { CardZoom } from './CardZoom'
+import { HoloCard } from './HoloCard'
 import { CraftReveal } from './CraftReveal'
 import { Loading } from './Loading'
 import { RaritySymbols } from './RaritySymbols'
@@ -35,6 +38,8 @@ export function CrateMissingSheet({ setKey, setName, owned, rules, points, onBou
   const [balance, setBalance] = useState(points)
   // Gekochte kaart groot onthullen (zoals bij een pakje).
   const [revealed, setRevealed] = useState<{ card: PackPull; cost: number } | null>(null)
+  // Kaart groot bekijken vóór het kopen (21-10-2026, op verzoek).
+  const [zoom, setZoom] = useState<(SetCard & { rarity: string | null }) | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -100,15 +105,17 @@ export function CrateMissingSheet({ setKey, setName, owned, rules, points, onBou
             const key = `en/${c.id}`
             return (
               <li key={c.id}>
-                <span className="crate-missing-img">
-                  <CatalogKeyPicture cardKey={key} image={c.image} name={c.name} quality="low" alt="" fallback={<CardFace name={c.name} detail={`#${c.localId}`} />} />
-                </span>
-                <span className="crate-missing-text">
-                  <strong>{c.name}</strong>
-                  <span className="muted small">
-                    #{c.localId} · <RaritySymbols rarity={c.rarity} /> {c.rarity ?? 'Unknown rarity'}
+                <button type="button" className="crate-missing-open" onClick={() => setZoom(c)} aria-label={`Show ${c.name} #${c.localId} large`}>
+                  <span className="crate-missing-img">
+                    <CatalogKeyPicture cardKey={key} image={c.image} name={c.name} quality="low" alt="" fallback={<CardFace name={c.name} detail={`#${c.localId}`} />} />
                   </span>
-                </span>
+                  <span className="crate-missing-text">
+                    <strong>{c.name}</strong>
+                    <span className="muted small">
+                      #{c.localId} · <RaritySymbols rarity={c.rarity} /> {c.rarity ?? 'Unknown rarity'}
+                    </span>
+                  </span>
+                </button>
                 <button
                   type="button"
                   className="small-btn"
@@ -124,6 +131,20 @@ export function CrateMissingSheet({ setKey, setName, owned, rules, points, onBou
         </ul>
       )}
       <p className="muted small">Prices depend on rarity. Cards stay virtual, like every Crate card.</p>
+      {zoom && (
+        <CardZoom label={`${zoom.name} #${zoom.localId}`} onClose={() => setZoom(null)}>
+          <HoloCard foil={foilStyleFor(null, zoom.rarity)} interactive>
+            <CatalogKeyPicture
+              cardKey={`en/${zoom.id}`}
+              image={zoom.image}
+              name={zoom.name}
+              quality="high"
+              alt={`${zoom.name} #${zoom.localId}`}
+              fallback={<CardFace name={zoom.name} detail={`#${zoom.localId}`} />}
+            />
+          </HoloCard>
+        </CardZoom>
+      )}
     </Sheet>
   )
 }
