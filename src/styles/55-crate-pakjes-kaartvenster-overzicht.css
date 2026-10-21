@@ -1,15 +1,29 @@
 /* ---------- Crate: pakjes, kaartvenster, overzicht (16-10-2026) ---------- */
-/* Punten als compacte balk bovenaan, de pakjes eronder in een raster (18-10-2026: naast de punten werden vijf pakjes te smal). */
+/* Punten als compacte balk bovenaan, de pakjes eronder in een raster (18-10-2026: naast de punten werden vijf pakjes te smal).
+   Statistiekbalk naast de punten tot dezelfde rechterrand als de pakjes (21-10-2026, op verzoek); is er naast de punten
+   minder dan 480px over, dan schuift hij eronder. */
 .crate-top {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
   gap: var(--space-4);
 }
 
 .crate-top .crate-wallet {
-  justify-self: start;
+  flex: 0 0 auto;
   min-width: 220px;
   max-width: 100%;
+}
+
+.crate-top .crate-ov-stats {
+  flex: 1 1 480px;
+  min-width: 0;
+  align-content: center;
+}
+
+.crate-top .crate-packs {
+  flex: 1 1 100%;
+  min-width: 0;
 }
 
 .crate-packs {

@@ -2,9 +2,8 @@ import { useEffect, useMemo, useState, type JSX, type ReactNode } from 'react'
 import { foilStyleFor, rarityRule } from '../lib/cardTraits'
 import { crateSetProgress, summarizeCrate, type CrateCard, type CrateRules } from '../lib/crate'
 import { crateSetKey } from '../lib/crateFilters'
-import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
-import { getCardPrice, getSetList } from '../lib/tcgdex'
+import { getSetList } from '../lib/tcgdex'
 import { hpLevel } from '../lib/trainer'
 import { CardFace } from './CardFace'
 import { CatalogKeyPicture } from './CatalogCardPicture'
@@ -29,13 +28,49 @@ function colClass(col: Col): string | undefined {
   return cls.length > 0 ? cls.join(' ') : undefined
 }
 
-interface Props {
+/** Prijs per exemplaar; ontbreekt zolang hij laadt, null = geen prijs. */
+type CratePrices = ReadonlyMap<string, number | null>
+
+interface StatsProps {
   cards: readonly CrateCard[]
-  onOpen: (card: CrateCard) => void
+  prices: CratePrices
   /** Inruilfactor uit de regels (STAP18: 2). */
   tradeFactor: number
   /** Knop (met bevestigen) om alle dubbelen in te ruilen; null = geen dubbelen. */
   tradeAll: ReactNode
+}
+
+/** Statistiekbalk (kaarten, marktwaarde, dubbelen); sinds 21-10-2026 bovenaan naast Crate points, op verzoek. */
+export function CrateStats({ cards, prices, tradeFactor, tradeAll }: StatsProps): JSX.Element {
+  const summary = useMemo(() => summarizeCrate(cards, (id) => prices.get(id), tradeFactor), [cards, prices, tradeFactor])
+  const loaded = cards.filter((c) => prices.has(c.tcgdexId)).length
+  return (
+    <section className="panel crate-ov-stats" aria-label="Your Crate in numbers">
+      <div>
+        <span className="stat-label">Cards</span>
+        <strong>{summary.unique}</strong>
+        <span className="muted small">{summary.copies} copies</span>
+      </div>
+      <div className="crate-ov-value">
+        <span className="stat-label">Market value</span>
+        <strong>{formatEur(summary.value)}</strong>
+        <span className="muted small">{loaded < cards.length ? `Loading prices ${loaded}/${cards.length}…` : `${summary.priced} of ${summary.unique} with a price`}</span>
+      </div>
+      <div>
+        <span className="stat-label">Duplicates</span>
+        <strong>{summary.duplicatePoints} pts</strong>
+        <span className="muted small">worth {formatEur(summary.duplicateValue)}</span>
+      </div>
+      {tradeAll && <div className="crate-ov-trade">{tradeAll}</div>}
+    </section>
+  )
+}
+
+interface Props {
+  cards: readonly CrateCard[]
+  prices: CratePrices
+  onOpen: (card: CrateCard) => void
+  tradeFactor: number
   /** Voor gericht kopen van ontbrekende kaarten (STAP23). */
   rules: CrateRules
   points: number
@@ -47,44 +82,13 @@ const TOP_CARDS = 6
 const TOP_SETS = 6
 
 /**
- * Overzicht van je Crate (standaardweergave, rustiger sinds 18-10-2026): één statistiekbalk, je waardevolste kaarten,
+ * Overzicht van je Crate (standaardweergave, rustiger sinds 18-10-2026): je waardevolste kaarten,
  * setvoortgang (doel van het Set pack), zeldzaamheid als balkjes en de volledige tabel ingeklapt.
+ * De statistiekbalk staat sinds 21-10-2026 bovenaan de pagina (CrateStats).
  */
-export function CrateOverview({ cards, onOpen, tradeFactor, tradeAll, rules, points, onBought }: Props): JSX.Element {
-  // Prijs per exemplaar; ontbreekt zolang hij laadt, null = geen prijs.
-  const [prices, setPrices] = useState<ReadonlyMap<string, number | null>>(new Map())
+export function CrateOverview({ cards, prices, onOpen, tradeFactor, rules, points, onBought }: Props): JSX.Element {
   const [sort, setSort] = useState<{ col: Col; desc: boolean }>({ col: 'value', desc: true })
-
-  const ids = useMemo(() => [...new Set(cards.map((c) => c.tcgdexId))].sort().join('|'), [cards])
-  useEffect(() => {
-    if (!ids) return
-    let cancelled = false
-    const found = new Map<string, number | null>()
-    let flush = 0
-    const publish = (): void => {
-      flush = 0
-      if (!cancelled) setPrices(new Map(found))
-    }
-    // Prijzen komen één voor één binnen; samen tonen om niet bij elke prijs de hele tabel te tekenen.
-    for (const id of ids.split('|')) {
-      getCardPrice(id)
-        .then((p) => found.set(id, marketValue(p, null)?.value ?? null))
-        .catch((err: unknown) => {
-          console.warn(`Prijs ophalen mislukt voor ${id}`, err)
-          found.set(id, null)
-        })
-        .finally(() => {
-          if (!flush) flush = window.setTimeout(publish, 300)
-        })
-    }
-    return () => {
-      cancelled = true
-      window.clearTimeout(flush)
-    }
-  }, [ids])
-
   const summary = useMemo(() => summarizeCrate(cards, (id) => prices.get(id), tradeFactor), [cards, prices, tradeFactor])
-  const loaded = cards.filter((c) => prices.has(c.tcgdexId)).length
 
   const rows = useMemo(() => {
     const priceOf = (c: CrateCard): number => prices.get(c.tcgdexId) ?? -1
@@ -147,25 +151,6 @@ export function CrateOverview({ cards, onOpen, tradeFactor, tradeAll, rules, poi
 
   return (
     <div className="crate-overview">
-      <section className="panel crate-ov-stats" aria-label="Your Crate in numbers">
-        <div>
-          <span className="stat-label">Cards</span>
-          <strong>{summary.unique}</strong>
-          <span className="muted small">{summary.copies} copies</span>
-        </div>
-        <div className="crate-ov-value">
-          <span className="stat-label">Market value</span>
-          <strong>{formatEur(summary.value)}</strong>
-          <span className="muted small">{loaded < cards.length ? `Loading prices ${loaded}/${cards.length}…` : `${summary.priced} of ${summary.unique} with a price`}</span>
-        </div>
-        <div>
-          <span className="stat-label">Duplicates</span>
-          <strong>{summary.duplicatePoints} pts</strong>
-          <span className="muted small">worth {formatEur(summary.duplicateValue)}</span>
-        </div>
-        {tradeAll && <div className="crate-ov-trade">{tradeAll}</div>}
-      </section>
-
       {top.length > 0 && (
         <section className="crate-ov-section" aria-labelledby="crate-top-title">
           <h3 id="crate-top-title" className="section-title">
