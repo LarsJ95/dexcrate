@@ -1,0 +1,38 @@
+/* ---------- Pijlen rechtsonder: snel naar boven of beneden (21-10-2026, op verzoek) ---------- */
+/* Hoogte (bottom) zet ScrollJump zelf: boven de onderbalk, Add card-knop en selectiebalk. */
+.scroll-jump {
+  position: fixed;
+  right: var(--space-5);
+  z-index: 20;
+  display: grid;
+  gap: var(--space-2);
+  transition:
+    opacity 200ms ease-out,
+    visibility 200ms ease-out;
+}
+
+.scroll-jump button,
+.scroll-jump button:hover:not(:disabled) {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-float);
+}
+
+.scroll-jump button:hover:not(:disabled) {
+  color: var(--accent-line);
+}
+
+/* Telefoon en tablet: alleen tijdens en kort na het scrollen, dus nooit blijvend in de weg. */
+.scroll-jump.is-touch {
+  right: var(--space-3);
+}
+
+.scroll-jump:not(.is-shown) {
+  opacity: 0;
+  visibility: hidden;
+}
