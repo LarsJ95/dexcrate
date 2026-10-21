@@ -78,11 +78,26 @@ describe('BinderSlot', () => {
     await userEvent.click(button)
     expect(onOpen).toHaveBeenCalledWith(card)
     rerender(<BinderSlot {...base} states={[state(null, 1)]} selected onOpen={onOpen} />)
-    expect(container.querySelector('li')?.className).toBe('slot missing is-selected')
+    expect(container.querySelector('li')?.className).toBe('slot missing is-selecting is-selected')
     expect(button.getAttribute('aria-pressed')).toBe('true')
-    expect(container.querySelector('.select-badge')).toBeTruthy()
     rerender(<BinderSlot {...base} states={[state(null, 1)]} onOpen={onOpen} />)
     expect(screen.getByRole('button', { name: 'View Pikachu #025 (missing)' }).getAttribute('aria-pressed')).toBeNull()
+  })
+
+  it('rondje linksboven: selecteert de kaart, ook zonder eerst "Select"; gekozen = vinkje', async () => {
+    const onSelect = vi.fn()
+    const onOpen = vi.fn()
+    const { container, rerender } = render(<BinderSlot {...base} states={[state(null, 1)]} onOpen={onOpen} onSelect={onSelect} />)
+    const pick = container.querySelector<HTMLButtonElement>('button.slot-pick')
+    expect(pick?.tabIndex).toBe(-1)
+    expect(pick?.querySelector('svg')).toBeNull()
+    await userEvent.click(pick as HTMLButtonElement)
+    expect(onSelect).toHaveBeenCalledWith(card)
+    expect(onOpen).not.toHaveBeenCalled()
+    rerender(<BinderSlot {...base} states={[state(null, 1)]} selected onOpen={onOpen} onSelect={onSelect} />)
+    expect(container.querySelector('button.slot-pick.is-on svg')).toBeTruthy()
+    rerender(<BinderSlot {...base} states={[state(null, 1)]} onOpen={onOpen} />)
+    expect(container.querySelector('button.slot-pick')).toBeNull()
   })
 
   it('sorteren op waarde toont de marktwaarde van de kaart', () => {

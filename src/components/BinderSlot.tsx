@@ -26,10 +26,12 @@ interface Props {
   onOpen: (card: SetCard) => void
   /** Aan het selecteren: of deze kaart gekozen is; undefined = niet aan het selecteren (tikken opent de kaart). */
   selected?: boolean
+  /** Rondje linksboven: kaart (de)selecteren, ook als je nog niet aan het selecteren bent. Ontbreekt = geen rondje. */
+  onSelect?: (card: SetCard) => void
 }
 
 /** Eén vak in de setbinder. */
-export function BinderSlot({ card: c, lang, setId, qty, states, cost, sort, values, newIndex, onOpen, selected }: Props): JSX.Element {
+export function BinderSlot({ card: c, lang, setId, qty, states, cost, sort, values, newIndex, onOpen, selected, onSelect }: Props): JSX.Element {
   const selecting = selected !== undefined
   const inGoal = states.length > 0
   const complete = inGoal && states.every((st) => st.missing === 0)
@@ -53,7 +55,7 @@ export function BinderSlot({ card: c, lang, setId, qty, states, cost, sort, valu
   const isNew = newIndex !== null
   return (
     <li
-      className={`slot${complete ? ' have' : ' missing'}${inGoal ? '' : ' outside'}${isNew ? ' is-new' : ''}${selected ? ' is-selected' : ''}`}
+      className={`slot${complete ? ' have' : ' missing'}${inGoal ? '' : ' outside'}${isNew ? ' is-new' : ''}${selecting ? ' is-selecting' : ''}${selected ? ' is-selected' : ''}`}
       style={isNew ? ({ '--pop-delay': `${newIndex * 120}ms` } as CSSProperties) : undefined}
     >
       <button
@@ -104,12 +106,14 @@ export function BinderSlot({ card: c, lang, setId, qty, states, cost, sort, valu
           <LazyCardPrice cardKey={`${lang}/${c.id}`} className="slot-price" withReverse />
         ) : null}
         {qty && qty > 1 ? <span className="qty-badge">{qty}×</span> : null}
-        {selected && (
-          <span className="select-badge" aria-hidden="true">
-            <IconCheck size={18} />
-          </span>
-        )}
       </button>
+      {/* Snelkoppeling voor muis en touch (21-10-2026, op verzoek); met het toetsenbord via "Select" en dan de kaart zelf
+          (aria-pressed), daarom niet in de tabvolgorde en verborgen voor schermlezers. */}
+      {onSelect && (
+        <button type="button" className={`slot-pick${selected ? ' is-on' : ''}`} tabIndex={-1} aria-hidden="true" onClick={() => onSelect(c)}>
+          <span className="slot-pick-ring">{selected && <IconCheck size={16} />}</span>
+        </button>
+      )}
     </li>
   )
 }

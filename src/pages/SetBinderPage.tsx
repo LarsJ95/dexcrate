@@ -307,18 +307,20 @@ export function SetBinderPage({ param }: Props): JSX.Element {
           onNext: i < visible.length - 1 ? () => setOpenCard(visible[i + 1]) : null,
         }
 
-  // Tikken op een kaart: kaartvenster openen, of tijdens selecteren de kaart aan- of uitzetten.
-  function openOrSelect(card: SetCard): void {
-    if (selected === null) {
-      setOpenCard(card)
-      return
-    }
+  // Kaart aan- of uitzetten; via het rondje op de kaart begint daarmee ook het selecteren.
+  function toggleSelected(card: SetCard): void {
     setSelected((s) => {
-      const next = new Set(s)
+      const next = new Set(s ?? [])
       if (next.has(card.id)) next.delete(card.id)
       else next.add(card.id)
       return next
     })
+  }
+
+  // Tikken op een kaart: kaartvenster openen, of tijdens selecteren de kaart aan- of uitzetten.
+  function openOrSelect(card: SetCard): void {
+    if (selected === null) setOpenCard(card)
+    else toggleSelected(card)
   }
 
   const isComplete = progress !== null && progress.total > 0 && progress.done >= progress.total
@@ -548,6 +550,7 @@ export function SetBinderPage({ param }: Props): JSX.Element {
                   newIndex={newIds.has(c.id) ? [...newIds].indexOf(c.id) : null}
                   onOpen={openOrSelect}
                   selected={selected === null ? undefined : selected.has(c.id)}
+                  onSelect={isLang(lang) ? toggleSelected : undefined}
                 />
               ))}
             </ul>
