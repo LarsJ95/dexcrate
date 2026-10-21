@@ -26,6 +26,25 @@ function Svg({ size = 20, className, children }: IconProps & { children: ReactNo
   )
 }
 
+/** Weergave als raster (grote kaarten). */
+export const IconGrid = (p: IconProps): JSX.Element => (
+  <Svg {...p}>
+    <rect x="4" y="4" width="7" height="7" rx="1.5" />
+    <rect x="13" y="4" width="7" height="7" rx="1.5" />
+    <rect x="4" y="13" width="7" height="7" rx="1.5" />
+    <rect x="13" y="13" width="7" height="7" rx="1.5" />
+  </Svg>
+)
+
+/** Weergave als lijst (compacte regels). */
+export const IconList = (p: IconProps): JSX.Element => (
+  <Svg {...p}>
+    <rect x="4" y="5" width="4" height="4" rx="1" />
+    <rect x="4" y="15" width="4" height="4" rx="1" />
+    <path d="M11 7h9M11 17h9" />
+  </Svg>
+)
+
 export const IconHome = (p: IconProps): JSX.Element => (
   <Svg {...p}>
     <path d="M3 12h4l3-8 4 16 3-8h4" />

@@ -1,0 +1,64 @@
+/* ---------- Raster of lijst (Collection en Wishlist, 21-10-2026, op verzoek) ---------- */
+/* Schakelaar rechtsboven naast Select/Add card: twee vierkante icoonknoppen. */
+.head-actions {
+  align-items: center;
+}
+
+.view-toggle {
+  flex: none;
+}
+
+.view-toggle > button {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  padding-inline: var(--space-2);
+}
+
+/* Collection als lijst: zelfde regel als de wishlist, met selectie zoals bij de tegels. */
+.card-rows .card-row {
+  position: relative;
+}
+
+.card-row .tx-main {
+  flex: 1;
+}
+
+.card-row .tx-amounts {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  text-align: right;
+}
+
+.card-row .tx-amount {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.card-row-item.is-selected .card-row {
+  outline: 3px solid var(--accent-line);
+  outline-offset: 2px;
+}
+
+.card-row .select-badge {
+  right: var(--space-2);
+  bottom: 50%;
+  translate: 0 50%;
+}
+
+/* Wishlist met grote kaarten: tegels zoals in Collection; gevonden wensen gedempt. */
+.wish-tile .tile-body {
+  gap: var(--space-1);
+}
+
+.wish-tile.is-found .tile-open {
+  opacity: 0.75;
+}
+
+.wish-tile .cm-button {
+  justify-self: start;
+}
