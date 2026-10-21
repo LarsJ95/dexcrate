@@ -21,6 +21,7 @@ import { useMarketPrices } from '../hooks/useMarketPrices'
 import { listCards, updateCard } from '../lib/db'
 import { compareOrder, swapOrder, useDragSwap } from '../lib/dragSwap'
 import { marketValueOf, type MarketValue } from '../lib/prices'
+import { OPEN_CARD_EVENT, clearPendingCard, pendingCard } from '../lib/openCard'
 import { matchesSearch } from '../lib/search'
 import { formatEur } from '../lib/stats'
 import { canToggleSold, statusFields, type Card, type CardInput, type CardStatus } from '../lib/types'
@@ -64,7 +65,23 @@ export function CollectionPage(): JSX.Element {
   const [selected, setSelected] = useState<ReadonlySet<string> | null>(null)
   const [saleFor, setSaleFor] = useState<Card[] | null>(null)
   const [purchaseFor, setPurchaseFor] = useState<Card[] | null>(null)
-  const [editing, setEditing] = useState<{ id: string | null } | null>(null)
+  const [editingState, setEditingState] = useState<{ id: string | null } | null>(null)
+  // Kaart gekozen in het zoekvenster (Ctrl+K): openen zodra de lijst er is en de kaart erin staat.
+  const [requested, setRequested] = useState<string | null>(pendingCard)
+  useEffect(() => {
+    clearPendingCard()
+    const onOpen = (): void => {
+      setRequested(pendingCard())
+      clearPendingCard()
+    }
+    window.addEventListener(OPEN_CARD_EVENT, onOpen)
+    return () => window.removeEventListener(OPEN_CARD_EVENT, onOpen)
+  }, [])
+  const setEditing = useCallback((next: { id: string | null } | null): void => {
+    setEditingState(next)
+    setRequested(null)
+  }, [])
+  const editing = editingState ?? (requested && cards?.some((c) => c.id === requested) ? { id: requested } : null)
   const newCardDefaults = useNewCardDefaults()
   const [pending, setPending] = useState<ReadonlySet<string>>(new Set())
   const { prices, loading: pricesLoading } = useMarketPrices(cards)
@@ -165,7 +182,7 @@ export function CollectionPage(): JSX.Element {
         })
       }
     },
-    [cards, pending, salesTracked],
+    [cards, pending, salesTracked, setEditing],
   )
 
   const open = useCallback(
@@ -181,7 +198,7 @@ export function CollectionPage(): JSX.Element {
         return next
       })
     },
-    [selected],
+    [selected, setEditing],
   )
 
   const selectedCards = selected ? (cards ?? []).filter((c) => selected.has(c.id)) : []
