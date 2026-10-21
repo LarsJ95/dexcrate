@@ -102,6 +102,34 @@
   }
 }
 
+/* Touchscreen (21-10-2026, vergrote kaart was op Android af en toe één beeldje weg; met Animations uit niet): het
+   schuiven via background-position met blur(48px) en masker liet de telefoon 60× per seconde de bovenste helft van
+   het scherm opnieuw tekenen en vervagen. Nu schuift de laag zelf (transform, niets opnieuw tekenen), zonder blur
+   (het verloop is al zacht). Zelfde baan: laag 220% breed, 0 → -54,545% van zichzelf = 1,2 schermbreedte. */
+@media (pointer: coarse) {
+  .sky-aurora {
+    right: auto;
+    width: 220%;
+    background-size: 100% 100%;
+    filter: none;
+    will-change: transform;
+  }
+
+  [data-motion='on'] .sky-aurora {
+    animation-name: sky-aurora-touch;
+  }
+}
+
+@keyframes sky-aurora-touch {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-54.545%);
+  }
+}
+
 /* Vliegende Pokémon: donker silhouet in de verte. */
 .sky-flyer {
   position: absolute;
