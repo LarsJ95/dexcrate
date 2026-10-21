@@ -49,31 +49,45 @@ afterEach(() => {
 })
 
 describe('SetSelectionBar: Cardmarket', () => {
-  it('weinig kaarten: meteen openen; blokkeert de browser de rest, dan één voor één verder', async () => {
+  it('één kaart: meteen openen, zonder vraag', async () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => ({ opener: null }) as unknown as Window)
+    render(<SetSelectionBar {...base} selected={cardsOf(1)} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Open 1 on Cardmarket in new tabs' }))
+    expect(open).toHaveBeenCalledTimes(1)
+    expect(open.mock.calls[0][0]).toContain('idProduct=111')
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('meer kaarten: eerst kiezen; "allemaal" geblokkeerd, dan meteen zeggen hoeveel en één voor één verder', async () => {
     const tab = (): Window => ({ opener: null }) as unknown as Window
     const open = vi.spyOn(window, 'open').mockImplementationOnce(tab).mockImplementationOnce(() => null)
     render(<SetSelectionBar {...base} selected={cardsOf(3)} />)
     await userEvent.click(screen.getByRole('button', { name: 'Open 3 on Cardmarket in new tabs' }))
-    expect(open.mock.calls[0][0]).toContain('idProduct=111')
-    expect(screen.getByText('1 of 3 tabs opened.')).toBeTruthy()
+    expect(open).not.toHaveBeenCalled()
+    expect(screen.getByText('Open 3 Cardmarket pages, each in its own tab.')).toBeTruthy()
+    expect(screen.queryByText(/That is a lot of tabs/)).toBeNull()
 
+    await userEvent.click(screen.getByRole('button', { name: 'Open all 3 at once' }))
+    expect(screen.getByText('1 of 3 tabs opened. Your browser blocked the others.')).toBeTruthy()
     open.mockImplementation(tab)
     await userEvent.click(screen.getByRole('button', { name: 'Open next (2 of 3)' }))
     expect(open.mock.lastCall?.[0]).toContain('searchString=Card%20002')
-    await userEvent.click(screen.getByRole('button', { name: 'Open next (3 of 3)' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(open).toHaveBeenCalledTimes(4)
   })
 
-  it(`vanaf 10 kaarten eerst vragen`, async () => {
+  it('één voor één: elke tik de volgende; vanaf 10 kaarten een waarschuwing', async () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => ({ opener: null }) as unknown as Window)
     render(<SetSelectionBar {...base} selected={cardsOf(10)} />)
     await userEvent.click(screen.getByRole('button', { name: 'Open 10 on Cardmarket in new tabs' }))
-    expect(open).not.toHaveBeenCalled()
-    expect(screen.getByText('Open 10 Cardmarket pages, each in its own tab?')).toBeTruthy()
-    await userEvent.click(screen.getByRole('button', { name: 'Open 10 tabs' }))
-    expect(open).toHaveBeenCalledTimes(10)
-    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.getByText(/That is a lot of tabs at once\./)).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: 'One at a time' }))
+    expect(open).toHaveBeenCalledTimes(1)
+    expect(screen.getByText('1 of 10 tabs opened.')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Open next (2 of 10)' }))
+    expect(open).toHaveBeenCalledTimes(2)
   })
 })
 
