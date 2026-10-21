@@ -20,6 +20,7 @@ import {
   type UserError,
 } from '../lib/admin'
 import { LEDGER_LABELS, plural, when } from '../lib/adminText'
+import { deleteUser, inviteUser, setBlocked } from '../lib/adminUsers'
 import { errorText } from '../lib/errors'
 import { Loading } from './Loading'
 
@@ -170,6 +171,129 @@ export function UserDetail({ user, onChanged, extra }: { user: AdminUser; onChan
       </form>
       {extra}
     </div>
+  )
+}
+
+/** Blokkeren/deblokkeren en verwijderen via admin-users. Niet voor jezelf of andere beheerders (de functie weigert dat ook). */
+export function AccountActions({ user, blocked, onChanged }: { user: AdminUser; blocked: boolean; onChanged: () => void }): JSX.Element {
+  const [reason, setReason] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
+
+  async function run(work: () => Promise<string>): Promise<void> {
+    if (busy) return
+    const problem = reasonError(reason)
+    if (problem) {
+      setResult({ ok: false, text: problem })
+      return
+    }
+    setBusy(true)
+    setResult(null)
+    try {
+      setResult({ ok: true, text: await work() })
+      setReason('')
+      onChanged()
+    } catch (err) {
+      setResult({ ok: false, text: errorText(err, 'That did not work.') })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="admin-account">
+      <h3>Account</h3>
+      <label>
+        Reason
+        <input value={reason} maxLength={REASON_MAX} placeholder="e.g. Asked to delete the account" onChange={(e) => setReason(e.target.value)} />
+      </label>
+      <div className="settings-actions">
+        <button type="button" disabled={busy} onClick={() => void run(async () => (await setBlocked(user.id, !blocked, reason), blocked ? 'Account unblocked.' : 'Account blocked: they cannot sign in.'))}>
+          {blocked ? 'Unblock account' : 'Block account'}
+        </button>
+        {!deleting && (
+          <button type="button" className="danger" disabled={busy} onClick={() => setDeleting(true)}>
+            Delete account…
+          </button>
+        )}
+      </div>
+      {deleting && (
+        <div className="admin-delete settings-danger">
+          <p className="small">
+            Deletes the account, all cards, photos, receipts, wishlist and Crate data of <strong>{user.email}</strong>. This cannot be undone.
+          </p>
+          <label>
+            Type the e-mail address to confirm
+            <input type="email" autoComplete="off" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+          </label>
+          <div className="settings-actions">
+            <button
+              type="button"
+              className="danger"
+              disabled={busy || confirm.trim().toLowerCase() !== user.email.toLowerCase()}
+              onClick={() => void run(async () => `Deleted, with ${plural(await deleteUser(user.id, confirm, reason), 'file', 'files')}.`)}
+            >
+              {busy ? 'Deleting…' : 'Delete for good'}
+            </button>
+            <button type="button" className="ghost" disabled={busy} onClick={() => setDeleting(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+      <Status result={result} />
+    </div>
+  )
+}
+
+/** Iemand uitnodigen (aanmelden staat uit): mail met een link om een wachtwoord te kiezen. */
+export function InvitePanel({ onInvited }: { onInvited: () => void }): JSX.Element {
+  const [email, setEmail] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
+
+  async function invite(e: FormEvent<HTMLFormElement>): Promise<void> {
+    e.preventDefault()
+    if (busy) return
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) {
+      setResult({ ok: false, text: 'Enter a valid e-mail address.' })
+      return
+    }
+    setBusy(true)
+    setResult(null)
+    try {
+      await inviteUser(email)
+      setResult({ ok: true, text: `Invitation sent to ${email.trim()}.` })
+      setEmail('')
+      onInvited()
+    } catch (err) {
+      setResult({ ok: false, text: errorText(err, 'Inviting failed.') })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form className="panel" aria-labelledby="admin-invite-title" onSubmit={(e) => void invite(e)} noValidate>
+      <h2 id="admin-invite-title" className="panel-title">
+        Invite someone
+      </h2>
+      <p className="muted small">They get an e-mail with a link to set a password and open Dexcrate.</p>
+      <div className="form-grid">
+        <label className="admin-wide">
+          E-mail
+          <input type="email" autoComplete="off" value={email} onChange={(e) => setEmail(e.target.value)} />
+        </label>
+      </div>
+      <div className="settings-actions">
+        <button type="submit" className="primary" disabled={busy}>
+          {busy ? 'Sending…' : 'Send invitation'}
+        </button>
+        <Status result={result} />
+      </div>
+    </form>
   )
 }
 

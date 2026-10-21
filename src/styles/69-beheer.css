@@ -7,6 +7,7 @@
 
 .admin .panel {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-3);
 }
 
@@ -20,11 +21,13 @@
   margin: 0;
   padding: 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .admin-users li,
 .admin-log li {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 2px;
   justify-items: start;
   padding: var(--space-3) 0;
@@ -62,6 +65,7 @@
 /* Details per gebruiker (STAP22): puntengeschiedenis, fouten, scanlimiet. */
 .admin-detail {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-3);
   width: 100%;
   margin-top: var(--space-2);
@@ -162,4 +166,15 @@
 .chip.is-blocked {
   color: var(--red);
   border-color: var(--red);
+}
+
+.admin-account,
+.admin-delete {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+.admin-delete strong {
+  overflow-wrap: anywhere;
 }
