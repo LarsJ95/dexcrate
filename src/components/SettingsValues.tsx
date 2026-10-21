@@ -99,7 +99,7 @@ export function AccountSettings(): JSX.Element {
 
   return (
     <>
-      <Section title="New cards" scope="account" intro="Filled in when you add or scan a card; you can still change them per card.">
+      <Section id="settings-cards" title="New cards" scope="account" intro="Filled in when you add or scan a card; you can still change them per card.">
         <div className="form-grid">
           <label>
             Language

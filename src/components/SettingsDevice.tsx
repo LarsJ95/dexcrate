@@ -24,7 +24,7 @@ export function AppearanceSection(): JSX.Element {
   const motionPref = useMotionPreference()
   const motion = useMotion()
   return (
-    <Section title="Appearance" scope="device">
+    <Section id="settings-appearance" title="Appearance" scope="device">
       <Choice label="Theme" value={prefs.theme} options={THEMES} onChange={(v) => setPref('theme', v)} />
       <Toggle
         checked={motionPref}
@@ -48,7 +48,7 @@ export function PartnerSection(): JSX.Element {
   const partner = usePartner()
   const [open, setOpen] = useState(false)
   return (
-    <Section title="Partner Pokémon" scope="device" intro="Your partner walks with you through the app and cheers when you add cards.">
+    <Section id="settings-partner" title="Partner Pokémon" scope="device" intro="Your partner walks with you through the app and cheers when you add cards.">
       <div className="partner-current">
         <img src={spriteUrls(partner.dex, false)[1]} alt="" width={64} height={64} />
         <div>
@@ -82,7 +82,7 @@ export function PartnerSection(): JSX.Element {
 export function ScanningSection(): JSX.Element {
   const prefs = usePrefs()
   return (
-    <Section title="Scanning" scope="device">
+    <Section id="settings-scanning" title="Scanning" scope="device">
       <Choice label="Open the scanner in" value={prefs.scanMode} options={SCAN_MODES} onChange={(v) => setPref('scanMode', v)} />
       <Toggle checked={prefs.autoCapture} onChange={(v) => setPref('autoCapture', v)} hint="Quick scan takes the photo itself when a new card lies still in the frame. You can also switch it in the camera.">
         Auto capture

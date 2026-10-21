@@ -2,12 +2,15 @@ import type { JSX, ReactNode } from 'react'
 
 type Scope = 'device' | 'account'
 
-/** Eén blok instellingen; rechtsboven waar het bewaard wordt. */
-export function Section({ title, scope, children, intro }: { title: string; scope: Scope; children: ReactNode; intro?: string }): JSX.Element {
+/** Eén blok instellingen; rechtsboven waar het bewaard wordt. `id`: doel van de snelknoppen bovenaan Settings. */
+export function Section({ title, scope, children, intro, id }: { title: string; scope: Scope; children: ReactNode; intro?: string; id?: string }): JSX.Element {
+  const headingId = `settings-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-title`
   return (
-    <section className="panel settings-section" aria-labelledby={`settings-${title}`}>
+    <section id={id} className="panel settings-section" aria-labelledby={headingId}>
       <header className="settings-head">
-        <h2 id={`settings-${title}`}>{title}</h2>
+        <h2 id={headingId} tabIndex={-1}>
+          {title}
+        </h2>
         <span className={`settings-scope scope-${scope}`}>{scope === 'device' ? 'This device' : 'Your account'}</span>
       </header>
       {intro && <p className="muted small">{intro}</p>}
