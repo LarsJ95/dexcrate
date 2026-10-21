@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { listCards } from '../lib/db'
 import { NO_COUNTS, dealsWithinMax, unlinkedCount, wishesWithMax, type NavCounts } from '../lib/navCounts'
-import { getCrateStatus } from '../lib/crate'
+import { CRATE_CHANGED_EVENT, getCrateStatus } from '../lib/crate'
 import { getCardPrice, type CardmarketPrice } from '../lib/tcgdex'
 import { hasWishlist, listWishlist } from '../lib/wishlist'
 
@@ -50,6 +50,30 @@ export function useNavCounts(route: string): NavCounts {
       cancelled = true
     }
   }, [route])
+
+  // Crate points veranderd (pakje, inruilen, beheer …): alleen dat getal meteen opnieuw ophalen (21-10-2026: het menu
+  // bleef anders tot een minuut op de oude stand staan). Kort wachten, zodat een reeks wijzigingen één opvraging is.
+  useEffect(() => {
+    let cancelled = false
+    let timer = 0
+    const refresh = (): void => {
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => {
+        getCrateStatus()
+          .then((crate) => {
+            if (cached) cached = { at: cached.at, promise: cached.promise.then((c) => ({ ...c, crate })) }
+            if (!cancelled) setCounts((c) => ({ ...c, crate }))
+          })
+          .catch((err: unknown) => console.warn('Crate points voor het menu ophalen mislukt', err))
+      }, 250)
+    }
+    window.addEventListener(CRATE_CHANGED_EVENT, refresh)
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+      window.removeEventListener(CRATE_CHANGED_EVENT, refresh)
+    }
+  }, [])
 
   return counts
 }
