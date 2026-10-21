@@ -3,6 +3,7 @@
  * Echte componenten met verzonnen voorbeelddata, zodat het uiterlijk zonder inloggen te bekijken is.
  */
 import { useEffect, useMemo, useState, type JSX } from 'react'
+import './concepts.css'
 import { CardTile } from '../components/CardTile'
 import { Shell } from '../components/Shell'
 import { seedSkyForPreview } from '../lib/sky'
@@ -46,6 +47,9 @@ import { EMPTY_CARD, fromStatus, type Card, type CardInput } from '../lib/types'
 const params = new URLSearchParams(location.search)
 const theme = params.get('theme') === 'light' ? 'light' : 'dark'
 document.documentElement.dataset.theme = theme
+// ?concept=center|arcade|dex: stijlconcept (21-10-2026), alleen hier; zie preview/concepts.css.
+const concept = params.get('concept')
+if (concept) document.documentElement.dataset.concept = concept
 
 // ?v2=1: doen alsof STAP4 gedraaid is (nieuwe velden en foto's zichtbaar).
 const previewV2 = params.get('v2') === '1'
