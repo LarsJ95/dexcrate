@@ -43,8 +43,8 @@ export const MORE_GROUPS: NavGroup[] = [
   { title: 'Settings', items: [SETTINGS_ITEM] },
 ]
 
-/** Import en Backup zitten in Settings: daar licht Settings op. */
-export const SETTINGS_ROUTES: readonly Route[] = ['settings', 'import', 'backup']
+/** Import, Backup en Admin zitten in Settings: daar licht Settings op. */
+export const SETTINGS_ROUTES: readonly Route[] = ['settings', 'import', 'backup', 'admin']
 
 export const TAB_NAV: NavItem[] = [OVERVIEW, COLLECTION, SCAN_ITEM, SETS, { route: 'more', label: 'More', Icon: IconMore }]
 
