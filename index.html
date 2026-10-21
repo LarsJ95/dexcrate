@@ -8,17 +8,18 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Dexcrate" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#0e0d12" />
+    <meta name="theme-color" content="#f6f1e7" />
     <script>
-      // Thema vóór de eerste render zetten, zodat er geen lichte flits is.
+      // Thema vóór de eerste render zetten, zodat er geen flits is. Zonder keuze licht (21-10-2026); Automatic volgt het toestel.
       try {
         var t =
           localStorage.getItem('dexcrate:theme') ||
           localStorage.getItem('binderline:theme') ||
           localStorage.getItem('kaartenmap:theme')
-        document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark'
+        var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light'
       } catch (e) {
-        document.documentElement.dataset.theme = 'dark'
+        document.documentElement.dataset.theme = 'light'
       }
     </script>
     <title>Dexcrate – Pokémon card collection</title>

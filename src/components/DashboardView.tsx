@@ -212,11 +212,11 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
   return (
     <section className="page dashboard">
       <div className="dash-main">
-      <h1>Overview</h1>
+      <h1>Home</h1>
 
       <div className="hero">
         {partner && <Partner dexId={partner.dexId} name={partner.name} />}
-        <span className="stat-label">Collection value</span>
+        <span className="stat-label">Your collection is worth</span>
         <p className="hero-value">{pricesLoading || shownValue === null ? '…' : formatEur(shownValue)}</p>
         {!pricesLoading && (
           <div className="hero-sub">
@@ -257,10 +257,10 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
       {!pricesLoading && (
         <div className="movers">
           <PhoneSlot className="dash-slot slot-gainers">
-            <MoverList title="Gainers" flavor="It's super effective!" items={movers.up} empty="No clear risers." onOpenCard={onOpenCard} />
+            <MoverList title="On the rise" flavor="It's super effective!" items={movers.up} empty="No clear risers." onOpenCard={onOpenCard} />
           </PhoneSlot>
           <PhoneSlot className="dash-slot slot-losers">
-            <MoverList title="Losers" flavor="It's not very effective…" items={movers.down} empty="No clear fallers." onOpenCard={onOpenCard} />
+            <MoverList title="Cooling off" flavor="It's not very effective…" items={movers.down} empty="No clear fallers." onOpenCard={onOpenCard} />
           </PhoneSlot>
           {/* Duurste kaarten staan al in de spotlight erboven; hier wat je goed kunt kopen (18-10-2026). */}
           {deals && <PhoneSlot className="dash-slot slot-deals">{deals}</PhoneSlot>}

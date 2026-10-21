@@ -127,7 +127,7 @@ export function SetsNearlyComplete({ ownedKeys }: { ownedKeys: readonly string[]
   return (
     <section className="panel near-sets" aria-labelledby="near-sets-title">
       <h2 id="near-sets-title" className="panel-title">
-        Sets almost complete
+        Almost there!
       </h2>
       <ul>
         {near.map((s) => (
@@ -154,7 +154,7 @@ export function RecentlyAdded({ cards, prices, onOpenCard }: { cards: readonly C
   return (
     <section className="panel recent-cards" aria-labelledby="recent-title">
       <h2 id="recent-title" className="panel-title">
-        Recently added
+        Fresh pulls
       </h2>
       <ul>
         {recent.map((c) => {

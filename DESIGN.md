@@ -71,7 +71,8 @@ Regels:
 
 Gewijzigd 15-10-2026: het marineblauw is vervangen. Basis is een neutrale, licht violet-getinte ondergrond; de kleur komt van de kaarten zelf via het energietype.
 
-Standaardthema is donker (tokens in `src/index.css`):
+Stijl "Pokémon Center" (21-10-2026, gekozen door de gebruiker uit 3 concepten, omdat de app "kaal en te strak" was): standaardthema is nu **licht** (wie Dark of Automatic koos, houdt dat). Licht palet: achtergrond #f6f1e7 (warm crème), oppervlak #ffffff (verhoogd #f4eee3, #ebe3d4), tekst primair #1f1a24 (zacht #3b3443), secundair #5f5566, rand #e6dccb (sterk #cdbfa7), accent als lijn/markering #8a5a00, link #7a4a00, grafieklijn pokéball-rood #e3350d. Beide thema's: elk blok een gekleurde bovenrand (6 px) in een energiekleur in vaste volgorde (vuur, water, gras, bliksem, psychic), hoofdcijfer met vuurrode rand en gele gloed, paginatitel met rood-zwart-gele streep, een kleine pokéball voor elke kop, gewone knoppen/keuzerijen/chips pil-vormig, gele knop met donkergele "drukrand" (zakt in bij indrukken), actief menu-item als gele pil, kaarttegels met zachte schaduw, Crate-knop en -tegels pokéball-rood → vuuroranje met rode drukrand (styles/71-pokemon-center.css).
+Donker thema (tokens in `src/index.css`):
 - Achtergrond: #0e0d12
 - Oppervlak (kaarten, panelen): #17161d (verhoogd: #1f1e26, #282730)
 - Tekst primair: #f6f3ee (zacht: #d3cfd8)
@@ -111,8 +112,8 @@ Regels:
 
 ## 6. Vorm en diepte
 
-- Radius: 4 (kleine badges: grade, aantal) / 8 (knoppen, invoer, chips) / 16 (panelen, popups, tegels) / 999 (statuspillen). Kaartfoto's houden de echte kaartvorm (4,5% / 3,2%)
-- Diepte via: randen (1 px `--line`) als hoofdmiddel. Kleurvlakken (oppervlak 1–3) alleen voor nesting. Schaduw alleen voor zwevende lagen: popup, vergrote kaart, tooltip
+- Radius: 4 (kleine badges: grade, aantal) / 12 (invoer, kleine vlakken; was 8) / 22 (panelen, popups, tegels; was 16) / 999 (knoppen, keuzerijen, chips en statuspillen, sinds 21-10-2026 stijl Pokémon Center). Kaartfoto's houden de echte kaartvorm (4,5% / 3,2%)
+- Diepte via: randen (1 px `--line`) en, sinds 21-10-2026 (stijl Pokémon Center), een zachte schaduw onder blokken (`--shadow-panel`) en kaarttegels (`--shadow-card`). Kleurvlakken (oppervlak 1–3) alleen voor nesting. Zware schaduw (`--shadow-float`) alleen voor zwevende lagen: popup, vergrote kaart, tooltip
 - Schaduw (indien gebruikt): één token `--shadow-float`: donker `0 16px 48px rgb(0 0 0 / 0.45)`, licht `0 16px 48px rgb(14 26 58 / 0.18)`
 
 
@@ -132,6 +133,7 @@ Elk component heeft verplicht deze states: default, hover, active, focus-visible
 - Knoppen: varianten ___ (bijv. primair, secundair, tekstlink)
 - Formulieren: label altijd zichtbaar, foutmelding onder veld, ___
 - Kaarten: ___
+- Namen (21-10-2026, voorstel gekozen door de gebruiker; routes blijven #/overview, #/collection …): Overview → **Home**, Collection → **My cards**, Buy & sell → **Trades**, Crate game → **Crate**; op Home "Collection value" → "Your collection is worth", Gainers/Losers → "On the rise"/"Cooling off", "Sets almost complete" → "Almost there!", "Recently added" → "Fresh pulls".
 - Navigatie desktop (18-10-2026, op verzoek): zijbalk met bovenaan een gele knop "Scan cards", daaronder groepen met kopje: My cards (Overview, Collection, Sets, Wishlist), Trade (Buy & sell), Extras (Photo inbox, Crate game; sinds 21-10-2026: Photo inbox weg op verzoek, Crate game als kleurige knop direct onder "Scan cards" met je punten en "Free" zolang het gratis pakje er is; telefoon: grote Crate-tegel bovenaan More; Overview: Crate-tegel direct onder de collectiewaarde). Onder Sets de laatste 3 bezochte sets (per apparaat, open set gemarkeerd). Getallen alleen als er iets te doen is: Collection = niet gekoppelde kaarten, Wishlist = deals binnen je max. prijs, Photo inbox = foto's nog niet gekoppeld (telling max. 1 min oud). Onderaan Settings (ook actief op Import/Backup en Admin, die via Settings bereikbaar zijn; Admin alleen voor beheerders, 21-10-2026: #/admin met gebruikerslijst, Crate points geven/afhalen met reden en logboek, per gebruiker Details (puntengeschiedenis, fouten, scanlimiet), Crate rules (alle prijzen en punten aan te passen), Scans (14 dagen met kostenindicatie), Announcement, Invite someone, per gebruiker Account (blokkeren/deblokkeren met reden; verwijderen pas na het e-mailadres intypen, in een rood kader; niet voor beheerders) via Edge Function admin-users; telefoon als lijst, niets zijwaarts). Mededeling van de beheerder: balk bovenaan de pagina (info: gele rand, warning: oranje rand) met ×, weggeklikt per mededeling per apparaat, thema, uitloggen en inklappen (alleen iconen, 76 px, getallen als stip, per apparaat onthouden). Telefoon: More-pagina met dezelfde groepen en uitleg per item, getal op de Collection-tab en een stip op More.
 - Navigatie mobiel (17-10-2026): onderbalk met 5 knoppen (Scan in het midden). Duimzone: de hoofdactie van een pagina (Add card, Upload photos; klasse `fab`) zweeft op telefoon en tablet rechtsonder boven de onderbalk (56 px hoog, pil, `--shadow-float`), verborgen tijdens selecteren. Tikdoelen op touchscreens minimaal 44 px, velden en knoppen in werkbalken 48 px (styles/61-telefoon-tikdoelen.css).
 - Footer: ___
