@@ -11,10 +11,76 @@
   opacity: 0.85;
 }
 
-/* Vinkje rechtsboven op de kaart (de prijs staat onderaan). */
-.slot .select-badge {
-  top: var(--space-2);
-  bottom: auto;
+/* Rondje linksboven op de kaart (rechtsboven staat het aantal): tikken = selecteren, ook zonder eerst "Select"
+   (21-10-2026, op verzoek). Met een muis pas zichtbaar als je over de kaart gaat; op touch altijd; tijdens selecteren
+   overal. Gekozen: geel met vinkje. */
+.slot button.slot-pick,
+.slot button.slot-pick:hover:not(:disabled) {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  transition:
+    opacity 120ms ease-out,
+    transform 150ms ease-out;
+}
+
+.slot-pick-ring {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--white);
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.3);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.4);
+  color: var(--on-yellow);
+}
+
+.slot-pick.is-on .slot-pick-ring {
+  width: 26px;
+  height: 26px;
+  border-color: var(--yellow);
+  background: var(--yellow);
+}
+
+@media (pointer: coarse) {
+  .slot button.slot-pick,
+  .slot button.slot-pick:hover:not(:disabled) {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+}
+
+@media (hover: hover) {
+  .slot:not(.is-selecting) button.slot-pick {
+    opacity: 0;
+  }
+
+  .slot:hover button.slot-pick {
+    opacity: 1;
+  }
+
+  /* Rondje en kaart komen samen omhoog, en een ontbrekende kaart kleurt op, ook met de muis op het rondje. */
+  .slot:hover button.slot-pick,
+  .slot:has(.slot-pick:hover) .card-img {
+    transform: translateY(-4px);
+  }
+
+  .slot.missing:has(.slot-pick:hover) .card-img {
+    filter: grayscale(0.35) brightness(0.98);
+    opacity: 0.85;
+  }
 }
 
 /* Meer knoppen dan in Collection: op een smal scherm mag de balk twee regels worden. */
