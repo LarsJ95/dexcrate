@@ -8,6 +8,7 @@ import { LANGUAGE_LABELS } from '../lib/types'
 import { addWishlistItems, listWishlist } from '../lib/wishlist'
 import { setListItems } from '../lib/wishlistLists'
 import { IconClose, IconStar } from './Icons'
+import { ListChoice } from './ListChoice'
 import { Loading } from './Loading'
 import { Sheet } from './Sheet'
 
@@ -138,13 +139,6 @@ function SetWishSheet({ lang, setCode, cards, onClose, onSaved }: WishProps): JS
   const fresh = existing ? cards.filter((c) => !existing.has(keyOf(c))) : []
   const already = existing ? cards.length - fresh.length : 0
   const chosenLists = lists.filter((l) => chosen.has(l.id))
-  const toggle = (id: string, on: boolean): void =>
-    setChosen((cur) => {
-      const next = new Set(cur)
-      if (on) next.add(id)
-      else next.delete(id)
-      return next
-    })
 
   async function save(): Promise<void> {
     if (busy || !existing) return
@@ -190,19 +184,7 @@ function SetWishSheet({ lang, setCode, cards, onClose, onSaved }: WishProps): JS
           <p className="muted small">
             Each wish: 1 copy, normal priority, any condition, {LANGUAGE_LABELS[lang]}. You can change wishes on the Wishlist page.
           </p>
-          {lists.length > 0 && (
-            <fieldset className="form-group">
-              <legend>Also put them in a list</legend>
-              <div className="filter-checks">
-                {lists.map((l) => (
-                  <label key={l.id} className="check">
-                    <input type="checkbox" checked={chosen.has(l.id)} onChange={(e) => toggle(l.id, e.target.checked)} />
-                    {l.name}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          )}
+          {lists.length > 0 && <ListChoice legend="Also put them in a list" lists={lists} chosen={chosen} onChange={setChosen} />}
         </>
       )}
       {error && (
