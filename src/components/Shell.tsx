@@ -1,7 +1,8 @@
 import { useEffect, useState, type JSX, type ReactNode } from 'react'
 import type { Theme } from '../hooks/useTheme'
 import type { Route } from '../lib/routes'
-import { IconLogout, IconMoon, IconSettings, IconSidebar, IconSun, LogoMark } from './Icons'
+import { IconLogout, IconMoon, IconSearch, IconSettings, IconSidebar, IconSun, LogoMark } from './Icons'
+import { SearchDialog } from './SearchDialog'
 import { Moments } from './Moments'
 import { PartnerBuddy } from './PartnerBuddy'
 import { Peek } from './Peek'
@@ -35,6 +36,9 @@ function readCollapsed(): boolean {
   }
 }
 
+/** Sneltoets voor zoeken zoals het systeem hem noemt. */
+const SEARCH_KEY = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘K' : 'Ctrl K'
+
 /** "14:32" voor vandaag, anders "16 Oct, 14:32". */
 function savedTimeText(ms: number): string {
   const d = new Date(ms)
@@ -66,6 +70,24 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
       return !c
     })
   }
+  // Zoeken overal (21-10-2026, op verzoek): Ctrl+K / ⌘K of de zoekknop. Niet als er al een popup open is.
+  const [searchOpen, setSearchOpen] = useState(false)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== 'k') return
+      if (document.querySelector('dialog[open]')) return
+      e.preventDefault()
+      setSearchOpen(true)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+  const searchButton = (
+    <button type="button" className="ghost icon-btn" onClick={() => setSearchOpen(true)} aria-label="Search" title={`Search (${SEARCH_KEY})`}>
+      <IconSearch />
+    </button>
+  )
+
   const collapseLabel = collapsed ? 'Expand menu' : 'Collapse menu'
   const themeLabel = theme === 'dark' ? 'Light theme' : 'Dark theme'
   const themeButton = (
@@ -87,6 +109,13 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
           <LogoMark />
           <span>Dexcrate</span>
         </a>
+        <button type="button" className="side-search" onClick={() => setSearchOpen(true)} title={collapsed ? `Search (${SEARCH_KEY})` : undefined}>
+          <IconSearch size={18} />
+          <span className="side-label">Search</span>
+          <kbd className="side-label" aria-hidden="true">
+            {SEARCH_KEY}
+          </kbd>
+        </button>
         <SideNav route={route} counts={counts} collapsed={collapsed} />
         <div className="side-foot">
           {!collapsed && <PartnerBuddy />}
@@ -121,6 +150,7 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
         </a>
         <PartnerBuddy compact />
         <div className="side-actions">
+          {searchButton}
           {themeButton}
           {logoutButton}
         </div>
@@ -140,6 +170,7 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
       <Moments />
       <Peek paused={route === 'scan'} />
       {route !== 'scan' && <ScrollJump />}
+      {searchOpen && <SearchDialog onClose={() => setSearchOpen(false)} />}
 
       <nav className="tab-bar" aria-label="Main menu">
         {TAB_NAV.map(({ route: r, label, Icon }) => (
