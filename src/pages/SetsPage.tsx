@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type JSX, type KeyboardEvent } from 'react'
+import { EmptyState } from '../components/EmptyState'
 import { IconSearch, IconStar } from '../components/Icons'
 import { usePinnedSets } from '../hooks/usePinnedSets'
 import { PIN_LANG, pinHref, pinKey } from '../lib/pinnedSets'
@@ -309,7 +310,22 @@ export function SetsPage(): JSX.Element {
       {!sets || sets.lang !== lang ? (
         <Loading center />
       ) : visible.length === 0 ? (
-        <p className="empty">No sets match.</p>
+        <EmptyState
+          action={
+            <button
+              type="button"
+              className="small-btn"
+              onClick={() => {
+                setQuery('')
+                setScope('all')
+              }}
+            >
+              Show all sets
+            </button>
+          }
+        >
+          No sets match.
+        </EmptyState>
       ) : (
         <ul className="set-list">
           {visible.map((r) => {

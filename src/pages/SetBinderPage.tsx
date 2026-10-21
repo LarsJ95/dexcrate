@@ -13,6 +13,7 @@ import { loadGoal } from '../lib/wishlist'
 import { BinderSlot } from '../components/BinderSlot'
 import { BinderToolbar, CostPanel, GoalStats, SetProgressSplit, type BinderShow } from '../components/SetBinderParts'
 import { GoalSheet } from '../components/GoalSheet'
+import { EmptyState } from '../components/EmptyState'
 import { IconArrowLeft, IconStar } from '../components/Icons'
 import { setPinned, usePinnedSets } from '../hooks/usePinnedSets'
 import { MAX_PINNED, pinKey } from '../lib/pinnedSets'
@@ -561,6 +562,31 @@ export function SetBinderPage({ param }: Props): JSX.Element {
           ))}
           <span className="legend-item">Green: owned. Dashed outline: missing.</span>
         </div>
+      )}
+
+      {data.cards.length > 0 && visible.length === 0 && (
+        <EmptyState
+          action={
+            <button
+              type="button"
+              className="small-btn"
+              onClick={() => {
+                setShow('all')
+                setQuery('')
+              }}
+            >
+              Show all cards
+            </button>
+          }
+        >
+          {query.trim()
+            ? `No cards match “${query.trim()}”.`
+            : show === 'missing'
+              ? 'Nothing missing: you have every card of this set.'
+              : show === 'duplicates'
+                ? 'No duplicates in this set.'
+                : 'No cards complete yet.'}
+        </EmptyState>
       )}
 
       <div ref={pagesRef} className="binder-pages" style={{ ['--binder-cols' as string]: PAGE_COLUMNS[pageSize] }}>

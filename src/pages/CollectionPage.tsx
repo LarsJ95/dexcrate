@@ -14,7 +14,8 @@ import { PurchaseDialog } from '../components/PurchaseDialog'
 import { SaleDialog } from '../components/SaleDialog'
 import { useNewCardDefaults } from '../hooks/useNewCardDefaults'
 import { useTransactionsEnabled } from '../hooks/useTransactionsEnabled'
-import { IconClose, IconEdit, IconPlus, IconReceipt, IconSearch, IconTag } from '../components/Icons'
+import { EmptyState } from '../components/EmptyState'
+import { IconCamera, IconClose, IconEdit, IconPlus, IconReceipt, IconSearch, IconTag } from '../components/Icons'
 import { useDismissedIds } from '../hooks/useDismissedIds'
 import { SearchClear } from '../components/SearchClear'
 import { useMarketPrices } from '../hooks/useMarketPrices'
@@ -267,6 +268,13 @@ export function CollectionPage(): JSX.Element {
   useScrollMemory('collection', scrollSaved, cards !== null, shownCount)
 
   const editingCard = editing?.id ? (cards?.find((c) => c.id === editing.id) ?? null) : null
+
+  // Filter levert niets op: zoeken en extra filters weg; levert de status alleen ook niets op (bv. Sold), dan alles tonen.
+  function clearAll(): void {
+    setExtra(NO_EXTRA_FILTERS)
+    setQuery('')
+    if (!(cards ?? []).some((c) => matchesFilter(c, filter))) setFilter('all')
+  }
   const nextSortOrder = (cards ?? []).reduce((m, c) => Math.max(m, c.sort_order), -1) + 1
   const visibleCount = visible.reduce((n, c) => n + c.quantity, 0)
   const visibleValue = visible.reduce((cents, c) => cents + c.quantity * Math.round(relevantPrice(c) * 100), 0) / 100
@@ -398,11 +406,30 @@ export function CollectionPage(): JSX.Element {
       )}
       {!cards && !loadError && <Loading />}
       {cards && cards.length === 0 && (
-        <p className="empty">
-          Your collection is empty. Add a card or <a href="#/import">import your Excel file</a>.
-        </p>
+        <EmptyState
+          title="No cards yet"
+          action={
+            <a className="button-link primary" href="#/scan">
+              <IconCamera size={18} />
+              Scan cards
+            </a>
+          }
+        >
+          Scan a card, add one with “Add card”, or <a href="#/import">import a spreadsheet</a>. You’ll see what each card is worth and which sets
+          you’re close to finishing.
+        </EmptyState>
       )}
-      {cards && cards.length > 0 && visible.length === 0 && <p className="empty">No cards match these filters.</p>}
+      {cards && cards.length > 0 && visible.length === 0 && (
+        <EmptyState
+          action={
+            <button type="button" className="small-btn" onClick={clearAll}>
+              Clear filters
+            </button>
+          }
+        >
+          No cards match these filters.
+        </EmptyState>
+      )}
 
       {sortable && (
         <p id="binder-order-help" className="visually-hidden">

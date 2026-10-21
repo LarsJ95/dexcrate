@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type JSX } from 'react'
+import { EmptyState } from '../components/EmptyState'
 import { FilterPanel } from '../components/FilterPanel'
 import { CatalogResults } from '../components/CatalogResults'
 import { SetCardSheet } from '../components/SetCardSheet'
@@ -447,10 +448,35 @@ export function WishlistPage(): JSX.Element {
       )}
       {items === null && !error && <Loading />}
       {items?.length === 0 && !searching && (
-        <p className="empty">Your wishlist is empty. Search for a Pokémon above, or add cards from a set's missing cards.</p>
+        <EmptyState
+          title="Your wishlist is empty"
+          action={
+            <button type="button" className="primary" onClick={() => openNew()}>
+              Add card
+            </button>
+          }
+        >
+          Add the cards you’re looking for, with a max. price if you like: the menu shows when one is offered below it. Search for a Pokémon above, or
+          select missing cards in a set and tap Wishlist.
+        </EmptyState>
       )}
       {items && items.length > 0 && visible.length === 0 && (
-        <p className="empty">
+        <EmptyState
+          action={
+            !searching && !activeList && canClear ? (
+              <button
+                type="button"
+                className="small-btn"
+                onClick={() => {
+                  setFilters(NO_WISH_FILTERS)
+                  setQuery('')
+                }}
+              >
+                Clear filters
+              </button>
+            ) : undefined
+          }
+        >
           {searching
             ? 'None of your wishes match. Cards from the database are below.'
             : activeList?.kind === 'manual' && (members.get(activeList.id)?.size ?? 0) === 0
@@ -458,7 +484,7 @@ export function WishlistPage(): JSX.Element {
               : activeList
                 ? 'No wishes in this list right now.'
                 : 'No wishes match these filters.'}
-        </p>
+        </EmptyState>
       )}
 
       {visible.length > 0 &&

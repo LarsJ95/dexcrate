@@ -22,6 +22,8 @@ import { thumbPath, type Card } from '../lib/types'
 import { CardImage } from './CardImage'
 import { ChangeBadge } from './ChangeBadge'
 import { CrateTeaser } from './CrateTeaser'
+import { EmptyState } from './EmptyState'
+import { IconCamera } from './Icons'
 import { LineChart } from './LineChart'
 import { Spotlight } from './Spotlight'
 
@@ -199,9 +201,19 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
   if (cards.length === 0) {
     return (
       <section className="page">
-        <p className="empty">
-          No cards yet. <a href="#/import">Import your Excel file</a> or <a href="#/scan">scan a card</a>.
-        </p>
+        <h1>Home</h1>
+        <EmptyState
+          title="Start your collection"
+          action={
+            <a className="button-link primary" href="#/scan">
+              <IconCamera size={18} />
+              Scan cards
+            </a>
+          }
+        >
+          Scan your cards or <a href="#/import">import a spreadsheet</a>. Dexcrate then shows what they’re worth, how far you are with each set, and you
+          earn Crate points to open packs.
+        </EmptyState>
       </section>
     )
   }

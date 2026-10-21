@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type JSX } from 'react'
+import { EmptyState } from '../components/EmptyState'
 import { TransactionDialog } from '../components/TransactionDialog'
 import { useTransactionsEnabled } from '../hooks/useTransactionsEnabled'
 import { listCards } from '../lib/db'
@@ -125,7 +126,29 @@ export function TransactionsPage(): JSX.Element {
         </p>
       )}
       {txs === null && !error && <Loading />}
-      {txs?.length === 0 && <p className="empty">No purchases or sales yet.</p>}
+      {txs?.length === 0 && (
+        <EmptyState
+          title="No purchases or sales yet"
+          action={
+            <a className="button-link primary" href="#/collection">
+              Go to My cards
+            </a>
+          }
+        >
+          Select cards in My cards and tap Bought or Sell. Dexcrate then keeps what you paid and got, and shows your profit per sale.
+        </EmptyState>
+      )}
+      {txs && txs.length > 0 && visible.length === 0 && (
+        <EmptyState
+          action={
+            <button type="button" className="small-btn" onClick={() => setFilter('all')}>
+              Show all
+            </button>
+          }
+        >
+          {filter === 'sale' ? 'No sales yet.' : 'No purchases yet.'}
+        </EmptyState>
+      )}
 
       {visible.length > 0 && (
         <ul className="tx-list">
