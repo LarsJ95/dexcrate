@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent, type JSX } from 'react'
-import { AnnouncementPanel, CrateRulesPanel, ScansPanel, UserDetail } from '../components/AdminParts'
+import { AccountActions, AnnouncementPanel, CrateRulesPanel, InvitePanel, ScansPanel, UserDetail } from '../components/AdminParts'
 import { IconSearch } from '../components/Icons'
 import { Loading } from '../components/Loading'
 import { SearchClear } from '../components/SearchClear'
@@ -196,13 +196,20 @@ export function AdminPage(): JSX.Element {
                     {open === u.id ? 'Hide details' : 'Details'}
                   </button>
                 </div>
-                {open === u.id && <UserDetail user={u} onChanged={() => setVersion((v) => v + 1)} />}
+                {open === u.id && (
+                  <UserDetail
+                    user={u}
+                    onChanged={() => setVersion((v) => v + 1)}
+                    extra={u.isAdmin ? <p className="muted small">Admins cannot be blocked or deleted here.</p> : <AccountActions user={u} blocked={isBanned(u)} onChanged={() => setVersion((v) => v + 1)} />}
+                  />
+                )}
               </li>
             ))}
           </ul>
         )}
       </section>
 
+      <InvitePanel onInvited={() => setVersion((v) => v + 1)} />
       <CrateRulesPanel />
       <ScansPanel />
       <AnnouncementPanel onSaved={() => setVersion((v) => v + 1)} />
