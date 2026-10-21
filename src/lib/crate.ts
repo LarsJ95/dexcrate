@@ -13,6 +13,19 @@ import type { WishlistInput } from './wishlist'
 
 export const PACK_SIZE = 10
 
+/** Seintje: je Crate points zijn veranderd (pakje, inruilen, kopen, verdienen, beheer); het menu werkt dan meteen bij. */
+export const CRATE_CHANGED_EVENT = 'dexcrate:crate-changed'
+
+export function notifyCrateChanged(): void {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(CRATE_CHANGED_EVENT))
+}
+
+/** Na een geslaagde wijziging van je punten: seintje geven en het resultaat doorgeven. */
+function changed<T>(result: T): T {
+  notifyCrateChanged()
+  return result
+}
+
 /** Soorten pakjes: booster (STAP11), great en master (STAP12), set en type (STAP18). */
 export type PackKind = 'booster' | 'great' | 'master' | 'set' | 'type'
 
@@ -215,10 +228,10 @@ async function crateServer(body: Record<string, unknown>, what: string): Promise
  * Met de server rekent de database alles zelf uit (`bonus` en `dexIds` worden dan genegeerd).
  */
 export async function syncCrate(bonus: Record<string, number>, dexIds: readonly number[]): Promise<CrateWallet & { earned: number }> {
-  if (await hasCrateServer()) return toWallet(await crateServer({ action: 'sync' }, 'Updating Crate points failed'))
+  if (await hasCrateServer()) return changed(toWallet(await crateServer({ action: 'sync' }, 'Updating Crate points failed')))
   const { data, error } = await supabase.rpc('crate_sync', { p_bonus: bonus, p_dex: [...new Set(dexIds)].filter((d) => d >= 1 && d <= 1025) })
   if (error) throw new Error(`Updating Crate points failed: ${error.message}`)
-  return toWallet(data)
+  return changed(toWallet(data))
 }
 
 /** Set compleet: 250 punten, één keer per set ("en/sv03.5"). */
@@ -226,7 +239,7 @@ export async function crateSetComplete(setKey: string): Promise<number> {
   if (await hasCrateServer()) return (await syncCrate({}, [])).earned
   const { data, error } = await supabase.rpc('crate_set_complete', { p_set: setKey })
   if (error) throw new Error(`Crate points for the set failed: ${error.message}`)
-  return num(data)
+  return changed(num(data))
 }
 
 /** Functie bestaat (nog) niet in de database: STAP12/STAP18 niet gedraaid. */
@@ -244,7 +257,7 @@ export async function openPack(pack: PackKind, choice: PackChoice = {}): Promise
         : [],
     )
     if (pulls.length === 0) throw new Error('Opening the pack failed: no cards came back.')
-    return { points: num(r.points), freePack: r.free_pack === true, cost: num(r.cost), pulls }
+    return changed({ points: num(r.points), freePack: r.free_pack === true, cost: num(r.cost), pulls })
   }
   const pulls = await drawPack(pack, choice)
   return { ...(await openCratePack(pulls, pack)), pulls }
@@ -259,7 +272,7 @@ export async function craftCard(tcgdexId: string): Promise<{ points: number; cos
     c && typeof c.tcgdex_id === 'string' && typeof c.name === 'string'
       ? { tcgdex_id: c.tcgdex_id, name: c.name, image: typeof c.image === 'string' ? c.image : null, rarity: typeof c.rarity === 'string' ? c.rarity : '', set_name: typeof c.set_name === 'string' ? c.set_name : null }
       : null
-  return { points: num(r.points), cost: num(r.cost), card }
+  return changed({ points: num(r.points), cost: num(r.cost), card })
 }
 
 export async function openCratePack(cards: readonly PackPull[], pack: PackKind = 'booster'): Promise<CrateWallet & { cost: number }> {
@@ -274,7 +287,7 @@ export async function openCratePack(cards: readonly PackPull[], pack: PackKind =
     throw new Error(`Opening the pack failed: ${error.message}`)
   }
   const o = isRecord(data) ? data : {}
-  return { points: num(o.points), freePack: o.free_pack === true, cost: num(o.cost) }
+  return changed({ points: num(o.points), freePack: o.free_pack === true, cost: num(o.cost) })
 }
 
 /** Wens bij een vallende ster (STAP13): één keer per dag +5. `gained` 0 = vandaag al gedaan. null = STAP13 ontbreekt. */
@@ -285,7 +298,7 @@ export async function makeWish(): Promise<{ points: number; gained: number } | n
     throw new Error(`Making a wish failed: ${error.message}`)
   }
   const o = isRecord(data) ? data : {}
-  return { points: num(o.points), gained: num(o.gained) }
+  return changed({ points: num(o.points), gained: num(o.gained) })
 }
 
 /** Inruilwaarde per extra exemplaar zonder factor (gelijk aan de databasefunctie crate_trade_value van STAP12). */
@@ -330,7 +343,7 @@ export async function crateSetDone(setKey: string, total: number): Promise<numbe
   if (await hasCrateServer()) return (await syncCrate({}, [])).earned
   const { data, error } = await supabase.rpc('crate_set_done', { p_set: setKey, p_total: total })
   if (error) throw new Error(`Crate points for the set failed: ${error.message}`)
-  return num(data)
+  return changed(num(data))
 }
 
 /** Verschillende nummers 1..official die je van een set in je Crate hebt (zoals crate_set_done telt). */
@@ -352,7 +365,7 @@ export async function tradeAllDuplicates(cards: readonly CrateCard[]): Promise<{
   const { data, error } = await supabase.rpc('crate_trade_all')
   if (!error) {
     const o = isRecord(data) ? data : {}
-    return { points: num(o.points), gained: num(o.gained) }
+    return changed({ points: num(o.points), gained: num(o.gained) })
   }
   if (!missingFunction(error)) throw new Error(`Trading in failed: ${error.message}`)
   let result = { points: 0, gained: 0 }
@@ -368,7 +381,7 @@ export async function tradeCrateCard(tcgdexId: string, count: number): Promise<{
   const { data, error } = await supabase.rpc('crate_trade', { p_tcgdex_id: tcgdexId, p_count: count })
   if (error) throw new Error(`Trading in failed: ${error.message}`)
   const o = isRecord(data) ? data : {}
-  return { points: num(o.points), gained: num(o.gained) }
+  return changed({ points: num(o.points), gained: num(o.gained) })
 }
 
 export async function listCrateCards(): Promise<CrateCard[]> {

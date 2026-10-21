@@ -1,3 +1,4 @@
+import { notifyCrateChanged } from './crate'
 import { supabase } from './supabase'
 
 /**
@@ -244,5 +245,7 @@ export async function grantCratePoints(userId: string, points: number, reason: s
   if (problem) throw new Error(problem)
   const { data, error } = await supabase.rpc('admin_grant_points', { p_user: userId, p_points: points, p_reason: reason.trim() })
   if (error) throw new Error(error.message)
+  // Misschien je eigen account: menu laten bijwerken (een ander account kost alleen één extra opvraging).
+  notifyCrateChanged()
   return num(data)
 }
