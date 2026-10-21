@@ -69,10 +69,10 @@
   display: none;
 }
 
-/* Touchscreen (21-10-2026, holo-tegels knipperden in Chrome op Android zolang de glans bewoog; eerst een 4× zo brede
-   laag met mengmodus, daarna een schuivend verloop binnen de tegel; beide knipperden). Nu, gekozen door de gebruiker:
-   de glans licht op en dooft (alleen opacity, op een eigen laag zo groot als de tegel, geen mengmodus), zodat de
-   kaartfoto eronder nooit opnieuw getekend hoeft te worden. Zelfde ritme als foil-sweep. */
+/* Touchscreen (21-10-2026): holo-tegels knipperden in Chrome op Android zolang de glans bewoog, op welke manier ook
+   (schuivende laag met mengmodus, schuivend verloop, oplichten en doven: alle drie getest op het toestel van de
+   gebruiker). Stilstaande glans knippert niet (Crate → Most valuable). Daarom op touch, gekozen door de gebruiker: een
+   vaste zachte regenboog diagonaal door het midden, zonder animatie, mengmodus of eigen laag. */
 @media (pointer: coarse) {
   .foil {
     overflow: visible;
@@ -83,26 +83,12 @@
     border-radius: inherit;
     transform: none;
     mix-blend-mode: normal;
-    opacity: 0;
-    will-change: opacity;
+    opacity: 0.25;
+    will-change: auto;
+    animation: none;
     /* Twee keer zo breed als de tegel en gecentreerd: de regenboog loopt diagonaal door het midden. */
     background-size: 200% 120%;
     background-position: center;
     background-repeat: no-repeat;
-    animation-name: foil-glow-touch;
-  }
-}
-
-@keyframes foil-glow-touch {
-  0%,
-  72% {
-    opacity: 0;
-  }
-  83% {
-    opacity: 0.35;
-  }
-  94%,
-  100% {
-    opacity: 0;
   }
 }
