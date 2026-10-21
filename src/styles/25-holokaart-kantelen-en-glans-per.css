@@ -114,6 +114,12 @@
     --foil-strength: 0.33;
   }
 
+  /* Alleen de vergrote kaart kantelt op touch (HoloCard: anders alleen met de muis). Zonder de stilstaande 3D-transform
+     ook geen eigen GPU-laag per kaart (21-10-2026: Crate → Most valuable knipperde in Chrome op Android). */
+  .holo-card:not(.is-interactive) {
+    transform: none;
+  }
+
   .holo-card .holo-foil {
     filter: none;
   }

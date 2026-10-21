@@ -68,3 +68,32 @@
 [data-motion='off'] .foil {
   display: none;
 }
+
+/* Touchscreen (21-10-2026, knipperen in Chrome op Android in Collection): geen extra GPU-laag per tegel. De glanslaag was
+   4× zo breed als de tegel, vast op de GPU (will-change + transform-animatie) en mengde met de kaart eronder (overlay).
+   Nu schuift hetzelfde verloop binnen de tegel (background-position, DESIGN.md §9), zelfde baan en timing, als gewone
+   doorzichtige laag; zonder mengmodus is hij feller, daarom zachter. */
+@media (pointer: coarse) {
+  .foil::before {
+    inset: 0;
+    transform: none;
+    will-change: auto;
+    mix-blend-mode: normal;
+    opacity: 0.35;
+    background-size: 400% 140%;
+    background-repeat: no-repeat;
+    animation-name: foil-sweep-touch;
+  }
+}
+
+/* Zelfde baan als foil-sweep: 110% = verloop links buiten de tegel, -10% = rechts erbuiten. */
+@keyframes foil-sweep-touch {
+  0%,
+  72% {
+    background-position: 110% 50%;
+  }
+  94%,
+  100% {
+    background-position: -10% 50%;
+  }
+}
