@@ -1,5 +1,82 @@
 /* ---------- Wishlist: slimme lijsten en extra filters ---------- */
+/* Eigen lijsten (21-10-2026, op verzoek: duidelijker): kopje "Your lists" met per lijst een tegel (naam, aantal,
+   wat de lijst toont); de gekozen lijst geel omrand, met de acties eronder. Telefoon: tegels naast elkaar te vegen. */
 .wish-lists {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.wish-lists-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.wish-lists-head .section-title {
+  margin: 0;
+}
+
+.wish-list-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: var(--space-3);
+}
+
+button.wish-list-tile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+  font-weight: 400;
+}
+
+button.wish-list-tile:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+}
+
+button.wish-list-tile[aria-pressed='true'] {
+  border-color: var(--accent-line);
+  box-shadow: inset 0 0 0 1px var(--accent-line);
+  background: var(--surface-2);
+}
+
+.wish-list-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  color: var(--accent-line);
+}
+
+.wish-list-text {
+  display: grid;
+  min-width: 0;
+}
+
+.wish-list-text strong,
+.wish-list-text .small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wish-list-text .small {
+  color: var(--muted);
+}
+
+.wish-list-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -7,15 +84,17 @@
 }
 
 @media (max-width: 480px) {
-  .wish-lists .segmented {
-    flex-wrap: nowrap;
+  .wish-list-tiles {
+    display: flex;
     overflow-x: auto;
-    max-width: 100%;
+    scroll-snap-type: x proximity;
     scrollbar-width: none;
+    padding-bottom: var(--space-1);
   }
 
-  .wish-lists .segmented button {
-    flex: 0 0 auto;
+  button.wish-list-tile {
+    flex: 0 0 72%;
+    scroll-snap-align: start;
   }
 }
 
