@@ -121,9 +121,19 @@ export function loadSettings(): Promise<UserSettings> {
   return settingsCache
 }
 
-export async function saveSettings(s: UserSettings): Promise<void> {
-  const settings = { condition_pct: s.conditionPct, sale_fee_pct: s.saleFeePct, sale_cost_per_sale: s.saleCostPerSale, defaults: s.defaults }
-  const { error } = await supabase.from('user_settings').upsert({ settings }, { onConflict: 'user_id' })
+/**
+ * Een deel van je instellingen opslaan; de rest blijft staan (21-10-2026: ook vastgezette sets staan hierin, die mogen
+ * niet verdwijnen als je waarde-instellingen opslaat en andersom). Eerst de actuele stand lezen, dan samenvoegen.
+ */
+export async function patchSettings(patch: Record<string, unknown>): Promise<void> {
+  const { data, error: readError } = await supabase.from('user_settings').select('settings').maybeSingle()
+  if (readError) throw new Error(`Saving settings failed: ${readError.message}`)
+  const current = isRecord(data) && isRecord(data.settings) ? data.settings : {}
+  const { error } = await supabase.from('user_settings').upsert({ settings: { ...current, ...patch } }, { onConflict: 'user_id' })
   if (error) throw new Error(`Saving settings failed: ${error.message}`)
+}
+
+export async function saveSettings(s: UserSettings): Promise<void> {
+  await patchSettings({ condition_pct: s.conditionPct, sale_fee_pct: s.saleFeePct, sale_cost_per_sale: s.saleCostPerSale, defaults: s.defaults })
   settingsCache = Promise.resolve(s)
 }

@@ -1,7 +1,20 @@
-import type { JSX } from 'react'
+import { useEffect, useState, type JSX } from 'react'
+import { usePinnedSets } from '../hooks/usePinnedSets'
 import type { BadgeKey, NavCounts } from '../lib/navCounts'
+import { PIN_LANG, pinHref, pinKey } from '../lib/pinnedSets'
 import type { Route } from '../lib/routes'
 import { CRATE_ITEM, SCAN_ITEM, SIDE_GROUPS, type NavItem } from './nav'
+
+/** Huidig adres, om een vastgezette set als "de pagina" te markeren. */
+function useHash(): string {
+  const [hash, setHash] = useState(() => window.location.hash)
+  useEffect(() => {
+    const on = (): void => setHash(window.location.hash)
+    window.addEventListener('hashchange', on)
+    return () => window.removeEventListener('hashchange', on)
+  }, [])
+  return hash
+}
 
 /** Wat het getal betekent, voor schermlezers en de tooltip. */
 const BADGE_TEXT: Record<BadgeKey, (n: number) => string> = {
@@ -31,10 +44,14 @@ interface Props {
 
 /** Zijbalk: Scan als hoofdknop, daaronder de pagina's in groepen met kopje. */
 export function SideNav({ route, counts, collapsed }: Props): JSX.Element {
+  const hash = useHash()
+  // Vastgezette sets onder Sets (21-10-2026, op verzoek); is de open set er een van, dan is die regel "de pagina".
+  const pinned = usePinnedSets()
+  const inPinned = route === 'sets' && !collapsed && pinned.some((p) => pinHref(p) === hash)
   const link = (item: NavItem): JSX.Element => (
     <a
       href={`#/${item.route}`}
-      aria-current={route === item.route ? 'page' : undefined}
+      aria-current={route === item.route ? (item.route === 'sets' && inPinned ? 'true' : 'page') : undefined}
       title={collapsed ? item.label : item.hint}
     >
       <item.Icon />
@@ -74,7 +91,24 @@ export function SideNav({ route, counts, collapsed }: Props): JSX.Element {
           </h2>
           <ul>
             {group.items.map((item) => (
-              <li key={item.route}>{link(item)}</li>
+              <li key={item.route}>
+                {link(item)}
+                {item.route === 'sets' && !collapsed && pinned.length > 0 && (
+                  <ul className="side-sub" aria-label="Pinned sets">
+                    {pinned.map((p) => {
+                      const href = pinHref(p)
+                      return (
+                        <li key={pinKey(p)}>
+                          <a href={href} aria-current={hash === href ? 'page' : undefined} title={p.name}>
+                            {p.name}
+                            {p.lang !== 'en' && <span className="side-sub-lang">{PIN_LANG[p.lang]}</span>}
+                          </a>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+              </li>
             ))}
           </ul>
         </section>

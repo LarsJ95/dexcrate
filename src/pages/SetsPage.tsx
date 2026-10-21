@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState, type JSX, type KeyboardEvent } from 'react'
-import { IconSearch } from '../components/Icons'
+import { IconSearch, IconStar } from '../components/Icons'
+import { usePinnedSets } from '../hooks/usePinnedSets'
+import { PIN_LANG, pinHref, pinKey } from '../lib/pinnedSets'
 import { SearchClear } from '../components/SearchClear'
 import { SetIcon } from '../components/SetIcon'
 import { listCards } from '../lib/db'
@@ -67,6 +69,7 @@ export function SetsPage(): JSX.Element {
   const [active, setActive] = useState(0)
   /** Set gevonden via de officiële afkorting (MEW → 151); alleen Engels. */
   const [abbrHit, setAbbrHit] = useState<{ q: string; setId: string | null } | null>(null)
+  const pinned = usePinnedSets()
 
   useEffect(() => {
     let cancelled = false
@@ -207,6 +210,19 @@ export function SetsPage(): JSX.Element {
     <section className="page">
       <h1>Sets</h1>
       {cardsError && <p className="notice error">{cardsError}</p>}
+
+      {/* Vastgezette sets (21-10-2026): op de computer in het menu, hier voor telefoon en tablet. */}
+      {pinned.length > 0 && (
+        <nav className="pinned-sets" aria-label="Pinned sets">
+          {pinned.map((p) => (
+            <a key={pinKey(p)} className="chip pinned-chip" href={pinHref(p)}>
+              <IconStar size={14} />
+              {p.name}
+              {p.lang !== 'en' && <span className="muted small">{PIN_LANG[p.lang]}</span>}
+            </a>
+          ))}
+        </nav>
+      )}
 
       <div className="segmented lang-switch" role="group" aria-label="Language">
         {LANGS.map((l) => (

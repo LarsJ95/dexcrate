@@ -13,7 +13,9 @@ import { loadGoal } from '../lib/wishlist'
 import { BinderSlot } from '../components/BinderSlot'
 import { BinderToolbar, CostPanel, GoalStats, SetProgressSplit, type BinderShow } from '../components/SetBinderParts'
 import { GoalSheet } from '../components/GoalSheet'
-import { IconArrowLeft } from '../components/Icons'
+import { IconArrowLeft, IconStar } from '../components/Icons'
+import { setPinned, usePinnedSets } from '../hooks/usePinnedSets'
+import { MAX_PINNED, pinKey } from '../lib/pinnedSets'
 import { SetCardSheet, type SheetNav } from '../components/SetCardSheet'
 import { SetSelectionBar } from '../components/SetSelectionBar'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
@@ -81,6 +83,9 @@ export function SetBinderPage({ param }: Props): JSX.Element {
   const cancelCost = useRef(false)
   // Verzameldoel (STAP6): wat telt mee voor "compleet".
   const goalsEnabled = useWishlistEnabled() === true
+  // Set vastzetten in het menu (21-10-2026, op verzoek).
+  const pinnedSets = usePinnedSets()
+  const [pinError, setPinError] = useState<string | null>(null)
   const [goal, setGoal] = useState<GoalSettings>(DEFAULT_GOAL)
   const [goalOpen, setGoalOpen] = useState(false)
 
@@ -375,6 +380,22 @@ export function SetBinderPage({ param }: Props): JSX.Element {
   const missingCount = progress.total - progress.done
   const variantGoal = goal.variants.length > 0
   const unit = variantGoal ? 'versions' : 'cards'
+  const pinSet = isLang(lang) ? { lang, setId: data.summary.id, name: data.summary.name } : null
+  const isPinned = pinSet !== null && pinnedSets.some((p) => pinKey(p) === pinKey(pinSet))
+  async function togglePin(): Promise<void> {
+    if (!pinSet) return
+    if (!isPinned && pinnedSets.length >= MAX_PINNED) {
+      setPinError(`You can pin up to ${MAX_PINNED} sets. Unpin one first.`)
+      return
+    }
+    setPinError(null)
+    try {
+      await setPinned(pinSet, !isPinned)
+    } catch (err) {
+      setPinError(errorText(err, 'Pinning failed.'))
+    }
+  }
+
   const selectedCards = selected === null ? [] : data.cards.filter((c) => selected.has(c.id))
   const allShownSelected = selected !== null && visible.length > 0 && visible.every((c) => selected.has(c.id))
   const goalText = [
@@ -404,6 +425,18 @@ export function SetBinderPage({ param }: Props): JSX.Element {
           {goalText.length > 0 && <p className="muted small">Goal: {goalText.join('; ')}</p>}
         </div>
         <div className="head-actions">
+          {isLang(lang) && (
+            <button
+              type="button"
+              className="pin-set"
+              aria-pressed={isPinned}
+              onClick={() => void togglePin()}
+              title={isPinned ? 'Remove from the menu' : 'Show this set in the menu'}
+            >
+              <IconStar size={16} />
+              {isPinned ? 'Pinned' : 'Pin'}
+            </button>
+          )}
           {isLang(lang) && data.cards.length > 0 && (
             <button type="button" onClick={() => setSelected((s) => (s === null ? new Set() : null))} aria-pressed={selected !== null}>
               {selected === null ? 'Select' : 'Done'}
@@ -416,6 +449,11 @@ export function SetBinderPage({ param }: Props): JSX.Element {
           )}
         </div>
       </div>
+      {pinError && (
+        <p className="notice error" role="alert">
+          {pinError}
+        </p>
+      )}
 
       <div
         className="set-progress"

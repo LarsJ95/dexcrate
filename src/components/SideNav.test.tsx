@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
-import { SideNav } from './SideNav'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { PinnedSet } from '../lib/pinnedSets'
+
+const pins = vi.hoisted(() => ({ list: [] as PinnedSet[] }))
+vi.mock('../lib/supabase', () => ({ supabase: {} }))
+vi.mock('../hooks/usePinnedSets', () => ({ usePinnedSets: () => pins.list }))
+
+const { SideNav } = await import('./SideNav')
 
 // Zelf gedefinieerd: lib/navCounts laadt (via de wishlist) de Supabase-client.
 const NO_COUNTS = { collection: 0, wishlist: 0, crate: null }
@@ -42,6 +48,26 @@ describe('SideNav', () => {
     render(<SideNav route="sets" counts={NO_COUNTS} collapsed={false} />)
     expect(screen.getByRole('link', { name: 'Sets' }).getAttribute('aria-current')).toBe('page')
     expect(screen.queryByRole('list', { name: 'Recent sets' })).toBeNull()
+    expect(screen.queryByRole('list', { name: 'Pinned sets' })).toBeNull()
+  })
+
+  it('vastgezette sets onder Sets; de open set is "de pagina", ingeklapt geen lijst', () => {
+    pins.list = [
+      { lang: 'en', setId: 'sv03.5', name: '151' },
+      { lang: 'ja', setId: 'SV2a', name: '151' },
+    ]
+    window.location.hash = '#/sets/en/sv03.5'
+    const { rerender } = render(<SideNav route="sets" counts={NO_COUNTS} collapsed={false} />)
+    const list = screen.getByRole('list', { name: 'Pinned sets' })
+    const links = [...list.querySelectorAll('a')]
+    expect(links.map((a) => [a.textContent, a.getAttribute('href'), a.getAttribute('aria-current')])).toEqual([
+      ['151', '#/sets/en/sv03.5', 'page'],
+      ['151JP', '#/sets/ja/SV2a', null],
+    ])
+    expect(screen.getByRole('link', { name: 'Sets' }).getAttribute('aria-current')).toBe('true')
+    rerender(<SideNav route="sets" counts={NO_COUNTS} collapsed />)
+    expect(screen.queryByRole('list', { name: 'Pinned sets' })).toBeNull()
+    pins.list = []
   })
 
   it('ingeklapt: tooltip met de naam', () => {
