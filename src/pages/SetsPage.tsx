@@ -217,7 +217,22 @@ export function SetsPage(): JSX.Element {
         ))}
       </div>
 
+      {/* Keuzerijen (taal, voortgang) direct onder elkaar, zoeken en sorteren eronder (21-10-2026, op verzoek). */}
       <div className="filters">
+        <div className="segmented" role="group" aria-label="Filter">
+          {(
+            [
+              ['all', 'All'],
+              ['owned', 'Started'],
+              ['almost', 'Almost'],
+              ['complete', 'Complete'],
+            ] as const
+          ).map(([key, label]) => (
+            <button key={key} type="button" aria-pressed={scope === key} onClick={() => setScope(key)}>
+              {label} <span className="count">{counts[key]}</span>
+            </button>
+          ))}
+        </div>
         <div className="search set-search">
           <IconSearch size={18} />
           <input
@@ -266,20 +281,6 @@ export function SetsPage(): JSX.Element {
               })}
             </ul>
           )}
-        </div>
-        <div className="segmented" role="group" aria-label="Filter">
-          {(
-            [
-              ['all', 'All'],
-              ['owned', 'Started'],
-              ['almost', 'Almost'],
-              ['complete', 'Complete'],
-            ] as const
-          ).map(([key, label]) => (
-            <button key={key} type="button" aria-pressed={scope === key} onClick={() => setScope(key)}>
-              {label} <span className="count">{counts[key]}</span>
-            </button>
-          ))}
         </div>
         <select className="toolbar-sort" aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
           <option value="newest">Newest first</option>
