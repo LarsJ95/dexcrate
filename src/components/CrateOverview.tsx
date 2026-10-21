@@ -22,6 +22,12 @@ const COLS: [Col, string][] = [
   ['value', 'Value'],
 ]
 
+/** Getallen rechts; op de telefoon alleen kaart en waarde als kolom (set, zeldzaamheid en aantal staan eronder). */
+function colClass(col: Col): string | undefined {
+  const cls = [col === 'qty' || col === 'price' || col === 'value' ? 'num' : null, col === 'name' || col === 'value' ? null : 'hide-narrow'].filter(Boolean)
+  return cls.length > 0 ? cls.join(' ') : undefined
+}
+
 interface Props {
   cards: readonly CrateCard[]
   onOpen: (card: CrateCard) => void
@@ -138,7 +144,7 @@ export function CrateOverview({ cards, onOpen, tradeFactor, tradeAll }: Props): 
           <strong>{summary.unique}</strong>
           <span className="muted small">{summary.copies} copies</span>
         </div>
-        <div>
+        <div className="crate-ov-value">
           <span className="stat-label">Market value</span>
           <strong>{formatEur(summary.value)}</strong>
           <span className="muted small">{loaded < cards.length ? `Loading prices ${loaded}/${cards.length}…` : `${summary.priced} of ${summary.unique} with a price`}</span>
@@ -226,6 +232,15 @@ export function CrateOverview({ cards, onOpen, tradeFactor, tradeAll }: Props): 
           <span className="section-title">All cards</span>
           <span className="muted small">{cards.length} cards, sortable by price and value</span>
         </summary>
+        {/* Telefoon: alleen kaart en waarde als kolom; sorteren op de rest via deze lijst. */}
+        <select className="crate-table-sort" aria-label="Sort" value={sort.col} onChange={(e) => setSort({ col: e.target.value as Col, desc: e.target.value !== 'name' && e.target.value !== 'set' })}>
+          {COLS.map(([col, label]) => (
+            <option key={col} value={col}>
+              {label}
+              {sort.col === col ? (sort.desc ? ' ↓' : ' ↑') : ''}
+            </option>
+          ))}
+        </select>
         <div className="crate-table-wrap">
           <table className="crate-table">
             <thead>
@@ -234,7 +249,7 @@ export function CrateOverview({ cards, onOpen, tradeFactor, tradeAll }: Props): 
                   <th
                     key={col}
                     scope="col"
-                    className={col === 'qty' || col === 'price' || col === 'value' ? 'num' : undefined}
+                    className={colClass(col)}
                     aria-sort={sort.col === col ? (sort.desc ? 'descending' : 'ascending') : 'none'}
                   >
                     <button
@@ -252,20 +267,31 @@ export function CrateOverview({ cards, onOpen, tradeFactor, tradeAll }: Props): 
             <tbody>
               {rows.map((c) => {
                 const p = prices.get(c.tcgdexId)
+                const each = p === undefined ? '…' : p === null ? '–' : formatEur(p)
                 return (
                   <tr key={c.tcgdexId}>
                     <td>
                       <button type="button" className="crate-table-name" onClick={() => onOpen(c)}>
                         {c.name}
                       </button>
+                      <span className="crate-table-sub muted small">
+                        <RaritySymbols rarity={c.rarity} /> {c.setName ?? '–'}
+                      </span>
                     </td>
-                    <td>{c.setName ?? '–'}</td>
-                    <td>
-                      <RaritySymbols rarity={c.rarity} /> <span className="hide-narrow">{c.rarity ?? '–'}</span>
+                    <td className="hide-narrow">{c.setName ?? '–'}</td>
+                    <td className="hide-narrow">
+                      <RaritySymbols rarity={c.rarity} /> {c.rarity ?? '–'}
                     </td>
-                    <td className="num">{c.quantity}</td>
-                    <td className="num">{p === undefined ? '…' : p === null ? '–' : formatEur(p)}</td>
-                    <td className="num">{p === undefined ? '…' : p === null ? '–' : formatEur(p * c.quantity)}</td>
+                    <td className="num hide-narrow">{c.quantity}</td>
+                    <td className="num hide-narrow">{each}</td>
+                    <td className="num">
+                      {p === undefined ? '…' : p === null ? '–' : formatEur(p * c.quantity)}
+                      {c.quantity > 1 && (
+                        <span className="crate-table-sub muted small">
+                          {c.quantity} × {each}
+                        </span>
+                      )}
+                    </td>
                   </tr>
                 )
               })}

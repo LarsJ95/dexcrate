@@ -196,6 +196,8 @@ button.crate-sheet-image:hover:not(:disabled) {
 /* Overzicht (18-10-2026, rustiger): statistiekbalk, waardevolste kaarten, sets en zeldzaamheid als balkjes, tabel ingeklapt. */
 .crate-overview {
   display: grid;
+  /* minmax(0, …): een brede tabel mag de kolom (en daarmee de pagina) niet breder maken dan het scherm. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-5);
 }
 
@@ -224,6 +226,19 @@ button.crate-sheet-image:hover:not(:disabled) {
   grid-column: 1 / -1;
   padding-top: var(--space-3);
   border-top: 1px solid var(--line);
+}
+
+/* Telefoon (21-10-2026): een bedrag als €1,190.04 past niet in een derde van de breedte; marktwaarde bovenaan over de
+   volle breedte, kaarten en dubbelen eronder naast elkaar. */
+@media (max-width: 480px) {
+  .crate-ov-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .crate-ov-value {
+    grid-column: 1 / -1;
+    order: -1;
+  }
 }
 
 .crate-ov-section {
@@ -384,4 +399,30 @@ button.th-sort:hover:not(:disabled) {
 
 .crate-table tbody tr:hover {
   background: var(--surface-2);
+}
+
+.crate-table-sort,
+.crate-table-sub {
+  display: none;
+}
+
+/* Telefoon (21-10-2026: tabel liep buiten beeld): geen zijwaarts scrollen. Twee kolommen: kaart met zeldzaamheid en set
+   eronder, waarde met "aantal × prijs" eronder; sorteren op de overige kolommen via de keuzelijst. */
+@media (max-width: 480px) {
+  .crate-table-sort {
+    display: block;
+    margin: 0 0 var(--space-3) auto;
+  }
+
+  .crate-table td {
+    white-space: normal;
+  }
+
+  .crate-table td.num {
+    white-space: nowrap;
+  }
+
+  .crate-table-sub {
+    display: block;
+  }
 }
