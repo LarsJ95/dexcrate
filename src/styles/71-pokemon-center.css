@@ -105,7 +105,6 @@ button.primary:active:not(:disabled) {
 
 /* Crate-knop en -tegels: "drukrand" zoals de gele knop (kleuren in 67-menu-groepen.css). */
 .side-nav a.side-crate,
-a.more-crate,
-a.crate-teaser {
+a.more-crate {
   box-shadow: 0 4px 0 var(--red-press);
 }
