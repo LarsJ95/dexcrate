@@ -5,6 +5,7 @@ import { IconLogout, IconMoon, IconSettings, IconSidebar, IconSun, LogoMark } fr
 import { Moments } from './Moments'
 import { PartnerBuddy } from './PartnerBuddy'
 import { Peek } from './Peek'
+import { ScrollJump } from './ScrollJump'
 import { Sky } from './Sky'
 import { usePrefs } from '../lib/devicePrefs'
 import { SETTINGS_ROUTES, TAB_NAV, isActiveTab, moreHasBadge } from './nav'
@@ -138,6 +139,7 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
       </main>
       <Moments />
       <Peek paused={route === 'scan'} />
+      {route !== 'scan' && <ScrollJump />}
 
       <nav className="tab-bar" aria-label="Main menu">
         {TAB_NAV.map(({ route: r, label, Icon }) => (
