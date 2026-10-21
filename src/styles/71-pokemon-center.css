@@ -1,0 +1,111 @@
+/* ---------- Stijl "Pokémon Center" (21-10-2026, gekozen door de gebruiker uit 3 concepten: vrolijker, minder kaal) ----------
+   Licht thema: warm crème met witte blokken (palet in index.css). Beide thema's: elk blok een gekleurde bovenrand in een
+   energiekleur, pokéball voor elke kop, paginatitel met rood-zwart-geel streep, ronde knoppen, gele knop met "drukrand",
+   actief menu-item als gele pil, kaarten met een zachte schaduw, Crate in pokéball-rood. */
+
+/* Blokken: gekleurde bovenrand. Geneste blokken en blokken in popups houden een gewone rand. */
+.page .panel:not(.panel .panel) {
+  border-top: 6px solid var(--panel-accent, var(--yellow));
+  box-shadow: var(--shadow-panel);
+}
+
+.page .hero {
+  border-top: 6px solid var(--energy-fire);
+}
+
+/* Elk blok een eigen energiekleur, in een vaste volgorde. */
+.page :nth-child(5n + 1 of .panel, .phone-fold) {
+  --panel-accent: var(--energy-fire);
+}
+
+.page :nth-child(5n + 2 of .panel, .phone-fold) {
+  --panel-accent: var(--energy-water);
+}
+
+.page :nth-child(5n + 3 of .panel, .phone-fold) {
+  --panel-accent: var(--energy-grass);
+}
+
+.page :nth-child(5n + 4 of .panel, .phone-fold) {
+  --panel-accent: var(--energy-lightning);
+}
+
+.page :nth-child(5n of .panel, .phone-fold) {
+  --panel-accent: var(--energy-psychic);
+}
+
+/* Hoofdcijfer op Overview: zachte gele gloed rechtsboven. */
+.page .hero {
+  background: radial-gradient(120% 140% at 100% 0%, color-mix(in oklab, var(--yellow) 26%, transparent), transparent 55%), var(--surface);
+}
+
+/* Paginatitel met een pokéball-streep (rood, zwart, geel). */
+.page h1 {
+  display: inline-block;
+  padding-bottom: 6px;
+  background: linear-gradient(90deg, var(--ball-red) 0 46%, var(--ball-line) 46% 54%, var(--yellow) 54%) bottom / 100% 6px no-repeat;
+}
+
+/* Kopjes met een kleine pokéball ervoor. */
+.panel-title,
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.panel-title::before,
+.section-title::before {
+  content: '';
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--ball-line);
+  background: linear-gradient(var(--ball-red) 0 44%, var(--ball-line) 44% 56%, var(--ball-white) 56%);
+}
+
+/* Ronde knoppen en keuzerijen; kaarttegels, regels en tegels (ook knoppen) houden hun eigen vorm. */
+:is(button:not([class]), button.primary, button.small-btn, button.ghost, button.danger, button.filter-toggle),
+a.button-link,
+.segmented,
+.segmented button,
+.chip {
+  border-radius: var(--radius-pill);
+}
+
+/* Gele knop met "drukrand": zakt in bij indrukken. */
+button.primary {
+  box-shadow: 0 4px 0 var(--yellow-press);
+}
+
+button.primary:active:not(:disabled) {
+  box-shadow: 0 1px 0 var(--yellow-press);
+  translate: 0 3px;
+}
+
+/* Actief menu-item als gele pil. */
+.side-nav a[aria-current='page']:not(.side-scan, .side-crate) {
+  background: var(--yellow);
+  color: var(--on-yellow);
+}
+
+.side-nav a[aria-current='page']:not(.side-scan, .side-crate) svg {
+  color: var(--on-yellow);
+}
+
+.side-nav a[aria-current='page']:not(.side-scan, .side-crate)::before {
+  content: none;
+}
+
+/* Kaarten met een zachte schaduw. */
+.tile-open {
+  box-shadow: var(--shadow-card);
+}
+
+/* Crate-knop en -tegels: "drukrand" zoals de gele knop (kleuren in 67-menu-groepen.css). */
+.side-nav a.side-crate,
+a.more-crate,
+a.crate-teaser {
+  box-shadow: 0 4px 0 var(--red-press);
+}

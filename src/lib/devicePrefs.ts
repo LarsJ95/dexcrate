@@ -51,7 +51,8 @@ function load(): DevicePrefs {
   const mode = read(KEYS.scanMode)
   const gap = Number(read(KEYS.autoGapMs))
   return {
-    theme: theme === 'light' || theme === 'system' ? theme : 'dark',
+    // Zonder keuze licht (21-10-2026, stijl Pokémon Center); wie Dark of Automatic koos, houdt dat.
+    theme: theme === 'dark' || theme === 'system' ? theme : 'light',
     sky: read(KEYS.sky) !== 'off',
     wallpaper: read(KEYS.wallpaper) !== 'off',
     scanMode: mode === 'single' || mode === 'multi' ? mode : 'queue',

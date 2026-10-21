@@ -18,13 +18,13 @@ export interface NavGroup {
   items: NavItem[]
 }
 
-const OVERVIEW: NavItem = { route: 'overview', label: 'Overview', Icon: IconHome }
-const COLLECTION: NavItem = { route: 'collection', label: 'Collection', Icon: IconCards, badge: 'collection' }
+const OVERVIEW: NavItem = { route: 'overview', label: 'Home', Icon: IconHome }
+const COLLECTION: NavItem = { route: 'collection', label: 'My cards', Icon: IconCards, badge: 'collection' }
 const SETS: NavItem = { route: 'sets', label: 'Sets', Icon: IconLayers }
 const WISHLIST: NavItem = { route: 'wishlist', label: 'Wishlist', Icon: IconStar, badge: 'wishlist' }
-const BUY_SELL: NavItem = { route: 'transactions', label: 'Buy & sell', Icon: IconReceipt, hint: 'Purchases and sales' }
+const BUY_SELL: NavItem = { route: 'transactions', label: 'Trades', Icon: IconReceipt, hint: 'Purchases and sales' }
 /** Crate: eigen, opvallend item direct onder Scan (21-10-2026, keuze gebruiker), niet in een groep. */
-export const CRATE_ITEM: NavItem = { route: 'crate', label: 'Crate game', Icon: IconCrate, hint: 'Open virtual packs with Crate points' }
+export const CRATE_ITEM: NavItem = { route: 'crate', label: 'Crate', Icon: IconCrate, hint: 'Open virtual packs with Crate points' }
 export const SCAN_ITEM: NavItem = { route: 'scan', label: 'Scan', Icon: IconCamera }
 export const SETTINGS_ITEM: NavItem = { route: 'settings', label: 'Settings', Icon: IconSettings, hint: 'Settings, backup and import' }
 

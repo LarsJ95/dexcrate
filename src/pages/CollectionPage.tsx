@@ -267,7 +267,7 @@ export function CollectionPage(): JSX.Element {
     <section className="page">
       <div className="page-head">
         <div>
-          <h1>Collection</h1>
+          <h1>My cards</h1>
           {cards && (
             <p className="muted">
               {visibleCount} {visibleCount === 1 ? 'card' : 'cards'}

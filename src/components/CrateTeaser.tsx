@@ -28,7 +28,7 @@ export function CrateTeaser(): JSX.Element | null {
         <IconCrate size={24} />
       </span>
       <span className="crate-teaser-text">
-        <strong>{status.freePack ? 'Your free pack is ready!' : 'Crate game'}</strong>
+        <strong>{status.freePack ? 'Your free pack is ready!' : 'Crate'}</strong>
         <span className="small">{status.points.toLocaleString('en-GB')} Crate points · open packs and complete sets</span>
       </span>
       <span className="crate-teaser-go">{status.freePack ? 'Open it' : 'Play'}</span>

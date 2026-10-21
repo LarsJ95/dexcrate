@@ -290,7 +290,7 @@ export function CratePage(): JSX.Element {
   if (enabled === false) {
     return (
       <section className="page">
-        <h1>Crate game</h1>
+        <h1>Crate</h1>
         <p className="notice">The Crate game is not set up yet: run STAP11 in Supabase.</p>
       </section>
     )
@@ -300,7 +300,7 @@ export function CratePage(): JSX.Element {
     <section className="page crate">
       <div className="page-head">
         <div>
-          <h1>Crate game</h1>
+          <h1>Crate</h1>
           <p className="muted">Earn Crate points with your real collection and open virtual packs. This collection is separate from your real cards.</p>
         </div>
       </div>

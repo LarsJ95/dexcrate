@@ -51,17 +51,18 @@
 }
 
 /* Crate (21-10-2026, keuze gebruiker: het spel moet opvallen): kleurige knop direct onder Scan, met je punten en
-   "Free" zolang het gratis pakje van vandaag er nog is. Kleuren van het Master pack (paars) en Water (blauw). */
+   "Free" zolang het gratis pakje van vandaag er nog is. Pokéball-rood naar vuuroranje (stijl Pokémon Center; eerst
+   paars-blauw, maar dat verbiedt DESIGN.md §11), iets verdonkerd zodat witte tekst ≥ 4,5:1 haalt. */
 .side-nav a.side-crate,
 a.more-crate {
-  background: linear-gradient(120deg, color-mix(in oklab, var(--energy-psychic) 78%, var(--ball-line)), color-mix(in oklab, var(--energy-water) 72%, var(--ball-line)));
+  background: linear-gradient(120deg, color-mix(in oklab, var(--ball-red) 85%, var(--ball-line)), color-mix(in oklab, var(--energy-fire) 72%, var(--ball-line)));
   color: var(--white);
   font-weight: 800;
 }
 
 .side-nav a.side-crate:hover,
 a.more-crate:hover {
-  background: linear-gradient(120deg, color-mix(in oklab, var(--energy-psychic) 88%, var(--ball-line)), color-mix(in oklab, var(--energy-water) 82%, var(--ball-line)));
+  background: linear-gradient(120deg, color-mix(in oklab, var(--ball-red) 92%, var(--ball-line)), color-mix(in oklab, var(--energy-fire) 78%, var(--ball-line)));
   color: var(--white);
 }
 
@@ -73,7 +74,7 @@ a.more-crate svg {
 
 .side-nav a.side-crate[aria-current='page'] {
   color: var(--white);
-  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--energy-psychic);
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ball-red);
 }
 
 .side-nav a.side-crate::before,
@@ -300,13 +301,13 @@ a.crate-teaser {
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-l);
-  background: linear-gradient(120deg, color-mix(in oklab, var(--energy-psychic) 78%, var(--ball-line)), color-mix(in oklab, var(--energy-water) 72%, var(--ball-line)));
+  background: linear-gradient(120deg, color-mix(in oklab, var(--ball-red) 85%, var(--ball-line)), color-mix(in oklab, var(--energy-fire) 72%, var(--ball-line)));
   color: var(--white);
   text-decoration: none;
 }
 
 a.crate-teaser:hover {
-  background: linear-gradient(120deg, color-mix(in oklab, var(--energy-psychic) 88%, var(--ball-line)), color-mix(in oklab, var(--energy-water) 82%, var(--ball-line)));
+  background: linear-gradient(120deg, color-mix(in oklab, var(--ball-red) 92%, var(--ball-line)), color-mix(in oklab, var(--energy-fire) 78%, var(--ball-line)));
   color: var(--white);
 }
 
