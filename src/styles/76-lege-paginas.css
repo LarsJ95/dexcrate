@@ -1,0 +1,50 @@
+/* ---------- Lege pagina's (21-10-2026, op verzoek): kop, wat het je oplevert en één knop ---------- */
+.empty-state {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+}
+
+.empty-state > p {
+  max-width: 52ch;
+  margin: 0;
+}
+
+/* Pokébal boven de kop, zoals bij de paneelkoppen. */
+.empty-state-title {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  font-size: var(--fs-h2);
+  color: var(--ink);
+}
+
+.empty-state-title::before {
+  content: '';
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid var(--ball-line);
+  background:
+    radial-gradient(circle, var(--ball-white) 0 4px, var(--ball-line) 4.5px 7px, transparent 7.5px),
+    linear-gradient(var(--ball-red) 0 44%, var(--ball-line) 44% 56%, var(--ball-white) 56%);
+}
+
+.empty-state.is-compact {
+  padding-block: var(--space-5);
+}
+
+/* Hoofdknop als link (naar een andere pagina): geel zoals een gewone hoofdknop. */
+.empty-state a.button-link.primary {
+  border-color: var(--yellow);
+  background: var(--yellow);
+  color: var(--on-yellow);
+  font-weight: 700;
+  box-shadow: 0 4px 0 var(--yellow-press);
+}
+
+.empty-state a.button-link.primary:hover {
+  background: var(--yellow-hover);
+  border-color: var(--yellow-hover);
+}

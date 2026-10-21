@@ -7,6 +7,7 @@ import { HoloCard } from '../components/HoloCard'
 import { PackOpening } from '../components/PackOpening'
 import { CatalogFilterFields } from '../components/CatalogFilterFields'
 import { FilterPanel } from '../components/FilterPanel'
+import { EmptyState } from '../components/EmptyState'
 import { IconCrate, IconSearch } from '../components/Icons'
 import { Loading } from '../components/Loading'
 import { RaritySymbols } from '../components/RaritySymbols'
@@ -498,7 +499,21 @@ export function CratePage(): JSX.Element {
           </FilterPanel>
         )}
         {cards === null && !error && <Loading />}
-        {view === 'overview' && cards && (
+        {cards?.length === 0 && (
+          <EmptyState
+            title="No virtual cards yet"
+            action={
+              freePack ? (
+                <button type="button" className="primary" onClick={() => void openPack('booster')} disabled={busy || opening !== null}>
+                  Open your free pack
+                </button>
+              ) : undefined
+            }
+          >
+            Open a pack above to start your Crate: a separate, virtual collection you build with Crate points. Your daily Booster pack is free.
+          </EmptyState>
+        )}
+        {view === 'overview' && cards && cards.length > 0 && (
           <CrateOverview
             cards={cards}
             prices={prices}
@@ -513,8 +528,24 @@ export function CratePage(): JSX.Element {
             }}
           />
         )}
-        {view === 'cards' && cards?.length === 0 && <p className="empty">No virtual cards yet. Open your first pack above.</p>}
-        {view === 'cards' && cards && cards.length > 0 && sorted.length === 0 && <p className="empty">No cards match these filters.</p>}
+        {view === 'cards' && cards && cards.length > 0 && sorted.length === 0 && (
+          <EmptyState
+            action={
+              <button
+                type="button"
+                className="small-btn"
+                onClick={() => {
+                  setFilters(NO_CRATE_FILTERS)
+                  setQuery('')
+                }}
+              >
+                Clear filters
+              </button>
+            }
+          >
+            No cards match these filters.
+          </EmptyState>
+        )}
         {view === 'cards' && sorted.length > 0 && (
           <ul className="catalog-grid crate-grid">
             {sorted.map((c) => (
