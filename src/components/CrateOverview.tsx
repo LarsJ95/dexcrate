@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type JSX, type ReactNode } from 'react'
 import { foilStyleFor, rarityRule } from '../lib/cardTraits'
-import { crateSetProgress, summarizeCrate, type CrateCard } from '../lib/crate'
+import { crateSetProgress, summarizeCrate, type CrateCard, type CrateRules } from '../lib/crate'
 import { crateSetKey } from '../lib/crateFilters'
 import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
@@ -8,6 +8,7 @@ import { getCardPrice, getSetList } from '../lib/tcgdex'
 import { hpLevel } from '../lib/trainer'
 import { CardFace } from './CardFace'
 import { CatalogKeyPicture } from './CatalogCardPicture'
+import { CrateMissingSheet } from './CrateMissingSheet'
 import { HoloCard } from './HoloCard'
 import { RaritySymbols } from './RaritySymbols'
 
@@ -35,6 +36,10 @@ interface Props {
   tradeFactor: number
   /** Knop (met bevestigen) om alle dubbelen in te ruilen; null = geen dubbelen. */
   tradeAll: ReactNode
+  /** Voor gericht kopen van ontbrekende kaarten (STAP23). */
+  rules: CrateRules
+  points: number
+  onBought: (points: number) => void
 }
 
 /** Zoveel waardevolste kaarten en sets tonen; de rest via de tabel / "Show all sets". */
@@ -45,7 +50,7 @@ const TOP_SETS = 6
  * Overzicht van je Crate (standaardweergave, rustiger sinds 18-10-2026): één statistiekbalk, je waardevolste kaarten,
  * setvoortgang (doel van het Set pack), zeldzaamheid als balkjes en de volledige tabel ingeklapt.
  */
-export function CrateOverview({ cards, onOpen, tradeFactor, tradeAll }: Props): JSX.Element {
+export function CrateOverview({ cards, onOpen, tradeFactor, tradeAll, rules, points, onBought }: Props): JSX.Element {
   // Prijs per exemplaar; ontbreekt zolang hij laadt, null = geen prijs.
   const [prices, setPrices] = useState<ReadonlyMap<string, number | null>>(new Map())
   const [sort, setSort] = useState<{ col: Col; desc: boolean }>({ col: 'value', desc: true })
@@ -109,6 +114,10 @@ export function CrateOverview({ cards, onOpen, tradeFactor, tradeAll }: Props): 
     }
   }, [])
   const [allSets, setAllSets] = useState(false)
+  // Set waarvan de ontbrekende kaarten open staan (gericht kopen).
+  const [missingOf, setMissingOf] = useState<{ key: string; name: string } | null>(null)
+  const owned = useMemo(() => new Set(cards.map((c) => c.tcgdexId)), [cards])
+  const canBuy = Object.keys(rules.craft).length > 0
 
   const sets = useMemo(() => {
     const names = new Map<string, string>()
@@ -194,6 +203,11 @@ export function CrateOverview({ cards, onOpen, tradeFactor, tradeAll }: Props): 
                   <span className="meter" aria-hidden="true">
                     <span className="meter-fill" data-hp={hpLevel(s.have / s.total)} style={{ width: `${(s.have / s.total) * 100}%` }} />
                   </span>
+                  {canBuy && s.have < s.total && (
+                    <button type="button" className="small-btn crate-ov-missing" onClick={() => setMissingOf({ key: s.key, name: s.name })}>
+                      Missing cards…
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
@@ -226,6 +240,10 @@ export function CrateOverview({ cards, onOpen, tradeFactor, tradeAll }: Props): 
           </ul>
         </section>
       </div>
+
+      {missingOf && (
+        <CrateMissingSheet setKey={missingOf.key} setName={missingOf.name} owned={owned} rules={rules} points={points} onBought={onBought} onClose={() => setMissingOf(null)} />
+      )}
 
       <details className="panel crate-ov-all">
         <summary>

@@ -20,11 +20,10 @@ import {
   canAfford,
   crateSetDone,
   crateSetProgress,
-  drawPack,
   getCrateRules,
   hasCrate,
   listCrateCards,
-  openCratePack,
+  openPack as drawAndOpen,
   packCost,
   packsByCost,
   syncCrate,
@@ -60,6 +59,20 @@ function earnRows(rules: CrateRules): [string, string][] {
     ...(rules.crateSet ? [['Complete a set in your Crate', String(rules.crateSet)] as [string, string]] : []),
     ['Open the app (daily bonus)', String(rules.daily)],
     ['Trade in a duplicate', `${2 * rules.tradeFactor} to ${30 * rules.tradeFactor}`],
+  ]
+}
+
+/** Prijzen voor een ontbrekende kaart (Overview → Sets → Missing cards). */
+function craftRows(rules: CrateRules): [string, string][] {
+  const c = rules.craft
+  const row = (label: string, v: number | undefined): [string, string][] => (v ? [[label, `${v} pts`]] : [])
+  return [
+    ...row('Common', c.common),
+    ...row('Uncommon', c.uncommon),
+    ...row('Rare or holo', c.rare),
+    ...row('Double or Ultra rare', c.double),
+    ...row('Illustration rare', c.illustration),
+    ...row('Special illustration, Hyper or secret rare', c.special),
   ]
 }
 
@@ -192,11 +205,10 @@ export function CratePage(): JSX.Element {
       const fresh = await listCrateCards()
       setCards(fresh)
       const before = new Map(fresh.map((c) => [c.tcgdexId, c.quantity]))
-      const drawn = await drawPack(pack, { setId: packSet || undefined, type: packType, owned: new Set(before.keys()) })
-      const result = await openCratePack(drawn, pack)
+      const result = await drawAndOpen(pack, { setId: packSet || undefined, type: packType, owned: new Set(before.keys()) })
       setPoints(result.points)
       setFreePack(result.freePack)
-      setOpening({ id: ++openingSeq.current, pack, pulls: drawn, before })
+      setOpening({ id: ++openingSeq.current, pack, pulls: result.pulls, before })
     } catch (err) {
       setError(errorText(err, 'Opening the pack failed.'))
     } finally {
@@ -479,7 +491,21 @@ export function CratePage(): JSX.Element {
           </FilterPanel>
         )}
         {cards === null && !error && <Loading />}
-        {view === 'overview' && cards && <CrateOverview cards={cards} onOpen={setOpened} tradeFactor={rules.tradeFactor} tradeAll={tradeAll} />}
+        {view === 'overview' && cards && (
+          <CrateOverview
+            cards={cards}
+            onOpen={setOpened}
+            tradeFactor={rules.tradeFactor}
+            tradeAll={tradeAll}
+            rules={rules}
+            points={points ?? 0}
+            onBought={(p) => {
+              setPoints(p)
+              buzz([20])
+              reload()
+            }}
+          />
+        )}
         {view === 'cards' && cards?.length === 0 && <p className="empty">No virtual cards yet. Open your first pack above.</p>}
         {view === 'cards' && cards && cards.length > 0 && sorted.length === 0 && <p className="empty">No cards match these filters.</p>}
         {view === 'cards' && sorted.length > 0 && (
@@ -520,7 +546,20 @@ export function CratePage(): JSX.Element {
             </div>
           ))}
         </dl>
-        <p className="muted small">Each card, sale and purchase counts once. One free pack every day.</p>
+        <p className="muted small">Each card counts once (adding the same card again gives nothing), sales and purchases at most 20 a day. One free pack every day.</p>
+        {craftRows(rules).length > 0 && (
+          <>
+            <h3 className="small">Buy a missing card</h3>
+            <dl>
+              {craftRows(rules).map(([what, pts]) => (
+                <div key={what}>
+                  <dt>{what}</dt>
+                  <dd>{pts}</dd>
+                </div>
+              ))}
+            </dl>
+          </>
+        )}
       </details>
     </section>
   )

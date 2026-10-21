@@ -426,3 +426,38 @@ button.th-sort:hover:not(:disabled) {
     display: block;
   }
 }
+
+/* Gericht kopen (STAP23, 21-10-2026): knop onder de setbalk en de lijst met ontbrekende kaarten. */
+.crate-ov-bars .crate-ov-missing {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.crate-missing {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.crate-missing li {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.crate-missing-img .card-img,
+.crate-missing-img .card-face {
+  width: 48px;
+}
+
+.crate-missing-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
