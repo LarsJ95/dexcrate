@@ -37,12 +37,16 @@ jobs:
           PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
       - name: Dump
         run: |
-          mkdir -p "$RUNNER_TEMP/dexcrate-backup"
-          cd "$RUNNER_TEMP/dexcrate-backup"
-          npx --yes "$SUPABASE_CLI" db dump --workdir "$GITHUB_WORKSPACE" --db-url "$DB_URL" --role-only -f roles.sql
-          npx --yes "$SUPABASE_CLI" db dump --workdir "$GITHUB_WORKSPACE" --db-url "$DB_URL" -f schema.sql
-          npx --yes "$SUPABASE_CLI" db dump --workdir "$GITHUB_WORKSPACE" --db-url "$DB_URL" --data-only --use-copy -f data.sql
-          ls -la
+          # -f is relatief aan --workdir, niet aan de huidige map: daarom volledige paden.
+          out="$RUNNER_TEMP/dexcrate-backup"
+          mkdir -p "$out"
+          npx --yes "$SUPABASE_CLI" db dump --workdir "$GITHUB_WORKSPACE" --db-url "$DB_URL" --role-only -f "$out/roles.sql"
+          npx --yes "$SUPABASE_CLI" db dump --workdir "$GITHUB_WORKSPACE" --db-url "$DB_URL" -f "$out/schema.sql"
+          npx --yes "$SUPABASE_CLI" db dump --workdir "$GITHUB_WORKSPACE" --db-url "$DB_URL" --data-only --use-copy -f "$out/data.sql"
+          ls -la "$out"
+          for f in roles schema data; do
+            test -s "$out/$f.sql" || { echo "::error::$f.sql ontbreekt of is leeg."; exit 1; }
+          done
         env:
           DB_URL: ${{ secrets.SUPABASE_DB_URL }}
       - name: Versleutelen
