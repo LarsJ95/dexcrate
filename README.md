@@ -53,7 +53,7 @@ Nieuwe databasewijziging:
 
 Secrets per GitHub environment (`staging`, `production`): `SUPABASE_DB_URL` = de **Session pooler**-verbinding uit Supabase → Connect (wachtwoord percent-encoded). Productie heeft daarnaast `BACKUP_PASSPHRASE`.
 
-- `supabase/migrations/20261017120000_baseline.sql`: het volledige schema na STAP16 (startpunt). Op productie alleen als toegepast gemarkeerd (eenmalig: workflow met mode `mark-baseline`); tot dan weigert de workflow productie, zodat de basismigratie daar nooit draait.
+- `supabase/migrations/20261017120000_baseline.sql`: het volledige schema na STAP16 (startpunt). Op productie alleen als toegepast gemarkeerd (workflow met mode `mark-applied`, die alle migraties t/m versie `tot` markeert zonder ze uit te voeren); tot dan weigert de workflow productie, zodat de basismigratie daar nooit draait.
 - `supabase/legacy/`: de oude STAP-bestanden en `schema.sql` (geschiedenis; niet meer gebruiken).
 - `supabase/config.toml`: nodig voor de CLI; geldt alleen voor een lokale stack. Nooit `supabase config push` zonder het hele bestand te controleren.
 
