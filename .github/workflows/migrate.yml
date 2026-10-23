@@ -5,8 +5,9 @@ name: Database migreren
 # Elke omgeving (GitHub environment "staging" / "production") heeft een eigen secret SUPABASE_DB_URL:
 # de "Session pooler"-verbinding uit Supabase → Connect (GitHub-runners hebben geen IPv6 voor de directe verbinding).
 #
-# Eenmalig voor productie: mode "mark-baseline" markeert de basismigratie als toegepast (productie had dat schema
-# al via de STAP-bestanden). Tot dat gebeurd is weigert "migrate" op productie, zodat de basismigratie daar nooit draait.
+# Voor productie: mode "mark-applied" markeert alle migraties t/m versie "tot" als toegepast, zonder iets uit te voeren
+# (productie kreeg die via de SQL Editor). Tot de basismigratie gemarkeerd is weigert "migrate" op productie, zodat
+# die daar nooit draait.
 on:
   pull_request:
     paths: ['supabase/migrations/**']
@@ -18,10 +19,14 @@ on:
         options: [staging, production]
         default: staging
       mode:
-        description: migrate = nieuwe migraties toepassen; mark-baseline = eenmalig, alleen productie
+        description: migrate = nieuwe migraties toepassen; mark-applied = alleen markeren, alleen productie
         type: choice
-        options: [migrate, mark-baseline]
+        options: [migrate, mark-applied]
         default: migrate
+      tot:
+        description: 'Alleen bij mark-applied: laatste versie die al op de database staat (14 cijfers, bv. 20261024001500)'
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -50,21 +55,26 @@ jobs:
         env:
           DB_URL: ${{ secrets.SUPABASE_DB_URL }}
 
-      - name: Basismigratie markeren als toegepast
-        if: env.MODE == 'mark-baseline'
+      - name: Migraties markeren als toegepast
+        if: env.MODE == 'mark-applied'
         run: |
-          test "$TARGET" = production || { echo "mark-baseline is alleen voor productie; een nieuw project krijgt de basismigratie via migrate."; exit 1; }
-          npx --yes "$SUPABASE_CLI" migration repair "$BASELINE" --status applied --db-url "$DB_URL"
+          test "$TARGET" = production || { echo "mark-applied is alleen voor productie; een nieuw project krijgt alles via migrate."; exit 1; }
+          [[ "$TOT" =~ ^[0-9]{14}$ ]] || { echo "::error::Vul bij 'tot' een versie van 14 cijfers in, bv. 20261024001500."; exit 1; }
+          versions=$(ls supabase/migrations/*.sql | sed -E 's#.*/([0-9]{14})_.*#\1#' | awk -v t="$TOT" '$1 <= t')
+          grep -qx "$TOT" <<<"$versions" || { echo "::error::Versie $TOT bestaat niet in supabase/migrations."; exit 1; }
+          echo "Markeren als toegepast:" $versions
+          npx --yes "$SUPABASE_CLI" migration repair $versions --status applied --db-url "$DB_URL"
           npx --yes "$SUPABASE_CLI" migration list --db-url "$DB_URL"
         env:
           DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          TOT: ${{ inputs.tot }}
 
       - name: Nog niet toegepaste migraties
         if: env.MODE == 'migrate'
         run: |
           npx --yes "$SUPABASE_CLI" db push --dry-run --db-url "$DB_URL" 2>&1 | tee "$RUNNER_TEMP/dry-run.txt"
           if [ "$TARGET" = production ] && grep -q "$BASELINE" "$RUNNER_TEMP/dry-run.txt"; then
-            echo "::error::De basismigratie staat op productie nog als niet toegepast. Draai eerst deze workflow met mode mark-baseline."
+            echo "::error::De basismigratie staat op productie nog als niet toegepast. Draai eerst deze workflow met mode mark-applied."
             exit 1
           fi
         env:
