@@ -178,3 +178,15 @@
 .admin-delete strong {
   overflow-wrap: anywhere;
 }
+
+/* Totaalplafond scans (STAP30). */
+.admin-scan-total {
+  display: grid;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-scan-total p {
+  margin: 0;
+}

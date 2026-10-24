@@ -147,6 +147,8 @@ async function takeQuota(req: Request): Promise<Quota> {
   if (!res.ok || !isRecord(body) || typeof body.ok !== 'boolean') throw new Error(`Scan limit check failed (${res.status})`)
   if (body.ok) return { ok: true }
   const retryAfter = typeof body.retry_after === 'number' ? body.retry_after : 60
+  // STAP30: totaalplafond voor iedereen samen bereikt (reden blijft "day", zodat oudere versies ook iets zinnigs melden).
+  if (body.scope === 'total') return { ok: false, message: 'Scanning is very busy today and paused until tomorrow. Try again later.', retryAfter }
   return body.reason === 'day'
     ? { ok: false, message: `Daily scan limit reached. Try again in about ${Math.max(1, Math.round(retryAfter / 3600))} hours.`, retryAfter }
     : { ok: false, message: 'Too many scans in one minute. Wait a moment and retry.', retryAfter }

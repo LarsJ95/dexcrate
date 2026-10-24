@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const rpc = vi.fn()
 vi.mock('./supabase', () => ({ supabase: { rpc: (...args: unknown[]) => rpc(...args) } }))
-const { MissingStepError, getCrateAudit, getScanStats, grantCratePoints, grantInputError, isAdmin, isBanned, listAdminUsers, toAdminAction, toAdminRules, toAdminUser } = await import('./admin')
+const { MissingStepError, getCrateAudit, getScanStats, getScanTotal, setScanTotal, grantCratePoints, grantInputError, isAdmin, isBanned, listAdminUsers, toAdminAction, toAdminRules, toAdminUser } = await import('./admin')
 const { actionText } = await import('./adminText')
 
 beforeEach(() => rpc.mockReset())
@@ -127,6 +127,17 @@ describe('database', () => {
     expect(rpc).toHaveBeenLastCalledWith('admin_crate_audit', { p_days: 7 })
     rpc.mockResolvedValueOnce({ data: null, error: { code: 'PGRST202', message: 'Could not find the function' } })
     expect(((await getCrateAudit().catch((e: unknown) => e)) as Error).message).toMatch(/STAP27/)
+  })
+  it('totaalplafond scans (STAP30): lezen en opslaan met reden', async () => {
+    rpc.mockResolvedValueOnce({ data: { total_per_day: 2000, used_today: '137' }, error: null })
+    expect(await getScanTotal()).toEqual({ totalPerDay: 2000, usedToday: 137 })
+    expect(rpc).toHaveBeenLastCalledWith('admin_scan_total', undefined)
+    rpc.mockResolvedValueOnce({ data: 0, error: null })
+    expect(await setScanTotal(0, '  rustig aan  ')).toBe(0)
+    expect(rpc).toHaveBeenLastCalledWith('admin_set_scan_total', { p_total: 0, p_reason: 'rustig aan' })
+    expect(actionText({ id: 'x', createdAt: 't', adminEmail: 'a', targetEmail: null, points: null, reason: 'r', action: 'set_scan_total', details: { before: 2000, after: 500 } })).toBe(
+      'Scans for everyone: 500 a day',
+    )
   })
   it('geweigerd door de database: duidelijke fout', async () => {
     rpc.mockImplementation(() => listQuery({ error: { code: '42501', message: 'Not allowed' } }))
