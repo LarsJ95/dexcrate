@@ -4,6 +4,7 @@ import { resetAccount } from '../lib/accountReset'
 import { checkForUpdate } from '../lib/appUpdate'
 import { supabase } from '../lib/supabase'
 import { Group, LinkRow, More, Row } from './SettingsControls'
+import { PRIVACY_URL, SOURCES, TERMS_URL } from '../lib/legal'
 import { OFFLINE_TEXT, errorText, isNetworkError } from '../lib/errors'
 
 // --- Account en gegevens ---
@@ -131,6 +132,36 @@ export function DataGroup(): JSX.Element {
           </button>
         )}
       </Row>
+    </Group>
+  )
+}
+
+/** Privacy, voorwaarden en waar de gegevens vandaan komen (24-10-2026). */
+export function AboutGroup(): JSX.Element {
+  return (
+    <Group title="About">
+      <LinkRow href={PRIVACY_URL} external>
+        Privacy
+      </LinkRow>
+      <LinkRow href={TERMS_URL} external>
+        Terms of use
+      </LinkRow>
+      <More label="Sources and credits">
+        <p className="muted small">
+          Dexcrate is an independent fan project, not affiliated with Nintendo, The Pokémon Company, Creatures, GAME FREAK or Cardmarket. Pokémon names are trademarks of
+          Nintendo; card images belong to their owners.
+        </p>
+        <ul className="settings-sources">
+          {SOURCES.map((s) => (
+            <li key={s.name}>
+              <a href={s.url} target="_blank" rel="noopener noreferrer">
+                {s.name}
+              </a>
+              : {s.what}
+            </li>
+          ))}
+        </ul>
+      </More>
     </Group>
   )
 }

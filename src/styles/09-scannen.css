@@ -304,3 +304,9 @@ button.scan-mode:not(.is-main) {
     grid-template-columns: repeat(8, minmax(0, 1fr));
   }
 }
+
+/* Waar scanfoto's heen gaan (AVG, 24-10-2026). */
+.scan-privacy {
+  margin: calc(-1 * var(--space-2)) 0 0;
+  text-align: center;
+}

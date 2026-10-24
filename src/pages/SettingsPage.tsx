@@ -1,5 +1,5 @@
 import type { JSX } from 'react'
-import { AccountGroup, AccountSummary, DataGroup } from '../components/SettingsAccount'
+import { AboutGroup, AccountGroup, AccountSummary, DataGroup } from '../components/SettingsAccount'
 import { AppearanceGroup, ScanningGroup } from '../components/SettingsDevice'
 import { AccountSettings } from '../components/SettingsValues'
 
@@ -18,6 +18,7 @@ export function SettingsPage(): JSX.Element {
       <AccountSettings />
       <DataGroup />
       <AccountGroup />
+      <AboutGroup />
       <p className="muted small settings-foot">Appearance and scanning are saved on this device, the rest in your account. Changes save straight away.</p>
     </section>
   )

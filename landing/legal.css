@@ -1,0 +1,69 @@
+/* Privacy en voorwaarden (24-10-2026): eenvoudige leespagina in de kleuren van de landingspagina. */
+@font-face {
+  font-family: 'Archivo';
+  src: url('./fonts/archivo-latin.woff2') format('woff2');
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: dark light;
+  --bg: #0e0d12;
+  --ink: #f4f1ea;
+  --muted: #a39fb0;
+  --link: #ffcb05;
+  --line: #2a2733;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f6f1e7;
+    --ink: #1f1a24;
+    --muted: #5f5566;
+    --link: #7a4a00;
+    --line: #e6dccb;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Archivo', system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+.legal {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+h1 {
+  margin: 8px 0 4px;
+  font-size: clamp(2rem, 6vw, 2.6rem);
+  font-stretch: 125%;
+}
+
+h2 {
+  margin: 28px 0 6px;
+  font-size: 1.15rem;
+}
+
+p,
+li {
+  margin: 0 0 8px;
+}
+
+ul {
+  padding-left: 1.2em;
+}
+
+a {
+  color: var(--link);
+}
+
+.muted {
+  color: var(--muted);
+}
