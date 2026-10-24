@@ -120,8 +120,27 @@ button.crate-shop-open {
   );
 }
 
+/* STAP26: Lucky goud-groen (klavertje), Pokémon geel-rood, Era sepia (oud), Pakje van de dag roze-oranje. */
+.pack-lucky .crate-pack-art {
+  border-color: var(--gold-b);
+  background: conic-gradient(from 30deg, #065f46, #10b981, var(--gold-a), #10b981, #065f46);
+}
+
+.pack-pokemon .crate-pack-art {
+  background: conic-gradient(from 30deg, #b91c1c, #facc15, #fef9c3, #facc15, #b91c1c);
+}
+
+.pack-era .crate-pack-art {
+  background: conic-gradient(from 30deg, #451a03, #a16207, #fde68a, #a16207, #451a03);
+}
+
+.pack-daily .crate-pack-art {
+  background: conic-gradient(from 30deg, #9d174d, #f97316, #fed7aa, #ec4899, #9d174d);
+}
+
 .crate-pack-choice,
-.crate-pack-choice select {
+.crate-pack-choice select,
+.crate-pack-choice input {
   width: 100%;
   min-width: 0;
 }

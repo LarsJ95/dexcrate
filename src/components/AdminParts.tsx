@@ -297,7 +297,17 @@ export function InvitePanel({ onInvited }: { onInvited: () => void }): JSX.Eleme
   )
 }
 
-const PACK_LABELS: Record<(typeof PACK_KEYS)[number], string> = { booster: 'Booster', great: 'Great', master: 'Master', set: 'Set pack', type: 'Type pack' }
+const PACK_LABELS: Record<(typeof PACK_KEYS)[number], string> = {
+  booster: 'Booster',
+  great: 'Great',
+  master: 'Master',
+  set: 'Set pack',
+  type: 'Type pack',
+  lucky: 'Lucky pack',
+  pokemon: 'Pokémon pack',
+  era: 'Era pack',
+  daily: 'Pack of the day',
+}
 const CRAFT_LABELS: Record<(typeof CRAFT_KEYS)[number], string> = {
   common: 'Common',
   uncommon: 'Uncommon',

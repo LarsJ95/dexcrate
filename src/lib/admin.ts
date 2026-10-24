@@ -66,11 +66,11 @@ export interface AdminCrateRules {
   daily: number
   trade_factor: number
   crate_set: number
-  packs: Record<'booster' | 'great' | 'master' | 'set' | 'type', number>
+  packs: Record<(typeof PACK_KEYS)[number], number>
   craft: Record<'common' | 'uncommon' | 'rare' | 'double' | 'illustration' | 'special', number>
 }
 
-export const PACK_KEYS = ['booster', 'great', 'master', 'set', 'type'] as const
+export const PACK_KEYS = ['booster', 'great', 'master', 'set', 'type', 'lucky', 'pokemon', 'era', 'daily'] as const
 export const CRAFT_KEYS = ['common', 'uncommon', 'rare', 'double', 'illustration', 'special'] as const
 
 /** Geschatte kosten per scan (Haiku; Sonnet-terugval kost meer): alleen een indicatie. */
@@ -127,7 +127,7 @@ export function toAdminRules(v: unknown): AdminCrateRules {
   const int = (x: unknown, fallback: number): number => (typeof x === 'number' && Number.isInteger(x) ? x : fallback)
   const packs = isRecord(o.packs) ? o.packs : {}
   const craft = isRecord(o.craft) ? o.craft : {}
-  const PACK_DEFAULTS = { booster: 100, great: 200, master: 1000, set: 150, type: 300 }
+  const PACK_DEFAULTS = { booster: 100, great: 200, master: 1000, set: 150, type: 300, lucky: 150, pokemon: 250, era: 200, daily: 200 }
   const CRAFT_DEFAULTS = { common: 120, uncommon: 180, rare: 300, double: 600, illustration: 900, special: 1800 }
   return {
     daily: int(o.daily, 150),

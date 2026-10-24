@@ -17,16 +17,20 @@ import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { useDbFeature } from '../hooks/useDbFeature'
 import { ENERGY_TYPES, foilStyleFor, isEnergyType, type EnergyType } from '../lib/cardTraits'
 import {
+  ERAS,
+  ERA_IDS,
   OLD_RULES,
   PACKS,
   canAfford,
   crateSetDone,
   crateSetProgress,
   getCrateRules,
+  getDailyPack,
   hasCrate,
   listCrateCards,
   openPack as drawAndOpen,
   packCost,
+  packStep,
   packsByCost,
   syncCrate,
   tradeAllDuplicates,
@@ -34,9 +38,11 @@ import {
   tradeValue,
   type CrateCard,
   type CrateRules,
+  type EraId,
   type PackKind,
   type PackPull,
 } from '../lib/crate'
+import { speciesList, type Species } from '../lib/names'
 import { energyColor } from '../lib/energy'
 import { LOCAL_SET_IDS } from '../lib/localCatalog'
 import { showMoment } from '../lib/moments'
@@ -116,7 +122,7 @@ export function CratePage(): JSX.Element {
   const [cards, setCards] = useState<CrateCard[] | null>(null)
   // Pack opening in een popup; id = nieuwe popup per pakje (ook bij "Open another").
   const openingSeq = useRef(0)
-  const [opening, setOpening] = useState<{ id: number; pack: PackKind; pulls: PackPull[]; before: ReadonlyMap<string, number> } | null>(null)
+  const [opening, setOpening] = useState<{ id: number; pack: PackKind; pulls: PackPull[]; god: boolean; before: ReadonlyMap<string, number> } | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sort, setSort] = useStoredChoice<CrateSort>('dexcrate:crate-sort', CRATE_SORTS, 'newest')
@@ -132,6 +138,11 @@ export function CratePage(): JSX.Element {
   const [setChoices, setSetChoices] = useState<SetChoice[]>([])
   const [packSet, setPackSet] = useState('')
   const [packType, setPackType] = useStoredChoice<EnergyType>('dexcrate:crate-pack-type', ENERGY_TYPES, 'Fire')
+  const [packEra, setPackEra] = useStoredChoice<EraId>('dexcrate:crate-pack-era', ERA_IDS, 'sv')
+  // Pokémon pack: getypte naam en de gevonden soort (standaard Pikachu).
+  const [species, setSpecies] = useState<Species[]>([])
+  const [pokemonText, setPokemonText] = useState('Pikachu')
+  const [daily, setDaily] = useState<{ id: string; name: string } | null>(null)
   // Sets waarvoor deze sessie al om de Crate-setbonus is gevraagd.
   const askedSets = useRef<Set<string>>(new Set())
 
@@ -189,6 +200,38 @@ export function CratePage(): JSX.Element {
     }
   }, [setPackOn])
 
+  // Pokémon pack: lijst met namen (STAP26). Pakje van de dag: welke set vandaag.
+  const pokemonPackOn = packCost(rules, 'pokemon') !== null
+  useEffect(() => {
+    if (!pokemonPackOn) return
+    let cancelled = false
+    speciesList()
+      .then((list) => {
+        if (!cancelled) setSpecies(list)
+      })
+      .catch((err: unknown) => console.warn('Pokémon-lijst ophalen mislukt', err))
+    return () => {
+      cancelled = true
+    }
+  }, [pokemonPackOn])
+  const dailyPackOn = packCost(rules, 'daily') !== null
+  useEffect(() => {
+    if (!dailyPackOn) return
+    let cancelled = false
+    getDailyPack()
+      .then((d) => {
+        if (!cancelled) setDaily(d)
+      })
+      .catch((err: unknown) => console.warn('Pakje van de dag ophalen mislukt', err))
+    return () => {
+      cancelled = true
+    }
+  }, [dailyPackOn])
+  const chosenPokemon = useMemo(() => {
+    const t = pokemonText.trim().toLowerCase()
+    return species.find((s) => s.name.toLowerCase() === t || `#${s.dexId}` === t || String(s.dexId) === t) ?? null
+  }, [species, pokemonText])
+
   // Complete set in je Crate: bonus (één keer per set; de database bewaakt dat).
   const crateSetBonus = rules.crateSet
   useEffect(() => {
@@ -219,10 +262,10 @@ export function CratePage(): JSX.Element {
       const fresh = await listCrateCards()
       setCards(fresh)
       const before = new Map(fresh.map((c) => [c.tcgdexId, c.quantity]))
-      const result = await drawAndOpen(pack, { setId: packSet || undefined, type: packType, owned: new Set(before.keys()) })
+      const result = await drawAndOpen(pack, { setId: packSet || undefined, type: packType, dexId: chosenPokemon?.dexId, era: packEra, owned: new Set(before.keys()) })
       setPoints(result.points)
       setFreePack(result.freePack)
-      setOpening({ id: ++openingSeq.current, pack, pulls: result.pulls, before })
+      setOpening({ id: ++openingSeq.current, pack, pulls: result.pulls, god: result.god, before })
     } catch (err) {
       setError(errorText(err, 'Opening the pack failed.'))
     } finally {
@@ -342,7 +385,7 @@ export function CratePage(): JSX.Element {
           const p = PACKS[kind]
           const cost = packCost(rules, kind)
           const free = kind === 'booster' && freePack
-          const ok = points !== null && canAfford(rules, kind, points, freePack) && (kind !== 'set' || packSet !== '')
+          const ok = points !== null && canAfford(rules, kind, points, freePack) && (kind !== 'set' || packSet !== '') && (kind !== 'pokemon' || chosenPokemon !== null)
           const art = kind === 'type' ? ({ '--pack-type': energyColor(packType) } as CSSProperties) : undefined
           return (
             <li key={kind} className={`panel crate-shop pack-${kind}`}>
@@ -353,7 +396,50 @@ export function CratePage(): JSX.Element {
               <strong className="crate-shop-title">{p.name}</strong>
               <span className="muted small crate-shop-text">{p.contents}</span>
               <div className="crate-shop-choice">
-                {cost === null && rulesLoaded && <span className="small muted">Not set up yet: run STAP18 in Supabase.</span>}
+                {cost === null && rulesLoaded && <span className="small muted">Not set up yet: run {packStep(kind)} in Supabase.</span>}
+                {cost !== null && kind === 'pokemon' && (
+                  <>
+                    <label className="crate-pack-choice">
+                      <span className="visually-hidden">Pokémon</span>
+                      <input
+                        type="text"
+                        list="crate-pokemon-list"
+                        value={pokemonText}
+                        onChange={(e) => setPokemonText(e.target.value)}
+                        placeholder="Name or Pokédex number"
+                        autoComplete="off"
+                        aria-invalid={species.length > 0 && chosenPokemon === null}
+                      />
+                    </label>
+                    <datalist id="crate-pokemon-list">
+                      {species.map((s) => (
+                        <option key={s.dexId} value={s.name} />
+                      ))}
+                    </datalist>
+                    <span className="small muted">
+                      {species.length === 0 ? 'Loading Pokémon…' : chosenPokemon ? `#${String(chosenPokemon.dexId).padStart(4, '0')} ${chosenPokemon.name}` : 'Pick a Pokémon from the list.'}
+                    </span>
+                  </>
+                )}
+                {cost !== null && kind === 'era' && (
+                  <label className="crate-pack-choice">
+                    <span className="visually-hidden">Era</span>
+                    <select
+                      value={packEra}
+                      onChange={(e) => {
+                        const era = ERA_IDS.find((id) => id === e.target.value)
+                        if (era) setPackEra(era)
+                      }}
+                    >
+                      {ERAS.map((era) => (
+                        <option key={era.id} value={era.id}>
+                          {era.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                {cost !== null && kind === 'daily' && <span className="small">{daily ? `Today: ${daily.name}` : 'Loading today’s set…'}</span>}
                 {cost !== null && kind === 'set' && (
                   <>
                     <label className="crate-pack-choice">
@@ -418,6 +504,7 @@ export function CratePage(): JSX.Element {
           key={opening.id}
           pack={opening.pack}
           pulls={opening.pulls}
+          god={opening.god}
           before={opening.before}
           tradeFactor={rules.tradeFactor}
           onOpenAnother={points !== null && canAfford(rules, opening.pack, points, freePack) ? () => void openPack(opening.pack) : null}

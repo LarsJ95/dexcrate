@@ -27,8 +27,8 @@ function changed<T>(result: T): T {
   return result
 }
 
-/** Soorten pakjes: booster (STAP11), great en master (STAP12), set en type (STAP18). */
-export type PackKind = 'booster' | 'great' | 'master' | 'set' | 'type'
+/** Soorten pakjes: booster (STAP11), great en master (STAP12), set en type (STAP18), lucky, pokemon, era en daily (STAP26). */
+export type PackKind = 'booster' | 'great' | 'master' | 'set' | 'type' | 'lucky' | 'pokemon' | 'era' | 'daily'
 
 export const PACKS: Record<PackKind, { name: string; contents: string }> = {
   booster: { name: 'Booster pack', contents: '6 common, 3 uncommon and 1 rare or better. One free every day.' },
@@ -36,7 +36,31 @@ export const PACKS: Record<PackKind, { name: string; contents: string }> = {
   master: { name: 'Master pack', contents: '4 uncommon, 4 rare slots with better odds and 2 guaranteed hits (Double rare or better).' },
   set: { name: 'Set pack', contents: 'Pick a set: 5 common, 3 uncommon and 2 rare or better, all from that set.' },
   type: { name: 'Type pack', contents: 'Pick a type: like a Great pack, with only cards of that type.' },
+  lucky: { name: 'Lucky pack', contents: 'Like a Booster pack, with a 1 in 30 chance of a God pack: all 10 cards are hits.' },
+  pokemon: { name: 'Pokémon pack', contents: 'Pick a Pokémon: 10 cards of that Pokémon, 2 with better odds of a rare.' },
+  era: { name: 'Era pack', contents: 'Pick an era: like a Great pack, only cards from sets of that era.' },
+  daily: { name: 'Pack of the day', contents: 'A different set every day, the same for everyone: 5 common, 3 uncommon, 1 rare and 1 guaranteed hit.' },
 }
+
+/** Pakjes die alleen de Crate-functie kan trekken (STAP26); STAP-bestand per soort voor de melding zonder prijs. */
+const SERVER_ONLY: readonly PackKind[] = ['lucky', 'pokemon', 'era', 'daily']
+export const packStep = (kind: PackKind): string => (SERVER_ONLY.includes(kind) ? 'STAP26' : 'STAP18')
+
+/** Tijdperken voor het Era pack (zelfde sleutels als de Crate-functie). */
+export const ERAS = [
+  { id: 'wotc', name: 'Wizards era (1999–2003)' },
+  { id: 'ex', name: 'EX (2003–2007)' },
+  { id: 'dp', name: 'Diamond & Pearl, Platinum' },
+  { id: 'hgss', name: 'HeartGold & SoulSilver' },
+  { id: 'bw', name: 'Black & White' },
+  { id: 'xy', name: 'XY' },
+  { id: 'sm', name: 'Sun & Moon' },
+  { id: 'swsh', name: 'Sword & Shield' },
+  { id: 'sv', name: 'Scarlet & Violet' },
+  { id: 'me', name: 'Mega Evolution' },
+] as const
+export type EraId = (typeof ERAS)[number]['id']
+export const ERA_IDS: readonly EraId[] = ERAS.map((e) => e.id)
 
 /** Regels van de Crate (STAP18: crate_rules). Zonder STAP18 de oude regels, zonder Set en Type pack. */
 export interface CrateRules {
@@ -248,20 +272,31 @@ function missingFunction(error: { code?: string; message: string }): boolean {
   return error.code === 'PGRST202' || /could not find the function/i.test(error.message)
 }
 
-/** Pakje openen: met de server trekt die de kaarten; anders trekt de app ze (oude manier). */
-export async function openPack(pack: PackKind, choice: PackChoice = {}): Promise<CrateWallet & { cost: number; pulls: PackPull[] }> {
+/** Set van het Pakje van de dag (de Crate-functie kiest hem, voor iedereen dezelfde). */
+export async function getDailyPack(): Promise<{ id: string; name: string }> {
+  const r = await crateServer({ action: 'daily' }, 'Loading the pack of the day failed')
+  if (typeof r.id !== 'string' || typeof r.name !== 'string') throw new Error('Loading the pack of the day failed: unexpected response.')
+  return { id: r.id, name: r.name }
+}
+
+/**
+ * Pakje openen: met de server trekt die de kaarten; anders trekt de app ze (oude manier, niet voor de STAP26-pakjes).
+ * `god`: Lucky pack werd een God pack (alleen de server bepaalt dat).
+ */
+export async function openPack(pack: PackKind, choice: PackChoice = {}): Promise<CrateWallet & { cost: number; pulls: PackPull[]; god: boolean }> {
   if (await hasCrateServer()) {
-    const r = await crateServer({ action: 'open', pack, setId: choice.setId, type: choice.type }, 'Opening the pack failed')
+    const r = await crateServer({ action: 'open', pack, setId: choice.setId, type: choice.type, dexId: choice.dexId, era: choice.era }, 'Opening the pack failed')
     const pulls = (Array.isArray(r.pulls) ? r.pulls : []).flatMap((p: unknown): PackPull[] =>
       isRecord(p) && typeof p.tcgdex_id === 'string' && typeof p.name === 'string'
         ? [{ tcgdex_id: p.tcgdex_id, name: p.name, image: typeof p.image === 'string' ? p.image : null, rarity: typeof p.rarity === 'string' ? p.rarity : '', set_name: typeof p.set_name === 'string' ? p.set_name : null }]
         : [],
     )
     if (pulls.length === 0) throw new Error('Opening the pack failed: no cards came back.')
-    return changed({ points: num(r.points), freePack: r.free_pack === true, cost: num(r.cost), pulls })
+    return changed({ points: num(r.points), freePack: r.free_pack === true, cost: num(r.cost), pulls, god: r.god === true })
   }
+  if (SERVER_ONLY.includes(pack)) throw new Error(CRATE_SERVER_MISSING)
   const pulls = await drawPack(pack, choice)
-  return { ...(await openCratePack(pulls, pack)), pulls }
+  return { ...(await openCratePack(pulls, pack)), pulls, god: false }
 }
 
 /** Ontbrekende kaart gericht kopen (alleen met de server: die zoekt kaart en zeldzaamheid zelf op). `card` = wat je kreeg. */
@@ -516,6 +551,10 @@ export interface PackChoice {
   owned?: ReadonlySet<string>
   /** Type pack: energietype. */
   type?: EnergyType
+  /** Pokémon pack: Pokédex-nummer. */
+  dexId?: number
+  /** Era pack: tijdperk. */
+  era?: EraId
 }
 
 /**

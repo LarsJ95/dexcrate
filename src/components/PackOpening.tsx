@@ -25,6 +25,8 @@ import { WishlistDialog } from './WishlistDialog'
 interface Props {
   pack: PackKind
   pulls: PackPull[]
+  /** Lucky pack werd een God pack: na het openscheuren een eigen onthulling (dicht ziet het er gewoon uit). */
+  god?: boolean
   /** Aantal per kaart in je Crate vóór dit pakje (voor NEW en "je hebt er nu N"). */
   before: ReadonlyMap<string, number>
   tradeFactor: number
@@ -53,7 +55,7 @@ function picture(c: Pick<PackPull, 'tcgdex_id' | 'image' | 'name' | 'set_name'>,
  * zeldzaamste als laatste → overzicht met acties (wishlist, inruilen, Cardmarket, nog een pakje).
  * De kaarten staan al in je Crate; sluiten kan dus altijd.
  */
-export function PackOpening({ pack, pulls, before, tradeFactor, onOpenAnother, opening, error: openError, onPoints, onClose }: Props): JSX.Element {
+export function PackOpening({ pack, pulls, god = false, before, tradeFactor, onOpenAnother, opening, error: openError, onPoints, onClose }: Props): JSX.Element {
   const ref = useRef<HTMLDialogElement>(null)
   const cardRef = useRef<HTMLDivElement>(null)
   const swipe = useRef<number | null>(null)
@@ -109,6 +111,14 @@ export function PackOpening({ pack, pulls, before, tradeFactor, onOpenAnother, o
     burstFrom(cardRef.current, { colors: gold ? ['var(--gold-a)', 'var(--gold-b)', '#ffffff'] : ['var(--yellow)', '#ffffff', 'var(--type)'], count: gold ? 70 : 36, speed: gold ? 10 : 8 })
     buzz(gold ? [40, 60, 40] : [20])
   }, [current, motion])
+
+  // God pack: meteen na het openscheuren een grote gouden uitbarsting.
+  const godReveal = god && stage === 'reveal' && index === 0
+  useEffect(() => {
+    if (!godReveal || !motion || !cardRef.current) return
+    burstFrom(cardRef.current, { colors: ['var(--gold-a)', 'var(--gold-b)', '#ffffff'], count: 120, speed: 12 })
+    buzz([60, 80, 60, 80, 120])
+  }, [godReveal, motion])
 
   function tear(): void {
     if (stage !== 'sealed' || tearing) return
@@ -191,7 +201,14 @@ export function PackOpening({ pack, pulls, before, tradeFactor, onOpenAnother, o
   const sel = selected !== null ? cards[selected] : null
 
   return (
-    <dialog ref={ref} className={`card-sheet pack-opening stage-${stage}`} onClose={onOwnClose(onClose)} onClick={onBackdrop} onKeyDown={onKeyDown} aria-labelledby="pack-opening-title">
+    <dialog
+      ref={ref}
+      className={`card-sheet pack-opening stage-${stage}${god && stage !== 'sealed' ? ' is-god' : ''}`}
+      onClose={onOwnClose(onClose)}
+      onClick={onBackdrop}
+      onKeyDown={onKeyDown}
+      aria-labelledby="pack-opening-title"
+    >
       <div className="sheet-body">
         <header className="sheet-head">
           <h2 id="pack-opening-title">{stage === 'summary' ? 'Your pack' : PACKS[pack].name}</h2>
@@ -204,6 +221,12 @@ export function PackOpening({ pack, pulls, before, tradeFactor, onOpenAnother, o
             <IconClose />
           </button>
         </header>
+
+        {god && stage !== 'sealed' && (
+          <p className="pack-god-banner" role="status">
+            God pack! Every card is a hit
+          </p>
+        )}
 
         {stage === 'sealed' && (
           <div className="pack-sealed-wrap">
