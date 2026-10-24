@@ -62,7 +62,7 @@ const db = vi.hoisted(() => {
 })
 vi.mock('./supabase', () => ({ supabase: db.supabase }))
 
-const { listCards, listSnapshotsFor } = await import('./db')
+const { listCards, listSnapshots, listSnapshotsFor } = await import('./db')
 
 const day = (d: number): string => new Date(Date.UTC(2026, 0, 1 + d)).toISOString().slice(0, 10)
 const history = (id: string, days: number): Row[] =>
@@ -74,6 +74,22 @@ beforeEach(() => {
   db.state.requests = 0
   db.state.orders = []
   db.state.error = null
+})
+
+describe('listSnapshots', () => {
+  it('meer dan 400 opnames: de nieuwste 400, oud → nieuw', async () => {
+    db.state.rows = [...history('en/a-1', 500), ...history('en/a-2', 10)]
+    const points = await listSnapshots('en/a-1')
+    expect(points).toHaveLength(400)
+    expect(points[0].takenOn).toBe(day(100))
+    expect(points[399]).toEqual({ takenOn: day(499), trend: 499, trendHolo: null })
+    expect(points.map((p) => p.takenOn)).toEqual(points.map((p) => p.takenOn).sort())
+  })
+
+  it('minder dan 400: alles, oud → nieuw', async () => {
+    db.state.rows = history('en/a-1', 3)
+    expect((await listSnapshots('en/a-1')).map((p) => p.takenOn)).toEqual([day(0), day(1), day(2)])
+  })
 })
 
 describe('listCards', () => {

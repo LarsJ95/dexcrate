@@ -251,20 +251,22 @@ export interface PriceSnapshot {
   trendHolo: number | null
 }
 
-/** Dagelijkse prijsopnames van één kaart, oud → nieuw (gevuld door de cron-job uit 004_price_snapshots.sql). */
+/** Dagelijkse prijsopnames van één kaart (de nieuwste 400), oud → nieuw (gevuld door de cron-job uit 004_price_snapshots.sql). */
 export async function listSnapshots(tcgdexId: string): Promise<PriceSnapshot[]> {
   const { data, error } = await supabase
     .from('price_snapshots')
     .select('*')
     .eq('tcgdex_id', tcgdexId)
-    .order('taken_on', { ascending: true })
+    .order('taken_on', { ascending: false })
     .limit(400)
   if (error) throw new Error(`Loading price history failed: ${error.message}`)
-  return (data as unknown[]).flatMap((r) =>
-    isRecord(r) && typeof r.taken_on === 'string'
-      ? [{ takenOn: r.taken_on, trend: numOrNull(r.trend), trendHolo: numOrNull(r.trend_holo) }]
-      : [],
-  )
+  return (data as unknown[])
+    .flatMap((r) =>
+      isRecord(r) && typeof r.taken_on === 'string'
+        ? [{ takenOn: r.taken_on, trend: numOrNull(r.trend), trendHolo: numOrNull(r.trend_holo) }]
+        : [],
+    )
+    .reverse()
 }
 
 /** Prijsopnames voor meerdere kaarten tegelijk (voor het waardeverloop van de collectie). */
