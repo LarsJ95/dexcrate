@@ -1,110 +1,193 @@
-/* ---------- Settings (16-10-2026) ---------- */
+/* ---------- Settings (24-10-2026 opnieuw, op verzoek "veel te uitgebreid"): één lijst zoals op je telefoon ---------- */
 .page.settings {
-  max-width: 1100px;
+  max-width: 760px;
 }
 
-.settings-section {
-  display: grid;
-  gap: var(--space-4);
-}
-
-.settings-head {
+/* Bovenaan: e-mail, versie met "Check for updates", uitloggen. */
+.settings-summary {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
 }
 
-.settings-head h2 {
-  margin: 0;
-  font-size: var(--fs-h2);
-}
-
-.settings-scope {
-  flex: none;
-  padding: 2px var(--space-2);
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--line);
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--muted);
-}
-
-.settings-scope.scope-account {
-  border-color: color-mix(in oklab, var(--yellow) 50%, var(--line));
-  color: var(--ink);
-}
-
-.settings-section > .muted.small {
-  margin: calc(var(--space-2) * -1) 0 0;
-}
-
-.settings-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2) var(--space-4);
-}
-
-.settings-label {
-  min-width: 150px;
-  font-weight: 600;
-  color: var(--ink-soft);
+.settings-summary-who {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
 }
 
 .settings-value {
-  flex: 1;
-  min-width: 0;
   overflow-wrap: anywhere;
 }
 
-.settings-toggle {
-  display: grid;
-  gap: 2px;
-}
-
-.settings-toggle .muted.small {
-  margin: 0 0 0 calc(18px + var(--space-2));
-}
-
-.partner-current {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.partner-current img {
-  image-rendering: pixelated;
-}
-
-.partner-current > div {
-  flex: 1;
+.settings-summary button.link-button {
+  display: inline;
   min-width: 0;
+  min-height: 0;
+  font-size: inherit;
 }
 
-.partner-current p {
-  margin: 0;
-}
-
-.settings-subhead {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
+/* Groep: klein kopje boven een paneel met regels. */
+.settings-group {
+  display: grid;
   gap: var(--space-2);
 }
 
-.settings-subhead h3,
-.settings-subtitle {
+.settings-group-title {
   margin: 0;
-  font-size: 1rem;
+  padding: 0 var(--space-2);
+  font-size: var(--fs-small);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.settings-list {
+  display: grid;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Regel: label links, keuze rechts; tussen de regels een dunne lijn. */
+.settings-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  min-height: 52px;
+  padding: var(--space-2) var(--space-4);
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.settings-list > :first-child,
+.settings-list > .settings-more:first-child > .settings-item {
+  border-top: 0;
+}
+
+.settings-more:not(:first-child) {
+  border-top: 1px solid var(--line);
+}
+
+.settings-more > .settings-item {
+  border-top: 0;
+}
+
+.settings-item-text {
+  flex: 1 1 auto;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.settings-item-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+}
+
+.settings-item-control {
+  flex: 0 1 auto;
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.settings-item-control :is(select, input) {
+  width: 170px;
+  max-width: 100%;
+}
+
+/* Niet de algemene labelstijl (kleiner, grijs): zelfde tekst als de andere regels. */
+label.settings-switch {
+  display: flex;
+  flex-wrap: nowrap;
+  font-size: inherit;
+  font-weight: inherit;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.settings-link > .muted,
+.settings-more > summary > .muted {
+  white-space: nowrap;
+}
+
+label.settings-switch input {
+  flex: none;
+}
+
+/* Naar een pagina of uitklappen: detail rechts, dan een pijltje. */
+a.settings-link:hover,
+.settings-more > summary:hover {
+  background: var(--surface-2);
+}
+
+.settings-link > .muted,
+.settings-more > summary > .muted {
+  margin-left: auto;
+}
+
+.settings-chevron {
+  flex: none;
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 1.4rem;
+  line-height: 1;
+  transition: transform 150ms ease-out;
+}
+
+.settings-link > .muted + .settings-chevron,
+.settings-more > summary > .muted + .settings-chevron {
+  margin-left: 0;
+}
+
+.settings-more > summary {
+  flex-wrap: nowrap;
+  list-style: none;
+  cursor: pointer;
+}
+
+.settings-more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-more[open] > summary .settings-chevron {
+  transform: rotate(90deg);
+}
+
+.settings-more-body {
+  display: grid;
+  gap: var(--space-3);
+  padding: 0 var(--space-4) var(--space-4);
+}
+
+.settings-more-body > p {
+  margin: 0;
+}
+
+.settings-more.is-danger > summary .settings-item-label {
+  color: var(--red);
+}
+
+.settings-partner-sprite {
+  width: 32px;
+  height: 32px;
+  margin: -6px 0;
+  image-rendering: pixelated;
 }
 
 .settings-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2) var(--space-3);
+  gap: var(--space-2);
 }
 
 .settings-password {
@@ -112,8 +195,10 @@
   gap: var(--space-3);
 }
 
+/* Bewaard / Saving… / fout, onder de groep. */
 .settings-save {
   margin: 0;
+  padding: 0 var(--space-2);
   font-size: var(--fs-small);
   font-weight: 700;
 }
@@ -128,6 +213,11 @@
 
 .settings-save.is-error {
   color: var(--red);
+}
+
+.settings-foot {
+  margin: 0;
+  padding: 0 var(--space-2);
 }
 
 /* Waarom een scan bij "Check these" staat. */
@@ -169,66 +259,22 @@ label.settings-confirm {
   font-family: inherit;
 }
 
-/* Bovenaan (21-10-2026, opnieuw ingedeeld op verzoek): wie, versie en de knoppen Check for updates / Sign out. */
-.settings-summary {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
-  align-items: center;
-  gap: var(--space-3) var(--space-5);
-}
-
-.settings-summary-who,
-.settings-summary-app {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-
-.settings-summary-who .settings-value {
-  overflow-wrap: anywhere;
-}
-
-.settings-summary-actions {
-  justify-content: flex-end;
-}
-
-/* Snelknoppen naar de secties; op de telefoon één rij om te vegen. */
-.settings-jump {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-button.settings-jump-chip {
-  min-height: 36px;
-  cursor: pointer;
-}
-
-button.settings-jump-chip:hover:not(:disabled) {
-  background: var(--surface-3);
-  color: var(--ink);
-}
-
-.settings-section {
-  scroll-margin-top: var(--space-6);
-}
-
-.settings-head h2:focus {
-  outline: none;
-}
-
+/* Telefoon: keuzeknoppen onder het label over de volle breedte, knoppen even breed. */
 @media (max-width: 480px) {
-  .settings-jump {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
+  .settings-item:has(> .settings-item-control > .segmented) .settings-item-control {
+    flex: 1 1 100%;
   }
 
-  button.settings-jump-chip {
-    flex: none;
+  .settings-item .segmented {
+    width: 100%;
   }
 
-  .settings-summary-actions {
-    justify-content: flex-start;
+  .settings-item .segmented button {
+    flex: 1 1 0;
+    padding-inline: var(--space-1);
+  }
+
+  .settings-item-control :is(select, input) {
+    width: 150px;
   }
 }

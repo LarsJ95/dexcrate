@@ -1,48 +1,90 @@
-import type { JSX, ReactNode } from 'react'
+import { useId, type JSX, type ReactNode } from 'react'
 
-type Scope = 'device' | 'account'
+/*
+ * Bouwstenen voor Settings (24-10-2026, op verzoek "veel te uitgebreid"): een lijst zoals de instellingen op je
+ * telefoon. Per regel links een kort label (eventueel een korte hint eronder), rechts de keuze.
+ */
 
-/** Eén blok instellingen; rechtsboven waar het bewaard wordt. `id`: doel van de snelknoppen bovenaan Settings. */
-export function Section({ title, scope, children, intro, id }: { title: string; scope: Scope; children: ReactNode; intro?: string; id?: string }): JSX.Element {
-  const headingId = `settings-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-title`
+/** Groep: klein kopje boven een paneel met regels. */
+export function Group({ title, children, foot }: { title: string; children: ReactNode; foot?: ReactNode }): JSX.Element {
+  const id = useId()
   return (
-    <section id={id} className="panel settings-section" aria-labelledby={headingId}>
-      <header className="settings-head">
-        <h2 id={headingId} tabIndex={-1}>
-          {title}
-        </h2>
-        <span className={`settings-scope scope-${scope}`}>{scope === 'device' ? 'This device' : 'Your account'}</span>
-      </header>
-      {intro && <p className="muted small">{intro}</p>}
-      {children}
+    <section className="settings-group" aria-labelledby={id}>
+      <h2 id={id} className="settings-group-title">
+        {title}
+      </h2>
+      <div className="panel settings-list">{children}</div>
+      {foot}
     </section>
   )
 }
 
-/** Keuze uit een paar opties als knoppenrij. */
-export function Choice<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: readonly [T, string][]; onChange: (v: T) => void }): JSX.Element {
+/** Eén regel: label links, bediening rechts. */
+export function Row({ label, hint, children }: { label: ReactNode; hint?: ReactNode; children: ReactNode }): JSX.Element {
   return (
-    <div className="settings-row">
-      <span className="settings-label">{label}</span>
-      <div className="segmented" role="group" aria-label={label}>
+    <div className="settings-item">
+      <span className="settings-item-text">
+        <span className="settings-item-label">{label}</span>
+        {hint && <span className="muted small">{hint}</span>}
+      </span>
+      <span className="settings-item-control">{children}</span>
+    </div>
+  )
+}
+
+/** Keuze uit een paar opties als knoppenrij. */
+export function Choice<T extends string>({ label, hint, value, options, onChange }: { label: string; hint?: ReactNode; value: T; options: readonly [T, string][]; onChange: (v: T) => void }): JSX.Element {
+  return (
+    <Row label={label} hint={hint}>
+      <span className="segmented" role="group" aria-label={label}>
         {options.map(([v, text]) => (
           <button key={v} type="button" aria-pressed={value === v} onClick={() => onChange(v)}>
             {text}
           </button>
         ))}
-      </div>
-    </div>
+      </span>
+    </Row>
   )
 }
 
-export function Toggle({ checked, onChange, children, hint }: { checked: boolean; onChange: (v: boolean) => void; children: ReactNode; hint?: string }): JSX.Element {
+/** Aan/uit: de hele regel is het tikvlak, het vinkje staat rechts. */
+export function Toggle({ checked, onChange, children, hint }: { checked: boolean; onChange: (v: boolean) => void; children: ReactNode; hint?: ReactNode }): JSX.Element {
   return (
-    <div className="settings-toggle">
-      <label className="check">
-        <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-        {children}
-      </label>
-      {hint && <p className="muted small">{hint}</p>}
-    </div>
+    <label className="settings-item settings-switch">
+      <span className="settings-item-text">
+        <span className="settings-item-label">{children}</span>
+        {hint && <span className="muted small">{hint}</span>}
+      </span>
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+    </label>
+  )
+}
+
+/** Regel die naar een andere pagina gaat. */
+export function LinkRow({ href, children, detail }: { href: string; children: ReactNode; detail?: ReactNode }): JSX.Element {
+  return (
+    <a className="settings-item settings-link" href={href}>
+      <span className="settings-item-label">{children}</span>
+      {detail && <span className="muted small">{detail}</span>}
+      <span className="settings-chevron" aria-hidden="true">
+        ›
+      </span>
+    </a>
+  )
+}
+
+/** Regel die uitklapt voor wat je zelden nodig hebt (wachtwoord, reset, catalogus …). */
+export function More({ label, detail, children, danger = false }: { label: ReactNode; detail?: ReactNode; children: ReactNode; danger?: boolean }): JSX.Element {
+  return (
+    <details className={`settings-more${danger ? ' is-danger' : ''}`}>
+      <summary className="settings-item">
+        <span className="settings-item-label">{label}</span>
+        {detail && <span className="muted small">{detail}</span>}
+        <span className="settings-chevron" aria-hidden="true">
+          ›
+        </span>
+      </summary>
+      <div className="settings-more-body">{children}</div>
+    </details>
   )
 }

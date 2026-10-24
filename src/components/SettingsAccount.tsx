@@ -3,7 +3,7 @@ import { useIsAdmin } from '../hooks/useIsAdmin'
 import { resetAccount } from '../lib/accountReset'
 import { checkForUpdate } from '../lib/appUpdate'
 import { supabase } from '../lib/supabase'
-import { Section } from './SettingsControls'
+import { Group, LinkRow, More, Row } from './SettingsControls'
 import { OFFLINE_TEXT, errorText, isNetworkError } from '../lib/errors'
 
 // --- Account en gegevens ---
@@ -78,54 +78,42 @@ export function AccountSummary(): JSX.Element {
   return (
     <section className="panel settings-summary" aria-label="Your account and app version">
       <div className="settings-summary-who">
-        <span className="stat-label">Signed in as</span>
         <strong className="settings-value">{email ?? '…'}</strong>
-      </div>
-      <div className="settings-summary-app">
-        <span className="stat-label">App version</span>
-        <span>{Number.isNaN(built.getTime()) ? 'Unknown date' : built.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+        <span className="muted small">
+          Version {Number.isNaN(built.getTime()) ? 'unknown' : built.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
+          {' · '}
+          <button type="button" className="link-button" onClick={() => void lookForUpdate()} disabled={checking}>
+            Check for updates
+          </button>
+        </span>
         {update && (
           <span className="small" role="status">
             {update}
           </span>
         )}
       </div>
-      <div className="settings-actions settings-summary-actions">
-        <button type="button" className="primary" onClick={() => void lookForUpdate()} disabled={checking}>
-          Check for updates
-        </button>
-        <button type="button" onClick={() => void signOut()}>
-          Sign out
-        </button>
-      </div>
+      <button type="button" className="small-btn" onClick={() => void signOut()}>
+        Sign out
+      </button>
     </section>
   )
 }
 
 /** Je gegevens: back-up, import, beheer (alleen beheerders) en de app-cache op dit apparaat. */
-export function DataSection(): JSX.Element {
+export function DataGroup(): JSX.Element {
   const [confirmClear, setConfirmClear] = useState(false)
   const admin = useIsAdmin() === true
   return (
-    <Section id="settings-data" title="Data" scope="account" intro="Download everything as a backup, or bring cards in from a spreadsheet or another app.">
-      <div className="settings-actions">
-        <a className="button-link" href="#/backup">
-          Backup and restore
-        </a>
-        <a className="button-link" href="#/import">
-          Import
-        </a>
-        {admin && (
-          <a className="button-link" href="#/admin">
-            Admin
-          </a>
-        )}
-      </div>
-      <h3 className="settings-subtitle">This device</h3>
-      <div className="settings-actions">
+    <Group title="Data">
+      <LinkRow href="#/backup">Backup and restore</LinkRow>
+      <LinkRow href="#/import">Import</LinkRow>
+      {admin && <LinkRow href="#/admin">Admin</LinkRow>}
+      <Row label="Clear app cache" hint={confirmClear ? 'Card info and prices are fetched again' : undefined}>
         {confirmClear ? (
-          <>
-            <span className="small">Clear stored card info and prices on this device? They are fetched again.</span>
+          <span className="settings-actions">
+            <button type="button" className="small-btn" onClick={() => setConfirmClear(false)}>
+              Cancel
+            </button>
             <button
               type="button"
               className="primary small-btn"
@@ -134,24 +122,31 @@ export function DataSection(): JSX.Element {
                 window.location.reload()
               }}
             >
-              Clear and reload
+              Clear
             </button>
-            <button type="button" className="small-btn" onClick={() => setConfirmClear(false)}>
-              Cancel
-            </button>
-          </>
+          </span>
         ) : (
-          <button type="button" onClick={() => setConfirmClear(true)}>
-            Clear app cache
+          <button type="button" className="small-btn" onClick={() => setConfirmClear(true)}>
+            Clear
           </button>
         )}
-      </div>
-    </Section>
+      </Row>
+    </Group>
+  )
+}
+
+/** Wachtwoord en account leegmaken, allebei uitgeklapt pas als je ze nodig hebt. */
+export function AccountGroup(): JSX.Element {
+  return (
+    <Group title="Account">
+      <PasswordRow />
+      <ResetRow />
+    </Group>
   )
 }
 
 /** Wachtwoord wijzigen. */
-export function PasswordSection(): JSX.Element {
+function PasswordRow(): JSX.Element {
   const email = useSignedInEmail()
   const [pw, setPw] = useState({ next: '', again: '' })
   const [pwState, setPwState] = useState<{ ok: boolean; text: string } | null>(null)
@@ -177,7 +172,7 @@ export function PasswordSection(): JSX.Element {
   }
 
   return (
-    <Section id="settings-password" title="Password" scope="account">
+    <More label="Change password">
       <form className="settings-password" onSubmit={(e) => void changePassword(e)} noValidate>
         <input type="email" autoComplete="username" value={email ?? ''} readOnly hidden />
         <div className="form-grid">
@@ -201,14 +196,14 @@ export function PasswordSection(): JSX.Element {
           )}
         </div>
       </form>
-    </Section>
+    </More>
   )
 }
 
 const RESET_WORD = 'RESET'
 
 /** Account helemaal leegmaken om opnieuw te beginnen; je login blijft. */
-export function ResetSection(): JSX.Element {
+function ResetRow(): JSX.Element {
   const [typed, setTyped] = useState('')
   const [busy, setBusy] = useState(false)
   const [state, setState] = useState<{ ok: boolean; text: string } | null>(null)
@@ -240,13 +235,11 @@ export function ResetSection(): JSX.Element {
   }
 
   return (
-    <Section id="settings-reset" title="Reset account" scope="account">
+    <More label="Reset account" danger>
       <div className="settings-danger">
         <p>
-          Start over from scratch. This permanently deletes <strong>all your cards, photos, sales and purchases, wishlist, goals, scan history and your Pack game</strong> (points,
-          cards and packs). Levels, badges and secret achievements start again from zero. Your login, theme and scanning settings stay.
+          Deletes <strong>all your cards, photos, sales, wishlist and Pack game</strong>. Your login and settings stay. This cannot be undone.
         </p>
-        <p className="muted small">This cannot be undone. Make a backup first if you might want anything back.</p>
         <div className="settings-actions">
           <a className="button-link" href="#/backup">
             Make a backup first
@@ -267,6 +260,6 @@ export function ResetSection(): JSX.Element {
           )}
         </div>
       </div>
-    </Section>
+    </More>
   )
 }
