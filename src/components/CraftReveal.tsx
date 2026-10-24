@@ -60,7 +60,7 @@ export function CraftReveal({ card, cost, onClose }: Props): JSX.Element {
         <div className="pack-stage">
           <div className="pack-current">
             <div ref={cardRef} className={`pack-current-card${hit ? ' is-hit' : ''}`}>
-              <HoloCard foil={foilStyleFor(null, card.rarity)}>
+              <HoloCard foil={foilStyleFor(null, card.rarity)} idle>
                 <CatalogKeyPicture cardKey={card.tcgdex_id} image={card.image} name={card.name} quality="high" alt={card.name} fallback={<CardFace name={card.name} detail={card.set_name} />} />
               </HoloCard>
             </div>

@@ -32,10 +32,12 @@ function useCompletionCost(set: NearSet, ownedIds: ReadonlySet<string>): Cost {
       const data = await getSet(set.lang, set.setId)
       const missing = (data?.cards ?? []).filter((c) => !ownedIds.has(c.id))
       if (missing.length > COST_LIMIT) return 'too-many' as const
+      // Tegelijk (de TCGdex-wachtrij begrenst het aantal verzoeken), niet meer één voor één (24-10-2026).
+      const prices = await Promise.all(missing.map((c) => getCardPrice(`${set.lang}/${c.id}`)))
       let amount = 0
       let unknown = 0
-      for (const c of missing) {
-        const v = marketValue(await getCardPrice(`${set.lang}/${c.id}`), null)?.value
+      for (const p of prices) {
+        const v = marketValue(p, null)?.value
         if (v === undefined) unknown += 1
         else amount += v
       }

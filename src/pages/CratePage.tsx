@@ -49,6 +49,7 @@ import { needsCatalog } from '../lib/collectionFilters'
 import { CRATE_SORTS, NO_CRATE_FILTERS, crateFilterChips, crateFilterCount, crateSetOptions, matchesCrate, matchesCrateSearch, sortCrate, type CrateFilters, type CrateSort } from '../lib/crateFilters'
 import { closeKeyboardOnEnter } from '../lib/keyboard'
 import { useStoredChoice } from '../hooks/useStoredChoice'
+import { useLoadMore } from '../hooks/useLoadMore'
 
 type View = 'cards' | 'overview'
 
@@ -102,8 +103,9 @@ interface Loaded {
 
 /** Stand ophalen; bijwerken zonder bonus/Pokédex (die komen via Overview en het toevoegen van kaarten). */
 async function loadCrate(): Promise<Loaded> {
-  const [w, rules] = await Promise.all([syncCrate({}, []), getCrateRules()])
-  return { points: w.points, freePack: w.freePack, cards: await listCrateCards(), rules }
+  // Tegelijk (24-10-2026): de sync telt alleen punten, de kaartenlijst hoeft daar niet op te wachten.
+  const [w, rules, cards] = await Promise.all([syncCrate({}, []), getCrateRules(), listCrateCards()])
+  return { points: w.points, freePack: w.freePack, cards, rules }
 }
 
 /** Engelse sets voor het Set pack, nieuwste eerst; zonder digitale (TCG Pocket), eigen catalogus (geen zeldzaamheden) en sets zonder telling. */
@@ -299,6 +301,8 @@ export function CratePage(): JSX.Element {
     () => sortCrate((cards ?? []).filter((c) => matchesCrateSearch(c, query) && matchesCrate(c, filters, infos.get(c.tcgdexId))), sort, sortPrices),
     [cards, query, filters, infos, sort, sortPrices],
   )
+  // Kaarten in stukken van 48 (24-10-2026: 700+ kaarten tegelijk maakte de pagina traag), zoals My cards.
+  const { count: shownCards, sentinel: moreCardsRef } = useLoadMore(sorted.length, `${view}|${query}|${sort}|${JSON.stringify(filters)}`, 48)
   const activeFilters = crateFilterCount(filters)
   const total = (cards ?? []).reduce((n, c) => n + c.quantity, 0)
   const extras = (cards ?? []).reduce((n, c) => n + (c.quantity - 1) * tradeValue(c.rarity, rules.tradeFactor), 0)
@@ -593,7 +597,7 @@ export function CratePage(): JSX.Element {
         )}
         {view === 'cards' && sorted.length > 0 && (
           <ul className="catalog-grid crate-grid">
-            {sorted.map((c) => (
+            {sorted.slice(0, shownCards).map((c) => (
               <li key={c.tcgdexId} className="crate-card">
                 <button type="button" className="crate-card-open" onClick={() => setOpened(c)} aria-label={`${c.name}, ${c.quantity}×. Show details`}>
                   <HoloCard foil={foilStyleFor(null, c.rarity)}>
@@ -614,6 +618,11 @@ export function CratePage(): JSX.Element {
               </li>
             ))}
           </ul>
+        )}
+        {view === 'cards' && sorted.length > shownCards && (
+          <div ref={moreCardsRef} className="catalog-more">
+            <Loading text={`Loading more cards… (${sorted.length - shownCards} left)`} />
+          </div>
         )}
       </section>
 

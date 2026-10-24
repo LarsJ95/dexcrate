@@ -74,7 +74,7 @@ export function CrateCardSheet({ card, busy, onTrade, onClose, tradeFactor }: Pr
     <Sheet title={card.name} onClose={onClose}>
       <div className="crate-sheet">
         <button type="button" className="crate-sheet-image" onClick={() => setZoom(true)} aria-label={`Show ${card.name} full screen`}>
-          <HoloCard foil={foilStyleFor(null, card.rarity)}>{picture('high')}</HoloCard>
+          <HoloCard foil={foilStyleFor(null, card.rarity)} idle>{picture('high')}</HoloCard>
         </button>
         <div className="crate-sheet-info">
           <p className="muted">{card.setName ?? 'Unknown set'}</p>

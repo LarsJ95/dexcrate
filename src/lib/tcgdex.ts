@@ -456,17 +456,43 @@ export function parseCardmarket(data: Record<string, unknown>): CardmarketPrice 
   }
 }
 
-const fetchCardPrice = memo(async (key: string): Promise<CardmarketPrice | null> => {
-  const cached = readCache<CardmarketPrice | 'none'>(PRICE_PREFIX, PRICE_TTL_MS, key)
-  if (cached) return cached === 'none' ? null : cached
+/** Verlopen prijzen tot zo oud meteen tonen en op de achtergrond verversen; ouder: eerst ophalen. */
+const PRICE_STALE_MS = 7 * 24 * 60 * 60 * 1000
+
+async function loadCardPrice(key: string): Promise<CardmarketPrice | null> {
   const data = await fetchCardRaw(key)
   const price = data ? parseCardmarket(data) : null
   writeCache(PRICE_PREFIX, key, price ?? 'none')
   return price
-})
+}
 
+const prices = new Map<string, Promise<CardmarketPrice | null>>()
+
+/**
+ * Cardmarket-prijs. Stale-while-revalidate (24-10-2026): een verlopen prijs (≤ 7 dagen) komt meteen terug en wordt op
+ * de achtergrond ververst; daarna krijgen volgende aanroepen de nieuwe. Zo hoeft een collectie niet eerst 700 prijzen
+ * opnieuw op te halen voordat de waarde verschijnt.
+ */
 export function getCardPrice(key: string): Promise<CardmarketPrice | null> {
-  return fetchCardPrice(key)
+  const known = prices.get(key)
+  if (known) return known
+  const unpack = (v: CardmarketPrice | 'none'): CardmarketPrice | null => (v === 'none' ? null : v)
+  const fresh = readCache<CardmarketPrice | 'none'>(PRICE_PREFIX, PRICE_TTL_MS, key)
+  const stale = fresh ? null : readCache<CardmarketPrice | 'none'>(PRICE_PREFIX, PRICE_STALE_MS, key)
+  let p: Promise<CardmarketPrice | null>
+  if (fresh) p = Promise.resolve(unpack(fresh))
+  else if (stale) {
+    p = Promise.resolve(unpack(stale))
+    loadCardPrice(key)
+      .then((price) => prices.set(key, Promise.resolve(price)))
+      .catch((err: unknown) => console.warn(`Prijs verversen mislukt voor ${key}`, err))
+  } else {
+    p = loadCardPrice(key)
+    // Mislukte requests niet onthouden, zodat opnieuw proberen kan.
+    p.catch(() => prices.delete(key))
+  }
+  prices.set(key, p)
+  return p
 }
 
 const TCGP_PREFIX = 'tcgdex:tcgp:v1:'

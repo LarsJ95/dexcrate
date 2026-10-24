@@ -80,7 +80,7 @@ export function Spotlight({
   return (
     <div className="panel spotlight">
       <button type="button" className="spotlight-card zoom-trigger" onClick={() => onOpenCard?.(card.id)} aria-label={`View ${card.name}`}>
-        <HoloCard foil={foilStyleFor(card.variant, info?.rarity)}>
+        <HoloCard foil={foilStyleFor(card.variant, info?.rarity)} idle>
           <CardImage
             tcgdexId={card.tcgdex_id}
             kind={card.kind}

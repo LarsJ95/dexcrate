@@ -15,6 +15,12 @@ export function useCatalogInfos(keys: readonly string[], enabled: boolean): Read
     const todo = list.split('\n')
     const found = new Map<string, CardInfo | null>()
     let done = 0
+    // Hoogstens elke 250 ms opnieuw renderen (24-10-2026: was elke 10 resultaten; bij honderden kaarten traag).
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const flush = (): void => {
+      timer = null
+      if (!cancelled) setInfos(new Map(found))
+    }
     for (const key of todo) {
       getCardInfo(key)
         .then((info) => found.set(key, info))
@@ -24,11 +30,16 @@ export function useCatalogInfos(keys: readonly string[], enabled: boolean): Read
         })
         .finally(() => {
           done += 1
-          if (!cancelled && (done % 10 === 0 || done === todo.length)) setInfos(new Map(found))
+          if (done < todo.length) timer ??= setTimeout(flush, 250)
+          else {
+            if (timer) clearTimeout(timer)
+            flush()
+          }
         })
     }
     return () => {
       cancelled = true
+      if (timer) clearTimeout(timer)
     }
   }, [list])
 

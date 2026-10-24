@@ -29,6 +29,7 @@ import {
  */
 
 const FPS = 30
+const IDLE_FPS = 10
 const ARTWORK = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork'
 /** Hier tik je op iets anders dan de lucht. */
 const NOT_SKY =
@@ -173,7 +174,8 @@ export function Sky({ theme, night = false }: { theme: 'dark' | 'light'; night?:
 
     const loop = (now: number): void => {
       raf = requestAnimationFrame(loop)
-      if (now - last < 1000 / FPS) return
+      // Fonkelen en wolken zijn rustig: 10 beeldjes/s volstaat; een vallende ster vloeiend (24-10-2026, minder rekenwerk).
+      if (now - last < 1000 / (fallingRef.current ? FPS : IDLE_FPS)) return
       draw(now)
     }
     const start = (): void => {

@@ -145,6 +145,18 @@ describe('lijsten boven de 1000 rijen: alles, precies één keer', () => {
     expect(db.state.requests[0].order).toEqual(['valued_on.desc', 'created_at.desc', 'id.asc'])
   })
 
+  it('twee gelijktijdige aanroepen (pagina + menutellers) delen één reeks verzoeken, elk een eigen lijst', async () => {
+    db.state.tables.wishlist_items = Array.from({ length: N }, (_, i) => ({ id: `w-${pad(i)}`, name: `Card ${i}`, priority: 2, created_at: '2026-10-24T10:00:00.000Z' }))
+    const [a, b] = await Promise.all([listWishlist(), listWishlist()])
+    expect(db.state.requests).toHaveLength(3)
+    expect(a).toHaveLength(N)
+    expect(a).not.toBe(b)
+    expect(b).toEqual(a)
+    // Daarna weer een nieuw verzoek (geen verouderde cache).
+    await listWishlist()
+    expect(db.state.requests).toHaveLength(6)
+  })
+
   it('fout op een latere pagina: melding met de oorzaak (herkenbaar als netwerkfout), geen halve lijst', async () => {
     db.state.tables.wishlist_items = Array.from({ length: N }, (_, i) => ({ id: `w-${pad(i)}`, name: `Card ${i}`, priority: 2, created_at: '2026-10-24T10:00:00.000Z' }))
     db.state.failAt = 2

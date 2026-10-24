@@ -115,8 +115,20 @@ function toItem(r: unknown): WishlistItem | null {
   }
 }
 
-/** Alle wensen. Zonder internet: de laatst geladen versie van dit apparaat (zie offlineCache). */
+let wishlistInflight: Promise<WishlistItem[]> | null = null
+
+/**
+ * Alle wensen. Zonder internet: de laatst geladen versie van dit apparaat (zie offlineCache). Gelijktijdige aanroepen
+ * delen één verzoek (24-10-2026); elke aanroeper krijgt een eigen lijst.
+ */
 export function listWishlist(): Promise<WishlistItem[]> {
+  wishlistInflight ??= loadWishlist().finally(() => {
+    wishlistInflight = null
+  })
+  return wishlistInflight.then((list) => [...list])
+}
+
+function loadWishlist(): Promise<WishlistItem[]> {
   return withOfflineCache(
     'wishlist',
     async () => {
