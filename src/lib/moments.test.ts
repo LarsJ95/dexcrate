@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // moments.ts haalt via de wishlist Supabase binnen; in CI zijn daar geen sleutels voor.
 vi.mock('./supabase', () => ({ supabase: {} }))
-const { BADGES_KEY, SET_MILESTONES, celebrateBadges, celebrateMilestone, endMoment, newMilestone, quietNext, takeQuiet, useMoment } = await import('./moments')
+const { BADGES_KEY, CRATE_MILESTONES, CRATE_MILESTONE_KEY, SET_MILESTONES, celebrateBadges, celebrateMilestone, endMoment, newMilestone, quietNext, takeQuiet, useMoment } = await import('./moments')
 
 describe('mijlpalen', () => {
   it('hoogste nieuwe mijlpaal boven wat al gevierd is', () => {
@@ -42,6 +42,16 @@ describe('stil bijwerken na scannen', () => {
     expect(shown(() => celebrateMilestone('m', 30, SET_MILESTONES, (n) => `${n} cards`))).toBeNull()
     expect(localStorage.getItem('m')).toBe('25')
     expect(shown(() => celebrateMilestone('m', 60, SET_MILESTONES, (n) => `${n} cards`))).toBe('milestone')
+  })
+
+  it('Pack game-mijlpaal met eigen titel; de eerste keer alleen onthouden', () => {
+    const { result } = renderHook(() => useMoment())
+    act(() => celebrateMilestone(CRATE_MILESTONE_KEY, 60, CRATE_MILESTONES, (n) => `${n} cards`, 'Pack game milestone!'))
+    expect(result.current).toBeNull()
+    act(() => celebrateMilestone(CRATE_MILESTONE_KEY, 120, CRATE_MILESTONES, (n) => `${n} cards`, 'Pack game milestone!'))
+    expect(result.current).toMatchObject({ kind: 'milestone', level: 100, caption: '100 cards', title: 'Pack game milestone!' })
+    const m = result.current
+    if (m) act(() => endMoment(m.id))
   })
 
   it('nieuwe badge na scannen geeft geen moment, zonder markering wel', () => {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type JSX, type KeyboardEvent, type MouseEvent, type PointerEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type JSX, type KeyboardEvent, type MouseEvent, type PointerEvent } from 'react'
 import { useBackToClose } from '../hooks/useBackToClose'
 import { useWishlistEnabled } from '../hooks/useWishlistEnabled'
 import { cardLanguageOf } from '../lib/cardmarket'
@@ -6,13 +6,13 @@ import { foilStyleFor, rarityRule } from '../lib/cardTraits'
 import { PACKS, crateWishInitial, tradeCrateCard, tradeValue, type PackKind, type PackPull } from '../lib/crate'
 import { onOwnClose } from '../lib/dialog'
 import { errorText } from '../lib/errors'
-import { burstFrom } from '../lib/fx'
+import { burstFrom, confetti } from '../lib/fx'
 import { buzz } from '../lib/haptics'
 import { useMotion } from '../lib/motion'
-import { countsAfter, duplicatePoints, revealOrder, type RevealCard } from '../lib/packOpening'
+import { bestPull, countsAfter, duplicatePoints, hitTier, packTier, printedNumber, revealOrder, setGains, type RevealCard } from '../lib/packOpening'
 import { marketValue } from '../lib/prices'
 import { formatEur } from '../lib/stats'
-import { getCardPrice, type CardmarketPrice } from '../lib/tcgdex'
+import { getCardPrice, getSetList, setOfKey, type CardmarketPrice, type Lang } from '../lib/tcgdex'
 import type { WishlistInput } from '../lib/wishlist'
 import { CardFace } from './CardFace'
 import { CardmarketLink } from './CardmarketLink'
@@ -45,6 +45,11 @@ type Stage = 'sealed' | 'reveal' | 'summary'
 
 /** Tijd van het openscheuren (ms); zonder animaties meteen door. */
 const TEAR_MS = 650
+/** Laatste kaart is een hit: zo lang ligt hij eerst met de achterkant boven (tikken draait hem meteen om). */
+const SUSPENSE_MS = 1300
+/** Tril bij het openscheuren: sterker als er een hit in zit (24-10-2026, "meer spel"). */
+const TEAR_BUZZ: Record<0 | 1 | 2 | 3, number | number[]> = { 0: 15, 1: [15, 50, 25], 2: [15, 50, 25, 50, 40], 3: [20, 40, 30, 40, 40, 40, 80] }
+const GOLD = ['var(--gold-a)', 'var(--gold-b)', '#ffffff']
 
 function picture(c: Pick<PackPull, 'tcgdex_id' | 'image' | 'name' | 'set_name'>, quality: 'low' | 'high'): JSX.Element {
   return <CatalogKeyPicture cardKey={c.tcgdex_id} image={c.image} name={c.name} quality={quality} alt={c.name} fallback={<CardFace name={c.name} detail={c.set_name} />} />
@@ -72,6 +77,13 @@ export function PackOpening({ pack, pulls, god = false, before, tradeFactor, onO
   const [wished, setWished] = useState<ReadonlySet<string>>(new Set())
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Laatste kaart (een hit) omgedraaid; daarvoor ligt hij met de achterkant boven.
+  const [flipped, setFlipped] = useState<number | null>(null)
+  // Officieel aantal kaarten per set ("en/sv08" → 191), voor "057/191" en de setvoortgang.
+  const [officials, setOfficials] = useState<ReadonlyMap<string, number>>(new Map())
+  // Punten van het laatste inruilen, als "+N pts" (key = opnieuw afspelen).
+  const [gain, setGain] = useState<{ n: number; key: number } | null>(null)
+  const tier = useMemo(() => packTier(cards), [cards])
 
   useEffect(() => {
     const dialog = ref.current
@@ -101,28 +113,60 @@ export function PackOpening({ pack, pulls, god = false, before, tradeFactor, onO
     }
   }, [pulls])
 
-  // Zeldzame kaart in beeld: vonken en trillen (zeldzaamste het meest).
-  const current = stage === 'reveal' ? cards[index] : null
+  // Setlijsten (meestal gecachet) voor het officiële aantal per set.
   useEffect(() => {
-    if (!current || !motion || !cardRef.current) return
+    let cancelled = false
+    const langs = new Set(pulls.flatMap((p) => setOfKey(p.tcgdex_id)?.lang ?? []))
+    Promise.all(
+      [...langs].map(async (lang: Lang) => [...(await getSetList(lang))].flatMap(([id, s]) => (s.official ? [[`${lang}/${id}`, s.official] as const] : []))),
+    )
+      .then((lists) => {
+        if (!cancelled) setOfficials(new Map(lists.flat()))
+      })
+      .catch((err: unknown) => console.warn('Setlijst voor het pakje ophalen mislukt', err))
+    return () => {
+      cancelled = true
+    }
+  }, [pulls])
+
+  // Laatste kaart is een hit (en er waren er meer): eerst even de achterkant, dan omdraaien.
+  const current = stage === 'reveal' ? cards[index] : null
+  const lastIndex = cards.length - 1
+  const suspense = motion && current !== null && index === lastIndex && lastIndex > 0 && hitTier(current.rarity) > 0 && flipped !== index
+  useEffect(() => {
+    if (!suspense) return
+    buzz([10, 120, 10, 120, 10])
+    const t = window.setTimeout(() => setFlipped(lastIndex), SUSPENSE_MS)
+    return () => clearTimeout(t)
+  }, [suspense, lastIndex])
+
+  // Zeldzame kaart in beeld: vonken en trillen (zeldzaamste het meest).
+  useEffect(() => {
+    if (!current || suspense || !motion || !cardRef.current) return
     const rank = rarityRule(current.rarity).rank
     if (rank < 5) return
     const gold = rank >= 9
-    burstFrom(cardRef.current, { colors: gold ? ['var(--gold-a)', 'var(--gold-b)', '#ffffff'] : ['var(--yellow)', '#ffffff', 'var(--type)'], count: gold ? 70 : 36, speed: gold ? 10 : 8 })
+    burstFrom(cardRef.current, { colors: gold ? GOLD : ['var(--yellow)', '#ffffff', 'var(--type)'], count: gold ? 70 : 36, speed: gold ? 10 : 8 })
     buzz(gold ? [40, 60, 40] : [20])
-  }, [current, motion])
+  }, [current, suspense, motion])
 
   // God pack: meteen na het openscheuren een grote gouden uitbarsting.
   const godReveal = god && stage === 'reveal' && index === 0
   useEffect(() => {
     if (!godReveal || !motion || !cardRef.current) return
-    burstFrom(cardRef.current, { colors: ['var(--gold-a)', 'var(--gold-b)', '#ffffff'], count: 120, speed: 12 })
+    burstFrom(cardRef.current, { colors: GOLD, count: 120, speed: 12 })
     buzz([60, 80, 60, 80, 120])
   }, [godReveal, motion])
 
+  // God pack: één keer confetti bij het overzicht.
+  const godFinale = god && stage === 'summary'
+  useEffect(() => {
+    if (godFinale && motion) confetti(GOLD)
+  }, [godFinale, motion])
+
   function tear(): void {
     if (stage !== 'sealed' || tearing) return
-    buzz(15)
+    buzz(TEAR_BUZZ[tier])
     if (!motion) {
       setStage('reveal')
       return
@@ -136,7 +180,8 @@ export function PackOpening({ pack, pulls, god = false, before, tradeFactor, onO
 
   function next(): void {
     if (stage !== 'reveal') return
-    if (index < cards.length - 1) setIndex((i) => i + 1)
+    if (suspense) setFlipped(index)
+    else if (index < cards.length - 1) setIndex((i) => i + 1)
     else setStage('summary')
   }
 
@@ -164,6 +209,7 @@ export function PackOpening({ pack, pulls, god = false, before, tradeFactor, onO
     if (busy) return
     setBusy(true)
     setError(null)
+    let gained = 0
     try {
       let points: number | null = null
       const updated = new Map(counts)
@@ -171,6 +217,7 @@ export function PackOpening({ pack, pulls, god = false, before, tradeFactor, onO
         const n = (updated.get(id) ?? 0) - 1
         if (n < 1) continue
         points = (await tradeCrateCard(id, n)).points
+        gained += n * tradeValue(cards.find((c) => c.tcgdex_id === id)?.rarity ?? null, tradeFactor)
         updated.set(id, 1)
         setCounts(new Map(updated))
       }
@@ -181,6 +228,8 @@ export function PackOpening({ pack, pulls, god = false, before, tradeFactor, onO
     } catch (err) {
       setError(errorText(err, 'Trading in failed.'))
     } finally {
+      // Ook bij een fout halverwege: wat al ingeruild is, is binnen.
+      if (gained > 0) setGain((g) => ({ n: gained, key: (g?.key ?? 0) + 1 }))
       setBusy(false)
     }
   }
@@ -199,6 +248,11 @@ export function PackOpening({ pack, pulls, god = false, before, tradeFactor, onO
   const dupPoints = duplicatePoints(cards, counts, tradeFactor)
   const dupIds = [...new Set(cards.map((c) => c.tcgdex_id))].filter((id) => (counts.get(id) ?? 0) > 1)
   const sel = selected !== null ? cards[selected] : null
+  const best = stage === 'summary' ? bestPull(cards, valueOf) : null
+  const bestCard = best !== null ? cards[best] : null
+  const gains = useMemo(() => setGains(cards, before, officials), [cards, before, officials])
+  const currentTier = current ? hitTier(current.rarity) : 0
+  const currentNumber = current ? printedNumber(current.tcgdex_id, officials) : null
 
   return (
     <dialog
@@ -233,6 +287,7 @@ export function PackOpening({ pack, pulls, god = false, before, tradeFactor, onO
             <button
               type="button"
               className={`pack-sealed pack-${pack}${tearing ? ' is-tearing' : ''}`}
+              data-tier={tearing ? tier : undefined}
               onClick={tear}
               onPointerDown={onPackDown}
               onPointerUp={onPackUp}
@@ -250,18 +305,41 @@ export function PackOpening({ pack, pulls, god = false, before, tradeFactor, onO
 
         {current && (
           <div className="pack-stage">
-            <button type="button" className="pack-current" onClick={next} aria-label={`${current.name}, ${current.rarity}. Next card`}>
-              <div key={index} ref={cardRef} className={`pack-current-card${rarityRule(current.rarity).rank >= 5 ? ' is-hit' : ''}`}>
-                <HoloCard foil={foilStyleFor(null, current.rarity)} idle>{picture(current, 'high')}</HoloCard>
-              </div>
+            <button type="button" className="pack-current" onClick={next} aria-label={suspense ? 'Last card. Turn it over' : `${current.name}, ${current.rarity}. Next card`}>
+              {/* Stralen in de kleur van de zeldzaamheid achter een hit (24-10-2026). */}
+              {currentTier > 0 && !suspense && <span className="pack-rays" data-tier={currentTier} aria-hidden="true" />}
+              {suspense ? (
+                <div key={`${index}-back`} className="pack-current-card pack-back" data-tier={currentTier} aria-hidden="true">
+                  <span className="pokeball" />
+                </div>
+              ) : (
+                <div key={index} ref={cardRef} className={`pack-current-card${rarityRule(current.rarity).rank >= 5 ? ' is-hit' : ''}`}>
+                  <HoloCard foil={foilStyleFor(null, current.rarity)} idle>{picture(current, 'high')}</HoloCard>
+                </div>
+              )}
             </button>
             <div className="pack-current-info" aria-live="polite">
-              <strong>{current.name}</strong>
-              <span className="pack-current-meta">
-                <RarityChip rarity={current.rarity} />
-                {current.isNew ? <span className="pack-badge is-new">NEW</span> : <span className="pack-badge">You have {current.copies}×</span>}
-              </span>
-              <span className="muted small">{current.set_name ?? ''}</span>
+              {suspense ? (
+                <>
+                  <strong>Last card…</strong>
+                  <span className="muted small">Something special is coming. Tap to turn it over.</span>
+                </>
+              ) : (
+                <>
+                  <strong>{current.name}</strong>
+                  <span className="pack-current-meta">
+                    <RarityChip rarity={current.rarity} />
+                    {current.isNew ? (
+                      <span key={index} className="pack-badge is-new is-stamp">
+                        NEW
+                      </span>
+                    ) : (
+                      <span className="pack-badge">You have {current.copies}×</span>
+                    )}
+                  </span>
+                  <span className="muted small">{[current.set_name, currentNumber].filter(Boolean).join(' · ')}</span>
+                </>
+              )}
             </div>
             <footer className="sheet-foot">
               <button type="button" className="ghost" onClick={() => setStage('summary')}>
@@ -281,13 +359,25 @@ export function PackOpening({ pack, pulls, god = false, before, tradeFactor, onO
               {newCount > 0 ? `${newCount} new in your pack collection` : 'No new cards this time'}
               {total > 0 && ` · worth ${formatEur(total)} on Cardmarket`}
             </p>
+            {bestCard && (
+              <p className="pack-best-line">
+                <span className="pack-best">Best pull</span> <strong>{bestCard.name}</strong>
+                {valueOf(bestCard.tcgdex_id) !== null && <span className="muted"> · {formatEur(valueOf(bestCard.tcgdex_id) ?? 0)}</span>}
+              </p>
+            )}
             <ul className="pack-summary">
               {cards.map((c, i) => {
                 const have = counts.get(c.tcgdex_id) ?? 1
                 const value = valueOf(c.tcgdex_id)
                 return (
-                  <li key={`${c.tcgdex_id}-${i}`}>
-                    <button type="button" className="pack-tile" aria-pressed={selected === i} onClick={() => setSelected(selected === i ? null : i)}>
+                  <li key={`${c.tcgdex_id}-${i}`} style={{ '--i': i } as CSSProperties}>
+                    <button
+                      type="button"
+                      className={`pack-tile${i === best ? ' is-best' : ''}`}
+                      aria-pressed={selected === i}
+                      aria-label={i === best ? `${c.name}, best pull` : undefined}
+                      onClick={() => setSelected(selected === i ? null : i)}
+                    >
                       <HoloCard foil={foilStyleFor(null, c.rarity)}>{picture(c, 'low')}</HoloCard>
                       {c.isNew ? <span className="pack-badge is-new">NEW</span> : have > 1 && <span className="pack-badge">{have}×</span>}
                     </button>
@@ -297,6 +387,26 @@ export function PackOpening({ pack, pulls, god = false, before, tradeFactor, onO
                 )
               })}
             </ul>
+
+            {/* Setvoortgang: wat dit pakje erbij deed (hoogstens drie sets). */}
+            {gains.length > 0 && (
+              <ul className="pack-sets" aria-label="Set progress">
+                {gains.slice(0, 3).map((g) => (
+                  <li key={g.setKey}>
+                    <span className="pack-set-head">
+                      <strong>{g.name}</strong>
+                      <span className="small">
+                        {g.before} → <strong>{g.after}</strong> / {g.official}
+                      </span>
+                    </span>
+                    <span className="meter" role="meter" aria-label={`${g.name}: ${g.after} of ${g.official}`} aria-valuemin={0} aria-valuemax={g.official} aria-valuenow={g.after}>
+                      <span className="meter-fill" style={{ width: `${(g.before / g.official) * 100}%` }} />
+                      <span className="meter-gain" style={{ width: `${((g.after - g.before) / g.official) * 100}%` }} />
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
 
             {sel && (
               <section className="panel pack-card-actions" aria-label={`Actions for ${sel.name}`}>
@@ -329,6 +439,11 @@ export function PackOpening({ pack, pulls, god = false, before, tradeFactor, onO
                 <button type="button" onClick={() => void tradeIn(dupIds)} disabled={busy}>
                   Trade in duplicates (+{dupPoints} pts)
                 </button>
+              )}
+              {gain && (
+                <span key={gain.key} className="pts-chip" role="status">
+                  +{gain.n} pts
+                </span>
               )}
               <span className="spacer" />
               {onOpenAnother && (

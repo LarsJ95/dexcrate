@@ -40,7 +40,7 @@ import {
   type PackPull,
 } from '../lib/crate'
 import { LOCAL_SET_IDS } from '../lib/localCatalog'
-import { showMoment } from '../lib/moments'
+import { CRATE_MILESTONES, CRATE_MILESTONE_KEY, celebrateMilestone, showMoment } from '../lib/moments'
 import { marketValue } from '../lib/prices'
 import { digitalSetIds, getSetList } from '../lib/tcgdex'
 import { buzz } from '../lib/haptics'
@@ -50,8 +50,11 @@ import { CRATE_SORTS, NO_CRATE_FILTERS, crateFilterChips, crateFilterCount, crat
 import { closeKeyboardOnEnter } from '../lib/keyboard'
 import { useStoredChoice } from '../hooks/useStoredChoice'
 import { useLoadMore } from '../hooks/useLoadMore'
+import { useCountTo, useDelta } from '../hooks/useCountTo'
 
-type View = 'cards' | 'overview'
+/** Tabbladen (24-10-2026: "Overview" en "Cards" stonden verwarrend midden op de pagina); het laatste wordt onthouden. */
+type View = 'packs' | 'cards' | 'overview'
+const VIEWS: readonly View[] = ['packs', 'cards', 'overview']
 
 /** Zo verdien je punten; dagbonus, inruilwaarde en Crate-set volgen de regels uit de database. */
 function earnRows(rules: CrateRules): [string, string][] {
@@ -131,8 +134,7 @@ export function CratePage(): JSX.Element {
   const [sort, setSort] = useStoredChoice<CrateSort>('dexcrate:crate-sort', CRATE_SORTS, 'newest')
   const [query, setQuery] = useState('')
   const [filters, setFilters] = useState<CrateFilters>(NO_CRATE_FILTERS)
-  // Overview is de hoofdweergave (keuze gebruiker 18-10-2026).
-  const [view, setView] = useState<View>('overview')
+  const [view, setView] = useStoredChoice<View>('dexcrate:crate-view', VIEWS, 'packs')
   const [opened, setOpened] = useState<CrateCard | null>(null)
   const [confirmAll, setConfirmAll] = useState(false)
   const [rules, setRules] = useState<CrateRules>(OLD_RULES)
@@ -231,6 +233,15 @@ export function CratePage(): JSX.Element {
     }
   }, [cards, setChoices, crateSetBonus])
 
+  // Mijlpalen van je pack collection (verschillende kaarten); niet tijdens een pakje, wel na het sluiten.
+  useEffect(() => {
+    if (cards && !opening) celebrateMilestone(CRATE_MILESTONE_KEY, cards.length, CRATE_MILESTONES, (n) => `${n} different cards in your pack collection`, 'Pack game milestone!')
+  }, [cards, opening])
+
+  // Punten lopen zichtbaar op of af, met het verschil er even naast.
+  const shownPoints = useCountTo(points)
+  const delta = useDelta(points)
+
   const chosenSet = setChoices.find((s) => s.id === packSet) ?? null
   const chosenSetHave = chosenSet && cards ? crateSetProgress(cards, chosenSet.key, chosenSet.official) : 0
 
@@ -304,7 +315,6 @@ export function CratePage(): JSX.Element {
   // Kaarten in stukken van 48 (24-10-2026: 700+ kaarten tegelijk maakte de pagina traag), zoals My cards.
   const { count: shownCards, sentinel: moreCardsRef } = useLoadMore(sorted.length, `${view}|${query}|${sort}|${JSON.stringify(filters)}`, 48)
   const activeFilters = crateFilterCount(filters)
-  const total = (cards ?? []).reduce((n, c) => n + c.quantity, 0)
   const extras = (cards ?? []).reduce((n, c) => n + (c.quantity - 1) * tradeValue(c.rarity, rules.tradeFactor), 0)
   const extraCopies = (cards ?? []).reduce((n, c) => n + c.quantity - 1, 0)
 
@@ -348,6 +358,17 @@ export function CratePage(): JSX.Element {
           <h1>Pack game</h1>
           <p className="muted">Earn Pack points with your real collection and open virtual packs. These virtual cards are separate from your real cards.</p>
         </div>
+        <div className="segmented crate-tabs" role="group" aria-label="Pack game">
+          <button type="button" aria-pressed={view === 'packs'} onClick={() => setView('packs')}>
+            Packs
+          </button>
+          <button type="button" aria-pressed={view === 'cards'} onClick={() => setView('cards')}>
+            Cards{cards ? ` (${cards.length.toLocaleString('en-IE')})` : ''}
+          </button>
+          <button type="button" aria-pressed={view === 'overview'} onClick={() => setView('overview')}>
+            Overview
+          </button>
+        </div>
       </div>
 
       <div className="crate-top">
@@ -359,12 +380,26 @@ export function CratePage(): JSX.Element {
             <span className="stat-label">Pack points</span>
             {/* Aantal tekens voor de lettergrootte: grote getallen worden kleiner in plaats van uit het vak te lopen. */}
             <p className="crate-points" style={{ '--pts-len': (points ?? 0).toLocaleString('en-IE').length } as CSSProperties}>
-              {points === null ? '…' : points.toLocaleString('en-IE')}
+              {shownPoints === null ? '…' : shownPoints.toLocaleString('en-IE')}
+              {delta && (
+                <span key={delta.key} className={`pts-chip${delta.n < 0 ? ' is-minus' : ''}`} aria-hidden="true">
+                  {delta.n > 0 ? '+' : '−'}
+                  {Math.abs(delta.n).toLocaleString('en-IE')}
+                </span>
+              )}
             </p>
           </div>
         </section>
         {cards && cards.length > 0 && <CrateStats cards={cards} prices={prices} tradeFactor={rules.tradeFactor} tradeAll={tradeAll} />}
+      </div>
 
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
+
+      {view === 'packs' && (
         <div className="crate-pack-groups">
         {PACK_GROUPS.map((group) => {
           const kinds = packsByCost(rules).filter((k) => group.kinds.includes(k))
@@ -434,12 +469,6 @@ export function CratePage(): JSX.Element {
           )
         })}
         </div>
-      </div>
-
-      {error && (
-        <p className="error" role="alert">
-          {error}
-        </p>
       )}
 
       {opening && (
@@ -462,27 +491,8 @@ export function CratePage(): JSX.Element {
         />
       )}
 
-      <section className="crate-collection" aria-labelledby="crate-collection-title">
-        <div className="catalog-head">
-          <h2 id="crate-collection-title" className="section-title">
-            Your pack collection
-          </h2>
-          {cards && (
-            <span className="muted small">
-              {cards.length} different, {total} in total
-            </span>
-          )}
-          {cards && cards.length > 0 && (
-            <div className="segmented" role="group" aria-label="View">
-              <button type="button" aria-pressed={view === 'overview'} onClick={() => setView('overview')}>
-                Overview
-              </button>
-              <button type="button" aria-pressed={view === 'cards'} onClick={() => setView('cards')}>
-                Cards
-              </button>
-            </div>
-          )}
-        </div>
+      {view !== 'packs' && (
+      <section className="crate-collection" aria-label={view === 'cards' ? 'Your pack collection' : 'Pack collection overview'}>
         {view === 'cards' && cards && cards.length > 1 && (
           <FilterPanel
             activeCount={activeFilters}
@@ -556,10 +566,14 @@ export function CratePage(): JSX.Element {
                 <button type="button" className="primary" onClick={() => void openPack('booster')} disabled={busy || opening !== null}>
                   Open your free pack
                 </button>
-              ) : undefined
+              ) : (
+                <button type="button" className="primary" onClick={() => setView('packs')}>
+                  Go to Packs
+                </button>
+              )
             }
           >
-            Open a pack above to start your pack collection: a separate, virtual collection you build with Pack points. Your daily Booster pack is free.
+            Open a pack to start your pack collection: a separate, virtual collection you build with Pack points. Your daily Booster pack is free.
           </EmptyState>
         )}
         {view === 'overview' && cards && cards.length > 0 && (
@@ -625,9 +639,11 @@ export function CratePage(): JSX.Element {
           </div>
         )}
       </section>
+      )}
 
       {opened && <CrateCardSheet card={opened} busy={busy} onTrade={(c) => void tradeIn(c)} onClose={() => setOpened(null)} tradeFactor={rules.tradeFactor} />}
 
+      {view === 'packs' && (
       <details className="panel crate-earn">
         <summary>How to earn Pack points</summary>
         <dl>
@@ -653,6 +669,7 @@ export function CratePage(): JSX.Element {
           </>
         )}
       </details>
+      )}
     </section>
   )
 }

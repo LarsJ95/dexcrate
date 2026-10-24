@@ -114,7 +114,7 @@ function MomentLayer({ moment }: { moment: Moment }): JSX.Element {
         <div className="moment-complete is-milestone" ref={target}>
           <span className="moment-stamp">Lv. {moment.level}</span>
           <span className="moment-caption">
-            <strong>Level up!</strong>
+            <strong>{moment.title ?? 'Level up!'}</strong>
             <span>{moment.caption}</span>
           </span>
         </div>
