@@ -211,7 +211,7 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
           }
         >
           Scan your cards or <a href="#/import">import a spreadsheet</a>. Dexcrate then shows what they’re worth, how far you are with each set, and you
-          earn Crate points to open packs.
+          earn Pack points to open packs.
         </EmptyState>
       </section>
     )

@@ -19,12 +19,12 @@ afterEach(() => {
 })
 
 describe('SideNav', () => {
-  it('Scan als eerste knop, Crate eronder, daarna groepen met kopje; geen Photo inbox, Import of Backup', () => {
+  it('Scan als eerste knop, Pack game eronder, daarna groepen met kopje; geen Photo inbox, Import of Backup', () => {
     render(<SideNav route="overview" counts={NO_COUNTS} collapsed={false} />)
     const links = screen.getAllByRole('link')
     expect(links[0].textContent).toBe('Scan cards')
-    expect(links[1].textContent).toBe('Crate')
-    expect(screen.getAllByRole('heading').map((h) => h.textContent)).toEqual(['My cards', 'Trade'])
+    expect(links[1].textContent).toBe('Pack game')
+    expect(screen.getAllByRole('heading').map((h) => h.textContent)).toEqual(['Collection', 'Trading'])
     expect(screen.queryByRole('link', { name: /Photo inbox/ })).toBeNull()
     expect(screen.queryByRole('link', { name: /Import|Backup/ })).toBeNull()
     expect(screen.getByRole('link', { name: 'Home' }).getAttribute('aria-current')).toBe('page')
@@ -38,10 +38,10 @@ describe('SideNav', () => {
 
   it('Crate: punten en "Free" zolang het gratis pakje van vandaag er nog is', () => {
     render(<SideNav route="overview" counts={{ collection: 0, wishlist: 0, crate: { points: 1250, freePack: true } }} collapsed={false} />)
-    expect(screen.getByRole('link', { name: /^Crate, ?1,250 pts, free pack ready$/ })).toBeTruthy()
+    expect(screen.getByRole('link', { name: /^Pack game, ?1,250 pts, free pack ready$/ })).toBeTruthy()
     cleanup()
     render(<SideNav route="overview" counts={{ collection: 0, wishlist: 0, crate: { points: 40, freePack: false } }} collapsed={false} />)
-    expect(screen.getByRole('link', { name: /^Crate, ?40 pts$/ })).toBeTruthy()
+    expect(screen.getByRole('link', { name: /^Pack game, ?40 pts$/ })).toBeTruthy()
   })
 
   it('Sets zonder snelkoppelingen naar recente sets (op verzoek weg, 18-10-2026)', () => {
@@ -68,6 +68,13 @@ describe('SideNav', () => {
     rerender(<SideNav route="sets" counts={NO_COUNTS} collapsed />)
     expect(screen.queryByRole('list', { name: 'Pinned sets' })).toBeNull()
     pins.list = []
+  })
+
+  it('elk item een icoonvak in een eigen energiekleur, nooit geel (dat is voor Scan)', () => {
+    render(<SideNav route="overview" counts={NO_COUNTS} collapsed={false} />)
+    const tones = ['Home', 'My cards', 'Sets', 'Wishlist', 'Trades'].map((name) => screen.getByRole('link', { name }).style.getPropertyValue('--tone'))
+    expect(tones).toEqual(['var(--energy-fire)', 'var(--energy-water)', 'var(--energy-grass)', 'var(--energy-fairy)', 'var(--energy-psychic)'])
+    expect(screen.getByRole('link', { name: 'Home' }).querySelector('.side-icon svg')).toBeTruthy()
   })
 
   it('ingeklapt: tooltip met de naam', () => {

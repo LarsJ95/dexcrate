@@ -61,7 +61,7 @@ function earnRows(rules: CrateRules): [string, string][] {
     ['Record a purchase', '5'],
     ['New Pokémon in your Pokédex', '25'],
     ['Complete a set in your collection', '250'],
-    ...(rules.crateSet ? [['Complete a set in your Crate', String(rules.crateSet)] as [string, string]] : []),
+    ...(rules.crateSet ? [['Complete a set in your pack collection', String(rules.crateSet)] as [string, string]] : []),
     ['Open the app (daily bonus)', String(rules.daily)],
     ['Trade in a duplicate', `${2 * rules.tradeFactor} to ${30 * rules.tradeFactor}`],
   ]
@@ -155,7 +155,7 @@ export function CratePage(): JSX.Element {
   const reload = useCallback((): void => {
     loadCrate()
       .then(apply)
-      .catch((err: unknown) => setError(errorText(err, 'Loading the Crate failed.')))
+      .catch((err: unknown) => setError(errorText(err, 'Loading the Pack game failed.')))
   }, [apply])
 
   useEffect(() => {
@@ -174,7 +174,7 @@ export function CratePage(): JSX.Element {
         if (!cancelled) apply(d)
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(errorText(err, 'Loading the Crate failed.'))
+        if (!cancelled) setError(errorText(err, 'Loading the Pack game failed.'))
       })
     return () => {
       cancelled = true
@@ -225,7 +225,7 @@ export function CratePage(): JSX.Element {
         .then((gained) => {
           if (gained <= 0) return
           setPoints((p) => (p === null ? p : p + gained))
-          showMoment({ kind: 'points', amount: gained, reason: `${s.name} complete in your Crate` })
+          showMoment({ kind: 'points', amount: gained, reason: `${s.name} complete in your pack collection` })
         })
         .catch((err: unknown) => console.warn('Crate-setbonus mislukt', err))
     }
@@ -335,8 +335,8 @@ export function CratePage(): JSX.Element {
   if (enabled === false) {
     return (
       <section className="page">
-        <h1>Crate</h1>
-        <p className="notice">The Crate game is not set up yet: run STAP11 in Supabase.</p>
+        <h1>Pack game</h1>
+        <p className="notice">The Pack game is not set up yet: run STAP11 in Supabase.</p>
       </section>
     )
   }
@@ -345,18 +345,18 @@ export function CratePage(): JSX.Element {
     <section className="page crate">
       <div className="page-head">
         <div>
-          <h1>Crate</h1>
-          <p className="muted">Earn Crate points with your real collection and open virtual packs. This collection is separate from your real cards.</p>
+          <h1>Pack game</h1>
+          <p className="muted">Earn Pack points with your real collection and open virtual packs. These virtual cards are separate from your real cards.</p>
         </div>
       </div>
 
       <div className="crate-top">
-        <section className="panel crate-wallet" aria-label="Crate points">
+        <section className="panel crate-wallet" aria-label="Pack points">
           <span className="crate-coin" aria-hidden="true">
             <IconCrate size={28} />
           </span>
           <div>
-            <span className="stat-label">Crate points</span>
+            <span className="stat-label">Pack points</span>
             {/* Aantal tekens voor de lettergrootte: grote getallen worden kleiner in plaats van uit het vak te lopen. */}
             <p className="crate-points" style={{ '--pts-len': (points ?? 0).toLocaleString('en-IE').length } as CSSProperties}>
               {points === null ? '…' : points.toLocaleString('en-IE')}
@@ -465,7 +465,7 @@ export function CratePage(): JSX.Element {
       <section className="crate-collection" aria-labelledby="crate-collection-title">
         <div className="catalog-head">
           <h2 id="crate-collection-title" className="section-title">
-            Your Crate
+            Your pack collection
           </h2>
           {cards && (
             <span className="muted small">
@@ -503,7 +503,7 @@ export function CratePage(): JSX.Element {
                   <input
                     type="search"
                     placeholder="Search name or set"
-                    aria-label="Search your Crate"
+                    aria-label="Search your pack collection"
                     enterKeyHint="search"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
@@ -559,7 +559,7 @@ export function CratePage(): JSX.Element {
               ) : undefined
             }
           >
-            Open a pack above to start your Crate: a separate, virtual collection you build with Crate points. Your daily Booster pack is free.
+            Open a pack above to start your pack collection: a separate, virtual collection you build with Pack points. Your daily Booster pack is free.
           </EmptyState>
         )}
         {view === 'overview' && cards && cards.length > 0 && (
@@ -629,7 +629,7 @@ export function CratePage(): JSX.Element {
       {opened && <CrateCardSheet card={opened} busy={busy} onTrade={(c) => void tradeIn(c)} onClose={() => setOpened(null)} tradeFactor={rules.tradeFactor} />}
 
       <details className="panel crate-earn">
-        <summary>How to earn Crate points</summary>
+        <summary>How to earn Pack points</summary>
         <dl>
           {earnRows(rules).map(([what, pts]) => (
             <div key={what}>

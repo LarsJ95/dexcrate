@@ -168,6 +168,8 @@ export function celebrateMilestone(key: string, count: number, steps: readonly n
 }
 
 export const BADGES_KEY = 'dexcrate:badges-earned'
+/** Hoogste trainer-level (celebrate.ts); de zijbalk toont het ook. */
+export const LEVEL_KEY = 'dexcrate:trainer-level'
 
 /**
  * Nieuwe badges vieren (hoogstens één moment: de laatst verdiende). Eerste keer alleen onthouden.

@@ -91,7 +91,7 @@ export function CrateCardSheet({ card, busy, onTrade, onClose, tradeFactor }: Pr
               </div>
             )}
             <div>
-              <dt>In your Crate</dt>
+              <dt>In your pack collection</dt>
               <dd>{card.quantity}×</dd>
             </div>
             {mv && card.quantity > 1 && (

@@ -90,7 +90,7 @@ export function AdminPage(): JSX.Element {
     <div className="page-head">
       <div>
         <h1>Admin</h1>
-        <p className="muted">Users and Crate points. Only admins see this page.</p>
+        <p className="muted">Users and Pack points. Only admins see this page.</p>
       </div>
     </div>
   )
@@ -123,7 +123,7 @@ export function AdminPage(): JSX.Element {
       )}
 
       <form id="admin-grant" className="panel admin-grant" onSubmit={(e) => void submit(e)} noValidate>
-        <h2 className="panel-title">Give or take Crate points</h2>
+        <h2 className="panel-title">Give or take Pack points</h2>
         <div className="form-grid">
           <label className="admin-wide">
             User
@@ -184,13 +184,13 @@ export function AdminPage(): JSX.Element {
                   Joined {when(u.createdAt)} · last sign-in {when(u.lastSignInAt)}
                 </span>
                 <span className="small">
-                  {plural(u.cards, 'card', 'cards')} · {plural(u.cratePoints, 'Crate point', 'Crate points')} · {plural(u.scans24h, 'scan', 'scans')} in 24 h
+                  {plural(u.cards, 'card', 'cards')} · {plural(u.cratePoints, 'Pack point', 'Pack points')} · {plural(u.scans24h, 'scan', 'scans')} in 24 h
                   {u.scans30d > 0 ? ` (${u.scans30d.toLocaleString('en-GB')} in 30 days)` : ''} · {plural(u.errors7d, 'error', 'errors')} in 7 days
                   {u.scanPerDay !== null || u.scanPerMinute !== null ? ` · own scan limit ${u.scanPerMinute ?? 40}/min, ${u.scanPerDay ?? 500}/day` : ''}
                 </span>
                 <div className="settings-actions">
                   <button type="button" className="small-btn" onClick={() => pick(u)}>
-                    Crate points…
+                    Pack points…
                   </button>
                   <button type="button" className="small-btn" aria-expanded={open === u.id} onClick={() => setOpen(open === u.id ? null : u.id)}>
                     {open === u.id ? 'Hide details' : 'Details'}

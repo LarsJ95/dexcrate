@@ -278,7 +278,7 @@ export function PackOpening({ pack, pulls, god = false, before, tradeFactor, onO
         {stage === 'summary' && (
           <div className="pack-summary-wrap">
             <p className="muted">
-              {newCount > 0 ? `${newCount} new for your Crate` : 'No new cards this time'}
+              {newCount > 0 ? `${newCount} new in your pack collection` : 'No new cards this time'}
               {total > 0 && ` · worth ${formatEur(total)} on Cardmarket`}
             </p>
             <ul className="pack-summary">

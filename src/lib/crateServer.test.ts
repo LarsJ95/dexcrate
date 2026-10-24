@@ -39,12 +39,16 @@ describe('Crate via de server', () => {
     expect(rpc).toHaveBeenCalledWith('crate_sync', { p_bonus: {}, p_dex: [25] })
     await expect(craftCard('en/s1-001')).rejects.toThrow(CRATE_SERVER_MISSING)
   })
-  it('foutmelding van de functie tonen (bv. te weinig punten)', async () => {
-    invoke.mockImplementation(async (_fn: string, { body }: { body: { action: string } }) =>
-      body.action === 'health' ? { data: { ok: true, db: true }, error: null } : { data: null, error: new FunctionsHttpError(new Response(JSON.stringify({ error: 'Not enough Crate points.' }), { status: 400 })) },
-    )
+  it('foutmelding van de functie tonen (bv. te weinig punten), met de nieuwe naam Pack points', async () => {
+    const reply = (error: string) =>
+      invoke.mockImplementation(async (_fn: string, { body }: { body: { action: string } }) =>
+        body.action === 'health' ? { data: { ok: true, db: true }, error: null } : { data: null, error: new FunctionsHttpError(new Response(JSON.stringify({ error }), { status: 400 })) },
+      )
     const { craftCard } = await import('./crate')
-    await expect(craftCard('en/s1-001')).rejects.toThrow('Not enough Crate points.')
+    reply('Not enough Crate points.')
+    await expect(craftCard('en/s1-001')).rejects.toThrow('Not enough Pack points.')
+    reply('Card not found.')
+    await expect(craftCard('en/s1-001')).rejects.toThrow('Card not found.')
   })
   it('functie wel, STAP23 niet (db false): oude manier', async () => {
     invoke.mockResolvedValue({ data: { ok: true, db: false }, error: null })

@@ -22,7 +22,7 @@ export const LEDGER_LABELS: Record<string, string> = {
   pack: 'Pack opened',
   trade: 'Traded in',
   wish: 'Wish',
-  crateset: 'Crate set complete',
+  crateset: 'Pack collection set complete',
   craft: 'Card bought',
   admin: 'By admin',
 }
@@ -34,7 +34,7 @@ export function actionText(a: AdminAction): string {
     case 'grant_points':
       return `${a.points !== null && a.points > 0 ? '+' : ''}${a.points?.toLocaleString('en-GB') ?? '–'} pts · ${who || '(deleted user)'}`
     case 'set_rules':
-      return 'Crate rules changed'
+      return 'Pack game rules changed'
     case 'set_scan_limit': {
       const d = a.details ?? {}
       const lim = d.per_minute === null && d.per_day === null ? 'default' : `${String(d.per_minute ?? '40')}/min, ${String(d.per_day ?? '500')}/day`

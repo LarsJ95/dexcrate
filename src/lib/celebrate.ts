@@ -4,6 +4,7 @@ import { listCards } from './db'
 import {
   BADGES_KEY,
   COLLECTION_MILESTONE_KEY,
+  LEVEL_KEY,
   celebrateNewCards,
   newSince,
   quietNext,
@@ -25,7 +26,6 @@ import type { Card } from './types'
  * de eerste keer wordt alleen onthouden, zodat bestaande voortgang geen stortvloed aan feestjes geeft.
  */
 
-const LEVEL_KEY = 'dexcrate:trainer-level'
 const ACHIEVEMENTS_KEY = 'dexcrate:achievements'
 const TRAINER_KEY = 'dexcrate:trainer-name'
 

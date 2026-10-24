@@ -1,0 +1,179 @@
+/* ---------- Gezelliger menu (24-10-2026, op verzoek: "kaal en strak"; keuze "Trainer-zijbalk") ----------
+   Energiestreep bovenaan, elk item een gekleurd icoonvak (energiekleur per item via --tone, zie nav.ts), groepen als
+   zachte blokken en onderaan je partner met trainernaam, level en titel. Geen geel: dat blijft voor Scan. */
+.sidebar {
+  background:
+    linear-gradient(90deg, var(--energy-fire), var(--energy-water), var(--energy-grass), var(--energy-psychic), var(--energy-fighting)) top / 100% 4px
+      no-repeat,
+    var(--surface);
+}
+
+/* Icoonvak: lichte tint van de itemkleur; actief gevuld. */
+.side-icon {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--tone, var(--muted)) 16%, transparent);
+  color: color-mix(in oklab, var(--tone, var(--muted)) 72%, var(--ink));
+}
+
+.side-nav a .side-icon svg,
+.more-link .side-icon svg {
+  color: inherit;
+}
+
+.side-nav a[aria-current] .side-icon {
+  background: var(--tone, var(--muted));
+  color: color-mix(in oklab, var(--tone, var(--muted)) 25%, black);
+}
+
+/* Items in de groepen: iets compacter (het icoonvak geeft hoogte), hover en actief in de itemkleur. */
+.side-group a {
+  padding: var(--space-1) var(--space-2);
+}
+
+.side-group a:hover {
+  background: color-mix(in oklab, var(--tone, var(--muted)) 10%, var(--surface));
+}
+
+.side-group a[aria-current='page'],
+.side-group a[aria-current='true'] {
+  background: color-mix(in oklab, var(--tone, var(--muted)) 14%, var(--surface));
+}
+
+/* Het streepje aan de rand viel buiten het blok; het gevulde icoonvak laat nu zien waar je bent. */
+.side-group a[aria-current='page']::before {
+  content: none;
+}
+
+/* Groep als zacht blok met het kopje erin. */
+.side-group {
+  padding: var(--space-2);
+  border-radius: var(--radius-l);
+  background: color-mix(in oklab, var(--surface-2) 55%, transparent);
+}
+
+.side-group .side-title {
+  padding: var(--space-1) var(--space-2) var(--space-1);
+}
+
+/* Onderaan: partner op een grasveldje, met naam en level. */
+.side-trainer {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.side-trainer-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.side-trainer-stage::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 2px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--energy-grass) 55%, transparent), transparent);
+  z-index: -1;
+}
+
+.side-trainer-stage .buddy {
+  isolation: isolate;
+}
+
+a.side-trainer-text {
+  display: grid;
+  min-width: 0;
+  color: var(--ink);
+  text-decoration: none;
+  line-height: 1.25;
+}
+
+.side-trainer-name {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.side-trainer-name .trainer-level {
+  flex: none;
+  font-size: var(--fs-small);
+}
+
+a.side-trainer-text strong,
+a.side-trainer-text .small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+a.side-trainer-text .small {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+a.side-trainer-text:hover strong {
+  text-decoration: underline;
+}
+
+/* More (telefoon): dezelfde icoonvakjes. */
+.more-link .side-icon {
+  width: 36px;
+  height: 36px;
+}
+
+/* Telefoon-kopbalk: wishlist-ster met het aantal deals erbij, tikvlak 44 px. */
+a.mobile-wish {
+  position: relative;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+a.mobile-wish .nav-badge {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  background: var(--yellow);
+  color: var(--on-yellow);
+  font-size: 0.7rem;
+}
+
+/* Overview: titel "Wishlist deals" leidt naar de Wishlist. */
+a.panel-title-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+a.panel-title-link:hover {
+  text-decoration: underline;
+}
+
+/* Ingeklapt: icoonvakjes gecentreerd, blokken smaller. */
+.shell.is-collapsed .side-group {
+  padding: var(--space-1);
+}
+
+.shell.is-collapsed .side-group a {
+  padding: var(--space-1);
+}
+
+/* Brede schermen (ver uitgezoomd): de zijbalk iets ruimer. */
+@media (min-width: 2200px) {
+  :root {
+    --sidebar: 272px;
+  }
+}

@@ -21,7 +21,7 @@ const PAGE_WORDS: Partial<Record<Route, string>> = {
   sets: 'binder expansions series',
   wishlist: 'wishes wants deals lists',
   transactions: 'buy sell purchases sales profit',
-  crate: 'packs points game',
+  crate: 'packs points game crate',
   settings: 'account theme password appearance',
   import: 'excel csv spreadsheet dex collectr',
   backup: 'export download restore',

@@ -1,4 +1,4 @@
-import type { JSX } from 'react'
+import type { CSSProperties, JSX } from 'react'
 import type { Route } from '../lib/routes'
 import type { BadgeKey, NavCounts } from '../lib/navCounts'
 import { IconCrate, IconCamera, IconCards, IconHome, IconLayers, IconMore, IconReceipt, IconSettings, IconStar } from './Icons'
@@ -11,6 +11,13 @@ export interface NavItem {
   hint?: string
   /** Welk getal ernaast staat (zie NavCounts); 0 = niets tonen. */
   badge?: BadgeKey
+  /** Kleur van het icoonvak in het menu (energiekleur, nooit geel: dat is voor Scan; 24-10-2026, "gezelliger menu"). */
+  tone?: string
+}
+
+/** Kleur van een menu-item als --tone op de link (icoonvak, achtergrond en streepje gebruiken hem). */
+export function toneStyle(item: NavItem): CSSProperties | undefined {
+  return item.tone ? ({ '--tone': item.tone } as CSSProperties) : undefined
 }
 
 export interface NavGroup {
@@ -18,26 +25,29 @@ export interface NavGroup {
   items: NavItem[]
 }
 
-const OVERVIEW: NavItem = { route: 'overview', label: 'Home', Icon: IconHome }
-const COLLECTION: NavItem = { route: 'collection', label: 'My cards', Icon: IconCards, badge: 'collection' }
-const SETS: NavItem = { route: 'sets', label: 'Sets', Icon: IconLayers }
-const WISHLIST: NavItem = { route: 'wishlist', label: 'Wishlist', Icon: IconStar, badge: 'wishlist' }
-const BUY_SELL: NavItem = { route: 'transactions', label: 'Trades', Icon: IconReceipt, hint: 'Purchases and sales' }
-/** Crate: eigen, opvallend item direct onder Scan (21-10-2026, keuze gebruiker), niet in een groep. */
-export const CRATE_ITEM: NavItem = { route: 'crate', label: 'Crate', Icon: IconCrate, hint: 'Open virtual packs with Crate points' }
+const OVERVIEW: NavItem = { route: 'overview', label: 'Home', Icon: IconHome, tone: 'var(--energy-fire)' }
+const COLLECTION: NavItem = { route: 'collection', label: 'My cards', Icon: IconCards, badge: 'collection', tone: 'var(--energy-water)' }
+const SETS: NavItem = { route: 'sets', label: 'Sets', Icon: IconLayers, tone: 'var(--energy-grass)' }
+const WISHLIST: NavItem = { route: 'wishlist', label: 'Wishlist', Icon: IconStar, badge: 'wishlist', tone: 'var(--energy-fairy)' }
+const BUY_SELL: NavItem = { route: 'transactions', label: 'Trades', Icon: IconReceipt, hint: 'Purchases and sales', tone: 'var(--energy-psychic)' }
+/** Pack game (heette tot 24-10-2026 Crate): eigen, opvallend item direct onder Scan (21-10-2026, keuze gebruiker). */
+export const CRATE_ITEM: NavItem = { route: 'crate', label: 'Pack game', Icon: IconCrate, hint: 'Open virtual packs with points from your real collection' }
 export const SCAN_ITEM: NavItem = { route: 'scan', label: 'Scan', Icon: IconCamera }
-export const SETTINGS_ITEM: NavItem = { route: 'settings', label: 'Settings', Icon: IconSettings, hint: 'Settings, backup and import' }
+export const SETTINGS_ITEM: NavItem = { route: 'settings', label: 'Settings', Icon: IconSettings, hint: 'Settings, backup and import', tone: 'var(--energy-metal)' }
 
-/** Zijbalk in groepen met kopje (18-10-2026). Scan en Crate staan bovenaan, Settings onderaan. Photo inbox weg (21-10-2026). */
+/**
+ * Zijbalk in groepen met kopje (18-10-2026). Scan en Pack game staan bovenaan, Settings onderaan. Photo inbox weg
+ * (21-10-2026). Kopjes 'Collection' en 'Trading' (24-10-2026): 'My cards' heette net als een item erin.
+ */
 export const SIDE_GROUPS: NavGroup[] = [
-  { title: 'My cards', items: [OVERVIEW, COLLECTION, SETS, WISHLIST] },
-  { title: 'Trade', items: [BUY_SELL] },
+  { title: 'Collection', items: [OVERVIEW, COLLECTION, SETS, WISHLIST] },
+  { title: 'Trading', items: [BUY_SELL] },
 ]
 
-/** Telefoon: dezelfde groepen voor wat niet in de onderbalk past (Crate staat als grote tegel bovenaan More). */
+/** Telefoon: dezelfde groepen voor wat niet in de onderbalk past (Pack game staat als grote tegel bovenaan More). */
 export const MORE_GROUPS: NavGroup[] = [
-  { title: 'My cards', items: [WISHLIST] },
-  { title: 'Trade', items: [BUY_SELL] },
+  { title: 'Collection', items: [WISHLIST] },
+  { title: 'Trading', items: [BUY_SELL] },
   { title: 'Settings', items: [SETTINGS_ITEM] },
 ]
 
