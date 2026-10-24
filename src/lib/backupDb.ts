@@ -1,24 +1,24 @@
 import { BACKUP_FORMAT, BACKUP_TABLES, BACKUP_VERSION, prepareRestore, type Backup, type BackupTable, type Row } from './backup'
+import { fetchAllPages } from './fetchAll'
 import { supabase } from './supabase'
 
-const PAGE = 1000
+/**
+ * Tabel bestaat (nog) niet: die SQL-stap is niet gedraaid. Alleen op de foutcode: een tijdelijke 503 "schema cache"
+ * (PGRST002) is geen ontbrekende tabel, en zou de tabel anders stil uit de back-up laten.
+ */
+const missingTable = (code: string | undefined): boolean => code === '42P01' || code === 'PGRST205'
 
-/** Tabel bestaat (nog) niet: die SQL-stap is niet gedraaid. */
-const missingTable = (code: string | undefined, message: string): boolean =>
-  code === '42P01' || code === 'PGRST205' || /schema cache|does not exist/i.test(message)
+/** Primaire sleutel: vaste volgorde, anders kunnen rijen tussen blokken dubbel in de back-up komen of ontbreken. */
+const keyOf = (table: BackupTable): string => (table === 'user_settings' ? 'user_id' : 'id')
 
 /** Alle rijen van een tabel (in blokken); null als de tabel niet bestaat. */
 async function fetchAll(table: BackupTable): Promise<Row[] | null> {
-  const out: Row[] = []
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await supabase.from(table).select('*').range(from, from + PAGE - 1)
-    if (error) {
-      if (missingTable(error.code, error.message)) return null
-      throw new Error(`Reading ${table} failed: ${error.message}`)
-    }
-    out.push(...(data as Row[]))
-    if (data.length < PAGE) return out
+  const { data, error } = await fetchAllPages<Row>((from, to) => supabase.from(table).select('*').order(keyOf(table), { ascending: true }).range(from, to))
+  if (error) {
+    if (missingTable(error.code)) return null
+    throw new Error(`Reading ${table} failed: ${error.message}`)
   }
+  return data
 }
 
 /** Huidige gegevens van alle tabellen die bestaan. */
@@ -123,7 +123,7 @@ export async function restoreBackup(backup: Backup, onProgress: Progress): Promi
     onProgress(`Restoring ${t.replace(/_/g, ' ')}…`)
     // Bestaat de tabel niet (SQL-stap niet gedraaid), dan overslaan en melden.
     const probe = await supabase.from(t).select('*').limit(1)
-    if (probe.error && missingTable(probe.error.code, probe.error.message)) {
+    if (probe.error && missingTable(probe.error.code)) {
       result.skippedTables.push(t)
       continue
     }
