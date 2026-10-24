@@ -31,7 +31,10 @@ vi.mock('../lib/scanMemory', () => ({
 }))
 vi.mock('../lib/supabase', () => ({ supabase: {} }))
 // Formuliervelden zonder catalogus (geen netwerk in unit-tests).
-vi.mock('../lib/scan', () => ({ draftFromScan: (r: Recognition) => Promise.resolve({ name: r.nameEnglish }) }))
+vi.mock('../lib/scan', () => ({
+  draftFromScan: (r: Recognition) => Promise.resolve({ name: r.nameEnglish }),
+  scanName: (r: Recognition) => r.nameEnglish || r.namePrinted,
+}))
 vi.mock('../lib/variantChoice', async (importOriginal) => ({ ...(await importOriginal<typeof import('../lib/variantChoice')>()), variantFacts: () => Promise.resolve({ variants: null, askVariant: false }) }))
 vi.mock('../hooks/useCardInfo', () => ({ useCardInfo: () => null }))
 vi.mock('../hooks/useCardPrice', () => ({ useCardPrice: () => null }))

@@ -18,8 +18,12 @@ const LANGUAGES = ['en', 'ja', 'zh-cn', 'zh-tw', 'ko', 'nl', 'de', 'fr', 'it', '
 
 const CARD_FIELDS = {
   name_printed: { type: 'string', description: 'Kaartnaam zoals gedrukt, in de taal van de kaart.' },
-    name_english: { type: 'string', description: 'Engelse kaartnaam inclusief suffix (bv. "Mew ex", "Oranguru V").' },
+    name_english: { type: 'string', description: 'Engelse kaartnaam inclusief suffix (bv. "Mew ex", "Oranguru V"). Engelse kaart: letterlijk de gedrukte naam.' },
     language: { type: 'string', enum: LANGUAGES },
+    language_mark: {
+      type: 'string',
+      description: 'Kleine gedrukte taalcode naast de setcode op nieuwere kaarten (bv. "EN" in "POR EN", "FR", "DE"); leeg als die er niet staat.',
+    },
     set_code: {
       type: 'string',
       description:
@@ -67,6 +71,8 @@ const MULTI_SCHEMA = {
 
 const RULES = `- Lees naam, setafkorting en kaartnummer letterlijk van de kaart (onderrand). Gok geen setcode die je niet kunt lezen.
 - De regulation mark (losse letter in een kadertje) is geen setcode.
+- language: bepaal de taal aan de gedrukte tekst (aanvallen, regeltekst, Trainer/Supporter-tekst, de copyrightregel) en aan de taalcode naast de setcode (language_mark). NOOIT aan de naam: namen van nieuwe personages of Pokémon kunnen onbekend zijn of buitenlands klinken (bv. "Jacinthe" op een Engelse kaart).
+- name_english: staat de kaart in het Engels, neem dan de gedrukte naam letterlijk over. Vertaal of verbeter nooit een naam die je niet kent; liever de gedrukte naam dan een gok.
 - Vereenvoudigd-Chinese kaarten (zh-cn) hebben eigen setcodes die op "C" eindigen, bv. "CSV9.5C", "CSV8C", "CS6.5C", "CBB4C". Neem de hele code over, met punt en de "C" aan het eind; maak er geen Japanse code van ("SV8a", "SV8") en gok niet op basis van de illustratie.
 - Gem Pack (宝石包, code "CBB…C") drukt het nummer als soort + uitvoering, bv. "11 01/07": card_number = "1101" (zonder spatie), set_total = "07".
 - language bij Chinese kaarten: kijk naar de tekens, niet naar de illustratie. "zh-cn" = Vereenvoudigd Chinees (vasteland China; bv. 宝可梦, 闪, 电, 龙, 击), "zh-tw" = Traditioneel Chinees (Taiwan/Hongkong; bv. 寶可夢, 閃, 電, 龍, 擊).
@@ -88,6 +94,7 @@ interface CardFields {
   name_printed: string
   name_english: string
   language: (typeof LANGUAGES)[number]
+  language_mark: string
   set_code: string
   card_number: string
   set_total: string

@@ -58,6 +58,16 @@ export async function preparedFromBlob(blob: Blob): Promise<PreparedImage> {
 }
 
 /**
+ * Naam van een gescande kaart. Gekoppeld aan de Engelse catalogus: de naam uit de catalogus, want de scan kan een
+ * onbekende naam verkeerd "vertalen" (25-10-2026: Jacinthe werd Iono). Aziatische catalogi hebben namen in hun eigen
+ * schrift; daar blijft de Engelse naam van de scan.
+ */
+export function scanName(r: Pick<Recognition, 'nameEnglish' | 'namePrinted'>, c: Pick<Candidate, 'key' | 'name'> | null): string {
+  if (c && splitKey(c.key)?.lang === 'en' && c.name.trim()) return c.name.trim()
+  return r.nameEnglish || r.namePrinted
+}
+
+/**
  * Formuliervelden voor een gescande kaart; met gekozen kandidaat incl. koppeling en officiële setcode.
  * Komt de kandidaat uit een andere catalogustaal (bv. Traditioneel i.p.v. Vereenvoudigd Chinees), dan volgt de taal die.
  */
@@ -82,7 +92,7 @@ export async function draftFromScan(r: Recognition, c: Candidate | null, scanLan
   const language = lookupLang(r.language) === lang ? r.language : lang
   // Gelezen uitvoering alleen als die bij deze kaart bestaat (bv. ex-kaarten: alleen holo).
   const variant = fitVariant(r.variant, (await variantFacts(c.key)).variants)
-  return { ...base, language, variant, tcgdex_id: c.key, set_code: setCode, card_number: plainNumber(c.localId) }
+  return { ...base, name: scanName(r, c), language, variant, tcgdex_id: c.key, set_code: setCode, card_number: plainNumber(c.localId) }
 }
 
 /** `strong`: "Look again", meteen met het sterkere (duurdere) model. */

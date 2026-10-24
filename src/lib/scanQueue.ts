@@ -1,5 +1,5 @@
 import { autoPick, type Candidate } from './match'
-import type { Recognition } from './scanResult'
+import { languageNeedsCheck, type Recognition } from './scanResult'
 import { CONDITION_LABELS, LANGUAGE_LABELS, VARIANT_LABELS, type CardLanguage, type Condition, type Variant } from './types'
 import { fitVariant, type VariantFacts } from './variantChoice'
 
@@ -71,7 +71,8 @@ export function withMatch(item: QueueItem, rec: Recognition, candidates: Candida
     candidates,
     chosen: best?.key ?? '',
     variant: fitVariant(rec.variant, best ? facts?.variants : null),
-    include: best !== null && rec.confidence !== 'low',
+    // Taal alleen geraden (Europees, geen taalcode): niet vanzelf toevoegen, eerst nakijken (25-10-2026).
+    include: best !== null && rec.confidence !== 'low' && !languageNeedsCheck(rec),
     ...(best && facts?.askVariant ? { askVariant: true } : {}),
     matcher: MATCHER_VERSION,
   }
@@ -151,6 +152,7 @@ function toRecognition(v: unknown): Recognition | null {
     variant,
     confidence: conf,
     notes: str(v.notes),
+    ...(v.languageChecked === true ? { languageChecked: true } : {}),
   }
 }
 

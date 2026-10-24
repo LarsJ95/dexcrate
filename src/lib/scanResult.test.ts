@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { correctRecognition, plainNumber, readLabel, scanQuery, toScanResult, type Recognition } from './scanResult'
+import { correctRecognition, languageNeedsCheck, plainNumber, readLabel, scanQuery, toScanResult, type Recognition } from './scanResult'
 
 describe('toScanResult', () => {
   it('zet het antwoord van de Edge Function om en sorteert op positie', () => {
@@ -20,6 +20,26 @@ describe('toScanResult', () => {
     const r = toScanResult({ cards: [{ language: 'other', confidence: 'zeker' }, 'onzin', null] })
     expect(r.cards).toHaveLength(1)
     expect(r.cards[0]).toMatchObject({ position: 1, language: null, confidence: 'low', nameEnglish: '' })
+  })
+
+  it('gedrukte taalcode ("POR EN") wint van de geraden taal; zonder code blijft Europees geraden te controleren', () => {
+    // 25-10-2026: Engelse "Jacinthe" werd als Franse kaart gezien.
+    const r = toScanResult({
+      cards: [
+        { position: 1, name_english: 'Jacinthe', language: 'fr', language_mark: 'en', set_code: 'POR', card_number: '075', confidence: 'high' },
+        { position: 2, name_english: 'Pikachu', language: 'fr', language_mark: '', set_code: 'MEW', card_number: '025', confidence: 'high' },
+        { position: 3, name_english: 'Mew', language: 'de', language_mark: 'XX', set_code: 'MEW', card_number: '151', confidence: 'high' },
+        { position: 4, name_english: 'Pikachu', language: 'ja', set_code: 'SV8', card_number: '057', confidence: 'high' },
+      ],
+    })
+    expect(r.cards.map((c) => [c.language, c.languageChecked === true, languageNeedsCheck(c)])).toEqual([
+      ['en', true, false],
+      ['fr', false, true],
+      ['de', false, true],
+      ['ja', false, false],
+    ])
+    expect(languageNeedsCheck({ language: 'fr', languageChecked: true })).toBe(false)
+    expect(languageNeedsCheck({ language: null })).toBe(false)
   })
 
   it('lege lijst is geldig (geen kaart op de foto)', () => {
@@ -61,7 +81,7 @@ describe('scanQuery', () => {
 describe('correctRecognition', () => {
   it('neemt je verbeteringen over; twijfel en toelichting vervallen; rest blijft', () => {
     const r = correctRecognition(scanned, { name: ' Dedenne ', setCode: ' S12 ', cardNumber: '45', setTotal: '98', language: 'zh-cn' })
-    expect(r).toEqual({ ...scanned, nameEnglish: 'Dedenne', setCode: 'S12', cardNumber: '45', setTotal: '98', language: 'zh-cn', confidence: 'high', notes: '' })
+    expect(r).toEqual({ ...scanned, nameEnglish: 'Dedenne', setCode: 'S12', cardNumber: '45', setTotal: '98', language: 'zh-cn', confidence: 'high', notes: '', languageChecked: true })
   })
 
   it('andere naam: de gedrukte naam van de scan vervalt (anders telt die nog bij het controleren)', () => {

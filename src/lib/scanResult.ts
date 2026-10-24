@@ -16,6 +16,8 @@ export interface Recognition {
   variant: Variant | null
   confidence: 'high' | 'medium' | 'low'
   notes: string
+  /** De taal staat vast: van de gedrukte taalcode naast de setcode (bv. "POR EN") of door jou nagekeken. */
+  languageChecked?: boolean
 }
 
 export interface ScanResult {
@@ -25,21 +27,33 @@ export interface ScanResult {
 
 const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '')
 
+/** Gedrukte taalcode op nieuwere kaarten (naast de setcode, bv. "POR EN") → taal. Wint van de taal die het model raadt. */
+const LANGUAGE_MARKS: Readonly<Record<string, CardLanguage>> = { EN: 'en', FR: 'fr', DE: 'de', IT: 'it', ES: 'es', PT: 'pt', NL: 'nl' }
+
+/** Europese talen die alleen uit de tekst te halen zijn; het model zag een Engelse kaart al eens als Frans (25-10-2026). */
+const GUESSED_LANGUAGES: ReadonlySet<CardLanguage> = new Set(['fr', 'de', 'it', 'es', 'pt', 'nl'])
+
+/** Taal nakijken: een Europese taal (niet Engels) die niet van een gedrukte taalcode komt. Dan niet vanzelf toevoegen. */
+export const languageNeedsCheck = (r: Pick<Recognition, 'language' | 'languageChecked'>): boolean =>
+  r.language !== null && GUESSED_LANGUAGES.has(r.language) && r.languageChecked !== true
+
 function toRecognition(r: Record<string, unknown>, index: number): Recognition {
   const lang = str(r.language)
+  const mark = Object.hasOwn(LANGUAGE_MARKS, str(r.language_mark).toUpperCase()) ? LANGUAGE_MARKS[str(r.language_mark).toUpperCase()] : null
   const variant = str(r.variant)
   const confidence = str(r.confidence)
   return {
     position: typeof r.position === 'number' && Number.isInteger(r.position) ? r.position : index + 1,
     namePrinted: str(r.name_printed),
     nameEnglish: str(r.name_english),
-    language: Object.hasOwn(LANGUAGE_LABELS, lang) ? (lang as CardLanguage) : null,
+    language: mark ?? (Object.hasOwn(LANGUAGE_LABELS, lang) ? (lang as CardLanguage) : null),
     setCode: str(r.set_code),
     cardNumber: str(r.card_number),
     setTotal: str(r.set_total),
     variant: variant === 'normal' || variant === 'holo' || variant === 'reverse' ? variant : null,
     confidence: confidence === 'high' || confidence === 'medium' ? confidence : 'low',
     notes: str(r.notes),
+    ...(mark ? { languageChecked: true } : {}),
   }
 }
 
@@ -98,5 +112,6 @@ export function correctRecognition(r: Recognition, fix: ReadFix): Recognition {
     setTotal: (ofTotal || fix.setTotal.trim()).slice(0, 10),
     confidence: 'high',
     notes: '',
+    languageChecked: true,
   }
 }

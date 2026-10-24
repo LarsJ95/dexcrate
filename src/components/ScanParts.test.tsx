@@ -136,7 +136,7 @@ describe('SingleScanResult', () => {
     await userEvent.type(number, '26/165')
     await userEvent.selectOptions(screen.getByLabelText('Language'), 'en')
     await userEvent.click(screen.getByRole('button', { name: 'Search again' }))
-    expect(onSearch).toHaveBeenLastCalledWith({ ...recognition, cardNumber: '26', setTotal: '165', language: 'en', confidence: 'high', notes: '' })
+    expect(onSearch).toHaveBeenLastCalledWith({ ...recognition, cardNumber: '26', setTotal: '165', language: 'en', confidence: 'high', notes: '', languageChecked: true })
     expect((await screen.findByRole('alert')).textContent).toBe('No internet connection')
     // Opnieuw: lukt, formulier sluit.
     await userEvent.click(screen.getByRole('button', { name: 'Search again' }))
