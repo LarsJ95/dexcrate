@@ -92,8 +92,9 @@ async function cardsInTransactions(ids: readonly string[]): Promise<Set<string>>
       supabase.from('transaction_lines').select('card_id').in('card_id', chunk).order('id', { ascending: true }).range(from, to),
     )
     if (error) {
-      // Alleen bij het eerste verzoek: verdwijnt de tabel halverwege, dan liever een fout dan een halve lijst.
-      if (i === 0 && /schema cache|does not exist/i.test(error.message)) return found
+      // Alleen op de foutcode (niet op de tekst: een tijdelijke 503 "schema cache" is geen ontbrekende tabel), en alleen
+      // bij het eerste verzoek: verdwijnt de tabel halverwege, dan liever een fout dan een halve lijst.
+      if (i === 0 && (error.code === 'PGRST205' || error.code === '42P01')) return found
       throw new Error(`Undo failed: ${error.message}`)
     }
     for (const r of data) if (isRecord(r) && typeof r.card_id === 'string') found.add(r.card_id)

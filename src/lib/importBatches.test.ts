@@ -128,6 +128,13 @@ describe('undoBatch', () => {
     expect(db.state.updates).toEqual([])
   })
 
+  it('tijdelijke storing "schema cache" bij het eerste blok (PGRST002): fout, geen "geen transacties"', async () => {
+    db.state.linesError = { code: 'PGRST002', message: 'Could not query the database for the schema cache. Retrying.' }
+    await expect(undoBatch('b1')).rejects.toThrow('Undo failed: Could not query the database for the schema cache')
+    expect(db.state.deletes).toEqual([])
+    expect(db.state.updates).toEqual([])
+  })
+
   it('kaarten ophalen mislukt: niets verwijderd', async () => {
     db.state.cardsError = { message: 'timeout' }
     await expect(undoBatch('b1')).rejects.toThrow('Undo failed: timeout')
