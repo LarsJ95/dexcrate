@@ -58,7 +58,8 @@ export async function openBrowser({ width = 412, height = 900 } = {}) {
   const extra = [...(process.env.CHROME_PATH ? ['--headless=new'] : []), ...(process.env.CI ? ['--no-sandbox'] : [])]
   const proc = spawn(chromePath(), [...extra, `--remote-debugging-port=${port}`, `--user-data-dir=${mkdtempSync(join(tmpdir(), 'dexcrate-e2e-'))}`, `--window-size=${width},${height}`, 'about:blank'], { stdio: 'ignore' })
   let target
-  for (let i = 0; i < 75 && !target; i++) {
+  // Tot 30 s: de eerste start op een koude CI-machine duurde soms langer dan 15 s (24-10-2026).
+  for (let i = 0; i < 150 && !target; i++) {
     await sleep(200)
     try {
       target = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).find((t) => t.type === 'page')
