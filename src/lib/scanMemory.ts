@@ -128,6 +128,8 @@ export async function withMemory(r: Recognition, found: Candidate[]): Promise<Ca
 /** Kandidaten voor een herkende kaart: catalogus (met taal-terugval) plus je eerdere keuze. */
 export async function scanCandidates(r: Recognition): Promise<Candidate[]> {
   const lang = lookupLang(r.language)
+  // Je keuzes alvast laden terwijl de catalogus zoekt (withMemory wacht op dezelfde lading; fouten meldt die).
+  void getStore().catch(() => null)
   const found = await findScanCandidates(scanQuery(r), lang)
   // Chinese kaart zonder zekere match: de Vereenvoudigd-Chinese catalogus ophalen als dat vanzelf mag (wifi).
   if ((lang === 'zh-cn' || lang === 'zh-tw') && !autoPick(found)) {

@@ -11,6 +11,7 @@ const db = vi.hoisted(() => {
     rows: [] as { read_key: string; card_key: string; updated_at?: string }[],
     selectError: null as { code: string; message: string } | null,
     ranges: [] as [number, number][],
+    orders: [] as string[][],
     upserts: [] as { rows: unknown; opts: unknown }[],
     deletes: [] as string[][],
   }
@@ -26,6 +27,7 @@ const db = vi.hoisted(() => {
           },
           range: (from: number, to: number) => {
             state.ranges.push([from, to])
+            state.orders.push(orders.map((o) => `${o.col}.${o.ascending ? 'asc' : 'desc'}`))
             if (state.selectError) return Promise.resolve({ data: null, error: state.selectError })
             const rows = [...state.rows].sort((a, b) => {
               for (const { col, ascending } of orders) {
@@ -84,6 +86,7 @@ beforeEach(() => {
   db.state.rows = []
   db.state.selectError = null
   db.state.ranges = []
+  db.state.orders = []
   db.state.upserts = []
   db.state.deletes = []
 })
@@ -102,6 +105,8 @@ describe('laden uit je account', () => {
       [3000, 3999],
       [4000, 4999],
     ])
+    // Keuzes uit één batch hebben vaak dezelfde tijd: read_key maakt de volgorde uniek tussen pagina's.
+    expect(db.state.orders[0]).toEqual(['updated_at.desc', 'read_key.asc'])
     const local = JSON.parse(localStorage.getItem('dexcrate:scan-memory:u1') ?? '[]') as [string, string][]
     expect(local).toHaveLength(500)
     expect(local[0]).toEqual(['k5501', 'c5501'])

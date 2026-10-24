@@ -134,6 +134,8 @@ describe('listSnapshotsFor', () => {
     db.state.rows = ids.flatMap((id) => history(id, 15))
     const rows = await listSnapshotsFor(ids)
     expect(rows).toHaveLength(1500)
+    // De grens van 1000 valt midden in een dag: zonder tcgdex_id als tweede sortering dubbele of gemiste rijen.
+    expect(new Set(rows.map((r) => `${r.tcgdexId}|${r.takenOn}`)).size).toBe(1500)
     // Blok 1: 80 × 15 = 1200 rijen (2 pagina's); blok 2: 20 × 15 = 300 rijen (1 pagina).
     expect(db.state.requests).toBe(3)
   })
