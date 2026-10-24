@@ -39,10 +39,14 @@ describe('Crate-pakje', () => {
   it('regels uit de database (STAP18), kapot antwoord = oude regels', () => {
     const rules = toRules({ daily: 100, trade_factor: 2, crate_set: 500, packs: { booster: 100, great: 300, master: 1000, set: 200, type: 300 } })
     // Type pack is weggehaald (24-10-2026): zijn prijs in de database wordt genegeerd.
-    expect(rules).toEqual({ daily: 100, tradeFactor: 2, crateSet: 500, packs: { booster: 100, great: 300, master: 1000, set: 200 }, craft: {} })
+    expect(rules).toEqual({ daily: 100, tradeFactor: 2, crateSet: 500, packs: { booster: 100, great: 300, master: 1000, set: 200 }, craft: {}, earnCap: null })
     expect(canAfford(rules, 'set', 200, false)).toBe(true)
     expect(toRules(null)).toBe(OLD_RULES)
     expect(toRules({ packs: { set: -5, booster: 'x' } }).packs).toEqual({})
+  })
+  it('dagplafond (STAP27): heel getal boven 0, anders geen plafond', () => {
+    expect(toRules({ packs: {}, earn_cap: 1000 }).earnCap).toBe(1000)
+    expect([toRules({ packs: {} }).earnCap, toRules({ packs: {}, earn_cap: 0 }).earnCap, toRules({ packs: {}, earn_cap: '1000' }).earnCap]).toEqual([null, null, null])
   })
   it('gericht kopen (STAP22/23): prijs per klasse zoals de database', () => {
     const rules = toRules({ packs: {}, craft: { common: 40, uncommon: 60, rare: 100, double: 200, illustration: 300, special: 600, bogus: 1 } })

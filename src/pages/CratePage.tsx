@@ -100,6 +100,8 @@ interface SetChoice {
 interface Loaded {
   points: number
   freePack: boolean
+  /** Punten boven het dagplafond die de volgende dagen binnenkomen (STAP27). */
+  waiting: number
   cards: CrateCard[]
   rules: CrateRules
 }
@@ -108,7 +110,7 @@ interface Loaded {
 async function loadCrate(): Promise<Loaded> {
   // Tegelijk (24-10-2026): de sync telt alleen punten, de kaartenlijst hoeft daar niet op te wachten.
   const [w, rules, cards] = await Promise.all([syncCrate({}, []), getCrateRules(), listCrateCards()])
-  return { points: w.points, freePack: w.freePack, cards, rules }
+  return { points: w.points, freePack: w.freePack, waiting: w.waiting, cards, rules }
 }
 
 /** Engelse sets voor het Set pack, nieuwste eerst; zonder digitale (TCG Pocket), eigen catalogus (geen zeldzaamheden) en sets zonder telling. */
@@ -125,6 +127,7 @@ export function CratePage(): JSX.Element {
   const enabled = useDbFeature(hasCrate, 'crate')
   const [points, setPoints] = useState<number | null>(null)
   const [freePack, setFreePack] = useState(false)
+  const [waiting, setWaiting] = useState(0)
   const [cards, setCards] = useState<CrateCard[] | null>(null)
   // Pack opening in een popup; id = nieuwe popup per pakje (ook bij "Open another").
   const openingSeq = useRef(0)
@@ -149,6 +152,7 @@ export function CratePage(): JSX.Element {
   const apply = useCallback((d: Loaded): void => {
     setPoints(d.points)
     setFreePack(d.freePack)
+    setWaiting(d.waiting)
     setCards(d.cards)
     setRules(d.rules)
     setRulesLoaded(true)
@@ -388,6 +392,11 @@ export function CratePage(): JSX.Element {
                 </span>
               )}
             </p>
+            {waiting > 0 && (
+              <p className="small muted crate-waiting">
+                +{waiting.toLocaleString('en-IE')} on the way{rules.earnCap ? ` (max. ${rules.earnCap.toLocaleString('en-IE')} a day from your collection)` : ''}
+              </p>
+            )}
           </div>
         </section>
         {cards && cards.length > 0 && <CrateStats cards={cards} prices={prices} tradeFactor={rules.tradeFactor} tradeAll={tradeAll} />}
@@ -655,6 +664,11 @@ export function CratePage(): JSX.Element {
           ))}
         </dl>
         <p className="muted small">Each card counts once (adding the same card again gives nothing), sales and purchases at most 20 a day. One free pack every day.</p>
+        {rules.earnCap && (
+          <p className="muted small">
+            Fair play: at most {rules.earnCap.toLocaleString('en-IE')} points a day from your collection (cards, Pokédex, complete sets, sales and purchases). Anything above that comes in on the next days. Sales and purchases only count with at least one card in them.
+          </p>
+        )}
         {craftRows(rules).length > 0 && (
           <>
             <h3 className="small">Buy a missing card</h3>

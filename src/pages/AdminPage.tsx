@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent, type JSX } from 'react'
-import { AccountActions, AnnouncementPanel, CrateRulesPanel, InvitePanel, ScansPanel, UserDetail } from '../components/AdminParts'
+import { AccountActions, AnnouncementPanel, CrateAuditPanel, CrateRulesPanel, InvitePanel, ScansPanel, UserDetail } from '../components/AdminParts'
 import { IconSearch } from '../components/Icons'
 import { Loading } from '../components/Loading'
 import { SearchClear } from '../components/SearchClear'
@@ -211,6 +211,7 @@ export function AdminPage(): JSX.Element {
 
       <InvitePanel onInvited={() => setVersion((v) => v + 1)} />
       <CrateRulesPanel />
+      <CrateAuditPanel />
       <ScansPanel />
       <AnnouncementPanel onSaved={() => setVersion((v) => v + 1)} />
 

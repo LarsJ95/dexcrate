@@ -18,12 +18,13 @@ describe('Crate via de server', () => {
   it('functie klaar: sync en pakje via de functie, de app stuurt geen bonus of Pokédex', async () => {
     invoke.mockImplementation(async (_fn: string, { body }: { body: { action: string } }) => {
       if (body.action === 'health') return { data: { ok: true, db: true }, error: null }
-      if (body.action === 'sync') return { data: { points: 500, earned: 25, free_pack: true }, error: null }
+      if (body.action === 'sync') return { data: { points: 500, earned: 25, free_pack: true, waiting: 120, cap: 1000 }, error: null }
       if (body.action === 'open') return { data: { points: 300, cost: 200, free_pack: false, pulls: [{ tcgdex_id: 'en/s1-001', name: 'A', image: null, rarity: 'Common', set_name: 'S' }] }, error: null }
       return { data: null, error: new Error('?') }
     })
     const { openPack, syncCrate } = await import('./crate')
-    expect(await syncCrate({ x: 20 }, [1, 2, 3])).toEqual({ points: 500, freePack: true, earned: 25 })
+    // STAP27: punten boven het dagplafond wachten (waiting).
+    expect(await syncCrate({ x: 20 }, [1, 2, 3])).toEqual({ points: 500, freePack: true, earned: 25, waiting: 120 })
     expect(invoke).toHaveBeenCalledWith('crate', { body: { action: 'sync' } })
     const r = await openPack('great', { setId: 'sv03.5' })
     expect(r.pulls).toHaveLength(1)

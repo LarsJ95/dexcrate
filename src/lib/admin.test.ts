@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const rpc = vi.fn()
 vi.mock('./supabase', () => ({ supabase: { rpc: (...args: unknown[]) => rpc(...args) } }))
-const { MissingStepError, getScanStats, grantCratePoints, grantInputError, isAdmin, isBanned, listAdminUsers, toAdminAction, toAdminRules, toAdminUser } = await import('./admin')
+const { MissingStepError, getCrateAudit, getScanStats, grantCratePoints, grantInputError, isAdmin, isBanned, listAdminUsers, toAdminAction, toAdminRules, toAdminUser } = await import('./admin')
 const { actionText } = await import('./adminText')
 
 beforeEach(() => rpc.mockReset())
@@ -89,6 +89,9 @@ describe('omzetten', () => {
     expect([r.packs.lucky, r.packs.daily]).toEqual([150, 200])
     expect(r.craft.special).toBe(1800)
     expect(toAdminRules(null).trade_factor).toBe(2)
+    // STAP27: dagplafond, standaard 1000.
+    expect(toAdminRules(null).earn_cap).toBe(1000)
+    expect(toAdminRules({ earn_cap: 2500 }).earn_cap).toBe(2500)
   })
   it('geblokkeerd alleen als de datum in de toekomst ligt', () => {
     const now = Date.parse('2026-10-21T12:00:00Z')
@@ -117,6 +120,13 @@ describe('database', () => {
     const err = await getScanStats().catch((e: unknown) => e)
     expect(err).toBeInstanceOf(MissingStepError)
     expect((err as Error).message).toMatch(/STAP22/)
+  })
+  it('controleoverzicht (STAP27): rijen omgezet; zonder STAP27 zeg welke STAP', async () => {
+    rpc.mockResolvedValueOnce({ data: [{ user_id: 'u1', email: 'a@b.nl', earned: '1000', best_day: 1000, cards_added: 120, cards_now: 300, points: 2400 }, { bogus: true }], error: null })
+    expect(await getCrateAudit(7)).toEqual([{ userId: 'u1', email: 'a@b.nl', earned: 1000, bestDay: 1000, cardsAdded: 120, cardsNow: 300, points: 2400 }])
+    expect(rpc).toHaveBeenLastCalledWith('admin_crate_audit', { p_days: 7 })
+    rpc.mockResolvedValueOnce({ data: null, error: { code: 'PGRST202', message: 'Could not find the function' } })
+    expect(((await getCrateAudit().catch((e: unknown) => e)) as Error).message).toMatch(/STAP27/)
   })
   it('geweigerd door de database: duidelijke fout', async () => {
     rpc.mockImplementation(() => listQuery({ error: { code: '42501', message: 'Not allowed' } }))

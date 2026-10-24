@@ -16,8 +16,8 @@ const TYPES = ['Grass', 'Fire', 'Water', 'Lightning', 'Psychic', 'Fighting', 'Da
 
 export type PackKind = 'booster' | 'great' | 'master' | 'set' | 'type' | 'lucky' | 'pokemon' | 'era' | 'daily'
 export const PACK_KINDS: readonly PackKind[] = ['booster', 'great', 'master', 'set', 'type', 'lucky', 'pokemon', 'era', 'daily']
-/** Lucky pack: kans op een God pack (alle kaarten hits). */
-export const GOD_PACK_CHANCE = 1 / 30
+/** Lucky pack: kans op een God pack (alle kaarten hits); 1 op 25 sinds 24-10-2026 (was 1 op 30). */
+export const GOD_PACK_CHANCE = 1 / 25
 /** Era pack: tijdperk → TCGdex-series. */
 export const ERAS: Record<string, readonly string[]> = {
   wotc: ['base', 'gym', 'neo', 'lc', 'ecard'],
@@ -316,11 +316,13 @@ export async function cardFacts(key: string): Promise<CardFacts> {
   }
 }
 
-async function setFacts(setKey: string): Promise<{ set_key: string; name: string | null; official: number }> {
+/** Setgegevens; een TCG Pocket-set (digitaal) krijgt officieel 0: geen setbonus (24-10-2026). */
+async function setFacts(setKey: string, digital: ReadonlySet<string>): Promise<{ set_key: string; name: string | null; official: number }> {
   const slash = setKey.indexOf('/')
-  const s = await getJson(`${TCGDEX}/${setKey.slice(0, slash)}/sets/${encodeURIComponent(setKey.slice(slash + 1))}`)
+  const id = setKey.slice(slash + 1)
+  const s = await getJson(`${TCGDEX}/${setKey.slice(0, slash)}/sets/${encodeURIComponent(id)}`)
   const count = isRecord(s) && isRecord(s.cardCount) ? s.cardCount : {}
-  return { set_key: setKey, name: isRecord(s) ? optStr(s.name) : null, official: typeof count.official === 'number' ? count.official : 0 }
+  return { set_key: setKey, name: isRecord(s) ? optStr(s.name) : null, official: !digital.has(id) && typeof count.official === 'number' ? count.official : 0 }
 }
 
 /** Taken met een maximum tegelijk. */
@@ -523,12 +525,16 @@ async function sync(user: string): Promise<unknown> {
   for (const f of facts) if (f.set_key) setKeys.add(f.set_key)
   for (const k of crate) setKeys.add(k.replace(/-[^-]+$/, ''))
   const setList = [...setKeys].filter((k) => /^[a-z-]{2,5}\/[A-Za-z0-9.+-]{1,40}$/.test(k))
-  const knownSets = new Set<string>()
+  const knownSets = new Map<string, number>()
   for (let i = 0; i < setList.length; i += 100) {
-    for (const s of await select('set_facts', `set_key=${encodeURIComponent(inList(setList.slice(i, i + 100)))}&select=set_key`, 'set_key')) knownSets.add(String(s.set_key))
+    for (const s of await select('set_facts', `set_key=${encodeURIComponent(inList(setList.slice(i, i + 100)))}&select=set_key,official`, 'set_key')) {
+      knownSets.set(String(s.set_key), typeof s.official === 'number' ? s.official : 0)
+    }
   }
-  const setTodo = setList.filter((k) => !knownSets.has(k)).slice(0, MAX_SET_LOOKUPS)
-  const sets = (await inBatches(setTodo, 5, (k) => setFacts(k).catch(() => null))).filter((s): s is { set_key: string; name: string | null; official: number } => s !== null)
+  // Onbekend, of een TCG Pocket-set die van vóór 24-10-2026 nog met een officieel aantal bewaard staat: (opnieuw) opzoeken.
+  const digital = await digitalSets()
+  const setTodo = setList.filter((k) => !knownSets.has(k) || (digital.has(k.slice(k.indexOf('/') + 1)) && (knownSets.get(k) ?? 0) > 0)).slice(0, MAX_SET_LOOKUPS)
+  const sets = (await inBatches(setTodo, 5, (k) => setFacts(k, digital).catch(() => null))).filter((s): s is { set_key: string; name: string | null; official: number } => s !== null)
 
   if (facts.length > 0 || sets.length > 0) {
     await rpc('crate_srv_put_facts', {
