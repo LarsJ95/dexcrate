@@ -50,6 +50,8 @@ export function actionText(a: AdminAction): string {
       return `Unblocked ${who}`
     case 'delete_user':
       return `Deleted ${who || 'a user'}`
+    case 'set_scan_total':
+      return `Scans for everyone: ${String(a.details?.after ?? '?')} a day`
     default:
       return a.action
   }

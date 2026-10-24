@@ -8,17 +8,20 @@ import {
   getAdminRules,
   getCrateAudit,
   getScanStats,
+  getScanTotal,
   listUserErrors,
   listUserLedger,
   reasonError,
   setAdminRules,
   setAnnouncement,
   setScanLimit,
+  setScanTotal,
   type AdminCrateRules,
   type AdminUser,
   type CrateAuditRow,
   type LedgerEntry,
   type ScanDay,
+  type ScanTotal,
   type UserError,
 } from '../lib/admin'
 import { LEDGER_LABELS, plural, when } from '../lib/adminText'
@@ -436,6 +439,87 @@ export function CrateRulesPanel(): JSX.Element {
   )
 }
 
+/** Totaalplafond voor iedereen samen (STAP30): gebruik van vandaag en aanpassen met reden. */
+function ScanTotalRow(): JSX.Element {
+  const [cap, setCap] = useState<ScanTotal | null>(null)
+  const [value, setValue] = useState('')
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    getScanTotal()
+      .then((t) => {
+        if (cancelled) return
+        setCap(t)
+        setValue(String(t.totalPerDay))
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setResult({ ok: false, text: problemText(err, 'Loading the scan limit failed.') })
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  async function save(e: FormEvent<HTMLFormElement>): Promise<void> {
+    e.preventDefault()
+    if (busy || !cap) return
+    const n = Number(value)
+    if (!Number.isInteger(n) || n < 0 || n > 100000) return setResult({ ok: false, text: 'Enter a whole number from 0 to 100000.' })
+    const problem = reasonError(reason)
+    if (problem) return setResult({ ok: false, text: problem })
+    setBusy(true)
+    setResult(null)
+    try {
+      const saved = await setScanTotal(n, reason)
+      setCap({ ...cap, totalPerDay: saved })
+      setReason('')
+      setResult({ ok: true, text: saved === 0 ? 'Scanning is now off for everyone.' : 'Saved.' })
+    } catch (err) {
+      setResult({ ok: false, text: problemText(err, 'Saving failed.') })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form className="admin-scan-total" onSubmit={(e) => void save(e)} noValidate>
+      <p className="small">
+        {cap ? (
+          <>
+            Today <strong>{cap.usedToday.toLocaleString('en-GB')}</strong> of {cap.totalPerDay.toLocaleString('en-GB')} scans for everyone together{' '}
+            <span className="muted">(per user max. 500 a day)</span>
+          </>
+        ) : (
+          !result && 'Loading…'
+        )}
+      </p>
+      {cap && (
+        <div className="form-grid">
+          <label>
+            Scans per day, all users
+            <input type="number" inputMode="numeric" min={0} max={100000} step={1} value={value} onChange={(e) => setValue(e.target.value)} />
+          </label>
+          <label>
+            Reason
+            <input value={reason} maxLength={REASON_MAX} placeholder="e.g. Busy weekend" onChange={(e) => setReason(e.target.value)} />
+          </label>
+        </div>
+      )}
+      <div className="settings-actions">
+        {cap && (
+          <button type="submit" className="small-btn" disabled={busy}>
+            {busy ? 'Saving…' : 'Save limit'}
+          </button>
+        )}
+        <Status result={result} />
+      </div>
+    </form>
+  )
+}
+
 /** Scans per dag (14 dagen) met een kostenindicatie (STAP22). */
 export function ScansPanel(): JSX.Element {
   const [days, setDays] = useState<ScanDay[] | null>(null)
@@ -465,6 +549,7 @@ export function ScansPanel(): JSX.Element {
       <h2 id="admin-scans-title" className="panel-title">
         Scans
       </h2>
+      <ScanTotalRow />
       {error && <p className="error">{error}</p>}
       {days === null ? (
         <Loading />
