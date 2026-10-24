@@ -105,6 +105,9 @@ describe('omzetten', () => {
     expect(actionText({ ...base, action: 'set_scan_limit', details: { per_minute: null, per_day: 2 } })).toBe('Scan limit 40/min, 2/day · b@b.nl')
     expect(actionText({ ...base, action: 'set_scan_limit', details: { per_minute: null, per_day: null } })).toBe('Scan limit default · b@b.nl')
     expect(actionText({ ...base, action: 'invite', targetEmail: null, details: { email: 'new@x.nl' } })).toBe('Invited new@x.nl')
+    // STAP31: account verwijderd, regel blijft zonder koppeling.
+    expect(actionText({ ...base, action: 'ban', targetEmail: null })).toBe('Blocked (deleted user)')
+    expect(actionText({ ...base, action: 'grant_points', points: 5, targetEmail: null })).toBe('+5 pts · (deleted user)')
   })
 })
 
