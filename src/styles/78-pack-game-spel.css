@@ -1,0 +1,327 @@
+/* ---------- Pack game: tabbladen en meer spel (24-10-2026, op verzoek: "meer spel, maar niet irritant") ----------
+   Alle beweging alleen met [data-motion='on']; zonder animaties blijft alles staan en leesbaar. Geen geluid. */
+
+/* Tabbladen Packs · Cards · Overview rechts in de kop; op de telefoon over de volle breedte. */
+@media (max-width: 640px) {
+  .crate-tabs {
+    width: 100%;
+  }
+
+  .crate-tabs button {
+    flex: 1 0 auto;
+  }
+}
+
+/* Punten: "+40" of "−150" rechtsboven in het puntenvak, daarna weg. */
+.crate-wallet {
+  position: relative;
+}
+
+.pts-chip {
+  display: inline-block;
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--hp-high) 20%, var(--surface));
+  color: var(--ink);
+  font-size: var(--fs-small);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+}
+
+.pts-chip.is-minus {
+  background: var(--surface-3);
+  color: var(--ink-soft);
+}
+
+.crate-wallet .pts-chip {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+}
+
+[data-motion='on'] .pts-chip {
+  animation: pts-pop 1800ms ease-out both;
+}
+
+@keyframes pts-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.8);
+  }
+  12%,
+  80% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+/* Kleur per hit-niveau (packOpening.ts hitTier): 1 zilverblauw, 2 paars, 3 goud. */
+.pack-opening [data-tier='1'] {
+  --tier: #8cc8ff;
+}
+
+.pack-opening [data-tier='2'] {
+  --tier: #c58bff;
+}
+
+.pack-opening [data-tier='3'] {
+  --tier: var(--gold-a);
+}
+
+/* 1. Teaser: zit er een hit in, dan lekt er licht uit de scheurrand en schudt het pakje harder. */
+.pack-sealed::after {
+  content: '';
+  position: absolute;
+  left: -15%;
+  right: -15%;
+  top: 2%;
+  height: 24%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--tier, transparent), transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+
+[data-motion='on'] .pack-sealed.is-tearing:is([data-tier='1'], [data-tier='2'], [data-tier='3'])::after {
+  animation: pack-tease 650ms ease-out both;
+}
+
+[data-motion='on'] .pack-sealed.is-tearing:is([data-tier='2'], [data-tier='3']) {
+  animation: pack-shake-hard 650ms ease-in both;
+}
+
+@keyframes pack-tease {
+  30% {
+    opacity: 1;
+    transform: scaleX(1.1);
+  }
+  100% {
+    opacity: 0.9;
+    transform: scale(1.6, 2.4);
+  }
+}
+
+@keyframes pack-shake-hard {
+  0%,
+  45% {
+    transform: none;
+  }
+  8%,
+  24% {
+    transform: rotate(-5deg) scale(1.03);
+  }
+  16%,
+  32% {
+    transform: rotate(5deg) scale(1.05);
+  }
+  100% {
+    transform: scale(1.12);
+    opacity: 0;
+  }
+}
+
+/* 2. Stralen in de kleur van de zeldzaamheid achter een hit. */
+button.pack-current {
+  position: relative;
+  isolation: isolate;
+}
+
+.pack-rays {
+  position: absolute;
+  inset: -16%;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+  background: repeating-conic-gradient(from 0deg, color-mix(in oklab, var(--tier) 55%, transparent) 0deg 7deg, transparent 7deg 20deg);
+  mask-image: radial-gradient(closest-side, #000 30%, transparent 100%);
+}
+
+[data-motion='on'] .pack-rays {
+  animation:
+    rays-in 500ms ease-out both,
+    rays-spin 16s linear infinite;
+}
+
+@keyframes rays-in {
+  from {
+    opacity: 0;
+    scale: 0.6;
+  }
+}
+
+@keyframes rays-spin {
+  to {
+    rotate: 1turn;
+  }
+}
+
+/* Spanning: de laatste kaart (een hit) ligt eerst met de achterkant boven en gloeit op in de kleur van wat komt. */
+.pack-back {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 63 / 88;
+  border: 6px solid var(--card-back-edge);
+  background:
+    radial-gradient(circle at 50% 50%, transparent 0 24%, var(--card-back-ring) 24.5% 25.5%, transparent 26%),
+    conic-gradient(from 30deg, var(--card-back-1), var(--card-back-2), var(--card-back-3), var(--card-back-2), var(--card-back-1));
+  box-shadow: 0 0 0 2px var(--tier);
+}
+
+.pack-back .pokeball {
+  --s: 30%;
+  width: 34%;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+[data-motion='on'] .pack-current-card.pack-back {
+  animation:
+    back-wiggle 1300ms ease-in-out both,
+    back-glow 1300ms ease-in both;
+}
+
+@keyframes back-wiggle {
+  0% {
+    transform: scale(0.96);
+  }
+  20% {
+    transform: rotate(-2deg);
+  }
+  40% {
+    transform: rotate(2deg);
+  }
+  60% {
+    transform: rotate(-3deg) scale(1.02);
+  }
+  80% {
+    transform: rotate(3deg) scale(1.04);
+  }
+  100% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes back-glow {
+  from {
+    box-shadow: 0 0 0 2px var(--tier);
+  }
+  to {
+    box-shadow:
+      0 0 0 3px var(--tier),
+      0 0 64px var(--tier);
+  }
+}
+
+/* NEW als stempel. */
+.pack-badge.is-stamp {
+  transform: rotate(-4deg);
+}
+
+[data-motion='on'] .pack-badge.is-stamp {
+  animation: new-stamp 420ms cubic-bezier(0.3, 1.6, 0.5, 1) 250ms both;
+}
+
+@keyframes new-stamp {
+  from {
+    opacity: 0;
+    transform: scale(2.2) rotate(-14deg);
+  }
+}
+
+/* 3. Overzicht: kaarten komen na elkaar binnen; de beste trekking gloeit goud. */
+[data-motion='on'] .pack-summary li {
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+
+button.pack-tile.is-best {
+  box-shadow:
+    0 0 0 2px var(--gold-b),
+    0 0 18px color-mix(in oklab, var(--gold-a) 60%, transparent);
+}
+
+.pack-best-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.pack-best {
+  display: inline-block;
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, var(--gold-b), var(--gold-a));
+  color: #1a1200;
+  font-size: var(--fs-small);
+  font-weight: 800;
+}
+
+/* Setvoortgang na het pakje: wat je had, en wat dit pakje erbij deed (groen, groeit aan). */
+.pack-sets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.pack-sets li {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.pack-set-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.pack-set-head > strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pack-set-head .small {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.pack-sets .meter {
+  display: flex;
+}
+
+.pack-sets .meter-fill {
+  border-radius: 0;
+}
+
+.meter-gain {
+  display: block;
+  height: 100%;
+  background: var(--hp-high);
+  transform-origin: left;
+}
+
+[data-motion='on'] .meter-gain {
+  animation: gain-grow 700ms ease-out 300ms both;
+}
+
+@keyframes gain-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* "+N pts" na inruilen, naast de knop. */
+.pack-opening .sheet-foot .pts-chip {
+  align-self: center;
+}

@@ -90,7 +90,8 @@ button.pack-sealed:hover:not(:disabled) {
 }
 
 [data-motion='on'] .pack-god-banner {
-  animation: god-pulse 1.4s ease-in-out infinite;
+  /* Drie keer, niet eindeloos (24-10-2026: niet irriteren). */
+  animation: god-pulse 1.4s ease-in-out 3;
 }
 
 @keyframes god-pulse {

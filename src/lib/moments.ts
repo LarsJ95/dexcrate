@@ -17,8 +17,8 @@ export type Moment =
       caught: boolean
     }
   | { kind: 'complete'; id: number; setName: string }
-  /** Mijlpaal: "Lv. 25" met uitleg, bv. "25 cards in 151". */
-  | { kind: 'milestone'; id: number; level: number; caption: string }
+  /** Mijlpaal: "Lv. 25" met uitleg, bv. "25 cards in 151"; `title` in plaats van "Level up!" (bv. Pack game). */
+  | { kind: 'milestone'; id: number; level: number; caption: string; title?: string }
   /** Toegevoegd aan de wishlist: pokébal wiebelt en klikt dicht. */
   | { kind: 'gotcha'; id: number; name: string }
   /** Nieuwe badge verdiend. */
@@ -135,6 +135,9 @@ export function risenSince(key: string, value: number): boolean {
 export const SET_MILESTONES = [10, 25, 50, 100, 150, 200, 250, 300] as const
 export const COLLECTION_MILESTONES = [10, 25, 50, 100, 250, 500, 1000, 2500] as const
 export const COLLECTION_MILESTONE_KEY = 'dexcrate:collection-milestone'
+/** Pack game (24-10-2026): verschillende kaarten in je pack collection. */
+export const CRATE_MILESTONES = [50, 100, 250, 500, 1000, 2500] as const
+export const CRATE_MILESTONE_KEY = 'dexcrate:crate-milestone'
 
 /** Hoogste mijlpaal die nu gehaald is maar nog niet gevierd (boven `celebrated`), of null. */
 export function newMilestone(count: number, celebrated: number, steps: readonly number[]): number | null {
@@ -147,7 +150,7 @@ export function newMilestone(count: number, celebrated: number, steps: readonly 
  * Mijlpaal vieren als die nieuw is; onthoudt per sleutel wat al gevierd is. Eerste keer (nog niets
  * onthouden): alleen onthouden, niet vieren, zodat oude voortgang niet ineens een feest wordt.
  */
-export function celebrateMilestone(key: string, count: number, steps: readonly number[], caption: (level: number) => string): void {
+export function celebrateMilestone(key: string, count: number, steps: readonly number[], caption: (level: number) => string, title?: string): void {
   let stored: string | null
   try {
     stored = localStorage.getItem(key)
@@ -164,7 +167,7 @@ export function celebrateMilestone(key: string, count: number, steps: readonly n
   }
   if (takeQuiet(key) || celebrated === null) return
   const level = newMilestone(count, celebrated, steps)
-  if (level !== null) showMoment({ kind: 'milestone', level, caption: caption(level) })
+  if (level !== null) showMoment({ kind: 'milestone', level, caption: caption(level), title })
 }
 
 export const BADGES_KEY = 'dexcrate:badges-earned'
