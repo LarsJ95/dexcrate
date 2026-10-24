@@ -16,6 +16,7 @@ import { useNavCounts } from '../hooks/useNavCounts'
 import { useBackdrop } from '../hooks/useBackdrop'
 import { useOnline } from '../hooks/useOnline'
 import { AnnouncementBanner } from './AnnouncementBanner'
+import { WishAlert } from './WishAlert'
 import { useOfflineDataTime } from '../lib/offlineCache'
 
 interface Props {
@@ -158,6 +159,7 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
 
       <main className="main">
         <AnnouncementBanner />
+        {counts.wishDeals && <WishAlert ids={counts.wishDeals} route={route} />}
         {(!online || savedAt !== null) && (
           <p className="notice offline-notice" role="status">
             {online ? 'No connection to the server. ' : 'You’re offline. '}

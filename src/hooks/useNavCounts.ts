@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { listCards } from '../lib/db'
-import { NO_COUNTS, dealsWithinMax, unlinkedCount, wishesWithMax, type NavCounts } from '../lib/navCounts'
+import { NO_COUNTS, dealIdsWithinMax, unlinkedCount, wishesWithMax, type NavCounts } from '../lib/navCounts'
 import { CRATE_CHANGED_EVENT, getCrateStatus } from '../lib/crate'
 import { getCardPrice, type CardmarketPrice } from '../lib/tcgdex'
 import { hasWishlist, listWishlist } from '../lib/wishlist'
@@ -13,8 +13,8 @@ async function load(): Promise<NavCounts> {
   const cards = await listCards()
   // Elk getal los: mislukt er één (bv. oude database zonder Crate), dan blijven de andere staan.
   const crate = getCrateStatus().catch(() => null)
-  const wishlist = (async () => {
-    if (!(await hasWishlist())) return 0
+  const wishlist = (async (): Promise<string[]> => {
+    if (!(await hasWishlist())) return []
     const items = await listWishlist()
     const keys = [...new Set(wishesWithMax(items).map((i) => i.tcgdex_id as string))]
     const prices = new Map<string, CardmarketPrice | null>()
@@ -23,9 +23,10 @@ async function load(): Promise<NavCounts> {
         prices.set(k, await getCardPrice(k).catch(() => null))
       }),
     )
-    return dealsWithinMax(items, cards, prices)
-  })().catch(() => 0)
-  return { collection: unlinkedCount(cards), wishlist: await wishlist, crate: await crate }
+    return dealIdsWithinMax(items, cards, prices)
+  })().catch(() => [])
+  const deals = await wishlist
+  return { collection: unlinkedCount(cards), wishlist: deals.length, wishDeals: deals, crate: await crate }
 }
 
 /** Menu-getallen; telt opnieuw bij het wisselen van pagina als de vorige telling ouder is dan een minuut. */

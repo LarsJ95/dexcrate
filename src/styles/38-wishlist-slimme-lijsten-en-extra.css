@@ -111,3 +111,13 @@ button.wish-list-tile[aria-pressed='true'] {
 .wish-twin p {
   margin: 0;
 }
+
+/* Melding bovenaan bij een nieuwe deal binnen je max. prijs (24-10-2026, components/WishAlert.tsx). */
+.wish-alert {
+  margin-bottom: var(--space-4);
+}
+
+.wish-alert > .notice-action {
+  border-left-color: var(--yellow);
+  color: var(--ink);
+}
