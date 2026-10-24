@@ -171,6 +171,6 @@ describe('WishlistPage', () => {
   it('zonder STAP6: uitleg in plaats van een lege lijst', () => {
     state.enabled = false
     render(<WishlistPage />)
-    expect(screen.getByText(/not set up yet/)).toBeTruthy()
+    expect(screen.getByText(/not available yet/)).toBeTruthy()
   })
 })

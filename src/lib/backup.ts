@@ -21,6 +21,21 @@ export const BACKUP_TABLES = [
 ] as const
 export type BackupTable = (typeof BACKUP_TABLES)[number]
 
+/**
+ * Alleen voor het meenemen (AVG, 24-10-2026), niet om terug te zetten: je eigen wishlist-lijsten, het Pack game, je
+ * scan-keuzes en je foutmeldingen. Per tabel de kolommen voor een vaste volgorde (primaire sleutel).
+ */
+export const EXPORT_ONLY_TABLES = {
+  wishlist_lists: ['id'],
+  wishlist_list_items: ['list_id', 'item_id'],
+  crate_wallet: ['user_id'],
+  crate_cards: ['id'],
+  crate_ledger: ['id'],
+  scan_choices: ['read_key'],
+  app_errors: ['id'],
+} as const satisfies Record<string, readonly string[]>
+export type ExportOnlyTable = keyof typeof EXPORT_ONLY_TABLES
+
 export type Row = Record<string, unknown>
 
 export interface Backup {
@@ -30,6 +45,8 @@ export interface Backup {
   /** Gebruiker op het moment van exporteren (voor het omzetten van opslagpaden bij herstel in een ander account). */
   user_id: string
   tables: Partial<Record<BackupTable, Row[]>>
+  /** Alleen meenemen, niet terugzetten (zie EXPORT_ONLY_TABLES); ontbreekt in oudere back-ups. */
+  extra?: Partial<Record<ExportOnlyTable, Row[]>>
   /** Bestanden: "<bucket>/<pad>" → base64-inhoud. */
   files: Record<string, string>
 }

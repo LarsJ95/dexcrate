@@ -1,4 +1,4 @@
-import { BACKUP_FORMAT, BACKUP_TABLES, BACKUP_VERSION, prepareRestore, type Backup, type BackupTable, type Row } from './backup'
+import { BACKUP_FORMAT, BACKUP_TABLES, BACKUP_VERSION, EXPORT_ONLY_TABLES, prepareRestore, type Backup, type BackupTable, type ExportOnlyTable, type Row } from './backup'
 import { fetchAllPages } from './fetchAll'
 import { supabase } from './supabase'
 
@@ -19,6 +19,24 @@ async function fetchAll(table: BackupTable): Promise<Row[] | null> {
     throw new Error(`Reading ${table} failed: ${error.message}`)
   }
   return data
+}
+
+/** Tabellen die alleen meegaan in het bestand (AVG); niet-bestaande of niet-leesbare tabellen worden overgeslagen. */
+export async function fetchExportOnly(): Promise<Partial<Record<ExportOnlyTable, Row[]>>> {
+  const out: Partial<Record<ExportOnlyTable, Row[]>> = {}
+  for (const t of Object.keys(EXPORT_ONLY_TABLES) as ExportOnlyTable[]) {
+    const { data, error } = await fetchAllPages<Row>((from, to) => {
+      let q = supabase.from(t).select('*')
+      for (const col of EXPORT_ONLY_TABLES[t]) q = q.order(col, { ascending: true })
+      return q.range(from, to)
+    })
+    if (error) {
+      if (missingTable(error.code)) continue
+      throw new Error(`Reading ${t} failed: ${error.message}`)
+    }
+    out[t] = data
+  }
+  return out
 }
 
 /** Huidige gegevens van alle tabellen die bestaan. */
@@ -63,6 +81,7 @@ export async function createBackup(withFiles: boolean, onProgress: Progress): Pr
   if (authError || !auth.user) throw new Error('Not signed in.')
   onProgress('Reading your data…')
   const tables = await fetchAllTables()
+  const extra = await fetchExportOnly()
   const files: Record<string, string> = {}
   let missingFiles = 0
   if (withFiles) {
@@ -80,7 +99,7 @@ export async function createBackup(withFiles: boolean, onProgress: Progress): Pr
     }
   }
   return {
-    backup: { format: BACKUP_FORMAT, version: BACKUP_VERSION, exported_at: new Date().toISOString(), user_id: auth.user.id, tables, files },
+    backup: { format: BACKUP_FORMAT, version: BACKUP_VERSION, exported_at: new Date().toISOString(), user_id: auth.user.id, tables, extra, files },
     missingFiles,
   }
 }

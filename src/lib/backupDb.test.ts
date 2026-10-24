@@ -78,3 +78,19 @@ describe('fetchAllTables', () => {
     await expect(fetchAllTables()).rejects.toThrow('Reading wishlist_items failed: Could not query the database for the schema cache')
   })
 })
+
+describe('fetchExportOnly (AVG, 24-10-2026): ook lijsten, Pack game, scan-keuzes en foutmeldingen in het bestand', () => {
+  it('alle tabellen, met een vaste volgorde (ook op twee kolommen); ontbrekende tabel overgeslagen', async () => {
+    const { fetchExportOnly } = await import('./backupDb')
+    db.state.tables.wishlist_list_items = Array.from({ length: 1500 }, (_, i) => ({ list_id: `l-${i % 3}`, item_id: `w-${String(i).padStart(5, '0')}` }))
+    db.state.tables.crate_wallet = [{ user_id: 'u1', points: 640 }]
+    db.state.errors.app_errors = MISSING
+    const extra = await fetchExportOnly()
+    expect(extra.wishlist_list_items).toHaveLength(1500)
+    expect(new Set(extra.wishlist_list_items?.map((r) => `${r.list_id}|${r.item_id}`)).size).toBe(1500)
+    expect(db.state.orders.wishlist_list_items).toEqual(['list_id', 'item_id'])
+    expect(extra.crate_wallet).toEqual([{ user_id: 'u1', points: 640 }])
+    expect(extra.app_errors).toBeUndefined()
+    expect(Object.keys(extra).sort()).toEqual(['crate_cards', 'crate_ledger', 'crate_wallet', 'scan_choices', 'wishlist_list_items', 'wishlist_lists'])
+  })
+})

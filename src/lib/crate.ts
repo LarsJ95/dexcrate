@@ -42,9 +42,8 @@ export const PACKS: Record<PackKind, { name: string; contents: string }> = {
   daily: { name: 'Pack of the day', contents: 'A different set every day, the same for everyone: 5 common, 3 uncommon, 1 rare and 1 guaranteed hit.' },
 }
 
-/** Pakjes die alleen de Crate-functie kan trekken (STAP26); STAP-bestand per soort voor de melding zonder prijs. */
+/** Pakjes die alleen de Crate-functie kan trekken (STAP26). */
 const SERVER_ONLY: readonly PackKind[] = ['lucky', 'daily']
-export const packStep = (kind: PackKind): string => (SERVER_ONLY.includes(kind) ? 'STAP26' : 'STAP18')
 
 /** Regels van de Crate (STAP18: crate_rules). Zonder STAP18 de oude regels, zonder Set en Type pack. */
 export interface CrateRules {
@@ -207,7 +206,7 @@ function toWallet(v: unknown): CrateSync {
 
 // --- Server (STAP23): Edge Function "crate" ---
 
-export const CRATE_SERVER_MISSING = 'This needs the crate function and STAP23 in Supabase (see TODO.md).'
+export const CRATE_SERVER_MISSING = 'The Pack game is not available right now. Try again later.'
 
 let serverCheck: Promise<boolean> | null = null
 
@@ -322,12 +321,12 @@ export async function craftCard(tcgdexId: string): Promise<{ points: number; cos
 export async function openCratePack(cards: readonly PackPull[], pack: PackKind = 'booster'): Promise<CrateWallet & { cost: number }> {
   let { data, error } = await supabase.rpc('crate_open_pack', { p_cards: cards, p_pack: pack })
   if (error && missingFunction(error)) {
-    if (pack !== 'booster') throw new Error('Great and Master packs are not set up yet: run STAP12 in Supabase.')
+    if (pack !== 'booster') throw new Error('This pack is not available yet.')
     ;({ data, error } = await supabase.rpc('crate_open_pack', { p_cards: cards }))
   }
   if (error) {
     if (error.message.includes('Not enough')) throw new Error('Not enough Pack points.')
-    if (error.message.includes('Unknown pack')) throw new Error('Set packs are not set up yet: run STAP18 in Supabase.')
+    if (error.message.includes('Unknown pack')) throw new Error('This pack is not available yet.')
     throw new Error(`Opening the pack failed: ${error.message}`)
   }
   const o = isRecord(data) ? data : {}
