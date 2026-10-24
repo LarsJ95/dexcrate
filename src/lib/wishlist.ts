@@ -172,6 +172,25 @@ export async function deleteWishlistItem(id: string): Promise<void> {
   if (error) throw new Error(`Removing failed: ${error.message}`)
 }
 
+type WishKey = Pick<WishlistItem, 'tcgdex_id' | 'name' | 'set_code' | 'card_number'>
+
+const norm = (s: string | null | undefined): string => (s ?? '').trim().toLowerCase()
+const numberOf = (s: string | null | undefined): string => norm(s).replace(/^0+(?=.)/, '')
+
+/**
+ * Staat deze kaart al op je wishlist (24-10-2026, op verzoek: dezelfde Mewtwo stond er twee keer in)? Gekoppeld:
+ * dezelfde cataloguskaart. Anders: dezelfde naam, set en nummer. Uitvoering en taal tellen niet mee: het is een
+ * waarschuwing, je kunt hem toch toevoegen.
+ */
+export function sameWishes(items: readonly WishlistItem[], wish: WishKey): WishlistItem[] {
+  if (!norm(wish.name) && !wish.tcgdex_id) return []
+  return items.filter((i) =>
+    i.tcgdex_id && wish.tcgdex_id
+      ? norm(i.tcgdex_id) === norm(wish.tcgdex_id)
+      : norm(i.name) === norm(wish.name) && norm(i.set_code) === norm(wish.set_code) && numberOf(i.card_number) === numberOf(wish.card_number),
+  )
+}
+
 /**
  * Hoeveel passende exemplaren je al hebt (in bezit of onderweg): zelfde cataloguskaart,
  * en — als opgegeven — dezelfde uitvoering en taal.

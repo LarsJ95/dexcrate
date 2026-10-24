@@ -1,5 +1,5 @@
 import { errorText } from '../lib/errors'
-import { useState, type FormEvent, type JSX } from 'react'
+import { useEffect, useMemo, useState, type FormEvent, type JSX } from 'react'
 import { useCardInfo } from '../hooks/useCardInfo'
 import { useCardPrice } from '../hooks/useCardPrice'
 import { useManualLists } from '../hooks/useManualLists'
@@ -11,8 +11,8 @@ import { formatEur } from '../lib/stats'
 import { getSet, lookupLang, type Lang } from '../lib/tcgdex'
 import { cardLanguageOf } from '../lib/cardmarket'
 import { CONDITION_LABELS, LANGUAGE_LABELS, VARIANT_LABELS, type CardLanguage, type Condition, type Variant } from '../lib/types'
-import { addWishlistItem, deleteWishlistItem, updateWishlistItem, type WishlistInput, type WishlistItem } from '../lib/wishlist'
-import { setItemLists } from '../lib/wishlistLists'
+import { addWishlistItem, deleteWishlistItem, listWishlist, sameWishes, updateWishlistItem, type WishlistInput, type WishlistItem } from '../lib/wishlist'
+import { listListMembers, setItemLists, type ListMembers } from '../lib/wishlistLists'
 import { CardmarketLink } from './CardmarketLink'
 import { LinkPicker } from './LinkPicker'
 import { ListChoice } from './ListChoice'
@@ -94,6 +94,56 @@ export function WishlistDialog({ item, initial, onClose, onSaved, onDeleted, lis
   const [busy, setBusy] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Al op je wishlist? (alleen bij een nieuwe wens) Met de eigen lijsten waar die wens in staat.
+  const [wishes, setWishes] = useState<WishlistItem[] | null>(null)
+  const [members, setMembers] = useState<ListMembers>(new Map())
+  const hasLists = lists.length > 0
+  useEffect(() => {
+    if (item) return
+    let cancelled = false
+    listWishlist()
+      .then((rows) => {
+        if (!cancelled) setWishes(rows)
+      })
+      .catch((err: unknown) => console.warn('Wishlist ophalen voor dubbele wens mislukt', err))
+    return () => {
+      cancelled = true
+    }
+  }, [item])
+  useEffect(() => {
+    if (item || !hasLists) return
+    let cancelled = false
+    listListMembers()
+      .then((m) => {
+        if (!cancelled) setMembers(m)
+      })
+      .catch((err: unknown) => console.warn('Lijsten van de wensen ophalen mislukt', err))
+    return () => {
+      cancelled = true
+    }
+  }, [item, hasLists])
+  const twin = useMemo(
+    () => (item || !wishes ? null : (sameWishes(wishes, { tcgdex_id: tcgdexId, name, set_code: setCode, card_number: number })[0] ?? null)),
+    [item, wishes, tcgdexId, name, setCode, number],
+  )
+  const twinLists = twin ? lists.filter((l) => members.get(l.id)?.has(twin.id)) : []
+  // Gekozen lijsten waar die wens nog niet in staat: dan kun je hem daar in zetten in plaats van een tweede toe te voegen.
+  const twinMissing = twin ? lists.filter((l) => chosenLists.has(l.id) && !members.get(l.id)?.has(twin.id)) : []
+
+  async function addToTwin(): Promise<void> {
+    if (!twin || busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      await setItemLists(twin.id, { add: twinMissing.map((l) => l.id), remove: [] })
+      if (ownLists) rememberLastLists(lists.filter((l) => chosenLists.has(l.id)).map((l) => l.id))
+      onSaved(twin, givenLists ? new Set([...twinLists, ...twinMissing].map((l) => l.id)) : null)
+    } catch (err) {
+      setError(errorText(err, 'Adding it to your list failed.'))
+      setBusy(false)
+    }
+  }
 
   // Alleen uitvoeringen die volgens de catalogus bestaan.
   const info = useCardInfo(tcgdexId)
@@ -286,6 +336,21 @@ export function WishlistDialog({ item, initial, onClose, onSaved, onDeleted, lis
 
         {lists.length > 0 && <ListChoice legend="Your lists" lists={lists} chosen={chosenLists} onChange={setChosenLists} />}
 
+        {twin && (
+          <div className="notice wish-twin" role="status">
+            <p>
+              <strong>Already on your wishlist</strong>
+              {twinLists.length > 0 ? ` in ${twinLists.map((l) => l.name).join(', ')}` : ''}
+              {twin.max_price !== null ? ` · max. ${formatEur(twin.max_price)}` : ''}.
+            </p>
+            {twinMissing.length > 0 && (
+              <button type="button" className="small-btn" onClick={() => void addToTwin()} disabled={busy}>
+                Add that one to {twinMissing.map((l) => l.name).join(', ')} instead
+              </button>
+            )}
+          </div>
+        )}
+
         {error && (
           <p className="error" role="alert">
             {error}
@@ -308,7 +373,7 @@ export function WishlistDialog({ item, initial, onClose, onSaved, onDeleted, lis
             </button>
           ) : (
             <button type="submit" className="primary" disabled={busy}>
-              {busy ? 'Saving…' : 'Save'}
+              {busy ? 'Saving…' : twin ? 'Add anyway' : 'Save'}
             </button>
           )}
         </footer>

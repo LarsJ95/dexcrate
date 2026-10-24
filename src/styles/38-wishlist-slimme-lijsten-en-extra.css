@@ -100,3 +100,14 @@ button.wish-list-tile[aria-pressed='true'] {
   }
 }
 
+
+/* Al op je wishlist (24-10-2026): melding in het venster, met eventueel de knop om de bestaande wens in de lijst te zetten. */
+.wish-twin {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+}
+
+.wish-twin p {
+  margin: 0;
+}
