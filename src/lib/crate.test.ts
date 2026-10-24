@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('./supabase', () => ({ supabase: {} }))
-const { ERA_IDS, GREAT_SLOT, HIT_SLOT, MISSING_FIRST, OLD_RULES, packStep, RARE_SLOT, canAfford, craftClassOf, craftCost, crateSetProgress, packCost, packSlots, packsByCost, pickSetCard, setPackSlots, toRules, tradeValue } = await import('./crate')
+const { GREAT_SLOT, HIT_SLOT, MISSING_FIRST, OLD_RULES, packStep, RARE_SLOT, canAfford, craftClassOf, craftCost, crateSetProgress, packCost, packSlots, packsByCost, pickSetCard, setPackSlots, toRules, tradeValue } = await import('./crate')
 
 describe('Crate-pakje', () => {
   it('kansen per vak tellen op tot 1', () => {
@@ -38,7 +38,8 @@ describe('Crate-pakje', () => {
   })
   it('regels uit de database (STAP18), kapot antwoord = oude regels', () => {
     const rules = toRules({ daily: 100, trade_factor: 2, crate_set: 500, packs: { booster: 100, great: 300, master: 1000, set: 200, type: 300 } })
-    expect(rules).toEqual({ daily: 100, tradeFactor: 2, crateSet: 500, packs: { booster: 100, great: 300, master: 1000, set: 200, type: 300 }, craft: {} })
+    // Type pack is weggehaald (24-10-2026): zijn prijs in de database wordt genegeerd.
+    expect(rules).toEqual({ daily: 100, tradeFactor: 2, crateSet: 500, packs: { booster: 100, great: 300, master: 1000, set: 200 }, craft: {} })
     expect(canAfford(rules, 'set', 200, false)).toBe(true)
     expect(toRules(null)).toBe(OLD_RULES)
     expect(toRules({ packs: { set: -5, booster: 'x' } }).packs).toEqual({})
@@ -93,16 +94,15 @@ describe('Crate-pakje', () => {
   })
   it('pakjes van goedkoop naar duur; gelijke prijs in vaste volgorde, zonder prijs achteraan', () => {
     const rules = toRules({ daily: 150, trade_factor: 2, crate_set: 500, packs: { booster: 100, great: 300, master: 1000, set: 150, type: 300 } })
-    expect(packsByCost(rules)).toEqual(['booster', 'set', 'great', 'type', 'master', 'lucky', 'pokemon', 'era', 'daily'])
-    expect(packsByCost(OLD_RULES)).toEqual(['booster', 'great', 'master', 'set', 'type', 'lucky', 'pokemon', 'era', 'daily'])
+    expect(packsByCost(rules)).toEqual(['booster', 'set', 'great', 'master', 'lucky', 'daily'])
+    expect(packsByCost(OLD_RULES)).toEqual(['booster', 'great', 'master', 'set', 'lucky', 'daily'])
   })
-  it('STAP26: Lucky, Pokémon, Era en Pakje van de dag met hun prijs; zonder STAP26 de juiste melding', () => {
+  it('STAP26: Lucky en Pakje van de dag met hun prijs; weggehaalde pakjes (Type, Pokémon, Era) genegeerd', () => {
     const rules = toRules({ packs: { booster: 100, great: 200, master: 1000, set: 150, type: 300, lucky: 150, pokemon: 250, era: 200, daily: 200 } })
-    expect(packsByCost(rules)).toEqual(['booster', 'set', 'lucky', 'great', 'era', 'daily', 'pokemon', 'type', 'master'])
-    expect(canAfford(rules, 'pokemon', 249, true)).toBe(false)
+    expect(packsByCost(rules)).toEqual(['booster', 'set', 'lucky', 'great', 'daily', 'master'])
+    expect(Object.keys(rules.packs)).not.toContain('pokemon')
     expect(canAfford(rules, 'lucky', 150, false)).toBe(true)
     expect(packStep('daily')).toBe('STAP26')
     expect(packStep('set')).toBe('STAP18')
-    expect(ERA_IDS).toContain('wotc')
   })
 })

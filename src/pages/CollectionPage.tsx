@@ -15,7 +15,8 @@ import { SaleDialog } from '../components/SaleDialog'
 import { useNewCardDefaults } from '../hooks/useNewCardDefaults'
 import { useTransactionsEnabled } from '../hooks/useTransactionsEnabled'
 import { EmptyState } from '../components/EmptyState'
-import { IconCamera, IconClose, IconEdit, IconPlus, IconReceipt, IconSearch, IconTag } from '../components/Icons'
+import { IconCamera, IconClose, IconEdit, IconPlus, IconReceipt, IconSearch, IconTag, IconTrash } from '../components/Icons'
+import { DeleteCardsDialog } from '../components/DeleteCardsDialog'
 import { useDismissedIds } from '../hooks/useDismissedIds'
 import { SearchClear } from '../components/SearchClear'
 import { useMarketPrices } from '../hooks/useMarketPrices'
@@ -52,6 +53,7 @@ export function CollectionPage(): JSX.Element {
   const infos = useCatalogInfos(catalogKeys, needsCatalog(extra))
   const setOptions = useSetOptions(cards, filter)
   const [bulkFor, setBulkFor] = useState<Card[] | null>(null)
+  const [deleteFor, setDeleteFor] = useState<{ cards: Card[]; all: boolean } | null>(null)
   const [lastBulk, setLastBulk] = useState<BulkChange[] | null>(null)
 
   useEffect(() => {
@@ -205,6 +207,7 @@ export function CollectionPage(): JSX.Element {
   const selectedCards = selected ? (cards ?? []).filter((c) => selected.has(c.id)) : []
   const canSell = selectedCards.length > 0 && selectedCards.every((c) => c.ownership === 'owned')
   const canBuy = selectedCards.length > 0 && selectedCards.every((c) => c.ownership === 'owned' || c.ownership === 'incoming')
+  const allVisibleSelected = selected !== null && visible.length > 0 && visible.every((c) => selected.has(c.id))
   /** Laatste bulkwijziging terugdraaien (oude waarden terugzetten). */
   async function undoBulk(): Promise<void> {
     if (!lastBulk) return
@@ -467,7 +470,14 @@ export function CollectionPage(): JSX.Element {
       {selected !== null && (
         <div className="select-bar" role="region" aria-label="Selection">
           <span className="select-count">{selectedCards.length === 0 ? 'Tap cards' : `${selectedCards.length} selected`}</span>
+          <button type="button" className="small-btn ghost" onClick={() => setSelected(allVisibleSelected ? new Set() : new Set(visible.map((c) => c.id)))} disabled={visible.length === 0}>
+            {allVisibleSelected ? 'Select none' : `Select all (${visible.length})`}
+          </button>
           <span className="spacer" />
+          <button type="button" className="small-btn danger-text" disabled={selectedCards.length === 0} onClick={() => setDeleteFor({ cards: selectedCards, all: allVisibleSelected })}>
+            <IconTrash size={16} />
+            Delete
+          </button>
           <button type="button" className="small-btn" disabled={selectedCards.length === 0} onClick={() => setBulkFor(selectedCards)}>
             <IconEdit size={16} />
             Edit
@@ -492,6 +502,21 @@ export function CollectionPage(): JSX.Element {
             setLastBulk(changes.length > 0 ? changes : null)
             setActionError(error)
             setBulkFor(null)
+            setSelected(null)
+          }}
+        />
+      )}
+
+      {deleteFor && (
+        <DeleteCardsDialog
+          cards={deleteFor.cards}
+          all={deleteFor.all}
+          onClose={() => setDeleteFor(null)}
+          onDeleted={(ids, error) => {
+            const gone = new Set(ids)
+            setCards((list) => list?.filter((c) => !gone.has(c.id)) ?? null)
+            setActionError(error)
+            setDeleteFor(null)
             setSelected(null)
           }}
         />

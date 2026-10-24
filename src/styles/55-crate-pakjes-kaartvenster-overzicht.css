@@ -136,34 +136,15 @@ button.crate-shop-open {
   border-color: color-mix(in oklab, var(--gold-b) 55%, var(--line));
 }
 
-/* Set pack groen; Type pack in de kleur van het gekozen type (STAP18). */
+/* Set pack groen (STAP18). */
 .pack-set .crate-pack-art {
   background: conic-gradient(from 30deg, #14532d, #22c55e, #bbf7d0, #22c55e, #14532d);
 }
 
-.pack-type .crate-pack-art {
-  background: conic-gradient(
-    from 30deg,
-    color-mix(in oklab, var(--pack-type, var(--type)) 45%, #000),
-    var(--pack-type, var(--type)),
-    color-mix(in oklab, var(--pack-type, var(--type)) 40%, #fff),
-    var(--pack-type, var(--type)),
-    color-mix(in oklab, var(--pack-type, var(--type)) 45%, #000)
-  );
-}
-
-/* STAP26: Lucky goud-groen (klavertje), Pokémon geel-rood, Era sepia (oud), Pakje van de dag roze-oranje. */
+/* STAP26: Lucky goud-groen (klavertje), Pakje van de dag roze-oranje. */
 .pack-lucky .crate-pack-art {
   border-color: var(--gold-b);
   background: conic-gradient(from 30deg, #065f46, #10b981, var(--gold-a), #10b981, #065f46);
-}
-
-.pack-pokemon .crate-pack-art {
-  background: conic-gradient(from 30deg, #b91c1c, #facc15, #fef9c3, #facc15, #b91c1c);
-}
-
-.pack-era .crate-pack-art {
-  background: conic-gradient(from 30deg, #451a03, #a16207, #fde68a, #a16207, #451a03);
 }
 
 .pack-daily .crate-pack-art {
@@ -171,8 +152,7 @@ button.crate-shop-open {
 }
 
 .crate-pack-choice,
-.crate-pack-choice select,
-.crate-pack-choice input {
+.crate-pack-choice select {
   width: 100%;
   min-width: 0;
 }

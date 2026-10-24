@@ -1,5 +1,5 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
-import { rarityMatches, rarityRule, type EnergyType } from './cardTraits'
+import { rarityMatches, rarityRule } from './cardTraits'
 import { fetchAllPages } from './fetchAll'
 import { supabase } from './supabase'
 import { getSet, getSetList, getSetRarities, searchCards, setIdOf, setOfKey, type SetCard } from './tcgdex'
@@ -27,40 +27,24 @@ function changed<T>(result: T): T {
   return result
 }
 
-/** Soorten pakjes: booster (STAP11), great en master (STAP12), set en type (STAP18), lucky, pokemon, era en daily (STAP26). */
-export type PackKind = 'booster' | 'great' | 'master' | 'set' | 'type' | 'lucky' | 'pokemon' | 'era' | 'daily'
+/**
+ * Soorten pakjes: booster (STAP11), great en master (STAP12), set (STAP18), lucky en daily (STAP26). Type, Pokémon en
+ * Era pack zijn op 24-10-2026 op verzoek weggehaald (de Crate-functie en de database kennen ze nog; de app biedt ze niet).
+ */
+export type PackKind = 'booster' | 'great' | 'master' | 'set' | 'lucky' | 'daily'
 
 export const PACKS: Record<PackKind, { name: string; contents: string }> = {
   booster: { name: 'Booster pack', contents: '6 common, 3 uncommon and 1 rare or better. One free every day.' },
   great: { name: 'Great pack', contents: '5 common, 3 uncommon and 2 rare slots with better odds.' },
   master: { name: 'Master pack', contents: '4 uncommon, 4 rare slots with better odds and 2 guaranteed hits (Double rare or better).' },
   set: { name: 'Set pack', contents: 'Pick a set: 5 common, 3 uncommon and 2 rare or better, all from that set.' },
-  type: { name: 'Type pack', contents: 'Pick a type: like a Great pack, with only cards of that type.' },
   lucky: { name: 'Lucky pack', contents: 'Like a Booster pack, with a 1 in 30 chance of a God pack: all 10 cards are hits.' },
-  pokemon: { name: 'Pokémon pack', contents: 'Pick a Pokémon: 10 cards of that Pokémon, 2 with better odds of a rare.' },
-  era: { name: 'Era pack', contents: 'Pick an era: like a Great pack, only cards from sets of that era.' },
   daily: { name: 'Pack of the day', contents: 'A different set every day, the same for everyone: 5 common, 3 uncommon, 1 rare and 1 guaranteed hit.' },
 }
 
 /** Pakjes die alleen de Crate-functie kan trekken (STAP26); STAP-bestand per soort voor de melding zonder prijs. */
-const SERVER_ONLY: readonly PackKind[] = ['lucky', 'pokemon', 'era', 'daily']
+const SERVER_ONLY: readonly PackKind[] = ['lucky', 'daily']
 export const packStep = (kind: PackKind): string => (SERVER_ONLY.includes(kind) ? 'STAP26' : 'STAP18')
-
-/** Tijdperken voor het Era pack (zelfde sleutels als de Crate-functie). */
-export const ERAS = [
-  { id: 'wotc', name: 'Wizards era (1999–2003)' },
-  { id: 'ex', name: 'EX (2003–2007)' },
-  { id: 'dp', name: 'Diamond & Pearl, Platinum' },
-  { id: 'hgss', name: 'HeartGold & SoulSilver' },
-  { id: 'bw', name: 'Black & White' },
-  { id: 'xy', name: 'XY' },
-  { id: 'sm', name: 'Sun & Moon' },
-  { id: 'swsh', name: 'Sword & Shield' },
-  { id: 'sv', name: 'Scarlet & Violet' },
-  { id: 'me', name: 'Mega Evolution' },
-] as const
-export type EraId = (typeof ERAS)[number]['id']
-export const ERA_IDS: readonly EraId[] = ERAS.map((e) => e.id)
 
 /** Regels van de Crate (STAP18: crate_rules). Zonder STAP18 de oude regels, zonder Set en Type pack. */
 export interface CrateRules {
@@ -285,7 +269,7 @@ export async function getDailyPack(): Promise<{ id: string; name: string }> {
  */
 export async function openPack(pack: PackKind, choice: PackChoice = {}): Promise<CrateWallet & { cost: number; pulls: PackPull[]; god: boolean }> {
   if (await hasCrateServer()) {
-    const r = await crateServer({ action: 'open', pack, setId: choice.setId, type: choice.type, dexId: choice.dexId, era: choice.era }, 'Opening the pack failed')
+    const r = await crateServer({ action: 'open', pack, setId: choice.setId }, 'Opening the pack failed')
     const pulls = (Array.isArray(r.pulls) ? r.pulls : []).flatMap((p: unknown): PackPull[] =>
       isRecord(p) && typeof p.tcgdex_id === 'string' && typeof p.name === 'string'
         ? [{ tcgdex_id: p.tcgdex_id, name: p.name, image: typeof p.image === 'string' ? p.image : null, rarity: typeof p.rarity === 'string' ? p.rarity : '', set_name: typeof p.set_name === 'string' ? p.set_name : null }]
@@ -319,7 +303,7 @@ export async function openCratePack(cards: readonly PackPull[], pack: PackKind =
   }
   if (error) {
     if (error.message.includes('Not enough')) throw new Error('Not enough Crate points.')
-    if (error.message.includes('Unknown pack')) throw new Error('Set and Type packs are not set up yet: run STAP18 in Supabase.')
+    if (error.message.includes('Unknown pack')) throw new Error('Set packs are not set up yet: run STAP18 in Supabase.')
     throw new Error(`Opening the pack failed: ${error.message}`)
   }
   const o = isRecord(data) ? data : {}
@@ -493,9 +477,9 @@ function pick(odds: Odds, random: () => number): string {
 
 const times = (n: number, f: () => string): string[] => Array.from({ length: n }, f)
 
-/** Zeldzaamheden van een pakje (10 vakken); Type pack = Great. Set pack: zie setPackSlots. */
+/** Zeldzaamheden van een pakje (10 vakken). Set pack: zie setPackSlots. */
 export function packSlots(pack: PackKind = 'booster', random: () => number = Math.random): string[] {
-  if (pack === 'great' || pack === 'type') return [...times(5, () => 'Common'), ...times(3, () => 'Uncommon'), ...times(2, () => pick(GREAT_SLOT, random))]
+  if (pack === 'great') return [...times(5, () => 'Common'), ...times(3, () => 'Uncommon'), ...times(2, () => pick(GREAT_SLOT, random))]
   if (pack === 'master') return [...times(4, () => 'Uncommon'), ...times(4, () => pick(GREAT_SLOT, random)), ...times(2, () => pick(HIT_SLOT, random))]
   return [...times(6, () => 'Common'), ...times(3, () => 'Uncommon'), pick(RARE_SLOT, random)]
 }
@@ -509,18 +493,6 @@ function pool(rarity: string): Promise<SetCard[]> {
     p = searchCards('en', '', { rarity }).then((list) => list.filter((c) => c.image))
     p.catch(() => pools.delete(rarity))
     pools.set(rarity, p)
-  }
-  return p
-}
-
-/** Alle Engelse kaarten van een zeldzaamheid en een type met plaatje (Type pack). */
-function typePool(rarity: string, type: EnergyType): Promise<SetCard[]> {
-  const k = `${rarity}|${type}`
-  let p = pools.get(k)
-  if (!p) {
-    p = searchCards('en', '', { rarity, type }).then((list) => list.filter((c) => c.image))
-    p.catch(() => pools.delete(k))
-    pools.set(k, p)
   }
   return p
 }
@@ -549,12 +521,6 @@ export interface PackChoice {
   setId?: string
   /** Set pack: kaarten die al in je Crate zitten ("en/sv03.5-025"), voor "ontbrekend eerst". */
   owned?: ReadonlySet<string>
-  /** Type pack: energietype. */
-  type?: EnergyType
-  /** Pokémon pack: Pokédex-nummer. */
-  dexId?: number
-  /** Era pack: tijdperk. */
-  era?: EraId
 }
 
 /**
@@ -598,12 +564,8 @@ export async function drawPack(pack: PackKind = 'booster', choice: PackChoice = 
       pulls.push({ tcgdex_id: `en/${card.id}`, name: card.name, image: card.image, rarity: card.rarity, set_name: name })
     }
   } else {
-    const type = pack === 'type' ? choice.type : undefined
-    if (pack === 'type' && !type) throw new Error('Pick a type first.')
     for (const rarity of packSlots(pack, random)) {
-      let list = type ? await typePool(rarity, type) : await pool(rarity)
-      // Zeldzaamheid bestaat niet voor dit type: dan een gewone rare van dat type.
-      if (list.length === 0 && type) list = await typePool('Rare', type)
+      const list = await pool(rarity)
       if (list.length === 0) continue
       const card = list[Math.floor(random() * list.length)]
       pulls.push({ tcgdex_id: `en/${card.id}`, name: card.name, image: card.image, rarity, set_name: sets.get(setIdOf(card))?.name ?? null })
