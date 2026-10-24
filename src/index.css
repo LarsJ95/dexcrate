@@ -62,9 +62,11 @@
   --hp-mid: #f2c12e;
   --hp-low: #f0603e;
 
-  /* Achtergrondgloed en energiepatroon in de typekleur (DESIGN.md §4). */
-  --type-glow: 34%;
-  --type-glow-far: 12%;
+  /* Achtergrondgloed en energiepatroon (DESIGN.md §4). Donker: vaste neutrale indigo-gloed (24-10-2026, op verzoek: de
+     gele typegloed was te veel); licht volgt de typekleur. */
+  --glow: rgb(72 86 176);
+  --type-glow: 22%;
+  --type-glow-far: 10%;
   --type-pattern: 0.05;
 
   --logo-top: #ff5a3c;
@@ -130,6 +132,7 @@
   --hp-mid: #946b00;
   --hp-low: #c23b22;
 
+  --glow: var(--type);
   --type-glow: 24%;
   --type-glow-far: 8%;
   --type-pattern: 0.07;
@@ -253,8 +256,8 @@
   color: var(--ink);
   /* Achtergrond op html (niet body): zo komen de hemel (Sky) en het energiebehang (body::before) erboven. */
   background:
-    radial-gradient(120% 55% at 50% -5%, color-mix(in oklab, var(--type) var(--type-glow), transparent), transparent 72%),
-    radial-gradient(80% 40% at 100% 100%, color-mix(in oklab, var(--type) var(--type-glow-far), transparent), transparent 70%),
+    radial-gradient(120% 55% at 50% -5%, color-mix(in oklab, var(--glow) var(--type-glow), transparent), transparent 72%),
+    radial-gradient(80% 40% at 100% 100%, color-mix(in oklab, var(--glow) var(--type-glow-far), transparent), transparent 70%),
     var(--bg);
   background-attachment: fixed;
   transition: --type 700ms ease;
