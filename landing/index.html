@@ -119,7 +119,9 @@
         font-style: normal;
         font-weight: 400 900;
         font-stretch: 62% 125%;
-        font-display: swap;
+        /* optional (25-10-2026, keuze gebruiker): niet wisselen na het laden, zodat de hero niet verspringt (CLS). Niet op
+           tijd binnen (eerste bezoek, trage verbinding): systeemlettertype; daarna uit de cache wel Archivo. */
+        font-display: optional;
         src: url('./fonts/archivo-latin.woff2') format('woff2');
       }
       :root {
