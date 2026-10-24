@@ -28,7 +28,7 @@ describe('Overview: trainer', () => {
     const b = badges({ cards: 43, species: 30, value: 169 })
     expect(b.filter((x) => x.earned).map((x) => x.id)).toEqual(['boulder', 'cascade', 'soul'])
     expect(b.find((x) => x.id === 'thunder')?.progress).toBeCloseTo(0.86)
-    expect(trainerName('lars.vanhamburg@hotmail.com')).toBe('Lars')
+    expect(trainerName('ash.ketchum@example.com')).toBe('Ash')
     expect(trainerName(null)).toBe('Trainer')
   })
 })

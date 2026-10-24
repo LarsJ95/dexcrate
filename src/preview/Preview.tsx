@@ -117,7 +117,7 @@ if (momentParam) {
     else if (momentParam === 'gotcha') showMoment({ kind: 'gotcha', name: 'Charizard ex' })
     else if (momentParam === 'badge') showMoment({ kind: 'badge', name: 'Thunder Badge', color: 'var(--energy-lightning)' })
     else if (momentParam === 'dex') showMoment({ kind: 'dex', dexId: 573, name: 'Cinccino', more: 2 })
-    else if (momentParam === 'level') showMoment({ kind: 'level', level: 12, trainer: 'Lars' })
+    else if (momentParam === 'level') showMoment({ kind: 'level', level: 12, trainer: 'Ash' })
     else if (momentParam === 'achievement') showMoment({ kind: 'achievement', name: 'Professor Oak’s Lab', how: 'Own a Pokémon from each Kanto starter line.' })
     else if (momentParam === 'almost') showMoment({ kind: 'almost', setName: '151', left: 2, missing: ['Mew ex #151', 'Charizard ex #199'] })
     else if (momentParam === 'pack')

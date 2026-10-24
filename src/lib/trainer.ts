@@ -134,7 +134,7 @@ export function badges(stats: { cards: number; species: number; value: number })
   })
 }
 
-/** Trainernaam uit het e-mailadres ("lars.vanhamburg@…" → "Lars"); leeg = "Trainer". */
+/** Trainernaam uit het e-mailadres ("ash.ketchum@…" → "Ash"); leeg = "Trainer". */
 export function trainerName(email: string | null | undefined): string {
   const first = (email ?? '').split('@')[0].split(/[._+-]/)[0].replace(/[^\p{L}\p{N}]/gu, '')
   return first ? first.charAt(0).toUpperCase() + first.slice(1, 20) : 'Trainer'
