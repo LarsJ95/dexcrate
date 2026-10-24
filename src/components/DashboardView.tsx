@@ -25,6 +25,7 @@ import { EmptyState } from './EmptyState'
 import { IconCamera } from './Icons'
 import { LineChart } from './LineChart'
 import { Spotlight } from './Spotlight'
+import { StartGuide } from './StartGuide'
 
 interface Props {
   cards: Card[]
@@ -201,18 +202,23 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
     return (
       <section className="page">
         <h1>Home</h1>
-        <EmptyState
-          title="Start your collection"
-          action={
-            <a className="button-link primary" href="#/scan">
-              <IconCamera size={18} />
-              Scan cards
-            </a>
+        <StartGuide
+          hasCards={false}
+          fallback={
+            <EmptyState
+              title="Start your collection"
+              action={
+                <a className="button-link primary" href="#/scan">
+                  <IconCamera size={18} />
+                  Scan cards
+                </a>
+              }
+            >
+              Scan your cards or <a href="#/import">import a spreadsheet</a>. Dexcrate then shows what they’re worth, how far you are with each set, and you
+              earn Pack points to open packs.
+            </EmptyState>
           }
-        >
-          Scan your cards or <a href="#/import">import a spreadsheet</a>. Dexcrate then shows what they’re worth, how far you are with each set, and you
-          earn Pack points to open packs.
-        </EmptyState>
+        />
       </section>
     )
   }
@@ -224,6 +230,7 @@ export function DashboardView({ cards, prices, pricesLoading, series, onOpenCard
     <section className="page dashboard">
       <div className="dash-main">
       <h1>Home</h1>
+      <StartGuide hasCards />
 
       <div className="hero">
         {partner && <Partner dexId={partner.dexId} name={partner.name} />}
