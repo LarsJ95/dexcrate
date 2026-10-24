@@ -94,6 +94,18 @@ const CARDS: { card: Card; market: MarketValue | null }[] = [
   { card: demo({ name: 'Arbok', set_code: 'TEF', card_number: '176', tcgdex_id: 'en/sv05-176', grading_company: 'PSA', grade: 10, purchase_price: 40 }), market: { value: 3.1, basis: 'trend', reverse: false, change30: 0.02 } },
   { card: demo({ name: 'Chaos Rising Booster Box', kind: 'sealed', purchase_price: 201.9 }), market: null },
   { card: demo({ name: 'Morpeko', set_code: 'CBB3C', card_number: '14', language: 'zh-cn', purchase_price: 3.5 }), market: null },
+  // ?showcase=1: voller voorbeeld voor de screenshots op de landingspagina (verzonnen bezit en waarden).
+  ...(params.get('showcase') === '1'
+    ? [
+        { card: demo({ name: 'Giratina V', set_code: 'LOR', card_number: '186', tcgdex_id: 'en/swsh11-186', variant: 'holo', purchase_price: 420 }), market: { value: 512.4, basis: 'trend' as const, reverse: false, change30: 0.08 } },
+        { card: demo({ name: 'Iono', set_code: 'PAL', card_number: '254', tcgdex_id: 'en/sv02-254', variant: 'holo', purchase_price: 35 }), market: { value: 41.9, basis: 'trend' as const, reverse: false, change30: 0.03 } },
+        { card: demo({ name: 'Pikachu VMAX', set_code: 'VIV', card_number: '188', tcgdex_id: 'en/swsh4-188', variant: 'holo', purchase_price: 260 }), market: { value: 318.5, basis: 'trend' as const, reverse: false, change30: 0.05 } },
+        { card: demo({ name: 'Charizard ex', set_code: 'OBF', card_number: '223', tcgdex_id: 'en/sv03-223', variant: 'holo', purchase_price: 70 }), market: { value: 88.2, basis: 'trend' as const, reverse: false, change30: 0.11 } },
+        { card: demo({ name: 'Gardevoir ex', set_code: 'SVI', card_number: '245', tcgdex_id: 'en/sv01-245', variant: 'holo', purchase_price: 18 }), market: { value: 22.75, basis: 'trend' as const, reverse: false, change30: -0.02 } },
+        { card: demo({ name: 'Mew ex', set_code: 'MEW', card_number: '205', tcgdex_id: 'en/sv03.5-205', variant: 'holo', purchase_price: 30 }), market: { value: 34.6, basis: 'trend' as const, reverse: false, change30: 0.04 } },
+        { card: demo({ name: 'Pikachu', set_code: 'MEW', card_number: '25', tcgdex_id: 'en/sv03.5-025', quantity: 4, purchase_price: 0.5 }), market: { value: 0.42, basis: 'trend' as const, reverse: false, change30: 0 } },
+      ]
+    : []),
 ]
 
 // ?sky=star|flyer|gengar[&phase=dawn|day|dusk|night]: achtergrond-gebeurtenis direct starten.
@@ -165,7 +177,7 @@ const PRICES: PriceMap = new Map(
 /** 30 dagen fictief waardeverloop. */
 const SERIES = Array.from({ length: 30 }, (_, i) => ({
   date: `2026-09-${String(i + 1).padStart(2, '0')}`,
-  value: 160 + Math.round((Math.sin(i / 4) * 8 + i * 0.6) * 100) / 100,
+  value: (params.get('showcase') === '1' ? 1080 : 160) + Math.round((Math.sin(i / 4) * 8 + i * 0.6) * (params.get('showcase') === '1' ? 700 : 100)) / 100,
 }))
 
 /** Binder-uiterlijk met een echte set (151) en verzonnen bezit. */
