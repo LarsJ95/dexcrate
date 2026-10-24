@@ -262,23 +262,31 @@ export async function listSnapshots(tcgdexId: string): Promise<PriceSnapshot[]> 
   )
 }
 
+/** De API geeft hoogstens zoveel rijen per verzoek (max_rows), ook als je om meer vraagt. */
+const SNAPSHOT_PAGE = 1000
+
 /** Prijsopnames voor meerdere kaarten tegelijk (voor het waardeverloop van de collectie). */
 export async function listSnapshotsFor(tcgdexIds: readonly string[]): Promise<SnapshotRow[]> {
   const out: SnapshotRow[] = []
   // In blokken, zodat de URL niet te lang wordt.
   for (let i = 0; i < tcgdexIds.length; i += 80) {
     const chunk = tcgdexIds.slice(i, i + 80)
-    const { data, error } = await supabase
-      .from('price_snapshots')
-      .select('tcgdex_id, taken_on, trend, trend_holo')
-      .in('tcgdex_id', chunk)
-      .order('taken_on', { ascending: true })
-      .limit(10000)
-    if (error) throw new Error(`Loading value history failed: ${error.message}`)
-    for (const r of data as unknown[]) {
-      if (isRecord(r) && typeof r.tcgdex_id === 'string' && typeof r.taken_on === 'string') {
-        out.push({ tcgdexId: r.tcgdex_id, takenOn: r.taken_on, trend: numOrNull(r.trend), trendHolo: numOrNull(r.trend_holo) })
+    // Per blok in pagina's, anders vallen de nieuwste dagen weg. Volgorde = primaire sleutel, dus geen dubbele of gemiste rijen.
+    for (let from = 0; ; from += SNAPSHOT_PAGE) {
+      const { data, error } = await supabase
+        .from('price_snapshots')
+        .select('tcgdex_id, taken_on, trend, trend_holo')
+        .in('tcgdex_id', chunk)
+        .order('taken_on', { ascending: true })
+        .order('tcgdex_id', { ascending: true })
+        .range(from, from + SNAPSHOT_PAGE - 1)
+      if (error) throw new Error(`Loading value history failed: ${error.message}`)
+      for (const r of data as unknown[]) {
+        if (isRecord(r) && typeof r.tcgdex_id === 'string' && typeof r.taken_on === 'string') {
+          out.push({ tcgdexId: r.tcgdex_id, takenOn: r.taken_on, trend: numOrNull(r.trend), trendHolo: numOrNull(r.trend_holo) })
+        }
       }
+      if (data.length < SNAPSHOT_PAGE) break
     }
   }
   return out
