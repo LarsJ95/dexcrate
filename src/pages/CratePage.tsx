@@ -23,7 +23,9 @@ import {
   crateSetDone,
   crateSetProgress,
   getCrateRules,
+  DAILY_PACK_LIMIT,
   getDailyPack,
+  getDailyPacksLeft,
   hasCrate,
   listCrateCards,
   openPack as drawAndOpen,
@@ -146,6 +148,8 @@ export function CratePage(): JSX.Element {
   const [setChoices, setSetChoices] = useState<SetChoice[]>([])
   const [packSet, setPackSet] = useState('')
   const [daily, setDaily] = useState<{ id: string; name: string } | null>(null)
+  // Pack of the day nog over vandaag (STAP28); null = onbekend of geen grens.
+  const [dailyLeft, setDailyLeft] = useState<number | null>(null)
   // Sets waarvoor deze sessie al om de Crate-setbonus is gevraagd.
   const askedSets = useRef<Set<string>>(new Set())
 
@@ -214,6 +218,11 @@ export function CratePage(): JSX.Element {
         if (!cancelled) setDaily(d)
       })
       .catch((err: unknown) => console.warn('Pakje van de dag ophalen mislukt', err))
+    getDailyPacksLeft()
+      .then((n) => {
+        if (!cancelled) setDailyLeft(n)
+      })
+      .catch((err: unknown) => console.warn('Aantal Pack of the day ophalen mislukt', err))
     return () => {
       cancelled = true
     }
@@ -261,6 +270,7 @@ export function CratePage(): JSX.Element {
       const result = await drawAndOpen(pack, { setId: packSet || undefined, owned: new Set(before.keys()) })
       setPoints(result.points)
       setFreePack(result.freePack)
+      if (pack === 'daily' && result.dailyLeft !== undefined) setDailyLeft(result.dailyLeft)
       setOpening({ id: ++openingSeq.current, pack, pulls: result.pulls, god: result.god, before })
     } catch (err) {
       setError(errorText(err, 'Opening the pack failed.'))
@@ -408,6 +418,40 @@ export function CratePage(): JSX.Element {
         </p>
       )}
 
+      {/* Uitleg bovenaan, ingeklapt (24-10-2026, op verzoek: stond helemaal onderaan). */}
+      {view === 'packs' && (
+      <details className="panel crate-earn">
+        <summary>How to earn Pack points</summary>
+        <dl>
+          {earnRows(rules).map(([what, pts]) => (
+            <div key={what}>
+              <dt>{what}</dt>
+              <dd>{pts}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="muted small">Each card counts once (adding the same card again gives nothing), sales and purchases at most 20 a day. One free pack every day.</p>
+        {rules.earnCap && (
+          <p className="muted small">
+            Fair play: at most {rules.earnCap.toLocaleString('en-IE')} points a day from your collection (cards, Pokédex, complete sets, sales and purchases). Anything above that comes in on the next days. Sales and purchases only count with at least one card in them.
+          </p>
+        )}
+        {craftRows(rules).length > 0 && (
+          <>
+            <h3 className="small">Buy a missing card</h3>
+            <dl>
+              {craftRows(rules).map(([what, pts]) => (
+                <div key={what}>
+                  <dt>{what}</dt>
+                  <dd>{pts}</dd>
+                </div>
+              ))}
+            </dl>
+          </>
+        )}
+      </details>
+      )}
+
       {view === 'packs' && (
         <div className="crate-pack-groups">
         {PACK_GROUPS.map((group) => {
@@ -423,7 +467,8 @@ export function CratePage(): JSX.Element {
           const p = PACKS[kind]
           const cost = packCost(rules, kind)
           const free = kind === 'booster' && freePack
-          const ok = points !== null && canAfford(rules, kind, points, freePack) && (kind !== 'set' || packSet !== '')
+          const dailyDone = kind === 'daily' && dailyLeft === 0
+          const ok = points !== null && canAfford(rules, kind, points, freePack) && (kind !== 'set' || packSet !== '') && !dailyDone
           return (
             <li key={kind} className={`panel crate-shop pack-${kind}`}>
               {/* Vaste rijen (titel, uitleg, keuze, melding, knop), via subgrid gelijk over alle pakjes in een rij. */}
@@ -434,7 +479,12 @@ export function CratePage(): JSX.Element {
               <span className="muted small crate-shop-text">{p.contents}</span>
               <div className="crate-shop-choice">
                 {cost === null && rulesLoaded && <span className="small muted">Not set up yet: run {packStep(kind)} in Supabase.</span>}
-                {cost !== null && kind === 'daily' && <span className="small">{daily ? `Today: ${daily.name}` : 'Loading today’s set…'}</span>}
+                {cost !== null && kind === 'daily' && (
+                  <span className="small">
+                    {daily ? `Today: ${daily.name}` : 'Loading today’s set…'}
+                    {dailyLeft !== null && <span className="muted"> · {dailyLeft} of {DAILY_PACK_LIMIT} left today</span>}
+                  </span>
+                )}
                 {cost !== null && kind === 'set' && (
                   <>
                     <label className="crate-pack-choice">
@@ -466,7 +516,22 @@ export function CratePage(): JSX.Element {
               ) : (
                 cost !== null && (
                   <button type="button" className="primary crate-shop-open" onClick={() => void openPack(kind)} disabled={busy || !ok || opening !== null}>
-                    {busy ? 'Opening…' : free ? 'Open free daily pack' : `Open (${cost.toLocaleString('en-IE')} points)`}
+                    {busy ? (
+                      'Opening…'
+                    ) : dailyDone ? (
+                      'Back tomorrow'
+                    ) : free ? (
+                      <>
+                        Open <span className="crate-open-long">free daily pack</span>
+                        <span className="crate-open-short">free</span>
+                      </>
+                    ) : (
+                      // Telefoon: "Open" met de prijs eronder (compacte tegel); groter scherm: "Open (150 points)".
+                      <>
+                        Open <span className="crate-open-long">({cost.toLocaleString('en-IE')} points)</span>
+                        <span className="crate-open-short">{cost.toLocaleString('en-IE')} pts</span>
+                      </>
+                    )}
                   </button>
                 )
               )}
@@ -488,7 +553,7 @@ export function CratePage(): JSX.Element {
           god={opening.god}
           before={opening.before}
           tradeFactor={rules.tradeFactor}
-          onOpenAnother={points !== null && canAfford(rules, opening.pack, points, freePack) ? () => void openPack(opening.pack) : null}
+          onOpenAnother={points !== null && canAfford(rules, opening.pack, points, freePack) && !(opening.pack === 'daily' && dailyLeft === 0) ? () => void openPack(opening.pack) : null}
           opening={busy}
           error={error}
           onPoints={setPoints}
@@ -652,38 +717,6 @@ export function CratePage(): JSX.Element {
 
       {opened && <CrateCardSheet card={opened} busy={busy} onTrade={(c) => void tradeIn(c)} onClose={() => setOpened(null)} tradeFactor={rules.tradeFactor} />}
 
-      {view === 'packs' && (
-      <details className="panel crate-earn">
-        <summary>How to earn Pack points</summary>
-        <dl>
-          {earnRows(rules).map(([what, pts]) => (
-            <div key={what}>
-              <dt>{what}</dt>
-              <dd>{pts}</dd>
-            </div>
-          ))}
-        </dl>
-        <p className="muted small">Each card counts once (adding the same card again gives nothing), sales and purchases at most 20 a day. One free pack every day.</p>
-        {rules.earnCap && (
-          <p className="muted small">
-            Fair play: at most {rules.earnCap.toLocaleString('en-IE')} points a day from your collection (cards, Pokédex, complete sets, sales and purchases). Anything above that comes in on the next days. Sales and purchases only count with at least one card in them.
-          </p>
-        )}
-        {craftRows(rules).length > 0 && (
-          <>
-            <h3 className="small">Buy a missing card</h3>
-            <dl>
-              {craftRows(rules).map(([what, pts]) => (
-                <div key={what}>
-                  <dt>{what}</dt>
-                  <dd>{pts}</dd>
-                </div>
-              ))}
-            </dl>
-          </>
-        )}
-      </details>
-      )}
     </section>
   )
 }

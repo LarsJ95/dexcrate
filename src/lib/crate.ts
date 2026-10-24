@@ -272,11 +272,24 @@ export async function getDailyPack(): Promise<{ id: string; name: string }> {
   return { id: r.id, name: r.name }
 }
 
+/** Pack of the day: hoogstens zoveel per dag (STAP28; de database bewaakt het). */
+export const DAILY_PACK_LIMIT = 3
+
+/** Hoeveel Pack of the day je vandaag nog kunt openen; null = STAP28 nog niet gedraaid (dan geen grens tonen). */
+export async function getDailyPacksLeft(): Promise<number | null> {
+  const { data, error } = await supabase.rpc('crate_daily_left')
+  if (error) {
+    if (missingFunction(error)) return null
+    throw new Error(`Loading the pack of the day failed: ${error.message}`)
+  }
+  return typeof data === 'number' ? Math.max(0, Math.min(DAILY_PACK_LIMIT, data)) : null
+}
+
 /**
  * Pakje openen: met de server trekt die de kaarten; anders trekt de app ze (oude manier, niet voor de STAP26-pakjes).
  * `god`: Lucky pack werd een God pack (alleen de server bepaalt dat).
  */
-export async function openPack(pack: PackKind, choice: PackChoice = {}): Promise<CrateWallet & { cost: number; pulls: PackPull[]; god: boolean }> {
+export async function openPack(pack: PackKind, choice: PackChoice = {}): Promise<CrateWallet & { cost: number; pulls: PackPull[]; god: boolean; dailyLeft?: number }> {
   if (await hasCrateServer()) {
     const r = await crateServer({ action: 'open', pack, setId: choice.setId }, 'Opening the pack failed')
     const pulls = (Array.isArray(r.pulls) ? r.pulls : []).flatMap((p: unknown): PackPull[] =>
@@ -285,7 +298,9 @@ export async function openPack(pack: PackKind, choice: PackChoice = {}): Promise
         : [],
     )
     if (pulls.length === 0) throw new Error('Opening the pack failed: no cards came back.')
-    return changed({ points: num(r.points), freePack: r.free_pack === true, cost: num(r.cost), pulls, god: r.god === true })
+    // daily_left (STAP28) alleen als de database het meestuurt.
+    const dailyLeft = typeof r.daily_left === 'number' ? r.daily_left : undefined
+    return changed({ points: num(r.points), freePack: r.free_pack === true, cost: num(r.cost), pulls, god: r.god === true, dailyLeft })
   }
   if (SERVER_ONLY.includes(pack)) throw new Error(CRATE_SERVER_MISSING)
   const pulls = await drawPack(pack, choice)
