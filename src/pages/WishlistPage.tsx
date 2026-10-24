@@ -87,7 +87,7 @@ export function WishlistPage(): JSX.Element {
   // Prijzen en kaartinfo ook als een slimme lijst ze nodig heeft: anders klopt het aantal op de lijsttegel niet.
   const smartFilters = lists.filter((l) => l.kind === 'smart').map((l) => l.filters)
   const infos = useCatalogInfos(wishKeys, needsWishCatalog(filters) || smartFilters.some(needsWishCatalog))
-  const prices = useCardPrices(wishKeys, sort === 'marketDesc' || needsWishPrices(filters) || smartFilters.some(needsWishPrices))
+  const prices = useCardPrices(wishKeys, sort === 'priceDesc' || sort === 'priceAsc' || needsWishPrices(filters) || smartFilters.some(needsWishPrices))
   const [activeListId, setActiveListId] = useState<string | null>(null)
   const [listSheet, setListSheet] = useState<WishlistList | 'new' | 'new-manual' | null>(null)
   // Eigen lijsten (STAP17): zelf gekozen wensen per lijst.

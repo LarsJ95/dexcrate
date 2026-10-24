@@ -30,10 +30,17 @@ describe('sortWishes', () => {
     expect(ids('name')).toEqual(['d', 'b', 'a', 'c'])
   })
 
-  it('marktwaarde en max. prijs; zonder waarde altijd achteraan', () => {
-    expect(ids('marketDesc')).toEqual(['b', 'a', 'd', 'c'])
-    expect(ids('priceDesc')).toEqual(['c', 'a', 'd', 'b'])
-    expect(ids('priceAsc')).toEqual(['d', 'a', 'c', 'b'])
+  it('prijs = marktprijs (zonder marktprijs de max. prijs); hoog-laag en laag-hoog zijn elkaars omgekeerde', () => {
+    // Markt: a 7, b 298, c geen (max. 900), d 0,5.
+    expect(ids('priceDesc')).toEqual(['c', 'b', 'a', 'd'])
+    expect(ids('priceAsc')).toEqual(['d', 'a', 'b', 'c'])
+  })
+
+  it('zonder marktprijs én zonder max. prijs altijd achteraan; wensen zonder max. prijs worden toch gesorteerd', () => {
+    const rows = [row('x', 'X', null, null, null, '1'), row('y', 'Y', null, null, null, '2'), row('z', 'Z', null, null, null, '3')]
+    const market: Record<string, number | null> = { x: 20, y: null, z: 150 }
+    expect(sortWishes(rows, 'priceDesc', (i) => market[i.id]).map((r) => r.item.id)).toEqual(['z', 'x', 'y'])
+    expect(sortWishes(rows, 'priceAsc', (i) => market[i.id]).map((r) => r.item.id)).toEqual(['x', 'z', 'y'])
   })
 
   it('verandert de invoer niet', () => {
