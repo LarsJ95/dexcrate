@@ -131,7 +131,7 @@ export function getCrateRules(): Promise<CrateRules> {
     if (!error) return toRules(data)
     if (missingFunction(error)) return OLD_RULES
     rulesCheck = null
-    throw new Error(`Loading the Crate rules failed: ${error.message}`)
+    throw new Error(`Loading the Pack game rules failed: ${error.message}`)
   })()
   return rulesCheck
 }
@@ -185,7 +185,7 @@ const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v)
 export async function getCrateStatus(): Promise<{ points: number; freePack: boolean } | null> {
   if (!(await hasCrate())) return null
   const { data, error } = await supabase.from('crate_wallet').select('points, last_free_pack').maybeSingle()
-  if (error) throw new Error(`Loading your Crate points failed: ${error.message}`)
+  if (error) throw new Error(`Loading your Pack points failed: ${error.message}`)
   if (!isRecord(data)) return { points: 0, freePack: true }
   const last = typeof data.last_free_pack === 'string' ? data.last_free_pack : null
   return { points: num(data.points), freePack: last === null || last < new Date().toISOString().slice(0, 10) }
@@ -225,7 +225,7 @@ async function crateServer(body: Record<string, unknown>, what: string): Promise
       if (ctx.status === 404) throw new Error(CRATE_SERVER_MISSING)
       const res: unknown = await ctx.json().catch(() => null)
       const msg = isRecord(res) ? res.error : null
-      if (typeof msg === 'string') throw new Error(msg)
+      if (typeof msg === 'string') throw new Error(/Not enough/.test(msg) ? 'Not enough Pack points.' : msg)
     }
     throw new Error(`${what}: the crate function is unavailable.`)
   }
@@ -237,9 +237,9 @@ async function crateServer(body: Record<string, unknown>, what: string): Promise
  * Met de server rekent de database alles zelf uit (`bonus` en `dexIds` worden dan genegeerd).
  */
 export async function syncCrate(bonus: Record<string, number>, dexIds: readonly number[]): Promise<CrateWallet & { earned: number }> {
-  if (await hasCrateServer()) return changed(toWallet(await crateServer({ action: 'sync' }, 'Updating Crate points failed')))
+  if (await hasCrateServer()) return changed(toWallet(await crateServer({ action: 'sync' }, 'Updating Pack points failed')))
   const { data, error } = await supabase.rpc('crate_sync', { p_bonus: bonus, p_dex: [...new Set(dexIds)].filter((d) => d >= 1 && d <= 1025) })
-  if (error) throw new Error(`Updating Crate points failed: ${error.message}`)
+  if (error) throw new Error(`Updating Pack points failed: ${error.message}`)
   return changed(toWallet(data))
 }
 
@@ -247,7 +247,7 @@ export async function syncCrate(bonus: Record<string, number>, dexIds: readonly 
 export async function crateSetComplete(setKey: string): Promise<number> {
   if (await hasCrateServer()) return (await syncCrate({}, [])).earned
   const { data, error } = await supabase.rpc('crate_set_complete', { p_set: setKey })
-  if (error) throw new Error(`Crate points for the set failed: ${error.message}`)
+  if (error) throw new Error(`Pack points for the set failed: ${error.message}`)
   return changed(num(data))
 }
 
@@ -302,7 +302,7 @@ export async function openCratePack(cards: readonly PackPull[], pack: PackKind =
     ;({ data, error } = await supabase.rpc('crate_open_pack', { p_cards: cards }))
   }
   if (error) {
-    if (error.message.includes('Not enough')) throw new Error('Not enough Crate points.')
+    if (error.message.includes('Not enough')) throw new Error('Not enough Pack points.')
     if (error.message.includes('Unknown pack')) throw new Error('Set packs are not set up yet: run STAP18 in Supabase.')
     throw new Error(`Opening the pack failed: ${error.message}`)
   }
@@ -362,7 +362,7 @@ export async function crateWishInitial(tcgdexId: string, name: string): Promise<
 export async function crateSetDone(setKey: string, total: number): Promise<number> {
   if (await hasCrateServer()) return (await syncCrate({}, [])).earned
   const { data, error } = await supabase.rpc('crate_set_done', { p_set: setKey, p_total: total })
-  if (error) throw new Error(`Crate points for the set failed: ${error.message}`)
+  if (error) throw new Error(`Pack points for the set failed: ${error.message}`)
   return changed(num(data))
 }
 
@@ -413,7 +413,7 @@ export async function listCrateCards(): Promise<CrateCard[]> {
       .order('id', { ascending: true })
       .range(from, to),
   )
-  if (error) throw new Error(`Loading your Crate collection failed: ${error.message}`)
+  if (error) throw new Error(`Loading your pack collection failed: ${error.message}`)
   return data.flatMap((r) =>
     isRecord(r) && typeof r.tcgdex_id === 'string' && typeof r.name === 'string'
       ? [

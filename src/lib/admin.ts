@@ -232,7 +232,7 @@ export async function setScanLimit(userId: string, perMinute: number | null, per
 }
 
 export async function getAdminRules(): Promise<AdminCrateRules> {
-  return toAdminRules(await call('crate_rules', undefined, 'STAP18', 'Loading the Crate rules failed'))
+  return toAdminRules(await call('crate_rules', undefined, 'STAP18', 'Loading the Pack game rules failed'))
 }
 
 export async function setAdminRules(rules: Partial<AdminCrateRules>, reason: string): Promise<AdminCrateRules> {

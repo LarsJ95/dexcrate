@@ -243,7 +243,7 @@ export function ResetSection(): JSX.Element {
     <Section id="settings-reset" title="Reset account" scope="account">
       <div className="settings-danger">
         <p>
-          Start over from scratch. This permanently deletes <strong>all your cards, photos, sales and purchases, wishlist, goals, scan history and your Crate</strong> (points,
+          Start over from scratch. This permanently deletes <strong>all your cards, photos, sales and purchases, wishlist, goals, scan history and your Pack game</strong> (points,
           cards and packs). Levels, badges and secret achievements start again from zero. Your login, theme and scanning settings stay.
         </p>
         <p className="muted small">This cannot be undone. Make a backup first if you might want anything back.</p>

@@ -41,7 +41,12 @@ export function WishDeals({ cards }: { cards: readonly Card[] }): JSX.Element {
 
   return (
     <div className="panel">
-      <h2 className="panel-title">Wishlist deals</h2>
+      {/* Titel als link naar de Wishlist (24-10-2026: op de telefoon was de Wishlist moeilijk te vinden). */}
+      <h2 className="panel-title">
+        <a className="panel-title-link" href="#/wishlist">
+          Wishlist deals <span aria-hidden="true">›</span>
+        </a>
+      </h2>
       <p className="flavor">A wild deal appeared!</p>
       {error ? (
         <p className="error small">{error}</p>

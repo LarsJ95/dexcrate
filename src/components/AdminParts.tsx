@@ -222,7 +222,7 @@ export function AccountActions({ user, blocked, onChanged }: { user: AdminUser; 
       {deleting && (
         <div className="admin-delete settings-danger">
           <p className="small">
-            Deletes the account, all cards, photos, receipts, wishlist and Crate data of <strong>{user.email}</strong>. This cannot be undone.
+            Deletes the account, all cards, photos, receipts, wishlist and Pack game data of <strong>{user.email}</strong>. This cannot be undone.
           </p>
           <label>
             Type the e-mail address to confirm
@@ -374,7 +374,7 @@ export function CrateRulesPanel(): JSX.Element {
       setRules(saved)
       setForm(toForm(saved))
       setReason('')
-      setResult({ ok: true, text: 'Rules saved. The Crate page uses them after a reload.' })
+      setResult({ ok: true, text: 'Rules saved. The Pack game page uses them after a reload.' })
     } catch (err) {
       setResult({ ok: false, text: problemText(err, 'Saving failed.') })
     } finally {
@@ -392,7 +392,7 @@ export function CrateRulesPanel(): JSX.Element {
   return (
     <form className="panel admin-rules" onSubmit={(e) => void save(e)} noValidate aria-labelledby="admin-rules-title">
       <h2 id="admin-rules-title" className="panel-title">
-        Crate rules
+        Pack game rules
       </h2>
       {!rules && !result && <Loading />}
       {rules && (
@@ -402,7 +402,7 @@ export function CrateRulesPanel(): JSX.Element {
             <div className="form-grid">
               {field('daily', 'Daily bonus')}
               {field('trade_factor', 'Trade-in factor', 1)}
-              {field('crate_set', 'Crate set complete')}
+              {field('crate_set', 'Pack collection set complete')}
             </div>
           </fieldset>
           <fieldset>
@@ -533,7 +533,7 @@ export function AnnouncementPanel({ onSaved }: { onSaved: () => void }): JSX.Ele
       <div className="form-grid">
         <label className="admin-wide">
           Message
-          <input value={message} maxLength={300} placeholder="e.g. New: buy a missing card in the Crate" onChange={(e) => setMessage(e.target.value)} />
+          <input value={message} maxLength={300} placeholder="e.g. New: buy a missing card in the Pack game" onChange={(e) => setMessage(e.target.value)} />
         </label>
         <label>
           Kind

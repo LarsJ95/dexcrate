@@ -1,6 +1,6 @@
 import type { JSX } from 'react'
-import { CRATE_ITEM, MORE_GROUPS } from '../components/nav'
-import { NavBadge } from '../components/SideNav'
+import { CRATE_ITEM, MORE_GROUPS, toneStyle } from '../components/nav'
+import { NavBadge, NavIcon } from '../components/SideNav'
 import { useNavCounts } from '../hooks/useNavCounts'
 
 /** Mobiel: overige pagina's die niet in de onderbalk passen, in dezelfde groepen als de zijbalk. */
@@ -16,7 +16,7 @@ export function MorePage(): JSX.Element {
           <span className="more-text">
             <strong>{CRATE_ITEM.label}</strong>
             <span className="small">
-              {counts.crate ? `${counts.crate.points.toLocaleString('en-GB')} Crate points` : CRATE_ITEM.hint}
+              {counts.crate ? `${counts.crate.points.toLocaleString('en-GB')} Pack points` : CRATE_ITEM.hint}
               {counts.crate?.freePack ? ' · Free pack ready!' : ''}
             </span>
           </span>
@@ -27,15 +27,15 @@ export function MorePage(): JSX.Element {
               {group.title}
             </h2>
             <ul className="more-list">
-              {group.items.map(({ route, label, Icon, hint, badge }) => (
-                <li key={route}>
-                  <a className="more-link" href={`#/${route}`}>
-                    <Icon />
+              {group.items.map((item) => (
+                <li key={item.route}>
+                  <a className="more-link" href={`#/${item.route}`} style={toneStyle(item)}>
+                    <NavIcon item={item} />
                     <span className="more-text">
-                      {label}
-                      {hint && <span className="muted small">{hint}</span>}
+                      {item.label}
+                      {item.hint && <span className="muted small">{item.hint}</span>}
                     </span>
-                    <NavBadge kind={badge} counts={counts} />
+                    <NavBadge kind={item.badge} counts={counts} />
                   </a>
                 </li>
               ))}

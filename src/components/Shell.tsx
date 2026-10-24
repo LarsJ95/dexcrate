@@ -1,10 +1,11 @@
 import { useEffect, useState, type JSX, type ReactNode } from 'react'
 import type { Theme } from '../hooks/useTheme'
 import type { Route } from '../lib/routes'
-import { IconLogout, IconMoon, IconSearch, IconSettings, IconSidebar, IconSun, LogoMark } from './Icons'
+import { IconLogout, IconMoon, IconSearch, IconSettings, IconSidebar, IconStar, IconSun, LogoMark } from './Icons'
 import { SearchDialog } from './SearchDialog'
 import { Moments } from './Moments'
 import { PartnerBuddy } from './PartnerBuddy'
+import { SideTrainer } from './SideTrainer'
 import { Peek } from './Peek'
 import { ScrollJump } from './ScrollJump'
 import { Sky } from './Sky'
@@ -118,12 +119,7 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
         </button>
         <SideNav route={route} counts={counts} collapsed={collapsed} />
         <div className="side-foot">
-          {!collapsed && <PartnerBuddy />}
-          {email && !collapsed && (
-            <p className="side-user" title={email}>
-              {email}
-            </p>
-          )}
+          {!collapsed && <SideTrainer email={email} />}
           <div className="side-actions">
             <a
               className="icon-link"
@@ -152,7 +148,11 @@ export function Shell({ route, email, theme, onToggleTheme, onSignOut, children 
         <div className="side-actions">
           {searchButton}
           {themeButton}
-          {logoutButton}
+          {/* Wishlist als ster (24-10-2026: zat op de telefoon verstopt onder More); uitloggen staat in Settings. */}
+          <a className="icon-link mobile-wish" href="#/wishlist" aria-current={route === 'wishlist' ? 'page' : undefined} aria-label="Wishlist" title="Wishlist">
+            <IconStar />
+            <NavBadge kind="wishlist" counts={counts} />
+          </a>
         </div>
       </header>
 

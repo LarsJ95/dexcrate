@@ -3,7 +3,7 @@ import { usePinnedSets } from '../hooks/usePinnedSets'
 import type { BadgeKey, NavCounts } from '../lib/navCounts'
 import { PIN_LANG, pinHref, pinKey } from '../lib/pinnedSets'
 import type { Route } from '../lib/routes'
-import { CRATE_ITEM, SCAN_ITEM, SIDE_GROUPS, type NavItem } from './nav'
+import { CRATE_ITEM, SCAN_ITEM, SIDE_GROUPS, toneStyle, type NavItem } from './nav'
 
 /** Huidig adres, om een vastgezette set als "de pagina" te markeren. */
 function useHash(): string {
@@ -35,6 +35,15 @@ export function NavBadge({ kind, counts }: { kind: BadgeKey | undefined; counts:
   )
 }
 
+/** Icoon in een gekleurd vakje (24-10-2026, "gezelliger menu"); ook op de More-pagina. */
+export function NavIcon({ item }: { item: NavItem }): JSX.Element {
+  return (
+    <span className="side-icon" aria-hidden="true">
+      <item.Icon size={18} />
+    </span>
+  )
+}
+
 interface Props {
   route: Route
   counts: NavCounts
@@ -53,8 +62,9 @@ export function SideNav({ route, counts, collapsed }: Props): JSX.Element {
       href={`#/${item.route}`}
       aria-current={route === item.route ? (item.route === 'sets' && inPinned ? 'true' : 'page') : undefined}
       title={collapsed ? item.label : item.hint}
+      style={toneStyle(item)}
     >
-      <item.Icon />
+      <NavIcon item={item} />
       <span className="side-label">{item.label}</span>
       <NavBadge kind={item.badge} counts={counts} />
     </a>

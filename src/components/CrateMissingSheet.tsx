@@ -86,7 +86,7 @@ export function CrateMissingSheet({ setKey, setName, owned, rules, points, onBou
     <Sheet title={`Missing from ${setName}`} onClose={onClose}>
       {revealed && <CraftReveal card={revealed.card} cost={revealed.cost} onClose={() => setRevealed(null)} />}
       <p className="muted small">
-        Buy one card you do not have yet. You have {balance.toLocaleString('en-GB')} Crate points.
+        Buy one card you do not have yet. You have {balance.toLocaleString('en-GB')} Pack points.
       </p>
       {server === false && <p className="notice">{CRATE_SERVER_MISSING}</p>}
       {error && (
@@ -130,7 +130,7 @@ export function CrateMissingSheet({ setKey, setName, owned, rules, points, onBou
           })}
         </ul>
       )}
-      <p className="muted small">Prices depend on rarity. Cards stay virtual, like every Crate card.</p>
+      <p className="muted small">Prices depend on rarity. Cards stay virtual, like every card in the Pack game.</p>
       {zoom && (
         <CardZoom label={`${zoom.name} #${zoom.localId}`} onClose={() => setZoom(null)}>
           <HoloCard foil={foilStyleFor(null, zoom.rarity)} interactive>

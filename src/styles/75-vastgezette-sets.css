@@ -8,7 +8,8 @@
 .side-nav ul.side-sub {
   grid-template-columns: minmax(0, 1fr);
   gap: 0;
-  margin: 2px 0 var(--space-1) calc(var(--space-3) + 20px + var(--space-3));
+  /* Onder de tekst van "Sets": inspringing + icoonvak (32 px sinds 24-10-2026) + tussenruimte. */
+  margin: 2px 0 var(--space-1) calc(var(--space-2) + 32px + var(--space-3));
   padding-left: var(--space-2);
   border-left: 1px solid var(--line);
 }

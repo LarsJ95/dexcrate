@@ -217,7 +217,7 @@ function MomentLayer({ moment }: { moment: Moment }): JSX.Element {
     return (
       <div ref={layer} className="moment-layer is-toast" popover="manual" role="status">
         <p className="moment-caption">
-          <strong className="crate-points-gain">+{moment.amount} Crate points</strong>
+          <strong className="crate-points-gain">+{moment.amount} Pack points</strong>
           <span>{moment.reason}</span>
         </p>
       </div>

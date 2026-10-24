@@ -52,7 +52,7 @@ export function CraftReveal({ card, cost, onClose }: Props): JSX.Element {
     <dialog ref={ref} className="card-sheet pack-opening stage-reveal craft-reveal" onClose={onOwnClose(onClose)} onClick={onBackdrop} aria-labelledby="craft-reveal-title">
       <div className="sheet-body">
         <header className="sheet-head">
-          <h2 id="craft-reveal-title">New for your Crate!</h2>
+          <h2 id="craft-reveal-title">New in your pack collection!</h2>
           <button type="button" className="ghost icon-btn" onClick={close} aria-label="Close">
             <IconClose />
           </button>
@@ -73,7 +73,7 @@ export function CraftReveal({ card, cost, onClose }: Props): JSX.Element {
             </span>
             <span className="muted small">
               {card.set_name ?? ''}
-              {cost > 0 ? ` · ${cost.toLocaleString('en-GB')} Crate points` : ''}
+              {cost > 0 ? ` · ${cost.toLocaleString('en-GB')} Pack points` : ''}
             </span>
           </div>
           <footer className="sheet-foot">

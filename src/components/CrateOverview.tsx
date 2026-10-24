@@ -45,7 +45,7 @@ export function CrateStats({ cards, prices, tradeFactor, tradeAll }: StatsProps)
   const summary = useMemo(() => summarizeCrate(cards, (id) => prices.get(id), tradeFactor), [cards, prices, tradeFactor])
   const loaded = cards.filter((c) => prices.has(c.tcgdexId)).length
   return (
-    <section className="panel crate-ov-stats" aria-label="Your Crate in numbers">
+    <section className="panel crate-ov-stats" aria-label="Your pack collection in numbers">
       <div>
         <span className="stat-label">Cards</span>
         <strong>{summary.unique}</strong>
