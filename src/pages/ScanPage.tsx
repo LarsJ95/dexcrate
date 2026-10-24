@@ -5,6 +5,7 @@ import { CardDialog } from '../components/CardDialog'
 import { IconBinder, IconCamera, IconCards } from '../components/Icons'
 import { ScanSessionSummary, SingleScanResult } from '../components/ScanParts'
 import { QueueStrip, ScanQueue } from '../components/ScanQueue'
+import { ScanRecent } from '../components/ScanRecent'
 import { addedQuietly } from '../lib/celebrate'
 import { insertCards, listCards } from '../lib/db'
 import { autoPick, type Candidate } from '../lib/match'
@@ -514,6 +515,16 @@ export function ScanPage(): JSX.Element {
             else setDonePositions((s) => new Set([...s, position]))
           }}
           onDeleted={() => setDraft(null)}
+        />
+      )}
+
+      {/* Laatst toegevoegd, zolang er geen foto of scanresultaat in beeld is (24-10-2026). */}
+      {phase.kind === 'idle' && !image && (
+        <ScanRecent
+          cards={cards}
+          nextSortOrder={nextSortOrder}
+          onChanged={(row) => setCards((list) => (list.some((c) => c.id === row.id) ? list.map((c) => (c.id === row.id ? row : c)) : [...list, row]))}
+          onDeleted={(id) => setCards((list) => list.filter((c) => c.id !== id))}
         />
       )}
     </section>

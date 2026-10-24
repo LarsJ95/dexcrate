@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type JSX } from 'react'
+import { useEffect, useMemo, useState, type JSX, type ReactNode } from 'react'
 import { marketValue, marketValueOf, type PriceMap } from '../lib/prices'
 import { formatEur } from '../lib/stats'
 import { getCardPrice, getSet, getSetList, setOfKey, type Lang } from '../lib/tcgdex'
@@ -142,8 +142,18 @@ export function SetsNearlyComplete({ ownedKeys }: { ownedKeys: readonly string[]
 
 const RECENT = 8
 
+interface RecentProps {
+  cards: readonly Card[]
+  prices: PriceMap
+  onOpenCard?: (id: string) => void
+  /** Kopje (Home: "Fresh pulls"; Scan: "Recently added"). */
+  title?: string
+  /** Iets rechts naast het kopje, bv. een link "See all". */
+  action?: ReactNode
+}
+
 /** Je laatst toegevoegde kaarten met foto en huidige waarde. */
-export function RecentlyAdded({ cards, prices, onOpenCard }: { cards: readonly Card[]; prices: PriceMap; onOpenCard?: (id: string) => void }): JSX.Element | null {
+export function RecentlyAdded({ cards, prices, onOpenCard, title = 'Fresh pulls', action }: RecentProps): JSX.Element | null {
   const recent = useMemo(
     () =>
       cards
@@ -155,9 +165,12 @@ export function RecentlyAdded({ cards, prices, onOpenCard }: { cards: readonly C
   if (recent.length === 0) return null
   return (
     <section className="panel recent-cards" aria-labelledby="recent-title">
-      <h2 id="recent-title" className="panel-title">
-        Fresh pulls
-      </h2>
+      <div className="recent-head">
+        <h2 id="recent-title" className="panel-title">
+          {title}
+        </h2>
+        {action}
+      </div>
       <ul>
         {recent.map((c) => {
           const mv = marketValueOf(c, prices)
