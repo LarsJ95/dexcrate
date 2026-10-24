@@ -1,0 +1,106 @@
+/* Startkaart op Home voor nieuwe gebruikers (24-10-2026, components/StartGuide.tsx). */
+/* Op Home met kaarten direct onder de kop (de rest van .dash-main heeft order 3). */
+.dash-main > .start-guide {
+  order: 0;
+}
+
+.start-guide-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+button.start-guide-close {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-color: transparent;
+  background: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--muted);
+}
+
+.start-guide-steps {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.start-guide-steps > li {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.start-guide-steps > li > div {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  min-width: 0;
+}
+
+.start-guide-mark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+
+.start-guide-steps > li.is-done .start-guide-mark {
+  border-color: var(--green);
+  background: var(--green-bg);
+  color: var(--green);
+}
+
+.start-guide-steps > li.is-done strong {
+  text-decoration: line-through;
+  text-decoration-color: var(--muted);
+}
+
+/* Vijf starters naast elkaar, op de telefoon op één regel. */
+.start-guide-partners {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 72px));
+  gap: var(--space-2);
+}
+
+.start-guide-partners button {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 56px;
+  padding: var(--space-1);
+  border-radius: var(--radius-s);
+}
+
+.start-guide-partners img {
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+}
+
+.start-guide-partners button[aria-pressed='true'] {
+  border-color: var(--accent-line);
+  box-shadow: inset 0 0 0 1px var(--accent-line);
+}
+
+.start-guide > button.primary {
+  justify-self: start;
+}
+
+.start-guide a.button-link.primary {
+  border-color: var(--yellow);
+  background: var(--yellow);
+  color: var(--on-yellow);
+  font-weight: 700;
+  box-shadow: 0 4px 0 var(--yellow-press);
+}

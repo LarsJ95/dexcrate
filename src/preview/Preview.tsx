@@ -225,7 +225,8 @@ function BinderPreview(): JSX.Element {
 /** Overview met werkende kaartpopup (zoals DashboardPage), om bv. kaart openen vanuit de Pokédex te testen. */
 function OverviewPreview(): JSX.Element {
   const [openId, setOpenId] = useState<string | null>(null)
-  const cards = CARDS.map((c) => c.card)
+  // ?empty=1: nieuwe gebruiker zonder kaarten (startkaart).
+  const cards = params.get('empty') === '1' ? [] : CARDS.map((c) => c.card)
   const open = cards.find((c) => c.id === openId) ?? null
   return (
     <>
