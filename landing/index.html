@@ -228,26 +228,22 @@
       .actions { display: flex; flex-wrap: wrap; gap: 12px; }
       .note { margin-top: 18px; color: var(--muted); font-size: 0.95rem; }
 
-      /* Voorbeeld van de app: waardeblok met oranje rand en een setbinder die vol raakt. */
-      .demo { position: relative; display: grid; gap: 16px; }
+      /* Echte schermen van de app (24-10-2026, demodata) in een telefoonrand. */
+      .phones { position: relative; height: clamp(440px, 46vw, 580px); }
+      .phone { margin: 0; aspect-ratio: 540 / 1169; border: 7px solid #1b1b1f; border-radius: 34px; background: #1b1b1f; overflow: hidden; box-shadow: var(--shadow-float); }
+      .phone img { display: block; width: 100%; height: 100%; object-fit: cover; }
+      .phones .phone { position: absolute; width: min(250px, 47%); }
+      .phones .phone-front { left: 6%; top: 0; rotate: -4deg; z-index: 1; }
+      .phones .phone-back { right: 4%; top: 48px; rotate: 6deg; }
       .panel { background: var(--surface); border: 1px solid var(--line); border-top: 6px solid var(--fire); border-radius: var(--radius-l); padding: 20px 22px; box-shadow: var(--shadow-panel); }
-      .demo-value .label { color: var(--muted); font-weight: 600; font-size: 0.95rem; }
-      .demo-value strong { display: block; font-size: clamp(2.2rem, 5vw, 3rem); font-stretch: 118%; line-height: 1.1; }
-      .demo-value .up { color: #17803d; font-weight: 700; font-size: 0.95rem; }
-      @media (prefers-color-scheme: dark) { .demo-value .up { color: #4fd16f; } }
-      .demo-binder { border-top-color: var(--water); }
-      .demo-binder .head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-weight: 700; }
-      .demo-binder .head span { color: var(--muted); font-weight: 600; font-size: 0.95rem; }
-      .meter { height: 10px; margin: 10px 0 14px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
-      .meter span { display: block; width: 74%; height: 100%; border-radius: inherit; background: #17803d; }
-      .slots { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
-      .slot { aspect-ratio: 63 / 88; border-radius: 8px; background: linear-gradient(150deg, var(--fire), var(--lightning) 45%, var(--psychic)); position: relative; overflow: hidden; }
-      .slot:nth-child(3n + 2) { background: linear-gradient(150deg, var(--water), #93c5fd 50%, var(--grass)); }
-      .slot:nth-child(4n + 3) { background: linear-gradient(150deg, var(--psychic), var(--fairy) 55%, var(--lightning)); }
-      .slot::after { content: ''; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgb(255 255 255 / 0.45) 48%, transparent 60%); }
-      .slot.missing { background: var(--surface-2); border: 2px dashed var(--line-strong); }
-      .slot.missing::after { content: none; }
-      .badge-new { position: absolute; top: -12px; right: 16px; padding: 4px 12px; border-radius: 999px; background: var(--yellow); color: var(--on-yellow); font-weight: 800; font-size: 0.85rem; box-shadow: var(--shadow-float); rotate: 6deg; }
+      .badge-new { position: absolute; top: 6px; right: 10%; z-index: 2; padding: 4px 12px; border-radius: 999px; background: var(--yellow); color: var(--on-yellow); font-weight: 800; font-size: 0.85rem; box-shadow: var(--shadow-float); rotate: 6deg; }
+
+      /* Kijkje in de app: drie schermen met uitleg; op de telefoon horizontaal schuiven. */
+      .shots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; list-style: none; margin: 0; padding: 0; }
+      .shots li { display: grid; gap: 14px; justify-items: center; text-align: center; }
+      .shots .phone { width: min(250px, 100%); }
+      .shots strong { display: block; font-size: 1.1rem; }
+      .shots span { color: var(--ink-soft); }
 
       section { padding: 56px 0; }
       .section-head { max-width: 42em; margin-bottom: 28px; }
@@ -334,7 +330,12 @@
         .top-actions .btn { min-height: 44px; padding: 0 14px; }
         .brand { font-size: 1.15rem; }
         .diff { grid-template-columns: 1fr; }
-        .slots { gap: 6px; }
+        .phones { height: 420px; }
+        .phones .phone { width: 52%; }
+      }
+      @media (max-width: 760px) {
+        .shots { grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: 68%; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 12px; }
+        .shots li { scroll-snap-align: center; }
       }
       @media (prefers-reduced-motion: no-preference) {
         .badge-new { animation: wiggle 2.4s ease-in-out infinite; }
@@ -381,21 +382,20 @@
             </div>
             <p class="note">Already in the beta? <a href="./app/">Sign in</a></p>
           </div>
-          <div class="demo" aria-hidden="true">
-            <div class="panel demo-value">
-              <span class="label">Your collection is worth</span>
-              <strong>€1,284.50</strong>
-              <span class="up">↑ +6% this month</span>
-            </div>
-            <div class="panel demo-binder">
-              <span class="badge-new">NEW!</span>
-              <p class="head">Surging Sparks <span>142 / 191</span></p>
-              <div class="meter"><span></span></div>
-              <div class="slots">
-                <i class="slot"></i><i class="slot"></i><i class="slot missing"></i><i class="slot"></i><i class="slot"></i><i class="slot"></i>
-                <i class="slot"></i><i class="slot missing"></i><i class="slot"></i><i class="slot"></i><i class="slot missing"></i><i class="slot"></i>
-              </div>
-            </div>
+          <div class="phones">
+            <span class="badge-new" aria-hidden="true">NEW!</span>
+            <figure class="phone phone-front">
+              <img
+                src="shots/binder.webp"
+                width="540"
+                height="1169"
+                fetchpriority="high"
+                alt="Dexcrate on a phone: the 151 set as a binder, with owned cards in colour and missing cards in grey"
+              />
+            </figure>
+            <figure class="phone phone-back">
+              <img src="shots/pack-game.webp" width="540" height="1169" alt="The Pack game: your virtual cards from opened packs, with their market value" />
+            </figure>
           </div>
         </div>
       </div>
@@ -436,6 +436,35 @@
               <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2" /><path d="M11 18h2" /></svg></div>
               <h3>Always with you</h3>
               <p>Install it on your phone like an app. Your collection is there at a card fair too, even without a connection.</p>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section aria-labelledby="inside-title">
+        <div class="wrap">
+          <div class="section-head">
+            <h2 id="inside-title" class="ball">A look inside</h2>
+            <p>Real screens from the app, with an example collection.</p>
+          </div>
+          <ul class="shots">
+            <li>
+              <figure class="phone">
+                <img src="shots/scan.webp" width="540" height="1169" loading="lazy" alt="The Scan page with Quick scan, Single card and Binder page, and your recently added cards" />
+              </figure>
+              <div><strong>Scan your way</strong><span>Quick scan, one card, or a whole binder page.</span></div>
+            </li>
+            <li>
+              <figure class="phone">
+                <img src="shots/set.webp" width="540" height="1169" loading="lazy" alt="A set page showing how many cards you own and what it costs to complete" />
+              </figure>
+              <div><strong>Track every set</strong><span>How far you are, and what the rest costs.</span></div>
+            </li>
+            <li>
+              <figure class="phone">
+                <img src="shots/wishlist.webp" width="540" height="1169" loading="lazy" alt="The wishlist with card images, market prices and your max price" />
+              </figure>
+              <div><strong>Wishlist with prices</strong><span>Your max price next to today’s market price.</span></div>
             </li>
           </ul>
         </div>
