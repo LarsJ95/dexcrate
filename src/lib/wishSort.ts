@@ -2,19 +2,19 @@ import type { WishlistItem } from './wishlist'
 
 /**
  * Sorteren in de Wishlist (24-10-2026, op verzoek: dezelfde keuzes als My cards). "Priority" is de oude volgorde
- * (zoals de database ze geeft: prioriteit, dan nieuwste); "Price" is je max. prijs.
+ * (zoals de database ze geeft: prioriteit, dan nieuwste). "Price" is de marktprijs die op de tegel staat (zonder
+ * marktprijs je max. prijs); op 24-10-2026 gecorrigeerd: alleen de max. prijs was bij de meeste wensen leeg.
  */
-export type WishSort = 'priority' | 'newest' | 'list' | 'set' | 'marketDesc' | 'priceDesc' | 'priceAsc' | 'name'
-export const WISH_SORTS: readonly WishSort[] = ['priority', 'newest', 'list', 'set', 'marketDesc', 'priceDesc', 'priceAsc', 'name']
+export type WishSort = 'priority' | 'newest' | 'list' | 'set' | 'priceDesc' | 'priceAsc' | 'name'
+export const WISH_SORTS: readonly WishSort[] = ['priority', 'newest', 'list', 'set', 'priceDesc', 'priceAsc', 'name']
 
 export const WISH_SORT_LABELS: Record<WishSort, string> = {
   priority: 'Priority',
   newest: 'Newest first',
   list: 'Oldest first',
   set: 'Set and number',
-  marketDesc: 'Market value',
-  priceDesc: 'Max. price: high to low',
-  priceAsc: 'Max. price: low to high',
+  priceDesc: 'Price: high to low',
+  priceAsc: 'Price: low to high',
   name: 'Name A–Z',
 }
 
@@ -40,9 +40,9 @@ export function sortWishes<T extends { item: Item }>(rows: readonly T[], sort: W
         a.item.name.localeCompare(b.item.name, 'en'),
     )
   }
-  if (sort === 'marketDesc') out.sort((a, b) => byNumber(marketOf(a.item) ?? null, marketOf(b.item) ?? null, -1))
-  if (sort === 'priceDesc') out.sort((a, b) => byNumber(a.item.max_price, b.item.max_price, -1))
-  if (sort === 'priceAsc') out.sort((a, b) => byNumber(a.item.max_price, b.item.max_price, 1))
+  const price = (r: T): number | null => marketOf(r.item) ?? r.item.max_price
+  if (sort === 'priceDesc') out.sort((a, b) => byNumber(price(a), price(b), -1))
+  if (sort === 'priceAsc') out.sort((a, b) => byNumber(price(a), price(b), 1))
   if (sort === 'name') out.sort((a, b) => a.item.name.localeCompare(b.item.name, 'en'))
   return out
 }
