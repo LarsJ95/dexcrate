@@ -372,11 +372,14 @@ async function rpc(fn: string, args: Record<string, unknown>): Promise<unknown> 
   return body
 }
 
-/** Rijen uit een tabel (serversleutel), in stukken van 1000. */
-async function select(table: string, query: string, max = 20000): Promise<Record<string, unknown>[]> {
+/**
+ * Rijen uit een tabel (serversleutel), in stukken van 1000. `order` = unieke kolom (primaire sleutel): zonder vaste
+ * volgorde kunnen rijen tussen stukken dubbel komen of ontbreken.
+ */
+async function select(table: string, query: string, order: string, max = 20000): Promise<Record<string, unknown>[]> {
   const out: Record<string, unknown>[] = []
   for (let from = 0; from < max; from += 1000) {
-    const res = await fetch(`${base()}/rest/v1/${table}?${query}`, { headers: { ...serviceHeaders(), Range: `${from}-${from + 999}` } })
+    const res = await fetch(`${base()}/rest/v1/${table}?${query}&order=${order}`, { headers: { ...serviceHeaders(), Range: `${from}-${from + 999}` } })
     const body: unknown = await res.json().catch(() => null)
     if (!res.ok) throw dbMessage(body, res.status)
     const rows = Array.isArray(body) ? body.filter(isRecord) : []
@@ -387,7 +390,7 @@ async function select(table: string, query: string, max = 20000): Promise<Record
 }
 
 async function ownedCrate(user: string): Promise<Set<string>> {
-  const rows = await select('crate_cards', `user_id=eq.${user}&select=tcgdex_id`)
+  const rows = await select('crate_cards', `user_id=eq.${user}&select=tcgdex_id`, 'id')
   return new Set(rows.flatMap((r) => (typeof r.tcgdex_id === 'string' ? [r.tcgdex_id] : [])))
 }
 
@@ -395,11 +398,11 @@ const inList = (keys: readonly string[]): string => `in.(${keys.map((k) => `"${k
 
 /** Kaart- en setgegevens aanvullen voor wat de gebruiker heeft, dan de punten laten tellen. */
 async function sync(user: string): Promise<unknown> {
-  const cards = await select('cards', `user_id=eq.${user}&status=neq.sold&tcgdex_id=not.is.null&select=tcgdex_id`)
+  const cards = await select('cards', `user_id=eq.${user}&status=neq.sold&tcgdex_id=not.is.null&select=tcgdex_id`, 'id')
   const keys = [...new Set(cards.flatMap((r) => (typeof r.tcgdex_id === 'string' && r.tcgdex_id.includes('/') ? [r.tcgdex_id] : [])))]
   const known = new Map<string, Record<string, unknown>>()
   for (let i = 0; i < keys.length; i += 100) {
-    for (const f of await select('card_facts', `tcgdex_id=${encodeURIComponent(inList(keys.slice(i, i + 100)))}&select=tcgdex_id,set_key,fetched_at`)) known.set(String(f.tcgdex_id), f)
+    for (const f of await select('card_facts', `tcgdex_id=${encodeURIComponent(inList(keys.slice(i, i + 100)))}&select=tcgdex_id,set_key,fetched_at`, 'tcgdex_id')) known.set(String(f.tcgdex_id), f)
   }
   const stale = Date.now() - FACTS_DAYS * 86_400_000
   const todo = keys.filter((k) => !known.has(k) || Date.parse(String(known.get(k)?.fetched_at)) < stale).slice(0, MAX_CARD_LOOKUPS)
@@ -415,7 +418,7 @@ async function sync(user: string): Promise<unknown> {
   const setList = [...setKeys].filter((k) => /^[a-z-]{2,5}\/[A-Za-z0-9.+-]{1,40}$/.test(k))
   const knownSets = new Set<string>()
   for (let i = 0; i < setList.length; i += 100) {
-    for (const s of await select('set_facts', `set_key=${encodeURIComponent(inList(setList.slice(i, i + 100)))}&select=set_key`)) knownSets.add(String(s.set_key))
+    for (const s of await select('set_facts', `set_key=${encodeURIComponent(inList(setList.slice(i, i + 100)))}&select=set_key`, 'set_key')) knownSets.add(String(s.set_key))
   }
   const setTodo = setList.filter((k) => !knownSets.has(k)).slice(0, MAX_SET_LOOKUPS)
   const sets = (await inBatches(setTodo, 5, (k) => setFacts(k).catch(() => null))).filter((s): s is { set_key: string; name: string | null; official: number } => s !== null)
