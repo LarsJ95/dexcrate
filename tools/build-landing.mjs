@@ -33,9 +33,10 @@ for (const name of readdirSync('landing')) {
   if (name.endsWith('.html')) writeFileSync(join(DIST, name), readFileSync(from, 'utf8').replaceAll('{{CONTACT}}', contactHtml()))
   else copy(from, join(DIST, name))
 }
-// Screenshots van de app op de landingspagina (24-10-2026).
-if (existsSync(join('landing', 'shots'))) {
-  for (const name of readdirSync(join('landing', 'shots'))) copy(join('landing', 'shots', name), join(DIST, 'shots', name))
+// Screenshots van de app (24-10-2026) en kaartplaatjes voor het verhaal (25-10-2026) op de landingspagina.
+for (const dir of ['shots', 'cards']) {
+  if (!existsSync(join('landing', dir))) continue
+  for (const name of readdirSync(join('landing', dir))) copy(join('landing', dir, name), join(DIST, dir, name))
 }
 for (const name of ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png']) copy(join('public', name), join(DIST, name))
 copy(join('src', 'assets', 'fonts', 'archivo-latin.woff2'), join(DIST, 'fonts', 'archivo-latin.woff2'))
