@@ -127,6 +127,8 @@ export function CratePage(): JSX.Element {
   const [opened, setOpened] = useState<CrateCard | null>(null)
   const [confirmAll, setConfirmAll] = useState(false)
   const [rules, setRules] = useState<CrateRules>(OLD_RULES)
+  // Tot de echte regels binnen zijn: geen oude prijzen of "Not set up yet" tonen.
+  const [rulesLoaded, setRulesLoaded] = useState(false)
   const [setChoices, setSetChoices] = useState<SetChoice[]>([])
   const [packSet, setPackSet] = useState('')
   const [packType, setPackType] = useStoredChoice<EnergyType>('dexcrate:crate-pack-type', ENERGY_TYPES, 'Fire')
@@ -138,6 +140,7 @@ export function CratePage(): JSX.Element {
     setFreePack(d.freePack)
     setCards(d.cards)
     setRules(d.rules)
+    setRulesLoaded(true)
   }, [])
 
   const reload = useCallback((): void => {
@@ -149,6 +152,14 @@ export function CratePage(): JSX.Element {
   useEffect(() => {
     if (enabled !== true) return
     let cancelled = false
+    // Regels apart en meteen (één verzoek), niet pas na je hele Crate-collectie.
+    getCrateRules()
+      .then((r) => {
+        if (cancelled) return
+        setRules(r)
+        setRulesLoaded(true)
+      })
+      .catch((err: unknown) => console.warn('Crate-regels laden mislukt', err))
     loadCrate()
       .then((d) => {
         if (!cancelled) apply(d)
@@ -342,7 +353,7 @@ export function CratePage(): JSX.Element {
               <strong className="crate-shop-title">{p.name}</strong>
               <span className="muted small crate-shop-text">{p.contents}</span>
               <div className="crate-shop-choice">
-                {cost === null && <span className="small muted">Not set up yet: run STAP18 in Supabase.</span>}
+                {cost === null && rulesLoaded && <span className="small muted">Not set up yet: run STAP18 in Supabase.</span>}
                 {cost !== null && kind === 'set' && (
                   <>
                     <label className="crate-pack-choice">
@@ -379,10 +390,16 @@ export function CratePage(): JSX.Element {
               <span className="small muted crate-shop-note">
                 {cost !== null && !ok && points !== null && points < cost && !free ? `You need ${(cost - points).toLocaleString('en-IE')} more points.` : ''}
               </span>
-              {cost !== null && (
-                <button type="button" className="primary crate-shop-open" onClick={() => void openPack(kind)} disabled={busy || !ok || opening !== null}>
-                  {busy ? 'Opening…' : free ? 'Open free daily pack' : `Open (${cost.toLocaleString('en-IE')} points)`}
+              {!rulesLoaded ? (
+                <button type="button" className="primary crate-shop-open" disabled>
+                  Loading…
                 </button>
+              ) : (
+                cost !== null && (
+                  <button type="button" className="primary crate-shop-open" onClick={() => void openPack(kind)} disabled={busy || !ok || opening !== null}>
+                    {busy ? 'Opening…' : free ? 'Open free daily pack' : `Open (${cost.toLocaleString('en-IE')} points)`}
+                  </button>
+                )
               )}
             </li>
           )
