@@ -110,17 +110,20 @@
       }
     </script>
 
+    <!-- Animaties alleen als ze mogen (geen "minder beweging") en het script kan draaien; anders staat alles meteen in de eindstand. -->
+    <script>
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) document.documentElement.classList.add('anim')
+    </script>
     <style>
-      /* Landingspagina in de stijl van de app (24-10-2026, op verzoek: "zelfde feeling als de app"): Pokémon Center-stijl,
-         crème met bliksempatroon, witte blokken met een gekleurde bovenrand, pokébal voor elk kopje, gele pilknoppen met
-         drukrand. Kleuren uit src/index.css; donker als het apparaat donker staat. */
+      /* Landingspagina als verhaal (25-10-2026, op verzoek: "een beleving, een verhaal waar je in gaat"). Huisstijl van de app
+         (crème, Pikachu-geel, energiekleuren, Archivo); de opening en het Pack game spelen 's nachts. Hoofdstukken: schoenendoos,
+         scannen, binder die vol raakt, waarde, Pack game. Zonder animaties (of zonder script) staat alles in de eindstand. */
       @font-face {
         font-family: 'Archivo';
         font-style: normal;
         font-weight: 400 900;
         font-stretch: 62% 125%;
-        /* optional (25-10-2026, keuze gebruiker): niet wisselen na het laden, zodat de hero niet verspringt (CLS). Niet op
-           tijd binnen (eerste bezoek, trage verbinding): systeemlettertype; daarna uit de cache wel Archivo. */
+        /* optional (25-10-2026, keuze gebruiker): niet wisselen na het laden, zodat de pagina niet verspringt (CLS). */
         font-display: optional;
         src: url('./fonts/archivo-latin.woff2') format('woff2');
       }
@@ -144,18 +147,18 @@
         --ball-red: #e3350d;
         --ball-line: #1b1b1f;
         --ball-white: #f3f1ec;
-        --card-back-1: #3a0e14;
-        --card-back-2: #7d1a1f;
-        --card-back-3: #2b0b10;
         --fire: #f0612f;
         --water: #3d8fe0;
         --grass: #4fb84a;
         --lightning: #f5c518;
         --psychic: #b05cc8;
         --fairy: #e47fb8;
+        --up: #17803d;
+        --cardboard: #b8875a;
+        --cardboard-edge: #8f6339;
         --pattern: 0.08;
         --shadow-panel: 0 6px 18px rgb(90 60 20 / 0.08);
-        --shadow-float: 0 16px 48px rgb(23 22 28 / 0.18);
+        --shadow-float: 0 18px 50px rgb(23 22 28 / 0.22);
         --radius-s: 12px;
         --radius-l: 22px;
         font-family: 'Archivo', system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -177,13 +180,16 @@
           --muted: #a19ba9;
           --link: #ffcb05;
           --accent-line: #ffcb05;
+          --up: #4fd16f;
+          --cardboard: #7a5634;
+          --cardboard-edge: #5a3d22;
           --pattern: 0.05;
           --shadow-panel: 0 6px 18px rgb(0 0 0 / 0.35);
-          --shadow-float: 0 16px 48px rgb(0 0 0 / 0.5);
+          --shadow-float: 0 18px 50px rgb(0 0 0 / 0.55);
         }
       }
       * { box-sizing: border-box; }
-      body { margin: 0; position: relative; }
+      body { margin: 0; position: relative; overflow-x: clip; }
       /* Bliksempatroon zoals de achtergrond van de app. */
       body::before {
         content: '';
@@ -197,10 +203,32 @@
         mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-6 -6 36 36'%3E%3Cpath d='M13 2 4 14h6l-1 8 9-12h-6l1-8z'/%3E%3C/svg%3E") 0 0 / 56px 56px;
       }
       a { color: var(--link); }
-      .wrap { width: min(1120px, 100% - 32px); margin-inline: auto; }
-      .skip { position: absolute; left: -999px; top: 8px; background: var(--yellow); color: var(--on-yellow); padding: 8px 12px; border-radius: 8px; }
+      img { max-width: 100%; }
+      .wrap { width: min(1160px, 100% - 32px); margin-inline: auto; }
+      .skip { position: absolute; left: -999px; top: 8px; z-index: 10; background: var(--yellow); color: var(--on-yellow); padding: 8px 12px; border-radius: 8px; }
       .skip:focus { left: 8px; }
       :focus-visible { outline: 3px solid var(--accent-line); outline-offset: 3px; }
+      .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+      /* Nacht: de opening en het Pack game. */
+      .night {
+        --ink: #f6f3ee;
+        --ink-soft: #d8d3de;
+        --muted: #a9a2b2;
+        --line: #34303f;
+        --line-strong: #4a4558;
+        --surface: #1f1c29;
+        --surface-2: #26222f;
+        --surface-3: #2f2a3a;
+        --link: #ffcb05;
+        --accent-line: #ffcb05;
+        --up: #4fd16f;
+        color: var(--ink);
+        background:
+          radial-gradient(55% 45% at 72% 38%, rgb(255 203 5 / 0.2), transparent 70%),
+          radial-gradient(45% 40% at 10% 90%, rgb(176 92 200 / 0.22), transparent 70%),
+          #15121f;
+      }
 
       header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 0; }
       .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font-weight: 800; font-size: 1.3rem; font-stretch: 118%; }
@@ -214,94 +242,143 @@
       .btn-primary:active { box-shadow: 0 1px 0 var(--yellow-press); translate: 0 3px; }
       .btn-ghost { color: var(--ink); border-color: var(--line); background: var(--surface-2); }
       .btn-ghost:hover { border-color: var(--line-strong); background: var(--surface-3); }
+      .btn-big { min-height: 56px; padding: 0 30px; font-size: 1.1rem; }
 
-      h1, h2, h3 { line-height: 1.1; margin: 0; font-weight: 800; }
-      h1 { font-size: clamp(2.2rem, 5.4vw, 3.6rem); font-stretch: 118%; letter-spacing: -0.01em; }
-      h1 .mark { background: linear-gradient(transparent 62%, color-mix(in oklab, var(--yellow) 70%, transparent) 62%); }
-      h2 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); font-stretch: 112%; }
-      /* Pokébal voor elk kopje, zoals in de app. */
+      h1, h2, h3 { line-height: 1.05; margin: 0; font-weight: 800; }
+      h2 { font-size: clamp(1.7rem, 3.4vw, 2.4rem); font-stretch: 112%; }
+      /* Pokébal voor de kopjes buiten het verhaal, zoals in de app. */
       h2.ball { display: flex; align-items: center; gap: 12px; }
       h2.ball::before { content: ''; flex: none; width: 0.7em; height: 0.7em; border-radius: 50%; border: 2px solid var(--ball-line); background: radial-gradient(circle, var(--ball-white) 0 18%, var(--ball-line) 19% 30%, transparent 31%), linear-gradient(var(--ball-red) 0 44%, var(--ball-line) 44% 56%, var(--ball-white) 56%); }
 
-      .hero { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 48px; align-items: center; padding: 40px 0 64px; }
-      .eyebrow { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 16px; padding: 6px 14px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-weight: 700; font-size: 0.9rem; color: var(--ink-soft); }
-      .eyebrow::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--grass); }
-      .lead { font-size: 1.18rem; color: var(--ink-soft); margin: 20px 0 28px; max-width: 34em; }
+      /* ---------- Opening: een booster pack scheurt open en de kaarten waaieren uit ---------- */
+      .opening { padding-bottom: 40px; overflow-x: clip; }
+      .hero { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 40px; align-items: center; min-height: min(78svh, 760px); padding: 24px 0 32px; }
+      .hero h1 { font-size: clamp(2.6rem, 5.2vw, 4.6rem); font-weight: 900; font-stretch: 125%; letter-spacing: -0.02em; line-height: 0.96; text-wrap: balance; }
+      .lead { font-size: clamp(1.1rem, 1.6vw, 1.3rem); color: var(--ink-soft); margin: 22px 0 30px; max-width: 30em; }
       .actions { display: flex; flex-wrap: wrap; gap: 12px; }
-      .note { margin-top: 18px; color: var(--muted); font-size: 0.95rem; }
+      .note { margin: 18px 0 0; color: var(--muted); font-size: 0.95rem; }
+      .beta { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 18px; color: var(--ink-soft); font-weight: 700; }
+      .beta::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: var(--grass); box-shadow: 0 0 0 4px rgb(79 184 74 / 0.25); }
 
-      /* Echte schermen van de app (24-10-2026, demodata) in een telefoonrand. */
-      .phones { position: relative; height: clamp(440px, 46vw, 580px); }
+      .fan { position: relative; width: min(560px, 100%); aspect-ratio: 1.12; margin-inline: auto; }
+      .fan .card { position: absolute; left: 30%; bottom: 6%; width: 40%; aspect-ratio: 400 / 550; transform-origin: 50% 100%; transform: var(--f); z-index: var(--z); }
+      .card img { display: block; width: 100%; height: 100%; border-radius: 4.5% / 3.3%; box-shadow: 0 14px 40px rgb(0 0 0 / 0.45); }
+      .fan .card:nth-child(1) { --f: translate(-62%, 6%) rotate(-22deg); --z: 1; --i: 0; }
+      .fan .card:nth-child(2) { --f: translate(-32%, 1%) rotate(-11deg); --z: 2; --i: 1; }
+      .fan .card:nth-child(3) { --f: translate(0, -4%) rotate(0deg); --z: 5; --i: 2; }
+      .fan .card:nth-child(4) { --f: translate(32%, 1%) rotate(11deg); --z: 3; --i: 3; }
+      .fan .card:nth-child(5) { --f: translate(62%, 6%) rotate(22deg); --z: 1; --i: 4; }
+      /* Het pakje zelf bestaat alleen tijdens de animatie. */
+      .pack { display: none; }
+      .burst { display: none; }
+
+      .facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; list-style: none; margin: 8px 0 0; padding: 18px 0 0; border-top: 1px solid var(--line); }
+      .facts li { display: grid; gap: 2px; }
+      .facts strong { font-size: clamp(1.3rem, 2.4vw, 1.8rem); font-stretch: 118%; font-weight: 900; color: var(--yellow); line-height: 1.1; }
+      .facts span { color: var(--ink-soft); font-size: 0.95rem; }
+
+      /* ---------- Hoofdstukken ---------- */
+      .chapter { padding: clamp(64px, 10vw, 120px) 0; }
+      .chapter-grid { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: clamp(32px, 6vw, 80px); align-items: center; }
+      .chapter-grid.flip > .stage { order: -1; }
+      .chapter h2 { font-size: clamp(2rem, 4.8vw, 3.5rem); font-stretch: 122%; font-weight: 900; letter-spacing: -0.015em; text-wrap: balance; }
+      .chapter p { font-size: 1.12rem; color: var(--ink-soft); margin: 18px 0 0; max-width: 32em; }
+      .stage { position: relative; }
+
+      /* Schoenendoos: losse kaarten die netjes op een rij gaan liggen. */
+      .box { position: relative; width: min(520px, 100%); aspect-ratio: 100 / 72; margin-inline: auto; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-panel); }
+      .box .c { position: absolute; left: 0; top: 0; width: 22%; aspect-ratio: 240 / 330; transform: translate(var(--tx), var(--ty)); }
+      .box .c img { display: block; width: 100%; height: 100%; border-radius: 4.5% / 3.3%; box-shadow: 0 6px 14px rgb(0 0 0 / 0.25); }
+      .box .c:nth-child(1) { --tx: 6.8%; --ty: 6.5%; --mx: 30%; --my: 40%; --mr: -24deg; --i: 0; }
+      .box .c:nth-child(2) { --tx: 120.4%; --ty: 6.5%; --mx: 150%; --my: 70%; --mr: 14deg; --i: 1; }
+      .box .c:nth-child(3) { --tx: 234%; --ty: 6.5%; --mx: 250%; --my: 20%; --mr: -8deg; --i: 2; }
+      .box .c:nth-child(4) { --tx: 347.6%; --ty: 6.5%; --mx: 330%; --my: 60%; --mr: 31deg; --i: 3; }
+      .box .c:nth-child(5) { --tx: 6.8%; --ty: 116.3%; --mx: 90%; --my: 100%; --mr: 38deg; --i: 4; }
+      .box .c:nth-child(6) { --tx: 120.4%; --ty: 116.3%; --mx: 200%; --my: 95%; --mr: -33deg; --i: 5; }
+      .box .c:nth-child(7) { --tx: 234%; --ty: 116.3%; --mx: 180%; --my: 30%; --mr: 6deg; --i: 6; }
+      .box .c:nth-child(8) { --tx: 347.6%; --ty: 116.3%; --mx: 290%; --my: 110%; --mr: -17deg; --i: 7; }
+
+      /* Scannen: een telefoon herkent een kaart. */
+      .scanphone { position: relative; width: min(290px, 78%); aspect-ratio: 9 / 17; margin-inline: auto; border: 9px solid #1b1b1f; border-radius: 40px; overflow: hidden; background: radial-gradient(80% 60% at 50% 40%, #3a3545, #16141c); box-shadow: var(--shadow-float); }
+      .scanphone .finder { position: absolute; left: 14%; right: 14%; top: 12%; aspect-ratio: 400 / 550; }
+      .finder .bracket { position: absolute; width: 22%; aspect-ratio: 1; border: 4px solid #fff; }
+      .finder .bracket:nth-child(1) { left: -8%; top: -5%; border-right: 0; border-bottom: 0; border-top-left-radius: 14px; }
+      .finder .bracket:nth-child(2) { right: -8%; top: -5%; border-left: 0; border-bottom: 0; border-top-right-radius: 14px; }
+      .finder .bracket:nth-child(3) { left: -8%; bottom: -5%; border-right: 0; border-top: 0; border-bottom-left-radius: 14px; }
+      .finder .bracket:nth-child(4) { right: -8%; bottom: -5%; border-left: 0; border-top: 0; border-bottom-right-radius: 14px; }
+      .scan.in .bracket, .bracket.found { border-color: var(--grass); }
+      .finder .scan-card { position: absolute; inset: 0; }
+      .finder .scan-card img { display: block; width: 100%; height: 100%; border-radius: 4.5% / 3.3%; }
+      .scanline { position: absolute; left: -6%; right: -6%; top: 0; height: 3px; background: var(--grass); box-shadow: 0 0 18px 4px rgb(79 184 74 / 0.7); opacity: 0; }
+      .result { position: absolute; left: 7%; right: 7%; bottom: 6%; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 10px; padding: 12px 14px; border-radius: 18px; background: #fff; color: #1f1a24; box-shadow: 0 10px 30px rgb(0 0 0 / 0.35); }
+      .result strong { font-size: 1.05rem; }
+      .result span { color: #5f5566; font-size: 0.88rem; grid-column: 1; }
+      .result em { grid-row: 1 / span 2; grid-column: 2; font-style: normal; font-weight: 800; color: #17803d; background: #e3f5e5; border-radius: 999px; padding: 6px 12px; }
+
+      /* Binder: een pagina van 151 die vol raakt terwijl je scrollt. */
+      .binder { width: min(500px, 100%); margin-inline: auto; padding: 20px; border-radius: var(--radius-l); background: var(--surface); border: 1px solid var(--line); border-top: 6px solid var(--water); box-shadow: var(--shadow-float); }
+      .binder-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-weight: 800; font-size: 1.25rem; font-stretch: 115%; }
+      .binder-head span { color: var(--muted); font-weight: 700; font-size: 1rem; font-variant-numeric: tabular-nums; }
+      .meter { height: 10px; margin: 12px 0 16px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
+      .meter i { display: block; height: 100%; width: var(--fill, 14%); border-radius: inherit; background: var(--up); transition: width 0.35s ease-out; }
+      .slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; list-style: none; margin: 0; padding: 0; }
+      .slot { position: relative; aspect-ratio: 240 / 330; border-radius: 8px; background: var(--surface-2); border: 2px dashed var(--line-strong); display: grid; place-items: center; color: var(--muted); font-weight: 700; font-size: 0.9rem; }
+      .slot img { position: absolute; inset: -2px; width: calc(100% + 4px); height: calc(100% + 4px); object-fit: cover; border-radius: 8px; box-shadow: 0 4px 12px rgb(0 0 0 / 0.2); }
+
+      /* Waarde. */
+      .worth { width: min(500px, 100%); margin-inline: auto; padding: 24px; border-radius: var(--radius-l); background: var(--surface); border: 1px solid var(--line); border-top: 6px solid var(--fire); box-shadow: var(--shadow-float); }
+      .worth-label { color: var(--muted); font-weight: 600; }
+      .worth-value { display: block; font-size: clamp(2.6rem, 6vw, 3.6rem); font-weight: 900; font-stretch: 120%; line-height: 1.05; font-variant-numeric: tabular-nums; }
+      .worth-up { display: inline-block; margin-top: 4px; color: var(--up); font-weight: 800; }
+      .spark { display: block; width: 100%; height: 110px; margin: 14px 0 6px; overflow: visible; }
+      .spark path { fill: none; stroke: var(--fire); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+      .deal { display: grid; grid-template-columns: 56px 1fr; gap: 4px 14px; align-items: center; margin-top: 14px; padding: 12px; border-radius: 16px; background: var(--surface-2); border: 1px solid var(--line); }
+      .deal img { grid-row: span 2; width: 56px; height: auto; border-radius: 4px; }
+      .deal strong { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+      .deal strong em { font-style: normal; font-size: 0.85rem; color: var(--up); background: color-mix(in oklab, var(--up) 14%, transparent); padding: 2px 10px; border-radius: 999px; }
+      .deal span { color: var(--ink-soft); font-size: 0.92rem; }
+      .example { margin: 10px 0 0; text-align: center; color: var(--muted); font-size: 0.85rem; }
+
+      /* Pack game: drie holo-kaarten die meekantelen met de muis. */
+      .holos { position: relative; display: flex; justify-content: center; gap: 0; padding: 20px 0; }
+      .holo { position: relative; width: min(220px, 31%); aspect-ratio: 400 / 550; margin: 0 -3%; border-radius: 4.5% / 3.3%; transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) rotate(var(--r, 0deg)) translateY(var(--y, 0)); transition: transform 0.25s ease-out; }
+      .holo:nth-child(1) { --r: -8deg; --y: 18px; }
+      .holo:nth-child(2) { --r: 0deg; --y: 0; z-index: 1; }
+      .holo:nth-child(3) { --r: 8deg; --y: 18px; }
+      .holo img { display: block; width: 100%; height: 100%; border-radius: inherit; box-shadow: 0 20px 50px rgb(0 0 0 / 0.55); }
+      .holo::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(circle at var(--mx, 50%) var(--my, 30%), rgb(255 255 255 / 0.4), transparent 45%); mix-blend-mode: overlay; opacity: var(--glow, 0); transition: opacity 0.25s; }
+      .points { position: absolute; left: 50%; top: -6px; translate: -50% 0; z-index: 2; padding: 6px 16px; border-radius: 999px; background: var(--yellow); color: var(--on-yellow); font-weight: 900; box-shadow: 0 4px 0 var(--yellow-press); font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .perks { display: grid; gap: 10px; list-style: none; margin: 24px 0 0; padding: 0; }
+      .perks li { padding-left: 30px; position: relative; color: var(--ink-soft); }
+      .perks li::before { content: ''; position: absolute; left: 0; top: 0.3em; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--ball-line); background: radial-gradient(circle, var(--ball-white) 0 18%, var(--ball-line) 19% 30%, transparent 31%), linear-gradient(var(--ball-red) 0 44%, var(--ball-line) 44% 56%, var(--ball-white) 56%); }
+      .perks strong { color: var(--ink); }
+
+      /* ---------- Gewone secties ---------- */
+      section.plain { padding: 56px 0; }
+      .section-head { max-width: 42em; margin-bottom: 28px; }
+      .section-head p { color: var(--ink-soft); margin: 12px 0 0; font-size: 1.08rem; }
+
       .phone { margin: 0; aspect-ratio: 540 / 1169; border: 7px solid #1b1b1f; border-radius: 34px; background: #1b1b1f; overflow: hidden; box-shadow: var(--shadow-float); }
       .phone img { display: block; width: 100%; height: 100%; object-fit: cover; }
-      .phones .phone { position: absolute; width: min(250px, 47%); }
-      .phones .phone-front { left: 6%; top: 0; rotate: -4deg; z-index: 1; }
-      .phones .phone-back { right: 4%; top: 48px; rotate: 6deg; }
-      .panel { background: var(--surface); border: 1px solid var(--line); border-top: 6px solid var(--fire); border-radius: var(--radius-l); padding: 20px 22px; box-shadow: var(--shadow-panel); }
-      .badge-new { position: absolute; top: 6px; right: 10%; z-index: 2; padding: 4px 12px; border-radius: 999px; background: var(--yellow); color: var(--on-yellow); font-weight: 800; font-size: 0.85rem; box-shadow: var(--shadow-float); rotate: 6deg; }
-
-      /* Kijkje in de app: drie schermen met uitleg; op de telefoon horizontaal schuiven. */
       .shots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; list-style: none; margin: 0; padding: 0; }
       .shots li { display: grid; gap: 14px; justify-items: center; text-align: center; }
       .shots .phone { width: min(250px, 100%); }
       .shots strong { display: block; font-size: 1.1rem; }
       .shots span { color: var(--ink-soft); }
 
-      section { padding: 56px 0; }
-      .section-head { max-width: 42em; margin-bottom: 28px; }
-      .section-head p { color: var(--ink-soft); margin: 12px 0 0; font-size: 1.08rem; }
-
-      /* Blokken met een gekleurde bovenrand in vaste volgorde (vuur, water, gras, bliksem, psychic, fairy). */
-      .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; list-style: none; margin: 0; padding: 0; }
-      .grid > li { background: var(--surface); border: 1px solid var(--line); border-top: 6px solid var(--fire); border-radius: var(--radius-l); padding: 22px; box-shadow: var(--shadow-panel); }
-      .grid > li:nth-child(6n + 2) { border-top-color: var(--water); }
-      .grid > li:nth-child(6n + 3) { border-top-color: var(--grass); }
-      .grid > li:nth-child(6n + 4) { border-top-color: var(--lightning); }
-      .grid > li:nth-child(6n + 5) { border-top-color: var(--psychic); }
-      .grid > li:nth-child(6n + 6) { border-top-color: var(--fairy); }
-      .grid h3 { font-size: 1.15rem; margin: 14px 0 8px; }
-      .grid p { margin: 0; color: var(--ink-soft); }
-      .icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--surface-2); color: var(--accent-line); }
-      .icon svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-
-      /* Waarom anders: rij met korte punten. */
       .diff { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; list-style: none; margin: 0; padding: 0; }
-      .diff li { display: grid; gap: 4px; padding: 18px; border-radius: var(--radius-l); background: var(--surface-2); border: 1px solid var(--line); }
+      .diff li { display: grid; gap: 4px; align-content: start; padding: 18px; border-radius: var(--radius-l); background: var(--surface-2); border: 1px solid var(--line); }
       .diff strong { font-size: 1.05rem; }
       .diff span { color: var(--ink-soft); font-size: 0.97rem; }
 
-      /* Leuk: het Pack game uitgelicht in de kleuren van de knop in de app (pokébalrood naar vuuroranje). */
-      .fun { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 24px; align-items: stretch; }
-      .fun-main { border-radius: var(--radius-l); padding: 28px; color: #fff; background: linear-gradient(120deg, color-mix(in oklab, var(--ball-red) 85%, var(--ball-line)), color-mix(in oklab, var(--fire) 72%, var(--ball-line))); box-shadow: 0 4px 0 #a3260a, var(--shadow-panel); }
-      .fun-main h3 { font-size: 1.6rem; font-stretch: 118%; }
-      .fun-main p { margin: 12px 0 0; color: rgb(255 255 255 / 0.92); }
-      .packs { display: flex; gap: 10px; margin-top: 20px; }
-      .pack { width: 64px; aspect-ratio: 63 / 88; border-radius: 8px; border: 2px solid var(--ball-line); display: grid; place-items: center; background: conic-gradient(from 30deg, var(--card-back-1), var(--card-back-2), var(--card-back-3), var(--card-back-2), var(--card-back-1)); }
-      .pack:nth-child(2) { background: conic-gradient(from 30deg, #1d4f9a, #3b82f6, #93c5fd, #3b82f6, #1d4f9a); }
-      .pack:nth-child(3) { border-color: #f2c94c; background: conic-gradient(from 30deg, #065f46, #10b981, #ffe27a, #10b981, #065f46); }
-      .pack:nth-child(4) { border-color: #f2c94c; background: conic-gradient(from 30deg, #4c1d95, #a855f7, #ffe27a, #a855f7, #4c1d95); }
-      .pack::before { content: ''; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--ball-line); background: radial-gradient(circle, var(--ball-white) 0 18%, var(--ball-line) 19% 30%, transparent 31%), linear-gradient(var(--ball-red) 0 44%, var(--ball-line) 44% 56%, var(--ball-white) 56%); }
-      .fun-list { display: grid; gap: 12px; list-style: none; margin: 0; padding: 0; }
-      .fun-list li { display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px; border-radius: var(--radius-l); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-panel); }
-      .fun-list .dot { flex: none; width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; font-size: 1.2rem; background: var(--surface-2); }
-      .fun-list strong { display: block; }
-      .fun-list span { color: var(--ink-soft); }
-
-      /* Community: bèta nu, plannen als "Coming soon". */
+      .panel { background: var(--surface); border: 1px solid var(--line); border-top: 6px solid var(--grass); border-radius: var(--radius-l); padding: 24px; box-shadow: var(--shadow-panel); }
       .community { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 24px; align-items: start; }
-      .community .panel { border-top-color: var(--grass); }
       .community .panel p { color: var(--ink-soft); margin: 10px 0 18px; }
       .soon { display: grid; gap: 12px; list-style: none; margin: 0; padding: 0; }
       .soon li { position: relative; padding: 18px 20px; border-radius: var(--radius-l); background: var(--surface-2); border: 1px dashed var(--line-strong); }
       .soon strong { display: block; margin-right: 110px; }
       .soon span { color: var(--ink-soft); }
       .soon li::after { content: 'Coming soon'; position: absolute; top: 16px; right: 16px; padding: 2px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-size: 0.8rem; font-weight: 700; color: var(--muted); }
-
-      .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; list-style: none; margin: 0; padding: 0; counter-reset: step; }
-      .steps li { counter-increment: step; padding: 22px; border-radius: var(--radius-l); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-panel); }
-      .steps li::before { content: counter(step); display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--yellow); color: var(--on-yellow); font-weight: 800; margin-bottom: 12px; box-shadow: 0 3px 0 var(--yellow-press); }
-      .steps h3 { font-size: 1.1rem; margin-bottom: 6px; }
-      .steps p { margin: 0; color: var(--ink-soft); }
 
       .faq { display: grid; gap: 12px; max-width: 48em; }
       .faq details { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-l); padding: 0 20px; box-shadow: var(--shadow-panel); }
@@ -311,178 +388,344 @@
       .faq details[open] summary::after { content: '–'; }
       .faq details p { margin: 0 0 18px; color: var(--ink-soft); }
 
-      .cta { text-align: center; background: var(--surface); border: 1px solid var(--line); border-top: 6px solid var(--lightning); border-radius: var(--radius-l); padding: 48px 24px; box-shadow: var(--shadow-panel); }
-      .cta p { color: var(--ink-soft); margin: 12px auto 24px; max-width: 34em; }
-      .cta .actions { justify-content: center; }
+      .finale { text-align: center; padding: clamp(64px, 10vw, 110px) 0; }
+      .finale h2 { font-size: clamp(2.2rem, 5.6vw, 4rem); font-stretch: 122%; font-weight: 900; text-wrap: balance; }
+      .finale p { color: var(--ink-soft); margin: 16px auto 28px; max-width: 32em; font-size: 1.12rem; }
+      .finale .actions { justify-content: center; }
 
-      footer { padding: 40px 0 56px; color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--line); margin-top: 32px; }
+      footer { padding: 40px 0 96px; color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--line); }
       footer p { margin: 0 0 8px; max-width: 60em; }
 
+      /* Vaste Register-knop onderaan op de telefoon, zodra de opening uit beeld is. */
+      .dock { display: none; }
+
       @media (max-width: 900px) {
-        .hero, .fun, .community { grid-template-columns: 1fr; }
-        .hero { padding-top: 16px; gap: 32px; }
-        .grid, .steps { grid-template-columns: 1fr; }
+        .hero, .chapter-grid, .community { grid-template-columns: 1fr; }
+        .hero { min-height: 0; gap: 8px; padding-top: 0; }
+        .hero .fan { order: -1; aspect-ratio: 1.5; width: min(440px, 100%); margin-bottom: 18px; }
+        .hero .fan .card { left: 33%; width: 34%; }
+        .chapter-grid.flip > .stage { order: 0; }
+        .facts { grid-template-columns: repeat(2, 1fr); row-gap: 16px; }
         .diff { grid-template-columns: repeat(2, 1fr); }
-        section { padding: 40px 0; }
+        section.plain { padding: 40px 0; }
       }
-      @media (min-width: 901px) and (max-width: 1060px) {
-        .grid { grid-template-columns: repeat(2, 1fr); }
+      @media (max-width: 760px) {
+        .shots { grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: 68%; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 12px; }
+        .shots li { scroll-snap-align: center; }
+        .dock { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 10px 10px 18px; border-radius: 999px; background: #1f1c29; color: #f6f3ee; box-shadow: 0 10px 30px rgb(0 0 0 / 0.35); translate: 0 160%; visibility: hidden; }
+        .dock.show { translate: 0 0; visibility: visible; }
+        .dock span { font-weight: 700; font-size: 0.95rem; }
+        .dock .btn { min-height: 44px; }
       }
       @media (max-width: 480px) {
         .top-actions .btn { min-height: 44px; padding: 0 14px; }
         .brand { font-size: 1.15rem; }
         .diff { grid-template-columns: 1fr; }
-        .phones { height: 420px; }
-        .phones .phone { width: 52%; }
+        .slots { gap: 7px; }
       }
+
+      /* ---------- Animaties (alleen met .anim op html) ---------- */
+      .anim .pack { display: block; position: absolute; left: 28%; bottom: 2%; z-index: 6; width: 44%; aspect-ratio: 63 / 100; animation: pack-shake 0.55s 0.25s ease-in-out both, pack-away 0.5s 1.05s ease-in forwards; }
+      .pack-body, .pack-top { position: absolute; left: 0; right: 0; border: 3px solid #1b1b1f; background: linear-gradient(135deg, #ffd83d, #ffcb05 30%, #f0612f 62%, #b05cc8); }
+      .pack-body { top: 13%; bottom: 0; border-radius: 0 0 14px 14px; display: grid; place-items: center; overflow: hidden; }
+      .pack-body::before { content: ''; width: 34%; aspect-ratio: 1; border-radius: 50%; border: 4px solid #1b1b1f; background: radial-gradient(circle, #f3f1ec 0 18%, #1b1b1f 19% 30%, transparent 31%), linear-gradient(#e3350d 0 44%, #1b1b1f 44% 56%, #f3f1ec 56%); }
+      .pack-body::after { content: ''; position: absolute; inset: -20%; background: linear-gradient(105deg, transparent 40%, rgb(255 255 255 / 0.55) 50%, transparent 60%); animation: foil 1s 0.1s ease-in-out both; }
+      .pack-top { top: 0; height: 14%; border-radius: 14px 14px 0 0; border-bottom: 3px dashed #1b1b1f; animation: tear 0.45s 0.7s ease-out forwards; }
+      .anim .burst { display: block; position: absolute; left: 50%; bottom: 30%; z-index: 0; width: 80%; aspect-ratio: 1; margin-left: -40%; border-radius: 50%; background: radial-gradient(circle, rgb(255 216 61 / 0.85), rgb(255 203 5 / 0.25) 40%, transparent 70%); animation: burst 1.1s 0.95s ease-out both; }
+      .anim .fan .card { animation: deal 0.75s cubic-bezier(0.2, 0.8, 0.25, 1.15) both; animation-delay: calc(1.05s + var(--i) * 0.09s); }
+      @keyframes pack-shake { 0%, 100% { rotate: 0deg; } 20% { rotate: -5deg; } 45% { rotate: 4deg; } 70% { rotate: -3deg; } }
+      @keyframes pack-away { to { translate: 0 75%; opacity: 0; visibility: hidden; } }
+      @keyframes tear { to { translate: 45% -190%; rotate: 32deg; opacity: 0; } }
+      @keyframes foil { from { translate: -60% 0; } to { translate: 60% 0; } }
+      @keyframes burst { 0% { scale: 0.2; opacity: 0; } 30% { opacity: 1; } 100% { scale: 1.5; opacity: 0; } }
+      @keyframes deal { from { transform: translate(0, 22%) scale(0.5) rotate(0deg); opacity: 0; } to { transform: var(--f); opacity: 1; } }
+
+      .anim .box { background: var(--cardboard); border-color: var(--cardboard-edge); box-shadow: inset 0 0 0 10px var(--cardboard-edge), var(--shadow-panel); transition: background 0.8s 0.5s, border-color 0.8s 0.5s, box-shadow 0.8s 0.5s; }
+      .anim .box.in { background: var(--surface); border-color: var(--line); box-shadow: var(--shadow-panel); }
+      .anim .box .c { transform: translate(var(--mx), var(--my)) rotate(var(--mr)); transition: transform 0.9s cubic-bezier(0.3, 0.9, 0.3, 1.05); transition-delay: calc(0.35s + var(--i) * 0.07s); }
+      .anim .box.in .c { transform: translate(var(--tx), var(--ty)) rotate(0deg); }
+
+      .anim .scan .scan-card { translate: 0 140%; opacity: 0; transition: translate 0.7s cubic-bezier(0.2, 0.8, 0.3, 1), opacity 0.4s; }
+      .anim .scan.in .scan-card { translate: 0 0; opacity: 1; }
+      .anim .scan.in .scanline { animation: sweep 0.9s 0.75s ease-in-out 2 alternate both; }
+      .anim .scan .bracket { transition: border-color 0.3s 2.2s; }
+      .anim .scan:not(.in) .bracket { border-color: #fff; }
+      .anim .scan .result { translate: 0 40px; opacity: 0; transition: translate 0.5s 2.3s cubic-bezier(0.2, 0.8, 0.3, 1.2), opacity 0.3s 2.3s; }
+      .anim .scan.in .result { translate: 0 0; opacity: 1; }
+      @keyframes sweep { 0% { top: 0; opacity: 1; } 100% { top: 100%; opacity: 1; } }
+
+      /* Groot scherm: het binder-hoofdstuk blijft staan terwijl je scrollt; de vakken vullen zich met het scrollen mee. */
+      .anim .binder-chapter.pinned { height: 240vh; padding: 0; }
+      .anim .binder-chapter.pinned .binder-sticky { position: sticky; top: 0; min-height: 100vh; display: grid; align-items: center; }
+      .anim .binder-chapter.pinned .binder { width: min(500px, 100%, calc((100vh - 150px) / 1.5)); }
+      .anim .slot img { opacity: 0; transform: scale(1.3) rotate(-8deg); transition: opacity 0.3s, transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.35); }
+      .anim .slot.on img { opacity: 1; transform: none; }
+
+      .anim .worth .spark path { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s; }
+      .anim .worth.in .spark path { stroke-dashoffset: 0; }
+      .anim .worth .deal { opacity: 0; translate: 0 18px; transition: opacity 0.4s 1.6s, translate 0.5s 1.6s cubic-bezier(0.2, 0.8, 0.3, 1.2); }
+      .anim .worth.in .deal { opacity: 1; translate: 0 0; }
+
+      .anim .holos .holo { opacity: 0; translate: 0 60px; transition: opacity 0.5s, translate 0.7s cubic-bezier(0.2, 0.8, 0.3, 1.15), transform 0.25s ease-out; }
+      .anim .holos .holo:nth-child(2) { transition-delay: 0.12s, 0.12s, 0s; }
+      .anim .holos .holo:nth-child(3) { transition-delay: 0.24s, 0.24s, 0s; }
+      .anim .holos.in .holo { opacity: 1; translate: 0 0; }
+      .anim .points { opacity: 0; scale: 0.6; transition: opacity 0.3s 0.6s, scale 0.4s 0.6s cubic-bezier(0.2, 0.8, 0.3, 1.5); }
+      .anim .holos.in .points { opacity: 1; scale: 1; }
+
       @media (max-width: 760px) {
-        .shots { grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: 68%; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 12px; }
-        .shots li { scroll-snap-align: center; }
+        .anim .dock { transition: translate 0.35s cubic-bezier(0.2, 0.8, 0.3, 1), visibility 0.35s; }
       }
-      @media (prefers-reduced-motion: no-preference) {
-        .badge-new { animation: wiggle 2.4s ease-in-out infinite; }
-        @keyframes wiggle { 0%, 100% { rotate: 6deg; } 50% { rotate: -2deg; } }
+      /* Lichter op de telefoon: geen glans-zwiep op het pakje. */
+      @media (max-width: 900px) {
+        .pack-body::after { display: none; }
       }
     </style>
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
-    <div class="wrap">
-      <header class="top">
-        <a class="brand" href="./" aria-label="Dexcrate home">
-          <svg viewBox="0 0 64 64" aria-hidden="true">
-            <g transform="rotate(-8 32 32)">
-              <rect x="12" y="4" width="40" height="56" rx="6" fill="#ffcb05" stroke="#17161c" stroke-width="3.5" />
-              <path d="M22 17h9.5c8.5 0 13.5 5.6 13.5 15s-5 15-13.5 15H22z" fill="#17161c" />
-              <path d="M28.5 23.5h2.8c4.4 0 6.7 3 6.7 8.5s-2.3 8.5-6.7 8.5h-2.8z" fill="#ffcb05" />
-            </g>
-            <path d="M52 3l2 5.2 5.2 2-5.2 2-2 5.2-2-5.2-5.2-2 5.2-2z" fill="#f6f3ee" stroke="#17161c" stroke-width="1.6" stroke-linejoin="round" />
-          </svg>
-          Dexcrate
-        </a>
-        <nav class="top-actions" aria-label="Account">
-          <a class="btn btn-ghost" href="./app/">Sign in</a>
-          <!-- Registreren (24-10-2026): knop staat er al, linkt nog nergens heen tot registreren openstaat. -->
-          <a class="btn btn-primary" href="#" data-register>Register</a>
-        </nav>
-      </header>
-    </div>
 
-    <main id="main">
+    <div class="night opening" id="opening">
       <div class="wrap">
+        <header class="top">
+          <a class="brand" href="./" aria-label="Dexcrate home">
+            <svg viewBox="0 0 64 64" aria-hidden="true">
+              <g transform="rotate(-8 32 32)">
+                <rect x="12" y="4" width="40" height="56" rx="6" fill="#ffcb05" stroke="#17161c" stroke-width="3.5" />
+                <path d="M22 17h9.5c8.5 0 13.5 5.6 13.5 15s-5 15-13.5 15H22z" fill="#17161c" />
+                <path d="M28.5 23.5h2.8c4.4 0 6.7 3 6.7 8.5s-2.3 8.5-6.7 8.5h-2.8z" fill="#ffcb05" />
+              </g>
+              <path d="M52 3l2 5.2 5.2 2-5.2 2-2 5.2-2-5.2-5.2-2 5.2-2z" fill="#f6f3ee" stroke="#17161c" stroke-width="1.6" stroke-linejoin="round" />
+            </svg>
+            Dexcrate
+          </a>
+          <nav class="top-actions" aria-label="Account">
+            <a class="btn btn-ghost" href="./app/">Sign in</a>
+            <!-- Registreren (24-10-2026): knop staat er al, linkt nog nergens heen tot registreren openstaat. -->
+            <a class="btn btn-primary" href="#" data-register>Register</a>
+          </nav>
+        </header>
+
         <div class="hero">
           <div>
-            <p class="eyebrow">Free private beta</p>
-            <h1>Your Pokémon cards, <span class="mark">finally all in one place.</span></h1>
+            <p class="beta">Free private beta</p>
+            <h1>Your cards deserve better than a shoebox.</h1>
             <p class="lead">
-              Scan your cards, watch every set fill up like a real binder and always know what your collection is worth on Cardmarket. Made by a collector, for
-              collectors.
+              Dexcrate scans your Pokémon cards, turns every set into a binder that fills up as you collect, and tells you what it is all worth. In euros,
+              every day.
             </p>
             <div class="actions">
-              <a class="btn btn-primary" href="#" data-register>Register</a>
-              <a class="btn btn-ghost" href="#why">Why Dexcrate?</a>
+              <a class="btn btn-primary btn-big" href="#" data-register>Register for free</a>
+              <a class="btn btn-ghost btn-big" href="#story">See how it works</a>
             </div>
             <p class="note">Already in the beta? <a href="./app/">Sign in</a></p>
           </div>
-          <div class="phones">
-            <span class="badge-new" aria-hidden="true">NEW!</span>
-            <figure class="phone phone-front">
-              <img
-                src="shots/binder.webp"
-                srcset="shots/binder-360.webp 360w, shots/binder.webp 540w"
-                sizes="(max-width: 480px) 48vw, 250px"
-                width="540"
-                height="1169"
-                fetchpriority="high"
-                alt="Dexcrate on a phone: the 151 set as a binder, with owned cards in colour and missing cards in grey"
-              />
-            </figure>
-            <figure class="phone phone-back">
-              <img src="shots/pack-game.webp"
-                srcset="shots/pack-game-360.webp 360w, shots/pack-game.webp 540w"
-                sizes="(max-width: 480px) 48vw, 250px" width="540" height="1169" alt="The Pack game: your virtual cards from opened packs, with their market value" />
-            </figure>
+          <div class="fan" aria-hidden="true">
+            <span class="card"><img src="cards/iono-sir.webp" width="400" height="550" alt="" /></span>
+            <span class="card"><img src="cards/umbreon-vmax.webp" width="400" height="550" alt="" /></span>
+            <span class="card"><img src="cards/charizard-ex-sir.webp" width="400" height="550" alt="" fetchpriority="high" /></span>
+            <span class="card"><img src="cards/pikachu-ex-sir.webp" width="400" height="550" alt="" /></span>
+            <span class="card"><img src="cards/mew-ex-gold.webp" width="400" height="550" alt="" /></span>
+            <span class="pack"><span class="pack-top"></span><span class="pack-body"></span></span>
+            <span class="burst"></span>
           </div>
         </div>
-      </div>
 
-      <section id="why" aria-labelledby="why-title">
-        <div class="wrap">
-          <div class="section-head">
-            <h2 id="why-title" class="ball">What you get</h2>
-            <p>Less admin, more collecting. Dexcrate keeps track of everything, so you can enjoy the hunt.</p>
+        <ul class="facts" aria-label="What Dexcrate knows">
+          <li><strong>20,000+</strong><span>English cards</span></li>
+          <li><strong>13,000+</strong><span>Japanese cards</span></li>
+          <li><strong>5</strong><span>card languages, Asian sets included</span></li>
+          <li><strong>Every day</strong><span>Cardmarket prices in euros</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <main id="main">
+      <section class="chapter" id="story" aria-labelledby="ch-box">
+        <div class="wrap chapter-grid">
+          <div>
+            <h2 id="ch-box">You know you have a Charizard somewhere.</h2>
+            <p>
+              In a binder, a box, a drawer. Maybe even twice. But which one is it, and is it worth anything? Most collectors stop keeping track the day the
+              spreadsheet gets boring.
+            </p>
+            <p>Dexcrate puts every card in its place, and keeps it there.</p>
           </div>
-          <ul class="grid">
-            <li>
-              <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg></div>
-              <h3>Scan instead of typing</h3>
-              <p>One card, a quick series, or a whole binder page in a single photo. Dexcrate finds the name, set and number; you just check and add.</p>
-            </li>
-            <li>
-              <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="8" height="16" rx="1.5" /><rect x="13" y="4" width="8" height="16" rx="1.5" /><path d="M5.5 8h3M15.5 8h3M5.5 12h3M15.5 12h3" /></svg></div>
-              <h3>Every set as a binder</h3>
-              <p>See at a glance what you have and what is missing, page by page, and what it costs to complete the set.</p>
-            </li>
-            <li>
-              <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18l5-6 4 3 7-9" /><path d="M15 6h5v5" /></svg></div>
-              <h3>Know what it is worth</h3>
-              <p>Daily Cardmarket prices for every card, the value of your whole collection and how it moves over time.</p>
-            </li>
-            <li>
-              <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" /></svg></div>
-              <h3>A wishlist that helps you buy</h3>
-              <p>Set a max price per card and see straight away when its market price drops below it.</p>
-            </li>
-            <li>
-              <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v12H4z" /><path d="M8 7V5h8v2M8 13h8" /></svg></div>
-              <h3>Buying and selling, sorted</h3>
-              <p>Record what you paid and sold for, with shipping and fees, and see your real profit per card and overall.</p>
-            </li>
-            <li>
-              <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2" /><path d="M11 18h2" /></svg></div>
-              <h3>Always with you</h3>
-              <p>Install it on your phone like an app. Your collection is there at a card fair too, even without a connection.</p>
-            </li>
-          </ul>
+          <div class="stage">
+            <div class="box" data-in aria-hidden="true">
+              <span class="c"><img src="cards/bulbasaur.webp" width="240" height="330" alt="" loading="lazy" /></span>
+              <span class="c"><img src="cards/pikachu.webp" width="240" height="330" alt="" loading="lazy" /></span>
+              <span class="c"><img src="cards/eevee.webp" width="240" height="330" alt="" loading="lazy" /></span>
+              <span class="c"><img src="cards/lugia-v.webp" width="240" height="330" alt="" loading="lazy" /></span>
+              <span class="c"><img src="cards/mew-ex.webp" width="240" height="330" alt="" loading="lazy" /></span>
+              <span class="c"><img src="cards/squirtle.webp" width="240" height="330" alt="" loading="lazy" /></span>
+              <span class="c"><img src="cards/charmeleon.webp" width="240" height="330" alt="" loading="lazy" /></span>
+              <span class="c"><img src="cards/charizard-ex.webp" width="240" height="330" alt="" loading="lazy" /></span>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section aria-labelledby="inside-title">
+      <section class="chapter" aria-labelledby="ch-scan">
+        <div class="wrap chapter-grid flip">
+          <div>
+            <h2 id="ch-scan">Point your phone. That’s it.</h2>
+            <p>
+              Dexcrate recognises the name, set and number, and you just check the result. Scan one card, a quick series one after another, or a whole binder
+              page of nine cards in a single photo.
+            </p>
+          </div>
+          <div class="stage">
+            <div class="scanphone scan" data-in aria-hidden="true">
+              <div class="finder">
+                <span class="bracket"></span><span class="bracket"></span><span class="bracket"></span><span class="bracket"></span>
+                <span class="scan-card"><img src="cards/charmander.webp" width="400" height="550" alt="" loading="lazy" /></span>
+                <span class="scanline"></span>
+              </div>
+              <div class="result"><strong>Charmander</strong><span>151 · #004 · €0.12</span><em>Added</em></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="chapter binder-chapter" aria-labelledby="ch-binder">
+        <div class="binder-sticky">
+          <div class="wrap chapter-grid">
+            <div>
+              <h2 id="ch-binder">Watch your sets fill up.</h2>
+              <p>
+                Every set becomes a binder page. The cards you own light up, the ones you are missing wait in grey, and you always know what it costs to
+                complete the set.
+              </p>
+            </div>
+            <div class="stage">
+              <div class="binder" data-in data-binder>
+                <p class="binder-head">151 <span><b data-count>23</b> / 165</span></p>
+                <div class="meter"><i></i></div>
+                <ul class="slots" aria-label="Example binder page of the 151 set">
+                  <li class="slot on">#001<img src="cards/bulbasaur.webp" width="240" height="330" alt="Bulbasaur" loading="lazy" /></li>
+                  <li class="slot on">#002<img src="cards/ivysaur.webp" width="240" height="330" alt="Ivysaur" loading="lazy" /></li>
+                  <li class="slot on">#003<img src="cards/venusaur-ex.webp" width="240" height="330" alt="Venusaur ex" loading="lazy" /></li>
+                  <li class="slot on">#004<img src="cards/charmander.webp" width="400" height="550" alt="Charmander" loading="lazy" /></li>
+                  <li class="slot on">#005<img src="cards/charmeleon.webp" width="240" height="330" alt="Charmeleon" loading="lazy" /></li>
+                  <li class="slot on">#006<img src="cards/charizard-ex.webp" width="240" height="330" alt="Charizard ex" loading="lazy" /></li>
+                  <li class="slot on">#007<img src="cards/squirtle.webp" width="240" height="330" alt="Squirtle" loading="lazy" /></li>
+                  <li class="slot on">#008<img src="cards/wartortle.webp" width="240" height="330" alt="Wartortle" loading="lazy" /></li>
+                  <li class="slot on">#009<img src="cards/blastoise-ex.webp" width="240" height="330" alt="Blastoise ex" loading="lazy" /></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="chapter" aria-labelledby="ch-worth">
+        <div class="wrap chapter-grid flip">
+          <div>
+            <h2 id="ch-worth">Know what it’s worth. Every single day.</h2>
+            <p>
+              Cardmarket prices in euros for every card, the value of your whole collection and how it moves over time. Put a max price on your wishlist and
+              Dexcrate tells you when a card drops below it.
+            </p>
+          </div>
+          <div class="stage">
+            <div class="worth" data-in>
+              <span class="worth-label">Your collection is worth</span>
+              <strong class="worth-value" data-to="1035.08">€1,035.08</strong>
+              <span class="worth-up">↑ 7% this month</span>
+              <svg class="spark" viewBox="0 0 300 100" preserveAspectRatio="none" aria-hidden="true">
+                <path pathLength="1" d="M0 82 C 30 78, 45 60, 70 64 S 110 80, 135 70 S 170 40, 195 48 S 235 62, 255 38 S 285 14, 300 10" />
+              </svg>
+              <div class="deal">
+                <img src="cards/charizard-ex-sir.webp" width="400" height="550" alt="" loading="lazy" />
+                <strong>Charizard ex <em>Within your max</em></strong>
+                <span>Market €241.10, your max €250</span>
+              </div>
+              <p class="example">Example collection.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="night chapter" aria-labelledby="ch-fun">
+        <div class="wrap chapter-grid">
+          <div>
+            <h2 id="ch-fun">And then it gets fun.</h2>
+            <p>
+              Every card you add earns Pack points. Spend them on virtual packs, tear them open and hope for a hit. A second collection, just for fun: points
+              can never be bought.
+            </p>
+            <ul class="perks">
+              <li><strong>Badges and trainer levels</strong> as your collection grows.</li>
+              <li><strong>A partner Pokémon</strong> that walks along through the app.</li>
+              <li><strong>Moments to celebrate:</strong> a new Pokédex entry, a set almost done, a set complete.</li>
+            </ul>
+          </div>
+          <div class="stage">
+            <div class="holos" data-in data-tilt aria-hidden="true">
+              <span class="points"><span data-points>+150</span> Pack points</span>
+              <span class="holo"><img src="cards/mew-ex-gold.webp" width="400" height="550" alt="" loading="lazy" /></span>
+              <span class="holo"><img src="cards/pikachu-ex-sir.webp" width="400" height="550" alt="" loading="lazy" /></span>
+              <span class="holo"><img src="cards/umbreon-vmax.webp" width="400" height="550" alt="" loading="lazy" /></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="plain" aria-labelledby="inside-title">
         <div class="wrap">
           <div class="section-head">
-            <h2 id="inside-title" class="ball">A look inside</h2>
-            <p>Real screens from the app, with an example collection.</p>
+            <h2 id="inside-title" class="ball">The real thing</h2>
+            <p>Screens straight from the app, with an example collection.</p>
           </div>
           <ul class="shots">
             <li>
               <figure class="phone">
-                <img src="shots/scan.webp"
-                srcset="shots/scan-360.webp 360w, shots/scan.webp 540w"
-                sizes="(max-width: 760px) 64vw, 250px" width="540" height="1169" loading="lazy" alt="The Scan page with Quick scan, Single card and Binder page, and your recently added cards" />
+                <img
+                  src="shots/scan.webp"
+                  srcset="shots/scan-360.webp 360w, shots/scan.webp 540w"
+                  sizes="(max-width: 760px) 64vw, 250px"
+                  width="540"
+                  height="1169"
+                  loading="lazy"
+                  alt="The Scan page with Quick scan, Single card and Binder page, and your recently added cards"
+                />
               </figure>
               <div><strong>Scan your way</strong><span>Quick scan, one card, or a whole binder page.</span></div>
             </li>
             <li>
               <figure class="phone">
-                <img src="shots/set.webp"
-                srcset="shots/set-360.webp 360w, shots/set.webp 540w"
-                sizes="(max-width: 760px) 64vw, 250px" width="540" height="1169" loading="lazy" alt="A set page showing how many cards you own and what it costs to complete" />
+                <img
+                  src="shots/binder.webp"
+                  srcset="shots/binder-360.webp 360w, shots/binder.webp 540w"
+                  sizes="(max-width: 760px) 64vw, 250px"
+                  width="540"
+                  height="1169"
+                  loading="lazy"
+                  alt="The 151 set as a binder, with owned cards in colour and missing cards in grey"
+                />
               </figure>
-              <div><strong>Track every set</strong><span>How far you are, and what the rest costs.</span></div>
+              <div><strong>Every set as a binder</strong><span>What you have, what you miss.</span></div>
             </li>
             <li>
               <figure class="phone">
-                <img src="shots/wishlist.webp"
-                srcset="shots/wishlist-360.webp 360w, shots/wishlist.webp 540w"
-                sizes="(max-width: 760px) 64vw, 250px" width="540" height="1169" loading="lazy" alt="The wishlist with card images, market prices and your max price" />
+                <img
+                  src="shots/pack-game.webp"
+                  srcset="shots/pack-game-360.webp 360w, shots/pack-game.webp 540w"
+                  sizes="(max-width: 760px) 64vw, 250px"
+                  width="540"
+                  height="1169"
+                  loading="lazy"
+                  alt="The Pack game: your virtual cards from opened packs, with their market value"
+                />
               </figure>
-              <div><strong>Wishlist with prices</strong><span>Your max price next to today’s market price.</span></div>
+              <div><strong>The Pack game</strong><span>Your virtual pulls, with their value.</span></div>
             </li>
           </ul>
         </div>
       </section>
 
-      <section aria-labelledby="diff-title">
+      <section class="plain" aria-labelledby="diff-title">
         <div class="wrap">
           <div class="section-head">
             <h2 id="diff-title" class="ball">Why it is different</h2>
@@ -496,31 +739,7 @@
         </div>
       </section>
 
-      <section aria-labelledby="fun-title">
-        <div class="wrap">
-          <div class="section-head">
-            <h2 id="fun-title" class="ball">Collecting should be fun</h2>
-            <p>Dexcrate celebrates your collection with you, with a little extra Pokémon magic.</p>
-          </div>
-          <div class="fun">
-            <div class="fun-main">
-              <h3>The Pack game</h3>
-              <p>
-                Every card you add earns Pack points. Spend them on virtual packs: tear them open, flip the cards and hope for a hit. Build a second, virtual
-                collection next to your real one. Just for fun: points can never be bought.
-              </p>
-              <div class="packs" aria-hidden="true"><span class="pack"></span><span class="pack"></span><span class="pack"></span><span class="pack"></span></div>
-            </div>
-            <ul class="fun-list">
-              <li><span class="dot" aria-hidden="true">🏅</span><span><strong>Badges and trainer levels</strong>Earn gym badges and level up as your collection grows.</span></li>
-              <li><span class="dot" aria-hidden="true">⭐</span><span><strong>Your partner Pokémon</strong>Walks along through the app and cheers when you add cards.</span></li>
-              <li><span class="dot" aria-hidden="true">🎉</span><span><strong>Moments to celebrate</strong>A new Pokémon in your Pokédex, a set almost done, a set complete.</span></li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <section aria-labelledby="community-title">
+      <section class="plain" aria-labelledby="community-title">
         <div class="wrap">
           <div class="section-head">
             <h2 id="community-title" class="ball">Be part of it from the start</h2>
@@ -543,29 +762,7 @@
         </div>
       </section>
 
-      <section aria-labelledby="how-title">
-        <div class="wrap">
-          <div class="section-head">
-            <h2 id="how-title" class="ball">How it works</h2>
-          </div>
-          <ol class="steps">
-            <li>
-              <h3>Add your cards</h3>
-              <p>Scan them, search the card database or import your existing spreadsheet.</p>
-            </li>
-            <li>
-              <h3>Follow your sets</h3>
-              <p>Every set becomes a binder that fills up as your collection grows.</p>
-            </li>
-            <li>
-              <h3>Enjoy the hunt</h3>
-              <p>Know what everything is worth, spot deals on your wishlist and open a pack when you earned it.</p>
-            </li>
-          </ol>
-        </div>
-      </section>
-
-      <section aria-labelledby="faq-title">
+      <section class="plain" aria-labelledby="faq-title">
         <div class="wrap">
           <div class="section-head">
             <h2 id="faq-title" class="ball">Frequently asked questions</h2>
@@ -599,15 +796,13 @@
         </div>
       </section>
 
-      <section aria-labelledby="cta-title">
+      <section class="finale" id="finale" aria-labelledby="cta-title">
         <div class="wrap">
-          <div class="cta">
-            <h2 id="cta-title">Ready to fill your binder?</h2>
-            <p>Join the beta and start your collection, or sign in if you already have an account.</p>
-            <div class="actions">
-              <a class="btn btn-primary" href="#" data-register>Register</a>
-              <a class="btn btn-ghost" href="./app/">Sign in</a>
-            </div>
+          <h2 id="cta-title">Your binder is waiting.</h2>
+          <p>Join the free beta and put your first card in its place today. Already have an account? Sign in.</p>
+          <div class="actions">
+            <a class="btn btn-primary btn-big" href="#" data-register>Register for free</a>
+            <a class="btn btn-ghost btn-big" href="./app/">Sign in</a>
           </div>
         </div>
       </section>
@@ -618,9 +813,129 @@
         <p>© 2026 Dexcrate · <a href="./privacy.html">Privacy</a> · <a href="./terms.html">Terms of use</a></p>
         <p>
           Dexcrate is an independent fan project and is not affiliated with, endorsed or sponsored by Nintendo, The Pokémon Company, Creatures,
-          GAME FREAK or Cardmarket. Pokémon and Pokémon character names are trademarks of Nintendo. Card data and prices via TCGdex.
+          GAME FREAK or Cardmarket. Pokémon and Pokémon character names are trademarks of Nintendo. Card images, card data and prices via TCGdex.
         </p>
       </div>
     </footer>
+
+    <div class="dock" data-dock>
+      <span>Free private beta</span>
+      <a class="btn btn-primary" href="#" data-register>Register</a>
+    </div>
+
+    <script>
+      // Verhaal-animaties en de vaste Register-knop. Zonder dit script staat alles in de eindstand.
+      ;(() => {
+        const anim = document.documentElement.classList.contains('anim')
+        const wide = matchMedia('(min-width: 900px)')
+        const fine = matchMedia('(hover: hover) and (pointer: fine)')
+
+        // Vaste Register-knop (telefoon): zichtbaar tussen de opening en de afsluiter.
+        const dock = document.querySelector('[data-dock]')
+        if (dock && 'IntersectionObserver' in window) {
+          const seen = new Map()
+          const watch = new IntersectionObserver((list) => {
+            for (const e of list) seen.set(e.target.id, e.isIntersecting)
+            dock.classList.toggle('show', !seen.get('opening') && !seen.get('finale'))
+          })
+          for (const id of ['opening', 'finale']) {
+            const el = document.getElementById(id)
+            if (el) watch.observe(el)
+          }
+        }
+        if (!anim) return
+
+        const eur = (n) => '€' + n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        const countTo = (el, to, ms, fmt) => {
+          const t0 = performance.now()
+          const step = (t) => {
+            const p = Math.min(1, (t - t0) / ms)
+            el.textContent = fmt(to * (1 - Math.pow(1 - p, 3)))
+            if (p < 1) requestAnimationFrame(step)
+          }
+          requestAnimationFrame(step)
+        }
+
+        // Binder: de vakken vullen zich. Groot scherm: met het scrollen mee (het blok blijft staan); telefoon: één voor één.
+        const binder = document.querySelector('[data-binder]')
+        const slots = binder ? [...binder.querySelectorAll('.slot')] : []
+        const count = binder?.querySelector('[data-count]')
+        const BEFORE = 14
+        const fill = (n) => {
+          slots.forEach((s, i) => s.classList.toggle('on', i < n))
+          if (count) count.textContent = String(BEFORE + n)
+          binder?.style.setProperty('--fill', ((BEFORE + n) / 165) * 100 + '%')
+        }
+        fill(0)
+        const chapter = binder?.closest('.binder-chapter')
+        let pinned = false
+        const onScroll = () => {
+          if (!chapter || !pinned) return
+          const r = chapter.getBoundingClientRect()
+          const p = Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - innerHeight)))
+          fill(Math.min(slots.length, Math.round(p * slots.length * 1.2)))
+        }
+        const setPinned = () => {
+          pinned = wide.matches
+          chapter?.classList.toggle('pinned', pinned)
+          onScroll()
+        }
+        let ticking = false
+        addEventListener('scroll', () => {
+          if (ticking) return
+          ticking = true
+          requestAnimationFrame(() => {
+            ticking = false
+            onScroll()
+          })
+        }, { passive: true })
+        wide.addEventListener('change', setPinned)
+        setPinned()
+
+        // Eenmalig starten als een blok goed in beeld is.
+        const start = (el) => {
+          if (el.matches('[data-binder]') && !pinned) slots.forEach((_, i) => setTimeout(() => fill(Math.max(i + 1, slots.filter((s) => s.classList.contains('on')).length)), 250 + i * 200))
+          const v = el.querySelector('[data-to]')
+          if (v) countTo(v, Number(v.dataset.to), 1600, eur)
+          const pts = el.querySelector('[data-points]')
+          if (pts) countTo(pts, 150, 900, (n) => '+' + Math.round(n))
+        }
+        const io = new IntersectionObserver((list) => {
+          for (const e of list) {
+            if (!e.isIntersecting) continue
+            io.unobserve(e.target)
+            e.target.classList.add('in')
+            start(e.target)
+          }
+        }, { threshold: 0.45 })
+        document.querySelectorAll('[data-in]').forEach((el) => io.observe(el))
+
+        // Holo-kaarten kantelen mee met de muis (alleen met een muis, niet op de telefoon).
+        const tilt = document.querySelector('[data-tilt]')
+        if (tilt && fine.matches) {
+          const cards = [...tilt.querySelectorAll('.holo')]
+          let frame = 0
+          tilt.addEventListener('pointermove', (ev) => {
+            cancelAnimationFrame(frame)
+            frame = requestAnimationFrame(() => {
+              for (const c of cards) {
+                const b = c.getBoundingClientRect()
+                const x = (ev.clientX - b.left) / b.width
+                const y = (ev.clientY - b.top) / b.height
+                const near = Math.max(0, 1 - Math.hypot(x - 0.5, y - 0.5) / 1.4)
+                c.style.setProperty('--ry', ((x - 0.5) * 22 * near).toFixed(2) + 'deg')
+                c.style.setProperty('--rx', ((0.5 - y) * 18 * near).toFixed(2) + 'deg')
+                c.style.setProperty('--mx', (x * 100).toFixed(1) + '%')
+                c.style.setProperty('--my', (y * 100).toFixed(1) + '%')
+                c.style.setProperty('--glow', near.toFixed(2))
+              }
+            })
+          })
+          tilt.addEventListener('pointerleave', () => {
+            for (const c of cards) for (const p of ['--rx', '--ry', '--glow']) c.style.removeProperty(p)
+          })
+        }
+      })()
+    </script>
   </body>
 </html>
