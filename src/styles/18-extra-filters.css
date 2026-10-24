@@ -135,11 +135,19 @@
      beeld. Raster van drie kolommen, zodat alle vijf zichtbaar zijn. */
   /* 20-10-2026 (gebruiker: "rare uitlijning"): 2 brede knoppen bovenaan (Owned, In collection), 3 smalle eronder
      (For sale, Sold, All). Zo past elk label op één regel en is er geen lege plek; 6 kolommen, elke knop 3 of 2 breed. */
+  /* 24-10-2026 (gebruiker: "niet goed uitgelijnd"): sinds de pilvorm (71-pokemon-center) werd de groep een ovaal
+     om twee rijen, met de actieve knop tegen de ronde rand en zwevende tekst eronder. Nu geen omhulsel meer: elke
+     knop een eigen pil, met dezelfde tussenruimte als "Oldest first" / "Filters" eronder, zodat de randen doorlopen. */
   .filters > .segmented.status-filter {
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: var(--space-3);
     height: auto;
+    padding: 0;
     overflow: visible;
+    background: none;
+    border: 0;
+    border-radius: 0;
   }
 
   /* Label nooit afbreken; past het getal niet meer (heel groot aantal, smal scherm), dan gecentreerd eronder. */
@@ -151,6 +159,24 @@
     min-width: 0;
     padding-inline: var(--space-1);
     white-space: nowrap;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+  }
+
+  .segmented.status-filter > button:hover:not(:disabled) {
+    border: 1px solid var(--line-strong);
+  }
+
+  /* Gekozen: rand en zachte vulling in de accentkleur (zoals de partnerkeuze), niet alleen het stipje. */
+  .segmented.status-filter > button[aria-pressed='true'] {
+    background: color-mix(in oklab, var(--accent-line) 14%, var(--surface-2));
+    border-color: var(--accent-line);
+    box-shadow: inset 0 0 0 1px var(--accent-line);
+  }
+
+  /* Stipje binnen de dubbele rand houden. */
+  .segmented.status-filter > button[aria-pressed='true']::after {
+    bottom: 3px;
   }
 
   .segmented.status-filter > button:nth-child(-n + 2) {
