@@ -88,9 +88,12 @@ const TOP_SETS = 6
  */
 export function CrateOverview({ cards, prices, onOpen, tradeFactor, rules, points, onBought }: Props): JSX.Element {
   const [sort, setSort] = useState<{ col: Col; desc: boolean }>({ col: 'value', desc: true })
+  // Tabel pas opbouwen als hij open is (24-10-2026: 700+ rijen ingeklapt kostten bij elke prijs opnieuw rendertijd).
+  const [tableOpen, setTableOpen] = useState(false)
   const summary = useMemo(() => summarizeCrate(cards, (id) => prices.get(id), tradeFactor), [cards, prices, tradeFactor])
 
   const rows = useMemo(() => {
+    if (!tableOpen) return []
     const priceOf = (c: CrateCard): number => prices.get(c.tcgdexId) ?? -1
     const cmp: Record<Col, (a: CrateCard, b: CrateCard) => number> = {
       name: (a, b) => a.name.localeCompare(b.name, 'en'),
@@ -102,7 +105,7 @@ export function CrateOverview({ cards, prices, onOpen, tradeFactor, rules, point
     }
     const dir = sort.desc ? -1 : 1
     return [...cards].sort((a, b) => dir * cmp[sort.col](a, b) || a.name.localeCompare(b.name, 'en'))
-  }, [cards, prices, sort])
+  }, [cards, prices, sort, tableOpen])
 
   // Officiële grootte per set (voor de setvoortgang); de Engelse setlijst is gedeeld en gecachet.
   const [official, setOfficial] = useState<ReadonlyMap<string, number>>(new Map())
@@ -230,77 +233,81 @@ export function CrateOverview({ cards, prices, onOpen, tradeFactor, rules, point
         <CrateMissingSheet setKey={missingOf.key} setName={missingOf.name} owned={owned} rules={rules} points={points} onBought={onBought} onClose={() => setMissingOf(null)} />
       )}
 
-      <details className="panel crate-ov-all">
+      <details className="panel crate-ov-all" onToggle={(e) => setTableOpen(e.currentTarget.open)}>
         <summary>
           <span className="section-title">All cards</span>
           <span className="muted small">{cards.length} cards, sortable by price and value</span>
         </summary>
-        {/* Telefoon: alleen kaart en waarde als kolom; sorteren op de rest via deze lijst. */}
-        <select className="crate-table-sort" aria-label="Sort" value={sort.col} onChange={(e) => setSort({ col: e.target.value as Col, desc: e.target.value !== 'name' && e.target.value !== 'set' })}>
-          {COLS.map(([col, label]) => (
-            <option key={col} value={col}>
-              {label}
-              {sort.col === col ? (sort.desc ? ' ↓' : ' ↑') : ''}
-            </option>
-          ))}
-        </select>
-        <div className="crate-table-wrap">
-          <table className="crate-table">
-            <thead>
-              <tr>
-                {COLS.map(([col, label]) => (
-                  <th
-                    key={col}
-                    scope="col"
-                    className={colClass(col)}
-                    aria-sort={sort.col === col ? (sort.desc ? 'descending' : 'ascending') : 'none'}
-                  >
-                    <button
-                      type="button"
-                      className="th-sort"
-                      onClick={() => setSort((s) => ({ col, desc: s.col === col ? !s.desc : col !== 'name' && col !== 'set' }))}
-                    >
-                      {label}
-                      <span aria-hidden="true">{sort.col === col ? (sort.desc ? ' ↓' : ' ↑') : ''}</span>
-                    </button>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((c) => {
-                const p = prices.get(c.tcgdexId)
-                const each = p === undefined ? '…' : p === null ? '–' : formatEur(p)
-                return (
-                  <tr key={c.tcgdexId}>
-                    <td>
-                      <button type="button" className="crate-table-name" onClick={() => onOpen(c)}>
-                        {c.name}
-                      </button>
-                      <span className="crate-table-sub muted small">
-                        <RaritySymbols rarity={c.rarity} /> {c.setName ?? '–'}
-                      </span>
-                    </td>
-                    <td className="hide-narrow">{c.setName ?? '–'}</td>
-                    <td className="hide-narrow">
-                      <RaritySymbols rarity={c.rarity} /> {c.rarity ?? '–'}
-                    </td>
-                    <td className="num hide-narrow">{c.quantity}</td>
-                    <td className="num hide-narrow">{each}</td>
-                    <td className="num">
-                      {p === undefined ? '…' : p === null ? '–' : formatEur(p * c.quantity)}
-                      {c.quantity > 1 && (
-                        <span className="crate-table-sub muted small">
-                          {c.quantity} × {each}
-                        </span>
-                      )}
-                    </td>
+        {tableOpen && (
+          <>
+            {/* Telefoon: alleen kaart en waarde als kolom; sorteren op de rest via deze lijst. */}
+            <select className="crate-table-sort" aria-label="Sort" value={sort.col} onChange={(e) => setSort({ col: e.target.value as Col, desc: e.target.value !== 'name' && e.target.value !== 'set' })}>
+              {COLS.map(([col, label]) => (
+                <option key={col} value={col}>
+                  {label}
+                  {sort.col === col ? (sort.desc ? ' ↓' : ' ↑') : ''}
+                </option>
+              ))}
+            </select>
+            <div className="crate-table-wrap">
+              <table className="crate-table">
+                <thead>
+                  <tr>
+                    {COLS.map(([col, label]) => (
+                      <th
+                        key={col}
+                        scope="col"
+                        className={colClass(col)}
+                        aria-sort={sort.col === col ? (sort.desc ? 'descending' : 'ascending') : 'none'}
+                      >
+                        <button
+                          type="button"
+                          className="th-sort"
+                          onClick={() => setSort((s) => ({ col, desc: s.col === col ? !s.desc : col !== 'name' && col !== 'set' }))}
+                        >
+                          {label}
+                          <span aria-hidden="true">{sort.col === col ? (sort.desc ? ' ↓' : ' ↑') : ''}</span>
+                        </button>
+                      </th>
+                    ))}
                   </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody>
+                  {rows.map((c) => {
+                    const p = prices.get(c.tcgdexId)
+                    const each = p === undefined ? '…' : p === null ? '–' : formatEur(p)
+                    return (
+                      <tr key={c.tcgdexId}>
+                        <td>
+                          <button type="button" className="crate-table-name" onClick={() => onOpen(c)}>
+                            {c.name}
+                          </button>
+                          <span className="crate-table-sub muted small">
+                            <RaritySymbols rarity={c.rarity} /> {c.setName ?? '–'}
+                          </span>
+                        </td>
+                        <td className="hide-narrow">{c.setName ?? '–'}</td>
+                        <td className="hide-narrow">
+                          <RaritySymbols rarity={c.rarity} /> {c.rarity ?? '–'}
+                        </td>
+                        <td className="num hide-narrow">{c.quantity}</td>
+                        <td className="num hide-narrow">{each}</td>
+                        <td className="num">
+                          {p === undefined ? '…' : p === null ? '–' : formatEur(p * c.quantity)}
+                          {c.quantity > 1 && (
+                            <span className="crate-table-sub muted small">
+                              {c.quantity} × {each}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </details>
     </div>
   )

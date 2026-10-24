@@ -15,6 +15,12 @@ export function useCardPrices(keys: readonly string[], enabled: boolean): Readon
     const todo = list.split('\n')
     const found = new Map<string, CardmarketPrice | null>()
     let done = 0
+    // Hoogstens elke 250 ms opnieuw renderen (24-10-2026: was elke 10 resultaten; bij honderden kaarten traag).
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const flush = (): void => {
+      timer = null
+      if (!cancelled) setPrices(new Map(found))
+    }
     for (const key of todo) {
       getCardPrice(key)
         .then((p) => found.set(key, p))
@@ -24,11 +30,16 @@ export function useCardPrices(keys: readonly string[], enabled: boolean): Readon
         })
         .finally(() => {
           done += 1
-          if (!cancelled && (done % 10 === 0 || done === todo.length)) setPrices(new Map(found))
+          if (done < todo.length) timer ??= setTimeout(flush, 250)
+          else {
+            if (timer) clearTimeout(timer)
+            flush()
+          }
         })
     }
     return () => {
       cancelled = true
+      if (timer) clearTimeout(timer)
     }
   }, [list])
 

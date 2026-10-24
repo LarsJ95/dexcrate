@@ -10,6 +10,11 @@
   position: relative;
   border-radius: var(--radius-card);
   transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));
+}
+
+/* Eigen GPU-laag alleen voor een kaart die beweegt (24-10-2026: niet meer voor elke kaart in een raster van honderden). */
+.holo-card:hover,
+.holo-card.is-tilting {
   will-change: transform;
 }
 

@@ -306,7 +306,7 @@ function MomentLayer({ moment }: { moment: Moment }): JSX.Element {
           {caught ? (
             <>
               <div className="moment-catch-card">
-                <HoloCard foil={foil}>{image}</HoloCard>
+                <HoloCard foil={foil} idle>{image}</HoloCard>
               </div>
               <span className="moment-ball pokeball" aria-hidden="true" />
             </>
@@ -316,7 +316,7 @@ function MomentLayer({ moment }: { moment: Moment }): JSX.Element {
                 <span className="pokeball" />
               </span>
               <div className="moment-face moment-front">
-                <HoloCard foil={foil}>{image}</HoloCard>
+                <HoloCard foil={foil} idle>{image}</HoloCard>
               </div>
             </div>
           )}

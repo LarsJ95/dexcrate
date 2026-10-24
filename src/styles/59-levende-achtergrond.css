@@ -73,8 +73,12 @@
     color-mix(in oklab, var(--aurora) 22%, transparent) 66%,
     transparent 86%
   );
-  background-size: 220% 100%;
-  filter: blur(48px);
+  /* Laag 220% breed die zelf schuift (transform, niets opnieuw tekenen), zonder blur: het verloop is al zacht. Sinds
+     21-10-2026 op touch, sinds 24-10-2026 overal (blur + background-position kostte op desktop ±290 tekenbeurten/s). */
+  right: auto;
+  width: 220%;
+  background-size: 100% 100%;
+  will-change: transform;
   opacity: 0.22;
   -webkit-mask-image: linear-gradient(180deg, #000, transparent);
   mask-image: linear-gradient(180deg, #000, transparent);
@@ -97,35 +101,8 @@
   animation: sky-aurora 60s ease-in-out infinite alternate;
 }
 
+/* Zelfde baan: 0 → -54,545% van zichzelf = 1,2 schermbreedte. */
 @keyframes sky-aurora {
-  from {
-    background-position: 0% 0;
-  }
-
-  to {
-    background-position: 100% 0;
-  }
-}
-
-/* Touchscreen (21-10-2026, vergrote kaart was op Android af en toe één beeldje weg; met Animations uit niet): het
-   schuiven via background-position met blur(48px) en masker liet de telefoon 60× per seconde de bovenste helft van
-   het scherm opnieuw tekenen en vervagen. Nu schuift de laag zelf (transform, niets opnieuw tekenen), zonder blur
-   (het verloop is al zacht). Zelfde baan: laag 220% breed, 0 → -54,545% van zichzelf = 1,2 schermbreedte. */
-@media (pointer: coarse) {
-  .sky-aurora {
-    right: auto;
-    width: 220%;
-    background-size: 100% 100%;
-    filter: none;
-    will-change: transform;
-  }
-
-  [data-motion='on'] .sky-aurora {
-    animation-name: sky-aurora-touch;
-  }
-}
-
-@keyframes sky-aurora-touch {
   from {
     transform: translateX(0);
   }

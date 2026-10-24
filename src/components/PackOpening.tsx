@@ -252,7 +252,7 @@ export function PackOpening({ pack, pulls, god = false, before, tradeFactor, onO
           <div className="pack-stage">
             <button type="button" className="pack-current" onClick={next} aria-label={`${current.name}, ${current.rarity}. Next card`}>
               <div key={index} ref={cardRef} className={`pack-current-card${rarityRule(current.rarity).rank >= 5 ? ' is-hit' : ''}`}>
-                <HoloCard foil={foilStyleFor(null, current.rarity)}>{picture(current, 'high')}</HoloCard>
+                <HoloCard foil={foilStyleFor(null, current.rarity)} idle>{picture(current, 'high')}</HoloCard>
               </div>
             </button>
             <div className="pack-current-info" aria-live="polite">

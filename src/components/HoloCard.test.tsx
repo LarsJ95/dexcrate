@@ -62,16 +62,35 @@ describe('HoloCard op een touchscreen', () => {
     expect(queue.length).toBe(0)
   })
 
-  it('met een muis blijft de rustige zwaai', async () => {
+  it('met een muis: losse grote kaart (idle) blijft rustig zwaaien', async () => {
     pointer(false)
     fakeFrames()
     const { HoloCard } = await import('./HoloCard')
     render(
-      <HoloCard foil="holo">
+      <HoloCard foil="holo" idle>
         <span>kaart</span>
       </HoloCard>,
     )
     expect(runFrames(50)).toBe(50)
     expect(queue.length).toBe(1)
+  })
+
+  it('met een muis: kaart in een raster (zonder idle) beweegt niet in rust, wel bij aanwijzen', async () => {
+    pointer(false)
+    fakeFrames()
+    const { HoloCard } = await import('./HoloCard')
+    const { container } = render(
+      <HoloCard foil="holo">
+        <span>kaart</span>
+      </HoloCard>,
+    )
+    expect(queue.length).toBe(0)
+    const card = container.querySelector('.holo-card') as HTMLElement
+    fireEvent.pointerMove(card, { clientX: 10, clientY: 10, pointerType: 'mouse' })
+    expect(queue.length).toBe(1)
+    fireEvent.pointerLeave(card)
+    // Terug naar de rustpositie, dan stoppen.
+    expect(runFrames(2000)).toBeLessThan(2000)
+    expect(queue.length).toBe(0)
   })
 })

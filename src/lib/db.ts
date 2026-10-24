@@ -178,8 +178,20 @@ export function toRow(input: Partial<CardInput>, v2: boolean): Record<string, un
 const SELECT_V1 = '*'
 const SELECT_V2 = '*, card_photos(id, card_id, path, thumb_path, label, is_primary, created_at)'
 
-/** Alle kaartregels. Zonder internet: de laatst geladen versie van dit apparaat (zie offlineCache). */
+let cardsInflight: Promise<Card[]> | null = null
+
+/**
+ * Alle kaartregels. Zonder internet: de laatst geladen versie van dit apparaat (zie offlineCache). Gelijktijdige
+ * aanroepen (bv. pagina en menutellers) delen één verzoek (24-10-2026); elke aanroeper krijgt een eigen lijst.
+ */
 export function listCards(): Promise<Card[]> {
+  cardsInflight ??= loadCards().finally(() => {
+    cardsInflight = null
+  })
+  return cardsInflight.then((list) => [...list])
+}
+
+function loadCards(): Promise<Card[]> {
   return withOfflineCache(
     'cards',
     async () => {
@@ -286,9 +298,10 @@ export async function listSnapshots(tcgdexId: string): Promise<PriceSnapshot[]> 
 export async function listSnapshotsFor(tcgdexIds: readonly string[]): Promise<SnapshotRow[]> {
   const out: SnapshotRow[] = []
   // In blokken, zodat de URL niet te lang wordt.
-  for (let i = 0; i < tcgdexIds.length; i += 80) {
-    const chunk = tcgdexIds.slice(i, i + 80)
-    // Per blok in pagina's, anders vallen de nieuwste dagen weg. Volgorde = primaire sleutel.
+  const chunks: string[][] = []
+  for (let i = 0; i < tcgdexIds.length; i += 80) chunks.push(tcgdexIds.slice(i, i + 80))
+  // Per blok in pagina's, anders vallen de nieuwste dagen weg. Volgorde = primaire sleutel.
+  const loadChunk = async (chunk: readonly string[]): Promise<void> => {
     const { data, error } = await fetchAllPages((from, to) =>
       supabase
         .from('price_snapshots')
@@ -305,6 +318,8 @@ export async function listSnapshotsFor(tcgdexIds: readonly string[]): Promise<Sn
       }
     }
   }
+  // Vier blokken tegelijk (24-10-2026: was één voor één); de volgorde van de rijen maakt voor het waardeverloop niet uit.
+  for (let i = 0; i < chunks.length; i += 4) await Promise.all(chunks.slice(i, i + 4).map(loadChunk))
   return out
 }
 

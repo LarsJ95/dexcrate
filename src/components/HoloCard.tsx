@@ -11,6 +11,11 @@ interface Props {
    * Anders alleen met de muis en een rustige beweging. Nooit via de stand van de telefoon.
    */
   interactive?: boolean
+  /**
+   * Rustige wiegbeweging in rust (alleen met een muis), voor losse grote kaarten. Kaarten in rasters niet: tientallen
+   * eindeloze animaties tegelijk maakten de pagina traag (24-10-2026: Crate-kaarten 8,5 fps). Buiten beeld gepauzeerd.
+   */
+  idle?: boolean
   className?: string
 }
 
@@ -21,7 +26,7 @@ const DRAG_PX = 8 // meer beweging dan dit is slepen, geen tik
  * Kaart die meekantelt met vinger of muis, met een glans per zeldzaamheid (DESIGN.md §9).
  * Werkt via CSS-variabelen op één element; zonder animaties staat de kaart stil met een vaste glans.
  */
-export function HoloCard({ foil, children, interactive = false, className }: Props): JSX.Element {
+export function HoloCard({ foil, children, interactive = false, idle = false, className }: Props): JSX.Element {
   const ref = useRef<HTMLDivElement>(null)
   const motion = useMotion()
 
@@ -30,9 +35,10 @@ export function HoloCard({ foil, children, interactive = false, className }: Pro
     if (!el || !motion) return
     // Touchscreen (20-10-2026): geen rustige zwaai in rust. Elk beeldje opnieuw tekenen van de glanslagen gaf in Chrome
     // op Android zwart flikkeren bij de vergrote kaart; nu beweegt hij alleen onder je vinger en komt dan tot stilstand.
-    const sway = typeof matchMedia !== 'function' || !matchMedia('(pointer: coarse)').matches
+    const sway = idle && (typeof matchMedia !== 'function' || !matchMedia('(pointer: coarse)').matches)
     let frame = 0
     let active = false
+    let visible = true
     let moved = 0
     let start: [number, number] | null = null
     const cur = { rx: 0, ry: 0, mx: 50, my: 50 }
@@ -67,12 +73,22 @@ export function HoloCard({ foil, children, interactive = false, className }: Pro
       el.style.setProperty('--mx', `${cur.mx.toFixed(1)}%`)
       el.style.setProperty('--my', `${cur.my.toFixed(1)}%`)
       el.style.setProperty('--hyp', (Math.hypot(cur.mx - 50, cur.my - 50) / 70).toFixed(3))
-      // Zonder zwaai: stoppen zodra de kaart weer stil ligt; een nieuwe aanraking start hem opnieuw.
-      frame = !sway && !active && settled(cur, target) ? 0 : requestAnimationFrame(tick)
+      // Stoppen zodra de kaart weer stil ligt (zonder zwaai) of uit beeld is; een nieuwe aanraking start hem opnieuw.
+      const idleNow = sway ? !visible : settled(cur, target)
+      frame = !active && idleNow ? 0 : requestAnimationFrame(tick)
     }
     const run = (): void => {
       if (frame === 0) frame = requestAnimationFrame(tick)
     }
+    // Zwaai alleen terwijl de kaart in beeld is.
+    const io =
+      sway && typeof IntersectionObserver === 'function'
+        ? new IntersectionObserver(([entry]) => {
+            visible = entry?.isIntersecting ?? true
+            if (visible) run()
+          })
+        : null
+    io?.observe(el)
     if (sway) run()
 
     const onDown = (e: PointerEvent): void => {
@@ -115,6 +131,7 @@ export function HoloCard({ foil, children, interactive = false, className }: Pro
     el.addEventListener('click', onClick, true)
     return () => {
       cancelAnimationFrame(frame)
+      io?.disconnect()
       el.classList.remove('is-tilting')
       el.removeEventListener('pointerdown', onDown)
       el.removeEventListener('pointermove', onMove)
@@ -124,7 +141,7 @@ export function HoloCard({ foil, children, interactive = false, className }: Pro
       el.removeEventListener('click', onClick, true)
       for (const v of ['--rx', '--ry', '--mx', '--my', '--hyp']) el.style.removeProperty(v)
     }
-  }, [motion, interactive])
+  }, [motion, interactive, idle])
 
   return (
     <div ref={ref} className={`holo-card${interactive && motion ? ' is-interactive' : ''}${className ? ` ${className}` : ''}`} data-foil={foil}>

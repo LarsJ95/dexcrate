@@ -154,7 +154,7 @@ export function CardDetail({ card, onEdit, onSaved, onChanged, onSold }: Props):
       <div className="cd-hero">
         <div className="cd-image">
           <button type="button" className="zoom-trigger" onClick={() => setZoomOpen(true)} aria-label={`Enlarge ${card.name}`}>
-            <HoloCard foil={foil}>{image}</HoloCard>
+            <HoloCard foil={foil} idle>{image}</HoloCard>
           </button>
         </div>
         <CardFacts
