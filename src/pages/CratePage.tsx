@@ -85,6 +85,13 @@ function craftRows(rules: CrateRules): [string, string][] {
   ]
 }
 
+/** Pakjes in groepen (binnen een groep op prijs): gratis/dagelijks, gewone pakjes, zelf kiezen wat erin zit. */
+const PACK_GROUPS: readonly { id: string; title: string; kinds: readonly PackKind[] }[] = [
+  { id: 'daily', title: 'Every day', kinds: ['booster', 'daily'] },
+  { id: 'packs', title: 'Packs', kinds: ['lucky', 'great', 'master'] },
+  { id: 'choose', title: 'Choose what’s inside', kinds: ['set', 'type', 'pokemon', 'era'] },
+]
+
 interface SetChoice {
   key: string
   id: string
@@ -380,8 +387,17 @@ export function CratePage(): JSX.Element {
         </section>
         {cards && cards.length > 0 && <CrateStats cards={cards} prices={prices} tradeFactor={rules.tradeFactor} tradeAll={tradeAll} />}
 
-        <ul className="crate-packs" aria-label="Packs">
-        {packsByCost(rules).map((kind) => {
+        <div className="crate-pack-groups">
+        {PACK_GROUPS.map((group) => {
+          const kinds = packsByCost(rules).filter((k) => group.kinds.includes(k))
+          return (
+            <section key={group.id} className="crate-pack-group" aria-labelledby={`crate-packs-${group.id}`}>
+              <h2 id={`crate-packs-${group.id}`} className="section-title">
+                {group.title}
+              </h2>
+              {/* --n: aantal pakjes; op brede schermen vullen ze samen de hele rij. */}
+              <ul className="crate-packs" style={{ '--n': kinds.length } as CSSProperties}>
+        {kinds.map((kind) => {
           const p = PACKS[kind]
           const cost = packCost(rules, kind)
           const free = kind === 'booster' && freePack
@@ -490,7 +506,11 @@ export function CratePage(): JSX.Element {
             </li>
           )
         })}
-        </ul>
+              </ul>
+            </section>
+          )
+        })}
+        </div>
       </div>
 
       {error && (

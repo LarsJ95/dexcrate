@@ -1,13 +1,19 @@
 /* ---------- Crate: pakjes, kaartvenster, overzicht (16-10-2026) ---------- */
-/* Punten als compacte balk bovenaan, de pakjes eronder in een raster (18-10-2026: naast de punten werden vijf pakjes te smal).
-   Statistiekbalk naast de punten (21-10-2026, op verzoek). Zelfde kolommen als de pakjes: punten boven Booster pack,
-   de balk boven Set en Great pack, dus hij eindigt waar Great pack eindigt (21-10-2026: over de volle breedte was te
-   veel witruimte). Past er maar één kolom, dan alles onder elkaar. */
+/* Eén lijn over de hele pagina (24-10-2026, op verzoek: het liep door elkaar). Bovenaan punten (1/3) en statistieken
+   (2/3), samen even breed als de pakjes eronder; smal onder elkaar. Pakjes in groepen met een kopje; elke groep vult
+   de hele rij met even brede kaarten (--n = aantal pakjes in de groep), op middelbreedte twee per rij. */
 .crate-top {
   container: crate-top / inline-size;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
+}
+
+/* Mediaquery, geen containerquery: een element kan zijn eigen containerbreedte niet bevragen. */
+@media (min-width: 960px) {
+  .crate-top {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  }
 }
 
 .crate-top .crate-wallet,
@@ -16,20 +22,25 @@
 }
 
 .crate-top .crate-ov-stats {
-  grid-column: span 2;
   align-content: center;
 }
 
-.crate-top .crate-packs {
+.crate-top .crate-pack-groups {
   grid-column: 1 / -1;
+  min-width: 0;
+  display: grid;
+  gap: var(--space-5);
+  margin-top: var(--space-2);
+}
+
+.crate-pack-group {
+  display: grid;
+  gap: var(--space-3);
   min-width: 0;
 }
 
-/* Eén kolom (twee pakjes van 300px passen niet): over twee kolommen lopen zou een extra kolom maken. */
-@container crate-top (width < 616px) {
-  .crate-top .crate-ov-stats {
-    grid-column: 1 / -1;
-  }
+.crate-pack-group > .section-title {
+  margin: 0;
 }
 
 .crate-packs {
@@ -37,8 +48,29 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
+}
+
+@container crate-top (width >= 640px) {
+  .crate-packs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Oneven laatste pakje: de hele rij, geen gat. */
+  .crate-packs > li:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
+@container crate-top (width >= 1100px) {
+  .crate-packs {
+    grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr));
+  }
+
+  .crate-packs > li:last-child:nth-child(odd) {
+    grid-column: auto;
+  }
 }
 
 /*
@@ -286,13 +318,21 @@ button.crate-sheet-image:hover:not(:disabled) {
   align-content: start;
 }
 
+/* Zes waardevolste kaarten verdeeld over de hele breedte (24-10-2026: stonden links met een gat ernaast); smal 3 per rij. */
 .crate-ov-top {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 100px), 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-3);
+}
+
+@media (min-width: 720px) {
+  .crate-ov-top {
+    grid-template-columns: repeat(6, minmax(0, 170px));
+    justify-content: space-between;
+  }
 }
 
 .crate-ov-top li {
@@ -316,12 +356,18 @@ button.crate-ov-card:hover:not(:disabled) {
   font-weight: 700;
 }
 
-/* Sets en zeldzaamheid naast elkaar op brede schermen. */
+/* Sets en zeldzaamheid naast elkaar op brede schermen: even breed en even hoog (24-10-2026). */
 .crate-ov-columns {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
-  align-items: start;
+  align-items: stretch;
+}
+
+@media (min-width: 760px) {
+  .crate-ov-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .crate-ov-bars {
