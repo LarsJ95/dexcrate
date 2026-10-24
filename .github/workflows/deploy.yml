@@ -33,6 +33,8 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
           # Contact in privacy en voorwaarden (leeg = algemene tekst); repository variable, niet in de code.
           DEXCRATE_CONTACT: ${{ vars.DEXCRATE_CONTACT }}
+          # "true" = registreren open in de app (eerst ook aanzetten in Supabase → Authentication).
+          VITE_SIGNUP_OPEN: ${{ vars.VITE_SIGNUP_OPEN }}
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:

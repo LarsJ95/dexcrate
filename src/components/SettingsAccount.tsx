@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent, type JSX } from 'react'
 import { useIsAdmin } from '../hooks/useIsAdmin'
-import { resetAccount } from '../lib/accountReset'
+import { deleteAccount, resetAccount } from '../lib/accountReset'
+import { DELETED_KEY } from '../lib/authLink'
 import { checkForUpdate } from '../lib/appUpdate'
 import { supabase } from '../lib/supabase'
 import { Group, LinkRow, More, Row } from './SettingsControls'
@@ -172,6 +173,7 @@ export function AccountGroup(): JSX.Element {
     <Group title="Account">
       <PasswordRow />
       <ResetRow />
+      <DeleteRow />
     </Group>
   )
 }
@@ -227,6 +229,67 @@ function PasswordRow(): JSX.Element {
           )}
         </div>
       </form>
+    </More>
+  )
+}
+
+/** Account helemaal verwijderen (AVG, 24-10-2026): bevestigen met je e-mailadres. */
+function DeleteRow(): JSX.Element {
+  const email = useSignedInEmail()
+  const [typed, setTyped] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const ready = !!email && typed.trim().toLowerCase() === email.toLowerCase() && !busy
+
+  async function remove(): Promise<void> {
+    if (!ready) return
+    setBusy(true)
+    setError(null)
+    // Melding voor het inlogscherm, dat na het uitloggen verschijnt.
+    try {
+      sessionStorage.setItem(DELETED_KEY, '1')
+    } catch (err) {
+      console.warn('Melding onthouden mislukt', err)
+    }
+    try {
+      await deleteAccount(typed)
+    } catch (err) {
+      try {
+        sessionStorage.removeItem(DELETED_KEY)
+      } catch (err2) {
+        console.warn('Melding weghalen mislukt', err2)
+      }
+      setError(errorText(err, 'Deleting the account failed.'))
+      setBusy(false)
+    }
+  }
+
+  return (
+    <More label="Delete account" danger>
+      <div className="settings-danger">
+        <p>
+          Deletes your account and <strong>everything in it</strong>: cards, photos, sales, wishlist and Pack game. You cannot sign in with it again. This cannot be undone.
+        </p>
+        <div className="settings-actions">
+          <a className="button-link" href="#/backup">
+            Make a backup first
+          </a>
+        </div>
+        <label className="settings-confirm">
+          Type your email address to confirm
+          <input type="email" value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" spellCheck={false} placeholder={email ?? ''} disabled={busy} />
+        </label>
+        <div className="settings-actions">
+          <button type="button" className="danger" onClick={() => void remove()} disabled={!ready}>
+            {busy ? 'Deleting…' : 'Delete my account'}
+          </button>
+          {error && (
+            <span className="error" role="alert">
+              {error}
+            </span>
+          )}
+        </div>
+      </div>
     </More>
   )
 }

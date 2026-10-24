@@ -1,3 +1,5 @@
+// Eerst: het adres lezen voordat de Supabase-client het opruimt (mail-links, zie lib/authLink.ts).
+import './lib/authLink'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'

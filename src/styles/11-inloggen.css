@@ -91,3 +91,18 @@
   margin: 0;
   text-align: center;
 }
+
+/* Wachtwoord vergeten / registreren (24-10-2026). */
+.login-switch,
+.login-hint {
+  margin: 0;
+}
+
+.login-switch {
+  text-align: center;
+}
+
+.login-switch button.link-button {
+  min-height: 0;
+  font-size: inherit;
+}
