@@ -114,3 +114,20 @@ export async function resetAccount(): Promise<ResetResult> {
   await clearDevice()
   return { rows, filesRemoved: files.removed, filesFailed: files.failed }
 }
+
+/**
+ * Account helemaal verwijderen (Settings → Account, AVG; 24-10-2026): eerst alles wissen zoals "Reset account"
+ * (gegevens, bestanden, dit toestel), dan het inlogaccount (STAP29, bevestigd met je e-mailadres) en uitloggen.
+ * Lukt het wissen van bestanden niet helemaal, dan stopt het vóór het account weg is: opnieuw proberen kan.
+ */
+export async function deleteAccount(confirmEmail: string): Promise<void> {
+  const r = await resetAccount()
+  if (r.filesFailed > 0) throw new Error(`${r.filesFailed} files could not be removed, so your account was not deleted yet. Try again.`)
+  const { error } = await supabase.rpc('delete_my_account', { p_confirm_email: confirmEmail.trim() })
+  if (error) {
+    if (error.code === 'PGRST202' || /could not find the function/i.test(error.message)) throw new Error('Deleting accounts is not available yet. Your data was deleted.')
+    throw new Error(`Deleting the account failed: ${error.message}`)
+  }
+  // Het account bestaat niet meer; de sessie op dit toestel opruimen (fout negeren: het account is al weg).
+  await supabase.auth.signOut({ scope: 'local' }).catch((err: unknown) => console.warn('Uitloggen na verwijderen mislukt', err))
+}

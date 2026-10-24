@@ -1,6 +1,8 @@
 import { lazy, Suspense, useEffect, useState, type JSX } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { Login } from './components/Login'
+import { SetPassword } from './components/SetPassword'
+import { needsNewPassword, startLink } from './lib/authLink'
 import { ROUTES } from './lib/routes'
 import { useHashRoute } from './hooks/useHashRoute'
 import { useTheme } from './hooks/useTheme'
@@ -29,6 +31,8 @@ const SetsPage = lazy(() => import('./pages/SetsPage').then((m) => ({ default: m
 function App(): JSX.Element {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  // Binnengekomen via uitnodiging of "Forgot password?": eerst een wachtwoord kiezen (lib/authLink.ts).
+  const [choosePassword, setChoosePassword] = useState(() => needsNewPassword(startLink.type))
   const { route, param } = useHashRoute(ROUTES, 'overview')
   const { theme, toggle } = useTheme()
 
@@ -42,6 +46,8 @@ function App(): JSX.Element {
       .finally(() => setLoading(false))
     const { data } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s)
+      if (event === 'PASSWORD_RECOVERY') setChoosePassword(true)
+      if (event === 'SIGNED_OUT') setChoosePassword(false)
       // Uitloggen: offline bewaarde gegevens van deze gebruiker horen niet op het apparaat te blijven staan.
       if (event === 'SIGNED_OUT') clearOfflineCache().catch((err: unknown) => console.warn('Offline cache wissen mislukt', err))
     })
@@ -59,7 +65,8 @@ function App(): JSX.Element {
   }
 
   if (loading) return <Loading center />
-  if (!session) return <Login />
+  if (!session) return <Login linkError={startLink.error} />
+  if (choosePassword) return <SetPassword invited={startLink.type === 'invite'} onDone={() => setChoosePassword(false)} />
 
   return (
     <Suspense fallback={<Loading center />}>
