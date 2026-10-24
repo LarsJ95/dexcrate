@@ -1,8 +1,26 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { isLocalKey, localCardInfo, localSet, localSetIdForAbbr, localSetSummaries, searchLocal } from './localCatalog'
+import { isLocalKey, localCardInfo, localSet, localSetIdForAbbr, localSetSummaries, searchLocal, withLocalSets } from './localCatalog'
 import { autoPick, findCandidates, findScanCandidates } from './match'
 import { findExact, getCardInfo, getCardPrice, getSetList } from './tcgdex'
+
+describe('eigen sets in de setlijst (volgorde = oud → nieuw)', () => {
+  const list = (ids: string[]) => new Map(ids.map((id) => [id, { id, name: id, logo: null }]))
+
+  it('Classic-decks (nov. 2023) direct na Paradox Rift, niet als nieuwste achteraan', () => {
+    expect([...withLocalSets(list(['mfb', 'sv04', 'sv04.5', '30th']), 'en').keys()]).toEqual(['mfb', 'sv04', 'clv', 'clc', 'clb', 'sv04.5', '30th'])
+  })
+
+  it('zonder anker in de lijst (TCGdex leeg of onbereikbaar): achteraan', () => {
+    expect([...withLocalSets(list([]), 'en').keys()]).toEqual(['clv', 'clc', 'clb'])
+  })
+
+  it('zelfde id als TCGdex: op dezelfde plek vervangen; nieuwe zonder anker achteraan', () => {
+    const zh = withLocalSets(list(['CBB3C', 'X']), 'zh-cn')
+    expect([...zh.keys()]).toEqual(['CBB3C', 'X', 'CSMC', 'CBB4C'])
+    expect(zh.get('CBB3C')?.name).toBe('Gem Pack Vol. 3')
+  })
+})
 
 describe('eigen catalogus: Pokémon TCG Classic', () => {
   it('drie decks van 34 kaarten, genummerd zoals gedrukt', () => {

@@ -4,7 +4,7 @@ import type { CardLanguage, Variant } from './types'
 import { parseCardGame, type CardGame } from './cardGame'
 import { parseTcgplayer, type TcgplayerPrice } from './valuation'
 import { parseDexId, parseRarity, parseSuffix, parseTypes, type EnergyType } from './cardTraits'
-import { isLocalKey, localCardInfo, localSet, localSetIdForAbbr, localSetSummaries, searchLocal } from './localCatalog'
+import { isLocalKey, localCardInfo, localSet, localSetIdForAbbr, searchLocal, withLocalSets } from './localCatalog'
 import { chsCardInfo, chsHasCard, chsSearch, chsSetData, chsSetSummaries } from './chsCatalog'
 
 /** Talen met eigen sets/nummering in TCGdex. */
@@ -224,9 +224,8 @@ const fetchSetList = memo(async (lang: string): Promise<Map<string, SetSummary>>
       }
     }
   }
-  // Eigen catalogus: nieuwe sets erbij, en vervangt een TCGdex-set zonder kaarten met hetzelfde id.
-  if (isLang(lang)) for (const s of localSetSummaries(lang)) map.set(s.id, s)
-  return map
+  // Eigen catalogus: vervangt een TCGdex-set zonder kaarten met hetzelfde id, nieuwe sets op hun releaseplek.
+  return isLang(lang) ? withLocalSets(map, lang) : map
 })
 
 export async function getSetList(lang: Lang): Promise<Map<string, SetSummary>> {

@@ -88,6 +88,11 @@
   opacity: 0.14;
 }
 
+/* Donker: noorderlicht neutraal blauw, niet in de typekleur (24-10-2026, geen gele gloed meer). */
+.sky-dark .sky-aurora {
+  --aurora: rgb(110 130 230);
+}
+
 [data-motion='on'] .sky-aurora {
   animation: sky-aurora 60s ease-in-out infinite alternate;
 }

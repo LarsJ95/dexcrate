@@ -36,6 +36,8 @@ interface LocalSet {
   abbr: string
   name: string
   releaseDate: string
+  /** TCGdex-set waarna deze set uitkwam: de plek in de setlijst (sorteren op nieuwste). Zonder of onbekend: achteraan. */
+  after?: string
   cards: readonly LocalCard[]
 }
 
@@ -65,6 +67,8 @@ const SETS: readonly LocalSet[] = [
     abbr: 'CLV',
     name: 'Pokémon TCG Classic (Venusaur)',
     releaseDate: '2023-11-17',
+    // Paradox Rift 03-11-2023, daarna Paldean Fates 26-01-2024.
+    after: 'sv04',
     cards: numbered([
       ['Bulbasaur', 'Grass', 1],
       ['Ivysaur', 'Grass', 2],
@@ -108,6 +112,8 @@ const SETS: readonly LocalSet[] = [
     abbr: 'CLC',
     name: 'Pokémon TCG Classic (Charizard)',
     releaseDate: '2023-11-17',
+    // Paradox Rift 03-11-2023, daarna Paldean Fates 26-01-2024.
+    after: 'sv04',
     cards: numbered([
       ['Charmander', 'Fire', 4],
       ['Charmeleon', 'Fire', 5],
@@ -151,6 +157,8 @@ const SETS: readonly LocalSet[] = [
     abbr: 'CLB',
     name: 'Pokémon TCG Classic (Blastoise)',
     releaseDate: '2023-11-17',
+    // Paradox Rift 03-11-2023, daarna Paldean Fates 26-01-2024.
+    after: 'sv04',
     cards: numbered([
       ['Squirtle', 'Water', 7],
       ['Wartortle', 'Water', 8],
@@ -311,6 +319,22 @@ export function localSet(setId: string, lang: Lang = 'en'): { summary: SetSummar
 export function localSetIdForAbbr(code: string, lang: Lang = 'en'): string | null {
   const c = code.trim().toUpperCase()
   return SETS.find((s) => s.lang === lang && s.abbr.toUpperCase() === c)?.id ?? null
+}
+
+/**
+ * TCGdex-setlijst (oud → nieuw) met de eigen sets erin: dezelfde id vervangt de TCGdex-set op zijn plek, een nieuwe
+ * set komt direct na zijn anker (`after`), anders achteraan (24-10-2026: Classic-decks stonden als nieuwste bovenaan).
+ */
+export function withLocalSets(list: ReadonlyMap<string, SetSummary>, lang: Lang): Map<string, SetSummary> {
+  const local = SETS.filter((s) => s.lang === lang)
+  const out = new Map<string, SetSummary>()
+  for (const [id, summary] of list) {
+    const own = local.find((s) => s.id === id)
+    out.set(id, own ? summaryOf(own) : summary)
+    for (const s of local) if (s.after === id) out.set(s.id, summaryOf(s))
+  }
+  for (const s of local) if (!out.has(s.id)) out.set(s.id, summaryOf(s))
+  return out
 }
 
 export function localSetSummaries(lang: Lang = 'en'): SetSummary[] {
