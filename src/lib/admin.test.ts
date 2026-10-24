@@ -85,6 +85,8 @@ describe('omzetten', () => {
     expect(r.daily).toBe(300)
     expect(r.packs.great).toBe(200)
     expect(r.packs.master).toBe(900)
+    // STAP26-pakjes: startwaarden als ze ontbreken.
+    expect([r.packs.lucky, r.packs.pokemon, r.packs.era, r.packs.daily]).toEqual([150, 250, 200, 200])
     expect(r.craft.special).toBe(1800)
     expect(toAdminRules(null).trade_factor).toBe(2)
   })

@@ -1,6 +1,6 @@
 // Supabase Edge Function: de Crate-game eerlijk (STAP23). Trekt pakjes zelf, zoekt kaarten en zeldzaamheden zelf op bij
 // TCGdex en laat de database de punten tellen; de app kan geen kaarten, zeldzaamheden of Pokédex-nummers meer opgeven.
-// Acties: sync (punten bijwerken), open (pakje), craft (ontbrekende kaart kopen), health.
+// Acties: sync (punten bijwerken), open (pakje), craft (ontbrekende kaart kopen), daily (set van vandaag), health.
 // Gebruikt de serversleutel die Supabase zelf aan Edge Functions geeft; geen eigen secrets nodig.
 // Deploy: Supabase → Edge Functions → nieuwe functie, naam "crate", dit bestand plakken; "Verify JWT" aan laten.
 
@@ -14,7 +14,23 @@ const MAX_CARD_LOOKUPS = 40
 const MAX_SET_LOOKUPS = 15
 const TYPES = ['Grass', 'Fire', 'Water', 'Lightning', 'Psychic', 'Fighting', 'Darkness', 'Metal', 'Dragon', 'Fairy', 'Colorless'] as const
 
-export type PackKind = 'booster' | 'great' | 'master' | 'set' | 'type'
+export type PackKind = 'booster' | 'great' | 'master' | 'set' | 'type' | 'lucky' | 'pokemon' | 'era' | 'daily'
+export const PACK_KINDS: readonly PackKind[] = ['booster', 'great', 'master', 'set', 'type', 'lucky', 'pokemon', 'era', 'daily']
+/** Lucky pack: kans op een God pack (alle kaarten hits). */
+export const GOD_PACK_CHANCE = 1 / 30
+/** Era pack: tijdperk → TCGdex-series. */
+export const ERAS: Record<string, readonly string[]> = {
+  wotc: ['base', 'gym', 'neo', 'lc', 'ecard'],
+  ex: ['ex'],
+  dp: ['dp', 'pl'],
+  hgss: ['hgss', 'col'],
+  bw: ['bw'],
+  xy: ['xy'],
+  sm: ['sm'],
+  swsh: ['swsh'],
+  sv: ['sv'],
+  me: ['me'],
+}
 export interface Pull {
   tcgdex_id: string
   name: string
@@ -86,11 +102,42 @@ function pick(odds: Odds, random: () => number): string {
 
 const times = (n: number, f: () => string): string[] => Array.from({ length: n }, f)
 
-/** Zeldzaamheden van een pakje (10 vakken); Type pack = Great. Bij Master zijn de laatste twee de hits. */
+/** Zeldzaamheden van een pakje (10 vakken); Type, Pokémon en Era pack = Great, Lucky = Booster. Bij Master zijn de laatste twee de hits. */
 export function packSlots(pack: PackKind, random: () => number = Math.random): string[] {
-  if (pack === 'great' || pack === 'type') return [...times(5, () => 'Common'), ...times(3, () => 'Uncommon'), ...times(2, () => pick(GREAT_SLOT, random))]
+  if (pack === 'great' || pack === 'type' || pack === 'pokemon' || pack === 'era') return [...times(5, () => 'Common'), ...times(3, () => 'Uncommon'), ...times(2, () => pick(GREAT_SLOT, random))]
   if (pack === 'master') return [...times(4, () => 'Uncommon'), ...times(4, () => pick(GREAT_SLOT, random)), ...times(2, () => pick(HIT_SLOT, random))]
   return [...times(6, () => 'Common'), ...times(3, () => 'Uncommon'), pick(RARE_SLOT, random)]
+}
+
+/** God pack: alle 10 vakken een hit. */
+export const godSlots = (random: () => number = Math.random): string[] => times(10, () => pick(HIT_SLOT, random))
+
+/** Gangbare zeldzaamheden van laag naar hoog (voor uitwijken als een Pokémon of tijdperk een zeldzaamheid niet heeft). */
+const RANKED = ['Common', 'Uncommon', 'Rare', 'Rare Holo', 'Double rare', 'Ultra Rare', 'Illustration rare', 'Special illustration rare', 'Hyper rare']
+
+/** Eerst de gevraagde zeldzaamheid, dan steeds een lagere, dan pas hogere. */
+export function fallbackOrder(rarity: string): string[] {
+  const i = RANKED.findIndex((r) => rarityMatches(r, rarity))
+  if (i < 0) return [rarity, ...RANKED.slice().reverse()]
+  return [RANKED[i], ...RANKED.slice(0, i).reverse(), ...RANKED.slice(i + 1)]
+}
+
+/** Pakje van de dag: de laatste kaart een hit uit de set (of de zeldzaamste die de set heeft). */
+export function dailySlots(rarities: readonly string[], random: () => number = Math.random): string[] {
+  const slots = setPackSlots(rarities, random)
+  const present = [...new Set(rarities)]
+  const hits = HIT_SLOT.filter((s) => present.some((r) => rarityMatches(r, s.rarity)))
+  const total = hits.reduce((n, s) => n + s.weight, 0)
+  const best = [...RANKED].reverse().find((r) => present.some((x) => rarityMatches(x, r)))
+  slots[slots.length - 1] = hits.length > 0 ? pick(hits.map((s) => ({ rarity: s.rarity, weight: s.weight / total })), random) : (best ?? slots[slots.length - 1])
+  return slots
+}
+
+/** Vaste index voor een datum ("2026-10-24"), voor iedereen gelijk. */
+export function dayIndex(date: string, n: number): number {
+  let h = 2166136261
+  for (const ch of date) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0
+  return n > 0 ? h % n : 0
 }
 
 /** Vakken van een Set pack, beperkt tot de zeldzaamheden die de set heeft. */
@@ -169,15 +216,44 @@ const setNames = (): Promise<Map<string, string>> =>
     return new Map(Array.isArray(data) ? data.flatMap((s) => (isRecord(s) && typeof s.id === 'string' && typeof s.name === 'string' ? [[s.id, s.name] as const] : [])) : [])
   })
 
-/** Alle Engelse kaarten van een zeldzaamheid (en eventueel type), met plaatje, zonder TCG Pocket. */
-function pool(rarity: string, type?: string): Promise<BriefCard[]> {
-  return remembered(`pool|${rarity}|${type ?? ''}`, async () => {
+/** Alle Engelse kaarten van een zeldzaamheid (en eventueel type of Pokédex-nummer), met plaatje, zonder TCG Pocket. */
+function pool(rarity: string, type?: string, dexId?: number): Promise<BriefCard[]> {
+  return remembered(`pool|${rarity}|${type ?? ''}|${dexId ?? ''}`, async () => {
     const r = rarity === 'Rare Holo' ? 'Rare Holo|Holo Rare' : rarity
-    const q = `rarity=eq:${encodeURIComponent(r)}${type ? `&types=eq:${encodeURIComponent(type)}` : ''}`
+    const q = `rarity=eq:${encodeURIComponent(r)}${type ? `&types=eq:${encodeURIComponent(type)}` : ''}${dexId ? `&dexId=eq:${dexId}` : ''}`
     const [list, digital] = await Promise.all([getJson(`${TCGDEX}/en/cards?${q}`), digitalSets()])
     return briefCards(list).filter((c) => c.image && !digital.has(setIdOf(c)))
   })
 }
+
+/** Sets van een tijdperk (Era pack), via de series van TCGdex. */
+function eraSets(era: string): Promise<Set<string>> {
+  return remembered(`era|${era}`, async () => {
+    const ids = new Set<string>()
+    for (const serie of ERAS[era] ?? []) {
+      const data = await getJson(`${TCGDEX}/en/series/${serie}`)
+      if (isRecord(data) && Array.isArray(data.sets)) for (const s of data.sets) if (isRecord(s) && typeof s.id === 'string') ids.add(s.id)
+    }
+    return ids
+  })
+}
+
+/** Set van de dag (UTC-datum): voor iedereen dezelfde, uit de gewone Engelse sets met minstens 60 kaarten. */
+export function dailySet(date: string): Promise<{ id: string; name: string }> {
+  return remembered(`daily|${date}`, async () => {
+    const [list, digital] = await Promise.all([getJson(`${TCGDEX}/en/sets`), digitalSets()])
+    const sets = (Array.isArray(list) ? list : [])
+      .flatMap((s) => (isRecord(s) && typeof s.id === 'string' && typeof s.name === 'string' && isRecord(s.cardCount) && typeof s.cardCount.official === 'number' ? [{ id: s.id, name: s.name, official: s.cardCount.official }] : []))
+      .filter((s) => s.official >= 60 && !digital.has(s.id) && !/promo|jumbo/i.test(s.name))
+      .sort((a, b) => (a.id < b.id ? -1 : 1))
+    if (sets.length === 0) throw new HttpError(502, 'No set for today could be found.')
+    const s = sets[dayIndex(date, sets.length)]
+    return { id: s.id, name: s.name }
+  })
+}
+
+/** Datum van vandaag (UTC), "2026-10-24". */
+const today = (): string => new Date().toISOString().slice(0, 10)
 
 /** Kaarten van een set met hun zeldzaamheid (GraphQL, 100 per pagina). */
 function setCards(setId: string): Promise<{ name: string; cards: (BriefCard & { rarity: string })[] }> {
@@ -260,17 +336,28 @@ async function inBatches<T, R>(items: readonly T[], size: number, f: (x: T) => P
 export interface Choice {
   setId?: string
   type?: string
+  /** Pokémon pack: Pokédex-nummer. */
+  dexId?: number
+  /** Era pack: sleutel uit ERAS. */
+  era?: string
+  /** Lucky pack: dit is een God pack (bepaald door de server, niet door de app). */
+  god?: boolean
+  /** Pakje van de dag: datum (UTC); standaard vandaag. */
+  date?: string
 }
 
 /** Een pakje van 10 kaarten trekken. `owned` = al in je Crate ("en/sv03.5-025"). */
 export async function drawPack(pack: PackKind, choice: Choice, owned: ReadonlySet<string>, random: () => number = Math.random): Promise<Pull[]> {
   const pulls: Pull[] = []
-  if (pack === 'set') {
-    if (!choice.setId || !/^[A-Za-z0-9.+-]{1,30}$/.test(choice.setId)) throw new HttpError(400, 'Pick a set first.')
-    const { name, cards } = await setCards(choice.setId)
+  if (pack === 'set' || pack === 'daily') {
+    const daily = pack === 'daily' ? await dailySet(choice.date ?? today()) : null
+    const setId = daily?.id ?? choice.setId
+    if (!setId || !/^[A-Za-z0-9.+-]{1,30}$/.test(setId)) throw new HttpError(400, 'Pick a set first.')
+    const { name, cards } = await setCards(setId)
     if (cards.length === 0) throw new HttpError(400, 'This set has no cards to draw. Pick another set.')
     const have = new Set(owned)
-    for (const rarity of setPackSlots(cards.map((c) => c.rarity), random)) {
+    const rarities = cards.map((c) => c.rarity)
+    for (const rarity of daily ? dailySlots(rarities, random) : setPackSlots(rarities, random)) {
       const card = pickSetCard(cards.filter((c) => rarityMatches(c.rarity, rarity)), have, random)
       if (!card) continue
       have.add(`en/${card.id}`)
@@ -279,25 +366,45 @@ export async function drawPack(pack: PackKind, choice: Choice, owned: ReadonlySe
   } else {
     const type = pack === 'type' ? choice.type : undefined
     if (pack === 'type' && !(TYPES as readonly string[]).includes(type ?? '')) throw new HttpError(400, 'Pick a type first.')
+    const dexId = pack === 'pokemon' ? choice.dexId : undefined
+    if (pack === 'pokemon' && !(typeof dexId === 'number' && Number.isInteger(dexId) && dexId >= 1 && dexId <= 1025)) throw new HttpError(400, 'Pick a Pokémon first.')
+    if (pack === 'era' && !(choice.era && Object.hasOwn(ERAS, choice.era))) throw new HttpError(400, 'Pick an era first.')
+    const inEra = pack === 'era' && choice.era ? await eraSets(choice.era) : null
+    const from = async (rarity: string): Promise<BriefCard[]> => {
+      const list = await pool(rarity, type, dexId)
+      return inEra ? list.filter((c) => inEra.has(setIdOf(c))) : list
+    }
     const names = await setNames().catch(() => new Map<string, string>())
-    const slots = packSlots(pack, random)
+    const god = pack === 'lucky' && choice.god === true
+    const slots = god ? godSlots(random) : packSlots(pack, random)
     const taken = new Set<string>()
     for (const [i, slot] of slots.entries()) {
       let rarity = slot
-      let list = await pool(rarity, type)
+      let list = await from(rarity)
       // Zeldzaamheid bestaat niet voor dit type: dan een gewone rare van dat type.
       if (list.length === 0 && type) {
         rarity = 'Rare'
-        list = await pool(rarity, type)
+        list = await from(rarity)
+      }
+      // Pokémon of tijdperk zonder deze zeldzaamheid: eerst lager uitwijken, dan hoger.
+      if (list.length === 0 && (dexId || inEra)) {
+        for (const r of fallbackOrder(slot).slice(1)) {
+          list = await from(r)
+          if (list.length > 0) {
+            rarity = r
+            break
+          }
+        }
       }
       if (list.length === 0) continue
-      // Master: de twee hits geven liefst geen SIR/Hyper die je al hebt (of die al in dit pakje zit).
-      const hit = pack === 'master' && i >= slots.length - 2 && isTopRarity(rarity)
-      const card = hit ? pickAvoiding(list, new Set([...owned, ...taken]), random) : list[Math.floor(random() * list.length)]
+      // Master-hits en God pack: liefst geen SIR/Hyper die je al hebt, en nooit twee keer dezelfde kaart in het pakje.
+      const hit = (pack === 'master' && i >= slots.length - 2 && isTopRarity(rarity)) || god
+      const card = hit ? pickAvoiding(list, new Set([...(god ? [] : owned), ...taken]), random) : list[Math.floor(random() * list.length)]
       if (!card) continue
       taken.add(`en/${card.id}`)
       pulls.push({ tcgdex_id: `en/${card.id}`, name: card.name, image: card.image, rarity, set_name: names.get(setIdOf(card)) ?? null })
     }
+    if (pulls.length === 0 && pack === 'pokemon') throw new HttpError(400, 'No cards of this Pokémon could be found. Pick another one.')
   }
   if (pulls.length === 0) throw new HttpError(502, 'No cards could be drawn. Try again.')
   return pulls
@@ -450,13 +557,23 @@ async function handle(req: Request, body: Record<string, unknown>): Promise<unkn
 
   if (action === 'sync') return sync(user)
 
+  if (action === 'daily') return dailySet(today())
+
   if (action === 'open') {
-    const pack = body.pack
-    if (pack !== 'booster' && pack !== 'great' && pack !== 'master' && pack !== 'set' && pack !== 'type') throw new HttpError(400, 'Unknown pack.')
-    const owned = pack === 'set' || pack === 'master' ? await ownedCrate(user) : new Set<string>()
-    const pulls = await drawPack(pack, { setId: typeof body.setId === 'string' ? body.setId : undefined, type: typeof body.type === 'string' ? body.type : undefined }, owned)
+    const pack = PACK_KINDS.find((k) => k === body.pack)
+    if (!pack) throw new HttpError(400, 'Unknown pack.')
+    const owned = pack === 'set' || pack === 'master' || pack === 'daily' ? await ownedCrate(user) : new Set<string>()
+    const god = pack === 'lucky' && Math.random() < GOD_PACK_CHANCE
+    const choice: Choice = {
+      setId: typeof body.setId === 'string' ? body.setId : undefined,
+      type: typeof body.type === 'string' ? body.type : undefined,
+      dexId: typeof body.dexId === 'number' ? body.dexId : undefined,
+      era: typeof body.era === 'string' ? body.era : undefined,
+      god,
+    }
+    const pulls = await drawPack(pack, choice, owned)
     const wallet = await rpc('crate_srv_open', { p_user: user, p_pack: pack, p_cards: pulls })
-    return { ...(isRecord(wallet) ? wallet : {}), pulls }
+    return { ...(isRecord(wallet) ? wallet : {}), pulls, god }
   }
 
   if (action === 'craft') {

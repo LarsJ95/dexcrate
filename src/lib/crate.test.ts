@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('./supabase', () => ({ supabase: {} }))
-const { GREAT_SLOT, HIT_SLOT, MISSING_FIRST, OLD_RULES, RARE_SLOT, canAfford, craftClassOf, craftCost, crateSetProgress, packCost, packSlots, packsByCost, pickSetCard, setPackSlots, toRules, tradeValue } = await import('./crate')
+const { ERA_IDS, GREAT_SLOT, HIT_SLOT, MISSING_FIRST, OLD_RULES, packStep, RARE_SLOT, canAfford, craftClassOf, craftCost, crateSetProgress, packCost, packSlots, packsByCost, pickSetCard, setPackSlots, toRules, tradeValue } = await import('./crate')
 
 describe('Crate-pakje', () => {
   it('kansen per vak tellen op tot 1', () => {
@@ -93,7 +93,16 @@ describe('Crate-pakje', () => {
   })
   it('pakjes van goedkoop naar duur; gelijke prijs in vaste volgorde, zonder prijs achteraan', () => {
     const rules = toRules({ daily: 150, trade_factor: 2, crate_set: 500, packs: { booster: 100, great: 300, master: 1000, set: 150, type: 300 } })
-    expect(packsByCost(rules)).toEqual(['booster', 'set', 'great', 'type', 'master'])
-    expect(packsByCost(OLD_RULES)).toEqual(['booster', 'great', 'master', 'set', 'type'])
+    expect(packsByCost(rules)).toEqual(['booster', 'set', 'great', 'type', 'master', 'lucky', 'pokemon', 'era', 'daily'])
+    expect(packsByCost(OLD_RULES)).toEqual(['booster', 'great', 'master', 'set', 'type', 'lucky', 'pokemon', 'era', 'daily'])
+  })
+  it('STAP26: Lucky, Pokémon, Era en Pakje van de dag met hun prijs; zonder STAP26 de juiste melding', () => {
+    const rules = toRules({ packs: { booster: 100, great: 200, master: 1000, set: 150, type: 300, lucky: 150, pokemon: 250, era: 200, daily: 200 } })
+    expect(packsByCost(rules)).toEqual(['booster', 'set', 'lucky', 'great', 'era', 'daily', 'pokemon', 'type', 'master'])
+    expect(canAfford(rules, 'pokemon', 249, true)).toBe(false)
+    expect(canAfford(rules, 'lucky', 150, false)).toBe(true)
+    expect(packStep('daily')).toBe('STAP26')
+    expect(packStep('set')).toBe('STAP18')
+    expect(ERA_IDS).toContain('wotc')
   })
 })

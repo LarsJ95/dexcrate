@@ -65,6 +65,55 @@ button.pack-sealed:hover:not(:disabled) {
   background: conic-gradient(from 30deg, color-mix(in oklab, var(--type) 45%, #000), var(--type), color-mix(in oklab, var(--type) 40%, #fff), var(--type), color-mix(in oklab, var(--type) 45%, #000));
 }
 
+.pack-sealed.pack-lucky,
+.pack-sealed.pack-lucky:hover:not(:disabled) {
+  border-color: var(--gold-b);
+  background: conic-gradient(from 30deg, #065f46, #10b981, var(--gold-a), #10b981, #065f46);
+}
+
+.pack-sealed.pack-pokemon,
+.pack-sealed.pack-pokemon:hover:not(:disabled) {
+  background: conic-gradient(from 30deg, #b91c1c, #facc15, #fef9c3, #facc15, #b91c1c);
+}
+
+.pack-sealed.pack-era,
+.pack-sealed.pack-era:hover:not(:disabled) {
+  background: conic-gradient(from 30deg, #451a03, #a16207, #fde68a, #a16207, #451a03);
+}
+
+.pack-sealed.pack-daily,
+.pack-sealed.pack-daily:hover:not(:disabled) {
+  background: conic-gradient(from 30deg, #9d174d, #f97316, #fed7aa, #ec4899, #9d174d);
+}
+
+/* God pack (Lucky pack): gouden banner en gloed rond het venster. */
+.pack-god-banner {
+  margin: 0 0 var(--space-2);
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--gold-b), var(--gold-a), var(--gold-b));
+  color: #1a1200;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.pack-opening.is-god {
+  box-shadow:
+    0 0 0 2px var(--gold-b),
+    0 0 48px color-mix(in oklab, var(--gold-a) 60%, transparent);
+}
+
+[data-motion='on'] .pack-god-banner {
+  animation: god-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes god-pulse {
+  50% {
+    filter: brightness(1.25);
+  }
+}
+
 /* Scheurrand bovenaan (perforatie). */
 .pack-sealed-top {
   border-bottom: 2px dashed rgb(255 255 255 / 0.55);
