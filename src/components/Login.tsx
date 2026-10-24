@@ -1,4 +1,5 @@
 import { useState, type FormEvent, type JSX } from 'react'
+import { PRIVACY_URL, TERMS_URL } from '../lib/legal'
 import { supabase } from '../lib/supabase'
 import { LogoMark } from './Icons'
 
@@ -53,6 +54,9 @@ export function Login(): JSX.Element {
           <button type="submit" className="primary" disabled={busy}>
             {busy ? 'Signing in…' : 'Sign in'}
           </button>
+          <p className="login-legal muted small">
+            <a href={PRIVACY_URL}>Privacy</a> · <a href={TERMS_URL}>Terms of use</a>
+          </p>
         </form>
       </section>
     </main>

@@ -278,3 +278,12 @@ label.settings-confirm {
     width: 150px;
   }
 }
+
+/* Bronnen in Settings → About. */
+.settings-sources {
+  margin: 0;
+  padding-left: 1.2em;
+  display: grid;
+  gap: var(--space-1);
+  font-size: var(--fs-small);
+}

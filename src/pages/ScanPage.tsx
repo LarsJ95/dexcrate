@@ -6,6 +6,7 @@ import { IconBinder, IconCamera, IconCards } from '../components/Icons'
 import { ScanSessionSummary, SingleScanResult } from '../components/ScanParts'
 import { QueueStrip, ScanQueue } from '../components/ScanQueue'
 import { ScanRecent } from '../components/ScanRecent'
+import { PRIVACY_URL } from '../lib/legal'
 import { addedQuietly } from '../lib/celebrate'
 import { insertCards, listCards } from '../lib/db'
 import { autoPick, type Candidate } from '../lib/match'
@@ -369,6 +370,13 @@ export function ScanPage(): JSX.Element {
       <button type="button" className="ghost scan-files" disabled={busy} onClick={() => inputRef.current?.click()}>
         Or choose photos from files
       </button>
+      {/* AVG (24-10-2026): zeggen waar de foto heen gaat. */}
+      <p className="muted small scan-privacy">
+        Photos are sent to Anthropic's Claude to recognise the card.{' '}
+        <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer">
+          Privacy
+        </a>
+      </p>
 
       <input
         ref={inputRef}

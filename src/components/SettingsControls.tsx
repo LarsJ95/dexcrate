@@ -60,10 +60,10 @@ export function Toggle({ checked, onChange, children, hint }: { checked: boolean
   )
 }
 
-/** Regel die naar een andere pagina gaat. */
-export function LinkRow({ href, children, detail }: { href: string; children: ReactNode; detail?: ReactNode }): JSX.Element {
+/** Regel die naar een andere pagina gaat; `external` = in een nieuw tabblad (buiten de app). */
+export function LinkRow({ href, children, detail, external = false }: { href: string; children: ReactNode; detail?: ReactNode; external?: boolean }): JSX.Element {
   return (
-    <a className="settings-item settings-link" href={href}>
+    <a className="settings-item settings-link" href={href} {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
       <span className="settings-item-label">{children}</span>
       {detail && <span className="muted small">{detail}</span>}
       <span className="settings-chevron" aria-hidden="true">

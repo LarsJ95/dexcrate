@@ -40,7 +40,8 @@ function PriceChartingImage({ lang, setId, localId, name, quality, setName, alt,
   const [failed, setFailed] = useState<string | null>(null)
   const src = hash ? pcImageUrl(hash, quality) : null
   if (!src || failed === src) return <>{fallback}</>
-  return <img className={className} src={src} alt={alt} loading="lazy" decoding="async" onError={() => setFailed(src)} />
+  // Bronvermelding (24-10-2026): foto van PriceCharting.
+  return <img className={className} src={src} alt={alt} title="Image: PriceCharting" loading="lazy" decoding="async" onError={() => setFailed(src)} />
 }
 
 const findPcHashFor = (key: string): Promise<string | null> => {

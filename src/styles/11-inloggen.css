@@ -85,3 +85,9 @@
     width: 110px;
   }
 }
+
+/* Privacy en voorwaarden onder het formulier (24-10-2026). */
+.login-legal {
+  margin: 0;
+  text-align: center;
+}

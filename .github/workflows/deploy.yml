@@ -31,6 +31,8 @@ jobs:
           # Publieke waarden (beveiliging loopt via RLS); ingesteld als repository variables.
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          # Contact in privacy en voorwaarden (leeg = algemene tekst); repository variable, niet in de code.
+          DEXCRATE_CONTACT: ${{ vars.DEXCRATE_CONTACT }}
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
