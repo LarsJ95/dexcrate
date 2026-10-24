@@ -275,6 +275,34 @@ export async function setScanTotal(total: number, reason: string): Promise<numbe
   return num(await call('admin_set_scan_total', { p_total: total, p_reason: reason.trim() }, 'STAP30', 'Saving the scan limit failed'))
 }
 
+/** Iemand op de wachtlijst (STAP32): aangemeld via de landingspagina. */
+export interface WaitlistEntry {
+  id: string
+  email: string
+  /** "Wat verzamel je", optioneel. */
+  collects: string | null
+  createdAt: string
+  invitedAt: string | null
+}
+
+export function toWaitlistEntry(r: unknown): WaitlistEntry | null {
+  if (!isRecord(r) || typeof r.id !== 'string' || typeof r.email !== 'string') return null
+  return { id: r.id, email: r.email, collects: str(r.collects), createdAt: str(r.created_at) ?? '', invitedAt: str(r.invited_at) }
+}
+
+/** De wachtlijst, oudste aanmelding eerst. */
+export async function getWaitlist(): Promise<WaitlistEntry[]> {
+  return rows(await call('admin_waitlist', undefined, 'STAP32', 'Loading the waitlist failed')).flatMap((r) => toWaitlistEntry(r) ?? [])
+}
+
+export async function markWaitlistInvited(id: string): Promise<void> {
+  await call('admin_waitlist_invited', { p_id: id }, 'STAP32', 'Saving failed')
+}
+
+export async function removeFromWaitlist(id: string): Promise<void> {
+  await call('admin_waitlist_remove', { p_id: id }, 'STAP32', 'Removing failed')
+}
+
 /** Allebei null = terug naar de standaard (40 per minuut, 500 per dag). */
 export async function setScanLimit(userId: string, perMinute: number | null, perDay: number | null, reason: string): Promise<void> {
   await call('admin_set_scan_limit', { p_user: userId, p_per_minute: perMinute, p_per_day: perDay, p_reason: reason.trim() }, 'STAP22', 'Saving the scan limit failed')

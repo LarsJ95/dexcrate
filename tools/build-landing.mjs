@@ -27,10 +27,33 @@ function contactHtml() {
   if (!c) return CONTACT_DEFAULT
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c) ? `<a href="mailto:${escapeHtml(c)}">${escapeHtml(c)}</a>` : escapeHtml(c)
 }
+// Wachtlijst (25-10-2026, STAP32): het aanmeldformulier roept waitlist_join aan met de publieke Supabase-gegevens (dezelfde
+// als die van de app). Uit de omgeving (deploy) of anders .env.local (lokaal). Ontbreekt iets, dan blijft het leeg en
+// meldt het formulier dat aanmelden nu niet kan.
+function supabasePublic() {
+  const local = existsSync('.env.local')
+    ? Object.fromEntries(
+        readFileSync('.env.local', 'utf8')
+          .split(/\r?\n/)
+          .map((l) => /^\s*([A-Z_]+)\s*=\s*(.*?)\s*$/.exec(l))
+          .filter(Boolean)
+          .map((m) => [m[1], m[2].replace(/^["']|["']$/g, '')]),
+      )
+    : {}
+  const url = (process.env.VITE_SUPABASE_URL || local.VITE_SUPABASE_URL || '').trim().replace(/\/+$/, '')
+  const key = (process.env.VITE_SUPABASE_PUBLISHABLE_KEY || local.VITE_SUPABASE_PUBLISHABLE_KEY || '').trim()
+  const okUrl = /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(url)
+  const okKey = /^[A-Za-z0-9._-]{20,400}$/.test(key)
+  if (!okUrl || !okKey) console.warn('Let op: geen geldige VITE_SUPABASE_URL/VITE_SUPABASE_PUBLISHABLE_KEY; het wachtlijstformulier werkt dan niet.')
+  return { url: okUrl ? url : '', key: okKey ? key : '' }
+}
+const supabase = supabasePublic()
+const fillIn = (html) =>
+  html.replaceAll('{{CONTACT}}', contactHtml()).replaceAll('{{SUPABASE_URL}}', escapeHtml(supabase.url)).replaceAll('{{SUPABASE_KEY}}', escapeHtml(supabase.key))
 for (const name of readdirSync('landing')) {
   const from = join('landing', name)
   if (!statSync(from).isFile()) continue
-  if (name.endsWith('.html')) writeFileSync(join(DIST, name), readFileSync(from, 'utf8').replaceAll('{{CONTACT}}', contactHtml()))
+  if (name.endsWith('.html')) writeFileSync(join(DIST, name), fillIn(readFileSync(from, 'utf8')))
   else copy(from, join(DIST, name))
 }
 // Screenshots van de app (24-10-2026) en kaartplaatjes voor het verhaal (25-10-2026) op de landingspagina.
