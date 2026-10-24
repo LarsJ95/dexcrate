@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent, type JSX } from 'react'
 import { AccountActions, AnnouncementPanel, CrateAuditPanel, CrateRulesPanel, InvitePanel, ScansPanel, UserDetail } from '../components/AdminParts'
+import { WaitlistPanel } from '../components/AdminWaitlist'
 import { IconSearch } from '../components/Icons'
 import { Loading } from '../components/Loading'
 import { SearchClear } from '../components/SearchClear'
@@ -209,6 +210,7 @@ export function AdminPage(): JSX.Element {
         )}
       </section>
 
+      <WaitlistPanel onInvited={() => setVersion((v) => v + 1)} />
       <InvitePanel onInvited={() => setVersion((v) => v + 1)} />
       <CrateRulesPanel />
       <CrateAuditPanel />

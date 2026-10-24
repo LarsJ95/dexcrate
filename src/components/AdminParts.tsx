@@ -34,7 +34,7 @@ function problemText(err: unknown, fallback: string): string {
   return err instanceof MissingStepError ? err.message : errorText(err, fallback)
 }
 
-function Status({ result }: { result: { ok: boolean; text: string } | null }): JSX.Element | null {
+export function Status({ result }: { result: { ok: boolean; text: string } | null }): JSX.Element | null {
   if (!result) return null
   return (
     <span className={result.ok ? 'success' : 'error'} role={result.ok ? 'status' : 'alert'}>

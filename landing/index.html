@@ -392,6 +392,24 @@
       .finale h2 { font-size: clamp(2.2rem, 5.6vw, 4rem); font-stretch: 122%; font-weight: 900; text-wrap: balance; }
       .finale p { color: var(--ink-soft); margin: 16px auto 28px; max-width: 32em; font-size: 1.12rem; }
       .finale .actions { justify-content: center; }
+      .finale .note { margin-top: 20px; }
+      /* Wachtlijst (STAP32). */
+      .join { display: grid; gap: 14px; width: min(460px, 100%); margin: 0 auto; padding: 24px; text-align: left; border-radius: var(--radius-l); background: var(--surface); border: 1px solid var(--line); border-top: 6px solid var(--lightning); box-shadow: var(--shadow-float); }
+      .join label { display: grid; gap: 6px; font-weight: 700; }
+      .join .optional { font-weight: 600; color: var(--muted); font-size: 0.9rem; }
+      .join input[type='email'], .join input[type='text'] { min-height: 48px; padding: 0 14px; border-radius: 14px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--ink); font: inherit; font-weight: 400; }
+      .join input:focus-visible { outline: 3px solid var(--accent-line); outline-offset: 1px; }
+      .join input[aria-invalid='true'] { border-color: var(--ball-red); }
+      .join .consent { grid-template-columns: auto 1fr; align-items: start; gap: 10px; font-weight: 400; color: var(--ink-soft); font-size: 0.95rem; }
+      .join .consent input { width: 22px; height: 22px; margin: 1px 0 0; accent-color: var(--yellow-press); }
+      .join .trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+      .join button { width: 100%; }
+      .join button[disabled] { opacity: 0.7; cursor: progress; }
+      .join-msg { margin: 0; min-height: 1.4em; font-weight: 600; }
+      .join-msg.is-error { color: var(--ball-red); }
+      @media (prefers-color-scheme: dark) { .join-msg.is-error { color: #ff8a6b; } }
+      .joined { display: grid; gap: 8px; justify-items: center; text-align: center; }
+      .joined strong { font-size: 1.4rem; font-stretch: 115%; }
 
       footer { padding: 40px 0 96px; color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--line); }
       footer p { margin: 0 0 8px; max-width: 60em; }
@@ -422,6 +440,10 @@
         .brand { font-size: 1.15rem; }
         .diff { grid-template-columns: 1fr; }
         .slots { gap: 7px; }
+      }
+      /* Heel smal: Sign in staat ook direct onder de kop, dus in de kopbalk alleen Early access. */
+      @media (max-width: 400px) {
+        .top-actions .btn-ghost { display: none; }
       }
 
       /* ---------- Animaties (alleen met .anim op html) ---------- */
@@ -501,8 +523,8 @@
           </a>
           <nav class="top-actions" aria-label="Account">
             <a class="btn btn-ghost" href="./app/">Sign in</a>
-            <!-- Registreren (24-10-2026): knop staat er al, linkt nog nergens heen tot registreren openstaat. -->
-            <a class="btn btn-primary" href="#" data-register>Register</a>
+            <!-- Wachtlijst (25-10-2026, STAP32): alle knoppen gaan naar het formulier onderaan. -->
+            <a class="btn btn-primary" href="#join" data-register>Early access</a>
           </nav>
         </header>
 
@@ -515,7 +537,7 @@
               every day.
             </p>
             <div class="actions">
-              <a class="btn btn-primary btn-big" href="#" data-register>Register for free</a>
+              <a class="btn btn-primary btn-big" href="#join" data-register>Get early access</a>
               <a class="btn btn-ghost btn-big" href="#story">See how it works</a>
             </div>
             <p class="note">Already in the beta? <a href="./app/">Sign in</a></p>
@@ -751,7 +773,7 @@
                 Dexcrate is built together with its first collectors. Beta members say what works, what is missing and what comes next, and get new features
                 first.
               </p>
-              <a class="btn btn-primary" href="#" data-register>Register</a>
+              <a class="btn btn-primary" href="#join" data-register>Get early access</a>
             </div>
             <ul class="soon">
               <li><strong>Show off your collection</strong><span>Share your binders and best pulls with friends.</span></li>
@@ -799,11 +821,27 @@
       <section class="finale" id="finale" aria-labelledby="cta-title">
         <div class="wrap">
           <h2 id="cta-title">Your binder is waiting.</h2>
-          <p>Join the free beta and put your first card in its place today. Already have an account? Sign in.</p>
-          <div class="actions">
-            <a class="btn btn-primary btn-big" href="#" data-register>Register for free</a>
-            <a class="btn btn-ghost btn-big" href="./app/">Sign in</a>
-          </div>
+          <p>Dexcrate is in a free private beta. Leave your email address and we send you an invitation as soon as there is room.</p>
+          <form class="join" id="join" data-waitlist data-url="{{SUPABASE_URL}}" data-key="{{SUPABASE_KEY}}" novalidate>
+            <label>
+              Email address
+              <input type="email" name="email" autocomplete="email" maxlength="254" required />
+            </label>
+            <label>
+              What do you collect? <span class="optional">Optional</span>
+              <input type="text" name="collects" maxlength="200" placeholder="For example: vintage holos and everything 151" />
+            </label>
+            <!-- Onzichtbaar voor mensen; bots vullen het in. -->
+            <label class="trap" aria-hidden="true">Website <input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+            <label class="consent">
+              <input type="checkbox" name="consent" required />
+              <span>Dexcrate may store my email address to invite me. See the <a href="./privacy.html#waitlist">privacy statement</a>.</span>
+            </label>
+            <button class="btn btn-primary btn-big" type="submit">Get early access</button>
+            <p class="join-msg" role="status" aria-live="polite"></p>
+            <noscript><p class="join-msg is-error">Turn on JavaScript to sign up.</p></noscript>
+          </form>
+          <p class="note">Already in the beta? <a href="./app/">Sign in</a></p>
         </div>
       </section>
     </main>
@@ -820,7 +858,7 @@
 
     <div class="dock" data-dock>
       <span>Free private beta</span>
-      <a class="btn btn-primary" href="#" data-register>Register</a>
+      <a class="btn btn-primary" href="#join" data-register>Get early access</a>
     </div>
 
     <script>
@@ -842,6 +880,65 @@
             const el = document.getElementById(id)
             if (el) watch.observe(el)
           }
+        }
+        // Wachtlijst (STAP32): aanmelden via de databasefunctie waitlist_join met de publieke sleutel.
+        const form = document.querySelector('[data-waitlist]')
+        if (form) {
+          const msg = form.querySelector('.join-msg')
+          const email = form.elements.namedItem('email')
+          const say = (text, error) => {
+            msg.textContent = text
+            msg.classList.toggle('is-error', error)
+          }
+          let busy = false
+          form.addEventListener('submit', async (ev) => {
+            ev.preventDefault()
+            if (busy) return
+            const mail = email.value.trim()
+            const ok = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,63}$/.test(mail)
+            email.setAttribute('aria-invalid', String(!ok))
+            if (!ok) {
+              say('Enter a valid email address.', true)
+              email.focus()
+              return
+            }
+            if (!form.elements.namedItem('consent').checked) return say('Please tick the box so we may store your email address.', true)
+            const url = form.dataset.url
+            const key = form.dataset.key
+            if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(url ?? '') || !key || key.includes('{{')) return say('Signing up is not available right now. Please try again later.', true)
+            busy = true
+            const button = form.querySelector('button')
+            button.disabled = true
+            say('Sending…', false)
+            try {
+              const res = await fetch(url + '/rest/v1/rpc/waitlist_join', {
+                method: 'POST',
+                headers: { apikey: key, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ p_email: mail, p_collects: form.elements.namedItem('collects').value.trim() || null, p_consent: true, p_trap: form.elements.namedItem('website').value || null }),
+              })
+              const body = await res.json().catch(() => null)
+              if (!res.ok) {
+                const known = body && typeof body.message === 'string' && /valid email|privacy statement|try again/i.test(body.message)
+                throw new Error(known ? body.message + (body.message.endsWith('.') ? '' : '.') : 'Signing up failed. Please try again later.')
+              }
+              const done = document.createElement('div')
+              done.className = 'joined'
+              done.setAttribute('role', 'status')
+              done.tabIndex = -1
+              const title = document.createElement('strong')
+              title.textContent = 'You’re on the list!'
+              const text = document.createElement('span')
+              text.textContent = 'We will email ' + mail + ' as soon as your invitation is ready.'
+              done.append(title, text)
+              form.replaceChildren(done)
+              done.focus()
+            } catch (err) {
+              say(err instanceof Error && err.message !== 'Failed to fetch' ? err.message : 'Could not reach the server. Check your connection and try again.', true)
+              button.disabled = false
+            } finally {
+              busy = false
+            }
+          })
         }
         if (!anim) return
 

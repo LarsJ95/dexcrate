@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const rpc = vi.fn()
 vi.mock('./supabase', () => ({ supabase: { rpc: (...args: unknown[]) => rpc(...args) } }))
-const { MissingStepError, getCrateAudit, getScanStats, getScanTotal, setScanTotal, grantCratePoints, grantInputError, isAdmin, isBanned, listAdminUsers, toAdminAction, toAdminRules, toAdminUser } = await import('./admin')
+const { MissingStepError, getCrateAudit, getScanStats, getScanTotal, setScanTotal, getWaitlist, markWaitlistInvited, removeFromWaitlist, grantCratePoints, grantInputError, isAdmin, isBanned, listAdminUsers, toAdminAction, toAdminRules, toAdminUser } = await import('./admin')
 const { actionText } = await import('./adminText')
 
 beforeEach(() => rpc.mockReset())
@@ -141,6 +141,19 @@ describe('database', () => {
     expect(actionText({ id: 'x', createdAt: 't', adminEmail: 'a', targetEmail: null, points: null, reason: 'r', action: 'set_scan_total', details: { before: 2000, after: 500 } })).toBe(
       'Scans for everyone: 500 a day',
     )
+  })
+  it('wachtlijst (STAP32): rijen omgezet, uitgenodigd en verwijderen; zonder STAP32 zeg welke STAP', async () => {
+    rpc.mockResolvedValueOnce({ data: [{ id: 'w1', email: 'ash@example.com', collects: 'Vintage', created_at: 't1', invited_at: null }, { email: 'zonder id' }], error: null })
+    expect(await getWaitlist()).toEqual([{ id: 'w1', email: 'ash@example.com', collects: 'Vintage', createdAt: 't1', invitedAt: null }])
+    expect(rpc).toHaveBeenLastCalledWith('admin_waitlist', undefined)
+    rpc.mockResolvedValueOnce({ data: null, error: null })
+    await markWaitlistInvited('w1')
+    expect(rpc).toHaveBeenLastCalledWith('admin_waitlist_invited', { p_id: 'w1' })
+    rpc.mockResolvedValueOnce({ data: null, error: null })
+    await removeFromWaitlist('w1')
+    expect(rpc).toHaveBeenLastCalledWith('admin_waitlist_remove', { p_id: 'w1' })
+    rpc.mockResolvedValueOnce({ data: null, error: { code: 'PGRST202', message: 'Could not find the function' } })
+    expect(((await getWaitlist().catch((e: unknown) => e)) as Error).message).toMatch(/STAP32/)
   })
   it('geweigerd door de database: duidelijke fout', async () => {
     rpc.mockImplementation(() => listQuery({ error: { code: '42501', message: 'Not allowed' } }))
