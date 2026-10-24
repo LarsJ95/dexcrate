@@ -1,3 +1,4 @@
+import { fetchAllPages } from './fetchAll'
 import { supabase } from './supabase'
 import { TX_KIND_LABELS, TX_STATUS_LABELS, type Transaction, type TxLine, type TxStatus } from './transactionTypes'
 
@@ -68,13 +69,17 @@ export function overrideTransactionsForPreview(v: boolean): void {
 
 /** Alle transacties, nieuwste eerst. */
 export async function listTransactions(): Promise<Transaction[]> {
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select(SELECT)
-    .order('occurred_on', { ascending: false, nullsFirst: false })
-    .order('created_at', { ascending: false })
+  const { data, error } = await fetchAllPages((from, to) =>
+    supabase
+      .from(TABLE)
+      .select(SELECT)
+      .order('occurred_on', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, to),
+  )
   if (error) throw new Error(`Loading transactions failed: ${error.message}`)
-  return (data as unknown[]).flatMap((r) => toTransaction(r) ?? [])
+  return data.flatMap((r) => toTransaction(r) ?? [])
 }
 
 export interface SaleInput {
