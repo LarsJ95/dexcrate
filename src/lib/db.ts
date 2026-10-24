@@ -245,6 +245,19 @@ export async function deleteCard(id: string): Promise<void> {
   if (error) throw new Error(`Deleting failed: ${error.message}`)
 }
 
+/**
+ * Meerdere kaartregels verwijderen, per 100 (de id's staan in de URL). `onProgress` krijgt na elk blok het aantal
+ * dat al weg is; bij een fout halverwege zijn de eerdere blokken al verwijderd.
+ */
+export async function deleteCards(ids: readonly string[], onProgress?: (done: number) => void): Promise<void> {
+  for (let i = 0; i < ids.length; i += 100) {
+    const chunk = ids.slice(i, i + 100)
+    const { error } = await supabase.from(TABLE).delete().in('id', chunk)
+    if (error) throw new Error(`Deleting failed: ${error.message}`)
+    onProgress?.(i + chunk.length)
+  }
+}
+
 export interface PriceSnapshot {
   takenOn: string
   trend: number | null

@@ -208,3 +208,38 @@ button.tx-row.void {
     bottom: calc(var(--tabbar) + var(--space-3) + env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* Telefoon (24-10-2026, met Select all en Delete erbij): telling en Select all bovenaan, de vier acties eronder even breed. */
+@media (max-width: 560px) {
+  .select-bar {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+
+  .select-bar .select-count {
+    grid-column: span 2;
+  }
+
+  .select-bar .select-count + button {
+    grid-column: span 2;
+    justify-self: end;
+  }
+
+  .select-bar .spacer {
+    display: none;
+  }
+
+  .select-bar .small-btn {
+    justify-content: center;
+    min-width: 0;
+    padding-inline: var(--space-2);
+  }
+}
+
+/* Heel smal: alleen tekst, zodat vier knoppen naast elkaar passen. */
+@media (max-width: 400px) {
+  .select-bar .small-btn svg {
+    display: none;
+  }
+}
