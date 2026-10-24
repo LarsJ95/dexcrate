@@ -29,6 +29,14 @@ describe('scan-wachtrij', () => {
     expect(withMatch(newItem('c', THUMB), rec(), []).include).toBe(false)
   })
 
+  it('Europese taal alleen geraden: niet vanzelf aangevinkt; met taalcode of nagekeken wel; bewaard na herladen', () => {
+    expect(ready('fr', 'en/sv03.5-025', { language: 'fr' }).include).toBe(false)
+    expect(ready('fr2', 'en/sv03.5-025', { language: 'fr', languageChecked: true }).include).toBe(true)
+    expect(ready('ja', 'ja/SV2a-025', { language: 'ja' }).include).toBe(true)
+    const saved = JSON.stringify([ready('k', 'en/sv03.5-025', { language: 'de', languageChecked: true }), ready('l', 'en/sv03.5-025', { language: 'de' })])
+    expect(parseQueue(saved).map((q) => q.rec?.languageChecked)).toEqual([true, undefined])
+  })
+
   it('zelfde kaart nog eens gescand: aantal +1 in plaats van een tweede regel', () => {
     const q = mergeDuplicate([ready('a'), ready('b')], 'b')
     expect(q).toHaveLength(1)

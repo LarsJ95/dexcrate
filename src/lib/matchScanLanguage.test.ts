@@ -5,7 +5,7 @@ import type { Recognition } from './scanResult'
 
 // draftFromScan zit in scan.ts, dat de Supabase-client laadt; die is hier niet nodig.
 vi.mock('./supabase', () => ({ supabase: {} }))
-const { draftFromScan } = await import('./scan')
+const { draftFromScan, scanName } = await import('./scan')
 
 /**
  * Nagebootste TCGdex/PokeAPI: Dedenne S12 #045 bestaat alleen in de Traditioneel-Chinese catalogus (zh-tw);
@@ -73,5 +73,14 @@ describe('scan: Vereenvoudigd en Traditioneel Chinees verward', () => {
     expect(draft).toMatchObject({ language: 'zh-tw', tcgdex_id: 'zh-tw/S12-045', set_code: 'S12', card_number: '45' })
     // Zonder koppeling blijft de gelezen taal.
     expect((await draftFromScan(rec, null, 'zh-cn')).language).toBe('zh-cn')
+  })
+
+  it('naam: gekoppeld aan de Engelse catalogus = catalogusnaam; Aziatische catalogus of geen koppeling = gelezen naam', () => {
+    // 25-10-2026: de scan "vertaalde" Jacinthe (POR 075) naar Iono.
+    const read = { nameEnglish: 'Iono', namePrinted: 'Jacinthe' }
+    expect(scanName(read, { key: 'en/me03-075', name: 'Jacinthe' })).toBe('Jacinthe')
+    expect(scanName({ nameEnglish: 'Dedenne', namePrinted: '咚咚鼠' }, { key: 'zh-tw/S12-045', name: '咚咚鼠' })).toBe('Dedenne')
+    expect(scanName(read, null)).toBe('Iono')
+    expect(scanName({ nameEnglish: '', namePrinted: 'Jacinthe' }, null)).toBe('Jacinthe')
   })
 })

@@ -4,10 +4,10 @@ import { addedQuietly } from '../lib/celebrate'
 import { onChsCatalogReady } from '../lib/chsCatalog'
 import { autoPick, type Candidate } from '../lib/match'
 import { recordChoices, scanCandidates, type ChoiceInput } from '../lib/scanMemory'
-import { draftFromScan, type Recognition } from '../lib/scan'
-import { readLabel } from '../lib/scanResult'
+import { draftFromScan, scanName, type Recognition } from '../lib/scan'
+import { languageNeedsCheck, readLabel } from '../lib/scanResult'
 import { isAmbiguous } from '../lib/scanQueue'
-import { CandidateStrip } from './ScanQueueParts'
+import { CandidateStrip, LanguageCheckNote } from './ScanQueueParts'
 import { lookupLang } from '../lib/tcgdex'
 import { CardFace } from './CardFace'
 import { CatalogKeyPicture } from './CatalogCardPicture'
@@ -91,7 +91,7 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
                     candidates,
                     chosen: best?.key ?? '',
                     // Alleen standaard aanvinken als er een match is en de kaart leesbaar was.
-                    include: best !== null && rec.confidence !== 'low',
+                    include: best !== null && rec.confidence !== 'low' && !languageNeedsCheck(rec),
                     variant: fitVariant(rec.variant, best ? facts.variants : null),
                   }
                 : r,
@@ -168,7 +168,7 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
         {open.map((r) => {
           const c = candidateOf(r)
           const owned = c ? ownedByKey.get(c.key) : undefined
-          const label = r.rec.nameEnglish || r.rec.namePrinted || `Card ${r.rec.position}`
+          const label = scanName(r.rec, c) || `Card ${r.rec.position}`
           const found = r.candidates !== undefined
           const pick = found && needsPick(r.candidates ?? [])
           const more = expanded.has(r.rec.position)
@@ -219,6 +219,7 @@ export function BinderScanResult({ recognitions, ownedByKey, nextSortOrder, onAd
               {found && (
                 <div className="queue-wide queue-notes">
                   {pick && <p className="queue-why small">Not sure: tap the right card.</p>}
+                  {!r.include && languageNeedsCheck(r.rec) && r.rec.language && <LanguageCheckNote language={r.rec.language} />}
                   {c && <VariantGapNote cardKey={c.key} />}
                 </div>
               )}

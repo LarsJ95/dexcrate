@@ -1,10 +1,19 @@
 import type { JSX } from 'react'
 import type { Candidate } from '../lib/match'
 import { MAX_QTY, stripCandidates, type QueueItem } from '../lib/scanQueue'
+import { LANGUAGE_LABELS, type CardLanguage } from '../lib/types'
 import { CardFace } from './CardFace'
 import { CatalogKeyPicture } from './CatalogCardPicture'
 import { IconMinus, IconPlus } from './Icons'
 import { Sheet } from './Sheet'
+
+/**
+ * Taal alleen geraden (Europees, geen gedrukte taalcode): niet aangevinkt, eerst nakijken (25-10-2026: een Engelse
+ * kaart werd als Frans opgeslagen).
+ */
+export function LanguageCheckNote({ language }: { language: CardLanguage }): JSX.Element {
+  return <p className="queue-why small">Read as a {LANGUAGE_LABELS[language]} card. Check the language, then tick the card to add it.</p>
+}
 
 /** Waarde van de keuzelijst "More…" zolang je er niets uit kiest. */
 const MORE = '__more'

@@ -2,8 +2,8 @@ import { useEffect, useState, useSyncExternalStore, type JSX } from 'react'
 import { addedQuietly } from '../lib/celebrate'
 import { insertCards } from '../lib/db'
 import { autoPick } from '../lib/match'
-import { draftFromScan } from '../lib/scan'
-import { readLabel } from '../lib/scanResult'
+import { draftFromScan, scanName } from '../lib/scan'
+import { languageNeedsCheck, readLabel } from '../lib/scanResult'
 import { recordChoices, type ChoiceInput } from '../lib/scanMemory'
 import { isAmbiguous, isCondition, onlyOtherNumbers, reviewGroups, scannedTwice, summarize, withoutCardData, type QueueItem } from '../lib/scanQueue'
 import {
@@ -30,7 +30,7 @@ import { ChsCatalogNotice } from './ChsCatalogNotice'
 import { IconClose } from './Icons'
 import { LazyCardPrice } from './LazyCardPrice'
 import { ReadFixForm } from './ScanParts'
-import { CandidateStrip, ComparePhotos, QtyStepper } from './ScanQueueParts'
+import { CandidateStrip, ComparePhotos, LanguageCheckNote, QtyStepper } from './ScanQueueParts'
 import { VariantGapNote, VariantSelect } from './VariantSelect'
 import { errorText } from '../lib/errors'
 import { useLoadMore } from '../hooks/useLoadMore'
@@ -251,7 +251,7 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
    */
   const row = (q: QueueItem): JSX.Element => {
     const c = candidateOf(q)
-    const label = q.rec ? q.rec.nameEnglish || q.rec.namePrinted || 'Unknown card' : STATUS_TEXT[q.status] || 'Photo'
+    const label = q.rec ? scanName(q.rec, c) || 'Unknown card' : STATUS_TEXT[q.status] || 'Photo'
     const owned = c ? ownedByKey.get(c.key) : undefined
     const ready = q.status === 'ready'
     const open = expanded.has(q.id)
@@ -315,6 +315,7 @@ export function ScanQueue({ ownedByKey, nextSortOrder, defaultCondition, onAdded
         {ready && (
           <div className="queue-wide queue-notes">
             {onlyOtherNumbers(q) && <p className="queue-why small">Not sure: tap the right card.</p>}
+            {q.rec && !q.include && languageNeedsCheck(q.rec) && q.rec.language && <LanguageCheckNote language={q.rec.language} />}
             {isAmbiguous(q) && !onlyOtherNumbers(q) && <p className="queue-why small">Same name and number in more sets: tap the right one.</p>}
             {withoutCardData(q) && <p className="queue-why small">No card data for this set: check the number.</p>}
             {twice.has(q.id) && <p className="queue-why small">Scanned twice. Same card? Remove one, or keep both.</p>}
