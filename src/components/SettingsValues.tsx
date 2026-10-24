@@ -4,7 +4,7 @@ import { CONDITION_LABELS, LANGUAGE_LABELS, type CardLanguage, type Condition } 
 import type { NewCardDefaults, UserSettings } from '../lib/valuation'
 import { hasValuations, loadSettings, saveSettings } from '../lib/valuationDb'
 import { Loading } from './Loading'
-import { Section } from './SettingsControls'
+import { Group, More, Row } from './SettingsControls'
 import { errorText } from '../lib/errors'
 
 // --- Instellingen in je account (Supabase), automatisch bewaard ---
@@ -97,72 +97,62 @@ export function AccountSettings(): JSX.Element {
     </p>
   )
 
+  const pctSet = Object.values(form.pct).some((v) => v.trim() !== '')
+  const costsSet = form.fee.trim() !== '' || form.cost.trim() !== ''
   return (
-    <>
-      <Section id="settings-cards" title="New cards" scope="account" intro="Filled in when you add or scan a card; you can still change them per card.">
-        <div className="form-grid">
-          <label>
-            Language
-            <select value={form.defaults.language ?? ''} onChange={(e) => setDefault('language', (e.target.value || null) as CardLanguage | null)}>
-              <option value="">No default</option>
-              {(Object.keys(LANGUAGE_LABELS) as CardLanguage[]).map((l) => (
-                <option key={l} value={l}>
-                  {LANGUAGE_LABELS[l]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Condition
-            <select value={form.defaults.condition ?? ''} onChange={(e) => setDefault('condition', (e.target.value || null) as Condition | null)}>
-              <option value="">No default</option>
-              {(Object.keys(CONDITION_LABELS) as Condition[]).map((c) => (
-                <option key={c} value={c}>
-                  {CONDITION_LABELS[c]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Set
-            <input value={form.defaults.set_code ?? ''} maxLength={20} placeholder="e.g. MEW" onChange={(e) => setDefault('set_code', e.target.value || null)} />
-          </label>
+    <Group title="New cards" foot={saveState}>
+      <Row label="Language">
+        <select aria-label="Default language" value={form.defaults.language ?? ''} onChange={(e) => setDefault('language', (e.target.value || null) as CardLanguage | null)}>
+          <option value="">No default</option>
+          {(Object.keys(LANGUAGE_LABELS) as CardLanguage[]).map((l) => (
+            <option key={l} value={l}>
+              {LANGUAGE_LABELS[l]}
+            </option>
+          ))}
+        </select>
+      </Row>
+      <Row label="Condition">
+        <select aria-label="Default condition" value={form.defaults.condition ?? ''} onChange={(e) => setDefault('condition', (e.target.value || null) as Condition | null)}>
+          <option value="">No default</option>
+          {(Object.keys(CONDITION_LABELS) as Condition[]).map((c) => (
+            <option key={c} value={c}>
+              {CONDITION_LABELS[c]}
+            </option>
+          ))}
+        </select>
+      </Row>
+      <Row label="Set">
+        <input aria-label="Default set" value={form.defaults.set_code ?? ''} maxLength={20} placeholder="e.g. MEW" onChange={(e) => setDefault('set_code', e.target.value || null)} />
+      </Row>
+      <More label="Value by condition" detail={pctSet ? 'On' : 'Off'}>
+        <p className="muted small">Share of the Cardmarket price per condition. Empty = no estimate.</p>
+        <div className="form-grid settings-pct">
+          {(Object.keys(CONDITION_LABELS) as Condition[]).map((c) => (
+            <label key={c}>
+              {CONDITION_LABELS[c]} (%)
+              <input inputMode="decimal" value={form.pct[c]} placeholder="–" onChange={(e) => edit((f) => ({ ...f, pct: { ...f.pct, [c]: e.target.value } }))} />
+            </label>
+          ))}
         </div>
-        {saveState}
-      </Section>
-
-      <Section
-        title="Value estimates"
-        scope="account"
-        intro="Cardmarket prices are averages over all conditions. With these percentages the app also shows an estimate for your copy's condition and what you would receive when selling. Empty = no estimate."
-      >
-        <div className="settings-subhead">
-          <h3>Value by condition</h3>
+        <div className="settings-actions">
           <button type="button" className="small-btn" onClick={() => edit((f) => ({ ...f, pct: { ...SUGGESTED_PCT } }))}>
             Use suggested values
           </button>
         </div>
-        <div className="form-grid">
-          {(Object.keys(CONDITION_LABELS) as Condition[]).map((c) => (
-            <label key={c}>
-              {CONDITION_LABELS[c]} (%)
-              <input inputMode="decimal" value={form.pct[c]} placeholder="not set" onChange={(e) => edit((f) => ({ ...f, pct: { ...f.pct, [c]: e.target.value } }))} />
-            </label>
-          ))}
-        </div>
-        <h3 className="settings-subtitle">Selling costs</h3>
+      </More>
+      <More label="Selling costs" detail={costsSet ? 'On' : 'Off'}>
+        <p className="muted small">Used to show what you would receive when selling.</p>
         <div className="form-grid">
           <label>
-            Platform and payment fees (%)
-            <input inputMode="decimal" value={form.fee} placeholder="not set" onChange={(e) => edit((f) => ({ ...f, fee: e.target.value }))} />
+            Fees (%)
+            <input inputMode="decimal" value={form.fee} placeholder="–" onChange={(e) => edit((f) => ({ ...f, fee: e.target.value }))} />
           </label>
           <label>
             Costs per sale (€)
-            <input inputMode="decimal" value={form.cost} placeholder="not set" onChange={(e) => edit((f) => ({ ...f, cost: e.target.value }))} />
+            <input inputMode="decimal" value={form.cost} placeholder="–" onChange={(e) => edit((f) => ({ ...f, cost: e.target.value }))} />
           </label>
         </div>
-        {saveState}
-      </Section>
-    </>
+      </More>
+    </Group>
   )
 }
