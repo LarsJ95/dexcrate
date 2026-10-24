@@ -9,6 +9,7 @@ import { WishTile } from '../components/WishTile'
 import { ViewToggle } from '../components/ViewToggle'
 import { LIST_VIEWS, type ListView } from '../lib/listView'
 import { useStoredChoice } from '../hooks/useStoredChoice'
+import { WISH_SORTS, WISH_SORT_LABELS, sortWishes, type WishSort } from '../lib/wishSort'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { useCardPrices } from '../hooks/useCardPrices'
 import { useDbFeature } from '../hooks/useDbFeature'
@@ -70,6 +71,8 @@ export function WishlistPage(): JSX.Element {
   const enabled = useWishlistEnabled()
   // Lijst of grote kaarten (21-10-2026, op verzoek), per apparaat onthouden.
   const [layout, setLayout] = useStoredChoice<ListView>('dexcrate:wishlist-layout', LIST_VIEWS, 'list')
+  // Sorteren zoals My cards (24-10-2026, op verzoek), per apparaat onthouden; standaard de oude volgorde (prioriteit).
+  const [sort, setSort] = useStoredChoice<WishSort>('dexcrate:wishlist-sort', WISH_SORTS, 'priority')
   const [items, setItems] = useState<WishlistItem[] | null>(null)
   const [cards, setCards] = useState<Card[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -84,7 +87,7 @@ export function WishlistPage(): JSX.Element {
   // Prijzen en kaartinfo ook als een slimme lijst ze nodig heeft: anders klopt het aantal op de lijsttegel niet.
   const smartFilters = lists.filter((l) => l.kind === 'smart').map((l) => l.filters)
   const infos = useCatalogInfos(wishKeys, needsWishCatalog(filters) || smartFilters.some(needsWishCatalog))
-  const prices = useCardPrices(wishKeys, needsWishPrices(filters) || smartFilters.some(needsWishPrices))
+  const prices = useCardPrices(wishKeys, sort === 'marketDesc' || needsWishPrices(filters) || smartFilters.some(needsWishPrices))
   const [activeListId, setActiveListId] = useState<string | null>(null)
   const [listSheet, setListSheet] = useState<WishlistList | 'new' | 'new-manual' | null>(null)
   // Eigen lijsten (STAP17): zelf gekozen wensen per lijst.
@@ -221,7 +224,7 @@ export function WishlistPage(): JSX.Element {
       }),
     [items, cards],
   )
-  const visible = rows.filter((r) => {
+  const matching = rows.filter((r) => {
     const key = r.item.tcgdex_id
     // undefined = nog aan het laden (dan niet wegfilteren), null = onbekend.
     const market = !key ? null : prices.has(key) ? (marketValue(prices.get(key) ?? null, r.item.variant)?.value ?? null) : undefined
@@ -229,6 +232,12 @@ export function WishlistPage(): JSX.Element {
     if (activeList?.kind === 'manual' && !members.get(activeList.id)?.has(r.item.id)) return false
     return matches(r.item, query) && matchesWishFilters(r.item, filters, { found: r.found, market, info })
   })
+  const wishById = useMemo(() => new Map(rows.map((r) => [r.item.id, r.item] as const)), [rows])
+  const marketOf = (item: Pick<WishlistItem, 'id'>): number | null => {
+    const wish = wishById.get(item.id)
+    return wish?.tcgdex_id ? (marketValue(prices.get(wish.tcgdex_id) ?? null, wish.variant)?.value ?? null) : null
+  }
+  const visible = sortWishes(matching, sort, marketOf)
   const foundCount = rows.filter((r) => r.found).length
   // Aantal wensen per lijst, voor de lijsttegels (21-10-2026: lijsten moesten duidelijker); null = nog aan het laden.
   const listCounts = useMemo(() => {
@@ -406,6 +415,13 @@ export function WishlistPage(): JSX.Element {
               />
               <SearchClear value={query} onClear={() => setQuery('')} />
             </div>
+            <select className="toolbar-sort" aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as WishSort)}>
+              {WISH_SORTS.map((s) => (
+                <option key={s} value={s}>
+                  {WISH_SORT_LABELS[s]}
+                </option>
+              ))}
+            </select>
           </>
         }
         activeCount={filterCount + (filters.showFound ? 1 : 0)}

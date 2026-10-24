@@ -27,6 +27,8 @@
 button.wish-list-tile {
   display: flex;
   align-items: center;
+  /* Links, niet gecentreerd zoals gewone knoppen (24-10-2026: stond midden in de tegel). */
+  justify-content: flex-start;
   gap: var(--space-3);
   min-width: 0;
   padding: var(--space-3);

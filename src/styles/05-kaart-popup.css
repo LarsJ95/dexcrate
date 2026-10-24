@@ -36,6 +36,18 @@
   background: var(--scrim-soft);
 }
 
+/* Venster open: de pagina erachter staat stil (24-10-2026, op verzoek: onder Filters scrolde de achtergrond mee).
+   Geldt voor elk venster via showModal; de ruimte van de schuifbalk blijft, dus niets verspringt. Scrollen binnen
+   het venster loopt niet door naar de pagina. */
+html:has(dialog:modal) {
+  overflow: hidden;
+  scrollbar-gutter: stable;
+}
+
+dialog:modal {
+  overscroll-behavior: contain;
+}
+
 .sheet-body {
   display: grid;
   gap: var(--gap-section);

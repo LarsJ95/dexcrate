@@ -293,3 +293,14 @@ button.scan-mode:not(.is-main) {
   font-stretch: 100%;
   white-space: nowrap;
 }
+
+/* Laatst toegevoegd onder de tegels (24-10-2026): vier per rij op de telefoon, acht op een groter scherm. */
+.scan .recent-cards ul {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (min-width: 768px) {
+  .scan .recent-cards ul {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+}
