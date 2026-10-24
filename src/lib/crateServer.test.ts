@@ -59,3 +59,32 @@ describe('Crate via de server', () => {
     expect(rpc).toHaveBeenCalledWith('crate_set_complete', { p_set: 'en/sv03.5' })
   })
 })
+
+describe('Pack of the day hoogstens 3 per dag (STAP28)', () => {
+  it('aantal over vandaag; zonder STAP28 geen grens (null)', async () => {
+    const { getDailyPacksLeft } = await import('./crate')
+    rpc.mockResolvedValueOnce({ data: 2, error: null })
+    expect(await getDailyPacksLeft()).toBe(2)
+    expect(rpc).toHaveBeenLastCalledWith('crate_daily_left')
+    rpc.mockResolvedValueOnce({ data: 9, error: null })
+    expect(await getDailyPacksLeft()).toBe(3)
+    rpc.mockResolvedValueOnce({ data: null, error: { code: 'PGRST202', message: 'Could not find the function' } })
+    expect(await getDailyPacksLeft()).toBeNull()
+    rpc.mockResolvedValueOnce({ data: null, error: { code: '500', message: 'kapot' } })
+    await expect(getDailyPacksLeft()).rejects.toThrow(/kapot/)
+  })
+
+  it('na openen stuurt de server mee hoeveel er nog over zijn; de melding bij de 4e komt door', async () => {
+    const pull = { tcgdex_id: 'en/s1-001', name: 'A', image: null, rarity: 'Common', set_name: 'S' }
+    let left = 1
+    invoke.mockImplementation(async (_fn: string, { body }: { body: { action: string } }) => {
+      if (body.action === 'health') return { data: { ok: true, db: true }, error: null }
+      if (left < 0) return { data: null, error: new FunctionsHttpError(new Response(JSON.stringify({ error: 'Pack of the day: 3 a day. Come back tomorrow for a new set.' }), { status: 400 })) }
+      return { data: { points: 100, cost: 200, free_pack: false, daily_left: left--, pulls: [pull] }, error: null }
+    })
+    const { openPack } = await import('./crate')
+    expect((await openPack('daily')).dailyLeft).toBe(1)
+    expect((await openPack('daily')).dailyLeft).toBe(0)
+    await expect(openPack('daily')).rejects.toThrow('Pack of the day: 3 a day')
+  })
+})

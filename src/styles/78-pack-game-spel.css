@@ -325,3 +325,92 @@ button.pack-tile.is-best {
 .pack-opening .sheet-foot .pts-chip {
   align-self: center;
 }
+
+/* Prijs op de knop: lang op een groot scherm, kort ("150 pts") in de compacte tegel. */
+.crate-open-short {
+  display: none;
+}
+
+/* Tussenruimte als een spatie (de knop zet tekst en prijs als losse vakjes naast elkaar). */
+button.crate-shop-open {
+  column-gap: 0.3em;
+}
+
+/* Compacte pakjes op de telefoon (24-10-2026, op verzoek: drie keer vegen voor alle pakjes): één regel per pakje,
+   klein plaatje links, naam en inhoud in het midden, korte knop rechts ("Open" met de prijs eronder). Keuze (Set pack)
+   en melding over de volle breedte eronder. */
+@container crate-packs (width < 640px) {
+  .crate-packs {
+    gap: var(--space-3);
+  }
+
+  .crate-packs .crate-shop {
+    grid-row: auto;
+    grid-template-rows: none;
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    grid-template-areas:
+      'art title open'
+      'art text open'
+      'choice choice choice'
+      'note note note';
+    column-gap: var(--space-3);
+    row-gap: 2px;
+    padding: var(--space-3);
+  }
+
+  .crate-packs .crate-pack-art {
+    grid-area: art;
+    align-self: start;
+    width: 44px;
+    border-width: 2px;
+  }
+
+  .crate-packs .crate-pack-art .pokeball {
+    --s: 20px;
+  }
+
+  .crate-packs .crate-shop-title {
+    grid-area: title;
+  }
+
+  .crate-packs .crate-shop-text {
+    grid-area: text;
+    line-height: 1.35;
+  }
+
+  .crate-packs .crate-shop-choice {
+    grid-area: choice;
+    margin-top: var(--space-2);
+  }
+
+  .crate-packs .crate-shop-choice:empty {
+    display: none;
+  }
+
+  .crate-packs .crate-shop-note {
+    grid-area: note;
+  }
+
+  .crate-packs button.crate-shop-open {
+    grid-area: open;
+    align-self: center;
+    flex-direction: column;
+    gap: 0;
+    min-width: 76px;
+    max-width: 96px;
+    padding: var(--space-2) var(--space-3);
+    line-height: 1.15;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .crate-open-long {
+    display: none;
+  }
+
+  .crate-open-short {
+    display: inline;
+    font-size: var(--fs-small);
+    font-weight: 600;
+  }
+}
