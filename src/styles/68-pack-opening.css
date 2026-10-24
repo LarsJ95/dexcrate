@@ -60,25 +60,10 @@ button.pack-sealed:hover:not(:disabled) {
   background: conic-gradient(from 30deg, #14532d, #22c55e, #bbf7d0, #22c55e, #14532d);
 }
 
-.pack-sealed.pack-type,
-.pack-sealed.pack-type:hover:not(:disabled) {
-  background: conic-gradient(from 30deg, color-mix(in oklab, var(--type) 45%, #000), var(--type), color-mix(in oklab, var(--type) 40%, #fff), var(--type), color-mix(in oklab, var(--type) 45%, #000));
-}
-
 .pack-sealed.pack-lucky,
 .pack-sealed.pack-lucky:hover:not(:disabled) {
   border-color: var(--gold-b);
   background: conic-gradient(from 30deg, #065f46, #10b981, var(--gold-a), #10b981, #065f46);
-}
-
-.pack-sealed.pack-pokemon,
-.pack-sealed.pack-pokemon:hover:not(:disabled) {
-  background: conic-gradient(from 30deg, #b91c1c, #facc15, #fef9c3, #facc15, #b91c1c);
-}
-
-.pack-sealed.pack-era,
-.pack-sealed.pack-era:hover:not(:disabled) {
-  background: conic-gradient(from 30deg, #451a03, #a16207, #fde68a, #a16207, #451a03);
 }
 
 .pack-sealed.pack-daily,

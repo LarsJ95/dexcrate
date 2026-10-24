@@ -53,6 +53,17 @@ describe('Crate-filters', () => {
     expect(sortCrate([zard, mew, pika], 'set').map((c) => c.name)).toEqual(['Pikachu', 'Charizard ex', 'Mew ex'])
   })
 
+  it('op prijs, hoog of laag; zonder prijs (of nog aan het laden) altijd onderaan', () => {
+    const prices = new Map<string, number | null>([
+      [zard.tcgdexId, 120],
+      [pika.tcgdexId, 0.2],
+      [mew.tcgdexId, null],
+    ])
+    expect(sortCrate([pika, mew, zard], 'price-high', prices).map((c) => c.name)).toEqual(['Charizard ex', 'Pikachu', 'Mew ex'])
+    expect(sortCrate([zard, mew, pika], 'price-low', prices).map((c) => c.name)).toEqual(['Pikachu', 'Charizard ex', 'Mew ex'])
+    expect(sortCrate([mew, pika, zard], 'price-high').map((c) => c.name)).toEqual(['Charizard ex', 'Mew ex', 'Pikachu'])
+  })
+
   it('setkeuzes op naam', () => {
     expect(crateSetOptions([mew, zard, pika])).toEqual([
       { key: 'en/sv03.5', label: '151' },

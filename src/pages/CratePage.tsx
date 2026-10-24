@@ -15,10 +15,8 @@ import { SearchClear } from '../components/SearchClear'
 import { useCardPrices } from '../hooks/useCardPrices'
 import { useCatalogInfos } from '../hooks/useCatalogInfos'
 import { useDbFeature } from '../hooks/useDbFeature'
-import { ENERGY_TYPES, foilStyleFor, isEnergyType, type EnergyType } from '../lib/cardTraits'
+import { foilStyleFor } from '../lib/cardTraits'
 import {
-  ERAS,
-  ERA_IDS,
   OLD_RULES,
   PACKS,
   canAfford,
@@ -38,12 +36,9 @@ import {
   tradeValue,
   type CrateCard,
   type CrateRules,
-  type EraId,
   type PackKind,
   type PackPull,
 } from '../lib/crate'
-import { speciesList, type Species } from '../lib/names'
-import { energyColor } from '../lib/energy'
 import { LOCAL_SET_IDS } from '../lib/localCatalog'
 import { showMoment } from '../lib/moments'
 import { marketValue } from '../lib/prices'
@@ -85,11 +80,10 @@ function craftRows(rules: CrateRules): [string, string][] {
   ]
 }
 
-/** Pakjes in groepen (binnen een groep op prijs): gratis/dagelijks, gewone pakjes, zelf kiezen wat erin zit. */
+/** Pakjes in groepen (binnen een groep op prijs): gratis/dagelijks en de rest. */
 const PACK_GROUPS: readonly { id: string; title: string; kinds: readonly PackKind[] }[] = [
   { id: 'daily', title: 'Every day', kinds: ['booster', 'daily'] },
-  { id: 'packs', title: 'Packs', kinds: ['lucky', 'great', 'master'] },
-  { id: 'choose', title: 'Choose what’s inside', kinds: ['set', 'type', 'pokemon', 'era'] },
+  { id: 'packs', title: 'Packs', kinds: ['lucky', 'set', 'great', 'master'] },
 ]
 
 interface SetChoice {
@@ -144,11 +138,6 @@ export function CratePage(): JSX.Element {
   const [rulesLoaded, setRulesLoaded] = useState(false)
   const [setChoices, setSetChoices] = useState<SetChoice[]>([])
   const [packSet, setPackSet] = useState('')
-  const [packType, setPackType] = useStoredChoice<EnergyType>('dexcrate:crate-pack-type', ENERGY_TYPES, 'Fire')
-  const [packEra, setPackEra] = useStoredChoice<EraId>('dexcrate:crate-pack-era', ERA_IDS, 'sv')
-  // Pokémon pack: getypte naam en de gevonden soort (standaard Pikachu).
-  const [species, setSpecies] = useState<Species[]>([])
-  const [pokemonText, setPokemonText] = useState('Pikachu')
   const [daily, setDaily] = useState<{ id: string; name: string } | null>(null)
   // Sets waarvoor deze sessie al om de Crate-setbonus is gevraagd.
   const askedSets = useRef<Set<string>>(new Set())
@@ -207,20 +196,7 @@ export function CratePage(): JSX.Element {
     }
   }, [setPackOn])
 
-  // Pokémon pack: lijst met namen (STAP26). Pakje van de dag: welke set vandaag.
-  const pokemonPackOn = packCost(rules, 'pokemon') !== null
-  useEffect(() => {
-    if (!pokemonPackOn) return
-    let cancelled = false
-    speciesList()
-      .then((list) => {
-        if (!cancelled) setSpecies(list)
-      })
-      .catch((err: unknown) => console.warn('Pokémon-lijst ophalen mislukt', err))
-    return () => {
-      cancelled = true
-    }
-  }, [pokemonPackOn])
+  // Pakje van de dag (STAP26): welke set vandaag.
   const dailyPackOn = packCost(rules, 'daily') !== null
   useEffect(() => {
     if (!dailyPackOn) return
@@ -234,10 +210,6 @@ export function CratePage(): JSX.Element {
       cancelled = true
     }
   }, [dailyPackOn])
-  const chosenPokemon = useMemo(() => {
-    const t = pokemonText.trim().toLowerCase()
-    return species.find((s) => s.name.toLowerCase() === t || `#${s.dexId}` === t || String(s.dexId) === t) ?? null
-  }, [species, pokemonText])
 
   // Complete set in je Crate: bonus (één keer per set; de database bewaakt dat).
   const crateSetBonus = rules.crateSet
@@ -269,7 +241,7 @@ export function CratePage(): JSX.Element {
       const fresh = await listCrateCards()
       setCards(fresh)
       const before = new Map(fresh.map((c) => [c.tcgdexId, c.quantity]))
-      const result = await drawAndOpen(pack, { setId: packSet || undefined, type: packType, dexId: chosenPokemon?.dexId, era: packEra, owned: new Set(before.keys()) })
+      const result = await drawAndOpen(pack, { setId: packSet || undefined, owned: new Set(before.keys()) })
       setPoints(result.points)
       setFreePack(result.freePack)
       setOpening({ id: ++openingSeq.current, pack, pulls: result.pulls, god: result.god, before })
@@ -321,9 +293,11 @@ export function CratePage(): JSX.Element {
   const cardPrices = useCardPrices(catalogKeys, true)
   const prices = useMemo(() => new Map([...cardPrices].map(([id, p]) => [id, marketValue(p, null)?.value ?? null] as const)), [cardPrices])
   const setOptions = useMemo(() => crateSetOptions(cards ?? []), [cards])
+  // Prijzen alleen bij sorteren op prijs (anders hoeft de lijst niet opnieuw bij elke binnengekomen prijs).
+  const sortPrices = sort === 'price-high' || sort === 'price-low' ? prices : undefined
   const sorted = useMemo(
-    () => sortCrate((cards ?? []).filter((c) => matchesCrateSearch(c, query) && matchesCrate(c, filters, infos.get(c.tcgdexId))), sort),
-    [cards, query, filters, infos, sort],
+    () => sortCrate((cards ?? []).filter((c) => matchesCrateSearch(c, query) && matchesCrate(c, filters, infos.get(c.tcgdexId))), sort, sortPrices),
+    [cards, query, filters, infos, sort, sortPrices],
   )
   const activeFilters = crateFilterCount(filters)
   const total = (cards ?? []).reduce((n, c) => n + c.quantity, 0)
@@ -401,60 +375,17 @@ export function CratePage(): JSX.Element {
           const p = PACKS[kind]
           const cost = packCost(rules, kind)
           const free = kind === 'booster' && freePack
-          const ok = points !== null && canAfford(rules, kind, points, freePack) && (kind !== 'set' || packSet !== '') && (kind !== 'pokemon' || chosenPokemon !== null)
-          const art = kind === 'type' ? ({ '--pack-type': energyColor(packType) } as CSSProperties) : undefined
+          const ok = points !== null && canAfford(rules, kind, points, freePack) && (kind !== 'set' || packSet !== '')
           return (
             <li key={kind} className={`panel crate-shop pack-${kind}`}>
               {/* Vaste rijen (titel, uitleg, keuze, melding, knop), via subgrid gelijk over alle pakjes in een rij. */}
-              <div className="crate-pack-art" aria-hidden="true" style={art}>
+              <div className="crate-pack-art" aria-hidden="true">
                 <span className="pokeball" />
               </div>
               <strong className="crate-shop-title">{p.name}</strong>
               <span className="muted small crate-shop-text">{p.contents}</span>
               <div className="crate-shop-choice">
                 {cost === null && rulesLoaded && <span className="small muted">Not set up yet: run {packStep(kind)} in Supabase.</span>}
-                {cost !== null && kind === 'pokemon' && (
-                  <>
-                    <label className="crate-pack-choice">
-                      <span className="visually-hidden">Pokémon</span>
-                      <input
-                        type="text"
-                        list="crate-pokemon-list"
-                        value={pokemonText}
-                        onChange={(e) => setPokemonText(e.target.value)}
-                        placeholder="Name or Pokédex number"
-                        autoComplete="off"
-                        aria-invalid={species.length > 0 && chosenPokemon === null}
-                      />
-                    </label>
-                    <datalist id="crate-pokemon-list">
-                      {species.map((s) => (
-                        <option key={s.dexId} value={s.name} />
-                      ))}
-                    </datalist>
-                    <span className="small muted">
-                      {species.length === 0 ? 'Loading Pokémon…' : chosenPokemon ? `#${String(chosenPokemon.dexId).padStart(4, '0')} ${chosenPokemon.name}` : 'Pick a Pokémon from the list.'}
-                    </span>
-                  </>
-                )}
-                {cost !== null && kind === 'era' && (
-                  <label className="crate-pack-choice">
-                    <span className="visually-hidden">Era</span>
-                    <select
-                      value={packEra}
-                      onChange={(e) => {
-                        const era = ERA_IDS.find((id) => id === e.target.value)
-                        if (era) setPackEra(era)
-                      }}
-                    >
-                      {ERAS.map((era) => (
-                        <option key={era.id} value={era.id}>
-                          {era.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                )}
                 {cost !== null && kind === 'daily' && <span className="small">{daily ? `Today: ${daily.name}` : 'Loading today’s set…'}</span>}
                 {cost !== null && kind === 'set' && (
                   <>
@@ -475,18 +406,6 @@ export function CratePage(): JSX.Element {
                       </span>
                     )}
                   </>
-                )}
-                {cost !== null && kind === 'type' && (
-                  <label className="crate-pack-choice">
-                    <span className="visually-hidden">Type</span>
-                    <select value={packType} onChange={(e) => isEnergyType(e.target.value) && setPackType(e.target.value)}>
-                      {ENERGY_TYPES.map((t) => (
-                        <option key={t} value={t}>
-                          {t}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
                 )}
               </div>
               <span className="small muted crate-shop-note">
@@ -590,6 +509,8 @@ export function CratePage(): JSX.Element {
                 </div>
                 <select className="toolbar-sort" aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as CrateSort)}>
                   <option value="newest">Newest first</option>
+                  <option value="price-high">Price: high to low</option>
+                  <option value="price-low">Price: low to high</option>
                   <option value="rarity">Rarest first</option>
                   <option value="set">Set and number</option>
                   <option value="copies">Most copies</option>

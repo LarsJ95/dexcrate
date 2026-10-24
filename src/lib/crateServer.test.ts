@@ -25,10 +25,10 @@ describe('Crate via de server', () => {
     const { openPack, syncCrate } = await import('./crate')
     expect(await syncCrate({ x: 20 }, [1, 2, 3])).toEqual({ points: 500, freePack: true, earned: 25 })
     expect(invoke).toHaveBeenCalledWith('crate', { body: { action: 'sync' } })
-    const r = await openPack('great', { setId: 'sv03.5', type: 'Fire' })
+    const r = await openPack('great', { setId: 'sv03.5' })
     expect(r.pulls).toHaveLength(1)
     expect(r.cost).toBe(200)
-    expect(invoke).toHaveBeenLastCalledWith('crate', { body: { action: 'open', pack: 'great', setId: 'sv03.5', type: 'Fire' } })
+    expect(invoke).toHaveBeenLastCalledWith('crate', { body: { action: 'open', pack: 'great', setId: 'sv03.5' } })
     expect(rpc).not.toHaveBeenCalled()
   })
   it('functie niet gedeployd (404): oude manier', async () => {

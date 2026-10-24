@@ -20,8 +20,8 @@ export interface CrateFilters {
 
 export const NO_CRATE_FILTERS: CrateFilters = { set: '', rarity: '', type: '', suffix: '', illustrator: '', duplicates: false }
 
-export type CrateSort = 'newest' | 'rarity' | 'name' | 'set' | 'copies'
-export const CRATE_SORTS: readonly CrateSort[] = ['newest', 'rarity', 'name', 'set', 'copies']
+export type CrateSort = 'newest' | 'rarity' | 'name' | 'set' | 'copies' | 'price-high' | 'price-low'
+export const CRATE_SORTS: readonly CrateSort[] = ['newest', 'rarity', 'name', 'set', 'copies', 'price-high', 'price-low']
 
 export function crateFilterCount(f: CrateFilters): number {
   return [f.set, f.rarity, f.type, f.suffix, f.illustrator.trim(), f.duplicates].filter(Boolean).length
@@ -70,10 +70,22 @@ const numberOf = (key: string): number => {
   return Number.isNaN(n) ? Number.POSITIVE_INFINITY : n
 }
 
-/** Gesorteerde kopie. 'newest' = volgorde uit de database (laatst getrokken eerst). */
-export function sortCrate(cards: readonly CrateCard[], sort: CrateSort): CrateCard[] {
+/**
+ * Gesorteerde kopie. 'newest' = volgorde uit de database (laatst getrokken eerst). Op prijs: marktwaarde per kaart uit
+ * `prices`; zonder prijs (of nog aan het laden) altijd onderaan.
+ */
+export function sortCrate(cards: readonly CrateCard[], sort: CrateSort, prices: ReadonlyMap<string, number | null> = new Map()): CrateCard[] {
   const list = [...cards]
   const byName = (a: CrateCard, b: CrateCard): number => a.name.localeCompare(b.name, 'en')
+  if (sort === 'price-high' || sort === 'price-low') {
+    const dir = sort === 'price-high' ? -1 : 1
+    list.sort((a, b) => {
+      const pa = prices.get(a.tcgdexId) ?? null
+      const pb = prices.get(b.tcgdexId) ?? null
+      if (pa === null || pb === null) return pa === pb ? byName(a, b) : pa === null ? 1 : -1
+      return dir * (pa - pb) || byName(a, b)
+    })
+  }
   if (sort === 'rarity') list.sort((a, b) => rarityRule(b.rarity).rank - rarityRule(a.rarity).rank || byName(a, b))
   if (sort === 'name') list.sort(byName)
   if (sort === 'copies') list.sort((a, b) => b.quantity - a.quantity || byName(a, b))
