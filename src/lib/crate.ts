@@ -38,7 +38,7 @@ export const PACKS: Record<PackKind, { name: string; contents: string }> = {
   great: { name: 'Great pack', contents: '5 common, 3 uncommon and 2 rare slots with better odds.' },
   master: { name: 'Master pack', contents: '4 uncommon, 4 rare slots with better odds and 2 guaranteed hits (Double rare or better).' },
   set: { name: 'Set pack', contents: 'Pick a set: 5 common, 3 uncommon and 2 rare or better, all from that set.' },
-  lucky: { name: 'Lucky pack', contents: 'Like a Booster pack, with a 1 in 30 chance of a God pack: all 10 cards are hits.' },
+  lucky: { name: 'Lucky pack', contents: 'Like a Booster pack, with a 1 in 25 chance of a God pack: all 10 cards are hits.' },
   daily: { name: 'Pack of the day', contents: 'A different set every day, the same for everyone: 5 common, 3 uncommon, 1 rare and 1 guaranteed hit.' },
 }
 
@@ -56,6 +56,8 @@ export interface CrateRules {
   packs: Partial<Record<PackKind, number>>
   /** Prijs voor een ontbrekende kaart per klasse (STAP22/23); leeg = kan nog niet. */
   craft: Partial<Record<CraftClass, number>>
+  /** Dagplafond voor punten uit je collectie (STAP27); null = database zonder plafond. */
+  earnCap: number | null
 }
 
 /** Prijsklassen voor gericht kopen (zelfde als crate_craft_class in de database). */
@@ -80,7 +82,7 @@ export function craftCost(rules: CrateRules, rarity: string | null | undefined):
   return c ? (rules.craft[c] ?? null) : null
 }
 
-export const OLD_RULES: CrateRules = { daily: 50, tradeFactor: 1, crateSet: null, packs: { booster: 100, great: 300, master: 1000 }, craft: {} }
+export const OLD_RULES: CrateRules = { daily: 50, tradeFactor: 1, crateSet: null, packs: { booster: 100, great: 300, master: 1000 }, craft: {}, earnCap: null }
 
 /** Kosten van een pakje, of null als die soort (nog) niet bestaat. */
 export const packCost = (rules: CrateRules, pack: PackKind): number | null => rules.packs[pack] ?? null
@@ -120,6 +122,7 @@ export function toRules(v: unknown): CrateRules {
     crateSet: typeof v.crate_set === 'number' && v.crate_set > 0 ? v.crate_set : null,
     packs,
     craft,
+    earnCap: typeof v.earn_cap === 'number' && Number.isInteger(v.earn_cap) && v.earn_cap > 0 ? v.earn_cap : null,
   }
 }
 
@@ -191,9 +194,15 @@ export async function getCrateStatus(): Promise<{ points: number; freePack: bool
   return { points: num(data.points), freePack: last === null || last < new Date().toISOString().slice(0, 10) }
 }
 
-function toWallet(v: unknown): CrateWallet & { earned: number } {
+/** Antwoord van een sync: stand, wat erbij kwam en (STAP27) wat boven het dagplafond nog wacht. */
+export interface CrateSync extends CrateWallet {
+  earned: number
+  waiting: number
+}
+
+function toWallet(v: unknown): CrateSync {
   const o = isRecord(v) ? v : {}
-  return { points: num(o.points), freePack: o.free_pack === true, earned: num(o.earned) }
+  return { points: num(o.points), freePack: o.free_pack === true, earned: num(o.earned), waiting: num(o.waiting) }
 }
 
 // --- Server (STAP23): Edge Function "crate" ---
@@ -236,7 +245,7 @@ async function crateServer(body: Record<string, unknown>, what: string): Promise
  * Punten bijwerken: kaarten, verkopen, aankopen, nieuwe Pokédex-soorten, complete sets en de dagbonus (eenmalig per stuk).
  * Met de server rekent de database alles zelf uit (`bonus` en `dexIds` worden dan genegeerd).
  */
-export async function syncCrate(bonus: Record<string, number>, dexIds: readonly number[]): Promise<CrateWallet & { earned: number }> {
+export async function syncCrate(bonus: Record<string, number>, dexIds: readonly number[]): Promise<CrateSync> {
   if (await hasCrateServer()) return changed(toWallet(await crateServer({ action: 'sync' }, 'Updating Pack points failed')))
   const { data, error } = await supabase.rpc('crate_sync', { p_bonus: bonus, p_dex: [...new Set(dexIds)].filter((d) => d >= 1 && d <= 1025) })
   if (error) throw new Error(`Updating Pack points failed: ${error.message}`)

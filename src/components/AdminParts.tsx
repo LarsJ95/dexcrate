@@ -6,6 +6,7 @@ import {
   REASON_MAX,
   SCAN_COST_EUR,
   getAdminRules,
+  getCrateAudit,
   getScanStats,
   listUserErrors,
   listUserLedger,
@@ -15,6 +16,7 @@ import {
   setScanLimit,
   type AdminCrateRules,
   type AdminUser,
+  type CrateAuditRow,
   type LedgerEntry,
   type ScanDay,
   type UserError,
@@ -326,6 +328,7 @@ export function CrateRulesPanel(): JSX.Element {
     daily: String(r.daily),
     trade_factor: String(r.trade_factor),
     crate_set: String(r.crate_set),
+    earn_cap: String(r.earn_cap),
     ...Object.fromEntries(PACK_KEYS.map((k) => [`packs.${k}`, String(r.packs[k])])),
     ...Object.fromEntries(CRAFT_KEYS.map((k) => [`craft.${k}`, String(r.craft[k])])),
   })
@@ -364,6 +367,7 @@ export function CrateRulesPanel(): JSX.Element {
       daily: int('daily'),
       trade_factor: int('trade_factor'),
       crate_set: int('crate_set'),
+      earn_cap: int('earn_cap'),
       packs: Object.fromEntries(PACK_KEYS.map((k) => [k, int(`packs.${k}`)])) as AdminCrateRules['packs'],
       craft: Object.fromEntries(CRAFT_KEYS.map((k) => [k, int(`craft.${k}`)])) as AdminCrateRules['craft'],
     }
@@ -382,10 +386,10 @@ export function CrateRulesPanel(): JSX.Element {
     }
   }
 
-  const field = (key: string, label: string, min = 0): JSX.Element => (
+  const field = (key: string, label: string, min = 0, max?: number): JSX.Element => (
     <label key={key}>
       {label}
-      <input type="number" inputMode="numeric" min={min} step={1} value={form[key] ?? ''} onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))} />
+      <input type="number" inputMode="numeric" min={min} max={max} step={1} value={form[key] ?? ''} onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))} />
     </label>
   )
 
@@ -401,8 +405,9 @@ export function CrateRulesPanel(): JSX.Element {
             <legend>Points</legend>
             <div className="form-grid">
               {field('daily', 'Daily bonus')}
-              {field('trade_factor', 'Trade-in factor', 1)}
+              {field('trade_factor', 'Trade-in factor (1 to 3)', 1, 3)}
               {field('crate_set', 'Pack collection set complete')}
+              {field('earn_cap', 'Daily limit from collection', 100, 100000)}
             </div>
           </fieldset>
           <fieldset>
@@ -483,6 +488,59 @@ export function ScansPanel(): JSX.Element {
             ))}
           </ul>
         </>
+      )}
+    </section>
+  )
+}
+
+/** Controleoverzicht (STAP27): wie verdiende de laatste 7 dagen het meest uit de collectie. */
+export function CrateAuditPanel(): JSX.Element {
+  const [list, setList] = useState<CrateAuditRow[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    getCrateAudit(7)
+      .then((r) => {
+        if (!cancelled) setList(r)
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setError(problemText(err, 'Loading the earning check failed.'))
+          setList([])
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const shown = (list ?? []).filter((r) => r.earned > 0 || r.cardsAdded > 0)
+  return (
+    <section className="panel" aria-labelledby="admin-audit-title">
+      <h2 id="admin-audit-title" className="panel-title">
+        Earning check
+      </h2>
+      <p className="small muted">Pack points from collections in the last 7 days (cards, Pokédex, sets, sales and purchases), most first. Someone at the daily limit every day is worth a look.</p>
+      {error && <p className="error">{error}</p>}
+      {list === null ? (
+        <Loading />
+      ) : shown.length === 0 ? (
+        !error && <p className="small">Nothing earned or added in the last 7 days.</p>
+      ) : (
+        <ul className="admin-mini">
+          {shown.map((r) => (
+            <li key={r.userId}>
+              <strong className="wide">{r.email ?? r.userId}</strong>
+              <span className="small">
+                {r.earned.toLocaleString('en-GB')} pts · best day {r.bestDay.toLocaleString('en-GB')}
+              </span>
+              <span className="small muted">
+                +{plural(r.cardsAdded, 'card', 'cards')} · {r.cardsNow.toLocaleString('en-GB')} now · {r.points.toLocaleString('en-GB')} pts
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
     </section>
   )

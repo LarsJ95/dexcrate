@@ -61,11 +61,25 @@ export interface ScanDay {
   users: number
 }
 
+/** Controleoverzicht (STAP27): punten uit de collectie in de laatste dagen per gebruiker. */
+export interface CrateAuditRow {
+  userId: string
+  email: string | null
+  earned: number
+  /** Meeste punten op één dag in die periode (wie elke dag het plafond haalt, valt op). */
+  bestDay: number
+  cardsAdded: number
+  cardsNow: number
+  points: number
+}
+
 /** Crate-regels zoals in crate_config (STAP22); alles hele getallen. */
 export interface AdminCrateRules {
   daily: number
   trade_factor: number
   crate_set: number
+  /** Dagplafond voor punten uit de collectie (STAP27), 100 t/m 100000. */
+  earn_cap: number
   packs: Record<(typeof PACK_KEYS)[number], number>
   craft: Record<'common' | 'uncommon' | 'rare' | 'double' | 'illustration' | 'special', number>
 }
@@ -134,6 +148,7 @@ export function toAdminRules(v: unknown): AdminCrateRules {
     daily: int(o.daily, 150),
     trade_factor: int(o.trade_factor, 2),
     crate_set: int(o.crate_set, 500),
+    earn_cap: int(o.earn_cap, 1000),
     packs: Object.fromEntries(PACK_KEYS.map((k) => [k, int(packs[k], PACK_DEFAULTS[k])])) as AdminCrateRules['packs'],
     craft: Object.fromEntries(CRAFT_KEYS.map((k) => [k, int(craft[k], CRAFT_DEFAULTS[k])])) as AdminCrateRules['craft'],
   }
@@ -224,6 +239,23 @@ export async function getScanStats(days = 14): Promise<ScanDay[]> {
   return rows(await call('admin_scan_stats', { p_days: days }, 'STAP22', 'Loading scans failed')).flatMap((r) =>
     isRecord(r) && typeof r.day === 'string' ? [{ day: r.day, scans: num(r.scans), users: num(r.users) }] : [],
   )
+}
+
+export function toCrateAuditRow(r: unknown): CrateAuditRow | null {
+  if (!isRecord(r) || typeof r.user_id !== 'string') return null
+  return {
+    userId: r.user_id,
+    email: str(r.email),
+    earned: num(r.earned),
+    bestDay: num(r.best_day),
+    cardsAdded: num(r.cards_added),
+    cardsNow: num(r.cards_now),
+    points: num(r.points),
+  }
+}
+
+export async function getCrateAudit(days = 7): Promise<CrateAuditRow[]> {
+  return rows(await call('admin_crate_audit', { p_days: days }, 'STAP27', 'Loading the earning check failed')).flatMap((r) => toCrateAuditRow(r) ?? [])
 }
 
 /** Allebei null = terug naar de standaard (40 per minuut, 500 per dag). */
