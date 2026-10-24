@@ -4,7 +4,7 @@ import { EMPTY_CARD, type Card } from './types'
 import type { WishlistItem } from './wishlist'
 
 vi.mock('./supabase', () => ({ supabase: {} }))
-const { dealsWithinMax, unlinkedCount } = await import('./navCounts')
+const { dealIdsWithinMax, dealsWithinMax, unlinkedCount } = await import('./navCounts')
 
 const card = (over: Partial<Card>): Card => ({ ...EMPTY_CARD, id: 'x', created_at: '', updated_at: '', ...over }) as Card
 const wish = (id: string, over: Partial<WishlistItem>): WishlistItem => ({
@@ -57,5 +57,6 @@ describe('menu-getallen', () => {
       ['en/x-c', price(0.1)],
     ])
     expect(dealsWithinMax(items, [], prices)).toBe(1)
+    expect(dealIdsWithinMax(items, [], prices)).toEqual(['a'])
   })
 })

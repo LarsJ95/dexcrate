@@ -13,6 +13,8 @@ export interface NavCounts {
   collection: number
   /** Wensen waarvan de marktprijs nu binnen je max. prijs valt. */
   wishlist: number
+  /** Ids van die wensen (voor de melding bij nieuwe deals); ontbreekt = onbekend. */
+  wishDeals?: readonly string[]
   /** Crate-stand voor het menu-item (null = geen Crate of onbekend). */
   crate: { points: number; freePack: boolean } | null
 }
@@ -28,6 +30,12 @@ export function wishesWithMax(items: readonly WishlistItem[]): WishlistItem[] {
   return items.filter((i) => i.tcgdex_id !== null && i.max_price !== null)
 }
 
+export function dealIdsWithinMax(items: readonly WishlistItem[], cards: readonly CardInput[], prices: ReadonlyMap<string, CardmarketPrice | null>): string[] {
+  return wishDeals(wishesWithMax(items), cards, prices, Number.POSITIVE_INFINITY)
+    .filter((d) => d.withinMax)
+    .map((d) => d.item.id)
+}
+
 export function dealsWithinMax(items: readonly WishlistItem[], cards: readonly CardInput[], prices: ReadonlyMap<string, CardmarketPrice | null>): number {
-  return wishDeals(wishesWithMax(items), cards, prices, Number.POSITIVE_INFINITY).filter((d) => d.withinMax).length
+  return dealIdsWithinMax(items, cards, prices).length
 }
