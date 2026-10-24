@@ -1,3 +1,4 @@
+import { fetchAllPages } from './fetchAll'
 import { DEFAULT_GOAL, type GoalSettings } from './goals'
 import { supabase } from './supabase'
 import { withOfflineCache } from './offlineCache'
@@ -119,7 +120,9 @@ export function listWishlist(): Promise<WishlistItem[]> {
   return withOfflineCache(
     'wishlist',
     async () => {
-      const { data, error } = await supabase.from('wishlist_items').select('*').order('priority').order('created_at', { ascending: false })
+      const { data, error } = await fetchAllPages((from, to) =>
+        supabase.from('wishlist_items').select('*').order('priority').order('created_at', { ascending: false }).order('id', { ascending: true }).range(from, to),
+      )
       if (error) throw new Error(`Loading the wishlist failed: ${error.message}`)
       return data
     },

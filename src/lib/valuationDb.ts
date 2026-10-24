@@ -1,3 +1,4 @@
+import { fetchAllPages } from './fetchAll'
 import { supabase } from './supabase'
 import { CONDITION_LABELS, LANGUAGE_LABELS, type CardLanguage, type Condition } from './types'
 import { EMPTY_SETTINGS, type UserSettings } from './valuation'
@@ -50,11 +51,13 @@ function toValuation(r: unknown): Valuation | null {
 
 /** Alle waarderingen (of die van één kaartregel), nieuwste eerst. */
 export async function listValuations(cardId?: string): Promise<Valuation[]> {
-  let q = supabase.from('valuations').select('id, card_id, amount, valued_on, note').order('valued_on', { ascending: false }).order('created_at', { ascending: false })
-  if (cardId) q = q.eq('card_id', cardId)
-  const { data, error } = await q
+  const { data, error } = await fetchAllPages((from, to) => {
+    let q = supabase.from('valuations').select('id, card_id, amount, valued_on, note').order('valued_on', { ascending: false }).order('created_at', { ascending: false }).order('id', { ascending: true })
+    if (cardId) q = q.eq('card_id', cardId)
+    return q.range(from, to)
+  })
   if (error) throw new Error(`Loading valuations failed: ${error.message}`)
-  return (data as unknown[]).flatMap((r) => toValuation(r) ?? [])
+  return data.flatMap((r) => toValuation(r) ?? [])
 }
 
 export async function addValuation(input: Omit<Valuation, 'id'>): Promise<Valuation> {

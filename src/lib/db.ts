@@ -1,6 +1,7 @@
 import type { SnapshotRow } from './prices'
 import { supabase } from './supabase'
 import { withOfflineCache } from './offlineCache'
+import { fetchAllPages } from './fetchAll'
 import {
   AVAILABILITY_LABELS,
   CONDITION_LABELS,
@@ -183,11 +184,15 @@ export function listCards(): Promise<Card[]> {
     'cards',
     async () => {
       const v2 = await hasSchemaV2()
-      const { data, error } = await supabase
-        .from(TABLE)
-        .select(v2 ? SELECT_V2 : SELECT_V1)
-        .order('sort_order', { ascending: true })
-        .order('created_at', { ascending: true })
+      const { data, error } = await fetchAllPages((from, to) =>
+        supabase
+          .from(TABLE)
+          .select(v2 ? SELECT_V2 : SELECT_V1)
+          .order('sort_order', { ascending: true })
+          .order('created_at', { ascending: true })
+          .order('id', { ascending: true })
+          .range(from, to),
+      )
       if (error) throw new Error(`Loading failed: ${error.message}`)
       return data
     },
@@ -246,24 +251,23 @@ export interface PriceSnapshot {
   trendHolo: number | null
 }
 
-/** Dagelijkse prijsopnames van één kaart, oud → nieuw (gevuld door de cron-job uit 004_price_snapshots.sql). */
+/** Dagelijkse prijsopnames van één kaart (de nieuwste 400), oud → nieuw (gevuld door de cron-job uit 004_price_snapshots.sql). */
 export async function listSnapshots(tcgdexId: string): Promise<PriceSnapshot[]> {
   const { data, error } = await supabase
     .from('price_snapshots')
     .select('*')
     .eq('tcgdex_id', tcgdexId)
-    .order('taken_on', { ascending: true })
+    .order('taken_on', { ascending: false })
     .limit(400)
   if (error) throw new Error(`Loading price history failed: ${error.message}`)
-  return (data as unknown[]).flatMap((r) =>
-    isRecord(r) && typeof r.taken_on === 'string'
-      ? [{ takenOn: r.taken_on, trend: numOrNull(r.trend), trendHolo: numOrNull(r.trend_holo) }]
-      : [],
-  )
+  return (data as unknown[])
+    .flatMap((r) =>
+      isRecord(r) && typeof r.taken_on === 'string'
+        ? [{ takenOn: r.taken_on, trend: numOrNull(r.trend), trendHolo: numOrNull(r.trend_holo) }]
+        : [],
+    )
+    .reverse()
 }
-
-/** De API geeft hoogstens zoveel rijen per verzoek (max_rows), ook als je om meer vraagt. */
-const SNAPSHOT_PAGE = 1000
 
 /** Prijsopnames voor meerdere kaarten tegelijk (voor het waardeverloop van de collectie). */
 export async function listSnapshotsFor(tcgdexIds: readonly string[]): Promise<SnapshotRow[]> {
@@ -271,22 +275,21 @@ export async function listSnapshotsFor(tcgdexIds: readonly string[]): Promise<Sn
   // In blokken, zodat de URL niet te lang wordt.
   for (let i = 0; i < tcgdexIds.length; i += 80) {
     const chunk = tcgdexIds.slice(i, i + 80)
-    // Per blok in pagina's, anders vallen de nieuwste dagen weg. Volgorde = primaire sleutel, dus geen dubbele of gemiste rijen.
-    for (let from = 0; ; from += SNAPSHOT_PAGE) {
-      const { data, error } = await supabase
+    // Per blok in pagina's, anders vallen de nieuwste dagen weg. Volgorde = primaire sleutel.
+    const { data, error } = await fetchAllPages((from, to) =>
+      supabase
         .from('price_snapshots')
         .select('tcgdex_id, taken_on, trend, trend_holo')
         .in('tcgdex_id', chunk)
         .order('taken_on', { ascending: true })
         .order('tcgdex_id', { ascending: true })
-        .range(from, from + SNAPSHOT_PAGE - 1)
-      if (error) throw new Error(`Loading value history failed: ${error.message}`)
-      for (const r of data as unknown[]) {
-        if (isRecord(r) && typeof r.tcgdex_id === 'string' && typeof r.taken_on === 'string') {
-          out.push({ tcgdexId: r.tcgdex_id, takenOn: r.taken_on, trend: numOrNull(r.trend), trendHolo: numOrNull(r.trend_holo) })
-        }
+        .range(from, to),
+    )
+    if (error) throw new Error(`Loading value history failed: ${error.message}`)
+    for (const r of data) {
+      if (isRecord(r) && typeof r.tcgdex_id === 'string' && typeof r.taken_on === 'string') {
+        out.push({ tcgdexId: r.tcgdex_id, takenOn: r.taken_on, trend: numOrNull(r.trend), trendHolo: numOrNull(r.trend_holo) })
       }
-      if (data.length < SNAPSHOT_PAGE) break
     }
   }
   return out

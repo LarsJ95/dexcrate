@@ -1,4 +1,5 @@
 import { wantChsCatalog } from './chsCatalog'
+import { fetchAllPages } from './fetchAll'
 import { autoPick, findScanCandidates, type Candidate } from './match'
 import { scanQuery, type Recognition } from './scanResult'
 import { getCardInfo, lookupLang } from './tcgdex'
@@ -13,6 +14,8 @@ import { getCardInfo, lookupLang } from './tcgdex'
 const TABLE = 'scan_choices'
 /** Zoveel keuzes op dit apparaat (de nieuwste). */
 const MAX_LOCAL = 500
+/** Zoveel keuzes uit je account (de nieuwste); de eerste scan wacht hierop. */
+const MAX_ACCOUNT = 5000
 const localKey = (userId: string): string => `dexcrate:scan-memory:${userId}`
 
 /** Lezing als sleutel ("zh-cn|CSMC|4|dedenne"); null zonder setcode én nummer (te vaag om op te bouwen) of zonder naam. */
@@ -66,12 +69,16 @@ async function load(userId: string): Promise<Store> {
   const s: Store = { userId, choices: readLocal(userId), db: false }
   try {
     const { supabase } = await import('./supabase')
-    const { data: rows, error } = await supabase.from(TABLE).select('read_key, card_key').limit(5000)
+    const { data: rows, error } = await fetchAllPages<{ read_key: string; card_key: string }>(
+      (from, to) => supabase.from(TABLE).select('read_key, card_key').order('updated_at', { ascending: false }).order('read_key', { ascending: true }).range(from, to),
+      { max: MAX_ACCOUNT },
+    )
     if (error) {
       if (!missingTable(error.code)) console.warn('Scan-keuzes laden mislukt', error.message)
       return s
     }
-    s.choices = new Map((rows ?? []).map((r: { read_key: string; card_key: string }) => [r.read_key, r.card_key]))
+    // Nieuwste eerst opgehaald; in de Map oud → nieuw, zodat de nieuwste achteraan staan (zoals recordChoices en writeLocal verwachten).
+    s.choices = new Map(rows.reverse().map((r) => [r.read_key, r.card_key]))
     s.db = true
     writeLocal(s)
   } catch (err) {
@@ -121,6 +128,8 @@ export async function withMemory(r: Recognition, found: Candidate[]): Promise<Ca
 /** Kandidaten voor een herkende kaart: catalogus (met taal-terugval) plus je eerdere keuze. */
 export async function scanCandidates(r: Recognition): Promise<Candidate[]> {
   const lang = lookupLang(r.language)
+  // Je keuzes alvast laden terwijl de catalogus zoekt (withMemory wacht op dezelfde lading; fouten meldt die).
+  void getStore().catch(() => null)
   const found = await findScanCandidates(scanQuery(r), lang)
   // Chinese kaart zonder zekere match: de Vereenvoudigd-Chinese catalogus ophalen als dat vanzelf mag (wifi).
   if ((lang === 'zh-cn' || lang === 'zh-tw') && !autoPick(found)) {

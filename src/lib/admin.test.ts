@@ -7,6 +7,31 @@ const { actionText } = await import('./adminText')
 
 beforeEach(() => rpc.mockReset())
 
+/**
+ * Nagebootste lijst-rpc (order + range): hoogstens 1000 rijen per verzoek, zoals de echte API. Gelijke waarden komen
+ * per verzoek in een andere volgorde terug, zoals in Postgres: zonder unieke sortering raken de pagina's in de war.
+ */
+function listQuery(result: { rows: Record<string, unknown>[] } | { error: { code: string; message: string } }) {
+  const calls = rpc.mock.calls.length
+  const q = {
+    orders: [] as string[],
+    order: (col: string, opts: { ascending: boolean }) => {
+      q.orders.push(`${col}.${opts.ascending ? 'asc' : 'desc'}`)
+      return q
+    },
+    range: (from: number, to: number) => {
+      if ('error' in result) return Promise.resolve({ data: null, error: result.error })
+      const cols = q.orders.map((o) => o.split('.')[0])
+      const rows = (calls % 2 ? [...result.rows].reverse() : [...result.rows]).sort((a, b) => {
+        for (const c of cols) if (String(a[c]) !== String(b[c])) return String(a[c]) < String(b[c]) ? -1 : 1
+        return 0
+      })
+      return Promise.resolve({ data: rows.slice(from, Math.min(to + 1, from + 1000)), error: null })
+    },
+  }
+  return q
+}
+
 describe('grantInputError', () => {
   it('geheel getal, niet 0, binnen de grens', () => {
     expect(grantInputError(0, 'reden')).not.toBeNull()
@@ -92,8 +117,25 @@ describe('database', () => {
     expect((err as Error).message).toMatch(/STAP22/)
   })
   it('geweigerd door de database: duidelijke fout', async () => {
-    rpc.mockResolvedValueOnce({ data: null, error: { code: '42501', message: 'Not allowed' } })
+    rpc.mockImplementation(() => listQuery({ error: { code: '42501', message: 'Not allowed' } }))
     await expect(listAdminUsers()).rejects.toThrow(/Not allowed/)
+  })
+  it('meer dan 1000 gebruikers: allemaal, oudste account eerst, in pagina’s', async () => {
+    // 400 met dezelfde aanmaaktijd (bv. tegelijk uitgenodigd), over de grens van 1000 heen: dan beslist user_id.
+    const users = Array.from({ length: 1500 }, (_, i) => ({
+      user_id: `u-${String(i).padStart(4, '0')}`,
+      email: `u${i}@example.com`,
+      created_at: i >= 800 && i < 1200 ? '2026-10-05T00:00:00.000Z' : new Date(Date.UTC(2026, 9, i < 800 ? 1 : 6, 0, 0, i)).toISOString(),
+    }))
+    rpc.mockImplementation(() => listQuery({ rows: users }))
+    const list = await listAdminUsers()
+    expect(list.map((u) => u.id)).toEqual(users.map((u) => u.user_id))
+    expect(rpc).toHaveBeenCalledTimes(2)
+    expect(rpc).toHaveBeenNthCalledWith(1, 'admin_list_users')
+    expect(rpc.mock.results.map((r) => (r.value as ReturnType<typeof listQuery>).orders)).toEqual([
+      ['created_at.asc', 'user_id.asc'],
+      ['created_at.asc', 'user_id.asc'],
+    ])
   })
   it('punten: eerst zelf controleren, reden zonder spaties eromheen', async () => {
     await expect(grantCratePoints('u1', 0, 'reden')).rejects.toThrow()

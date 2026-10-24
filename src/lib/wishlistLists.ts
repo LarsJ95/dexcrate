@@ -1,3 +1,4 @@
+import { fetchAllPages } from './fetchAll'
 import { supabase } from './supabase'
 import { parseWishFilters, type WishFilters } from './wishFilters'
 
@@ -117,9 +118,11 @@ export function toMembers(rows: readonly unknown[]): Map<string, Set<string>> {
 }
 
 export async function listListMembers(): Promise<Map<string, Set<string>>> {
-  const { data, error } = await supabase.from(ITEMS).select('list_id, item_id')
+  const { data, error } = await fetchAllPages((from, to) =>
+    supabase.from(ITEMS).select('list_id, item_id').order('list_id', { ascending: true }).order('item_id', { ascending: true }).range(from, to),
+  )
   if (error) throw new Error(`Loading your lists failed: ${error.message}`)
-  return toMembers(data as unknown[])
+  return toMembers(data)
 }
 
 /** Wat er moet gebeuren om een wens in precies deze eigen lijsten te zetten. */

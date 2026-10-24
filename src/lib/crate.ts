@@ -1,5 +1,6 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import { rarityMatches, rarityRule, type EnergyType } from './cardTraits'
+import { fetchAllPages } from './fetchAll'
 import { supabase } from './supabase'
 import { getSet, getSetList, getSetRarities, searchCards, setIdOf, setOfKey, type SetCard } from './tcgdex'
 import type { WishlistInput } from './wishlist'
@@ -385,9 +386,16 @@ export async function tradeCrateCard(tcgdexId: string, count: number): Promise<{
 }
 
 export async function listCrateCards(): Promise<CrateCard[]> {
-  const { data, error } = await supabase.from('crate_cards').select('tcgdex_id, name, image, rarity, set_name, quantity, first_at').order('last_at', { ascending: false })
+  const { data, error } = await fetchAllPages((from, to) =>
+    supabase
+      .from('crate_cards')
+      .select('tcgdex_id, name, image, rarity, set_name, quantity, first_at')
+      .order('last_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, to),
+  )
   if (error) throw new Error(`Loading your Crate collection failed: ${error.message}`)
-  return (data as unknown[]).flatMap((r) =>
+  return data.flatMap((r) =>
     isRecord(r) && typeof r.tcgdex_id === 'string' && typeof r.name === 'string'
       ? [
           {

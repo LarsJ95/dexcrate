@@ -1,4 +1,5 @@
 import { notifyCrateChanged } from './crate'
+import { fetchAllPages } from './fetchAll'
 import { supabase } from './supabase'
 
 /**
@@ -183,10 +184,13 @@ export async function isAdmin(): Promise<boolean> {
   return data === true
 }
 
+/** Alle gebruikers, oudste account eerst (zelfde volgorde als de functie; user_id maakt hem uniek voor de pagina's). */
 export async function listAdminUsers(): Promise<AdminUser[]> {
-  const { data, error } = await supabase.rpc('admin_list_users')
+  const { data, error } = await fetchAllPages((from, to) =>
+    supabase.rpc('admin_list_users').order('created_at', { ascending: true }).order('user_id', { ascending: true }).range(from, to),
+  )
   if (error) throw new Error(`Loading users failed: ${error.message}`)
-  return (Array.isArray(data) ? data : []).flatMap((r) => {
+  return data.flatMap((r) => {
     const u = toAdminUser(r)
     return u ? [u] : []
   })

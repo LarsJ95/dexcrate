@@ -4,19 +4,45 @@ import type { Candidate } from './match'
 import type { Recognition } from './scanResult'
 import type { CardInfo } from './tcgdex'
 
-/** Nagebootste Supabase: sessie, tabel scan_choices (lezen, upsert, delete). */
+/** Nagebootste Supabase: sessie, tabel scan_choices (lezen in pagina's van hoogstens 1000, upsert, delete). */
 const db = vi.hoisted(() => {
   const state = {
     session: { user: { id: 'u1' } } as { user: { id: string } } | null,
-    rows: [] as { read_key: string; card_key: string }[],
+    rows: [] as { read_key: string; card_key: string; updated_at?: string }[],
     selectError: null as { code: string; message: string } | null,
+    ranges: [] as [number, number][],
+    orders: [] as string[][],
     upserts: [] as { rows: unknown; opts: unknown }[],
     deletes: [] as string[][],
   }
   const supabase = {
     auth: { getSession: () => Promise.resolve({ data: { session: state.session } }) },
     from: () => ({
-      select: () => ({ limit: () => Promise.resolve(state.selectError ? { data: null, error: state.selectError } : { data: state.rows, error: null }) }),
+      select: () => {
+        const orders: { col: 'read_key' | 'updated_at'; ascending: boolean }[] = []
+        const q = {
+          order: (col: 'read_key' | 'updated_at', opts: { ascending: boolean }) => {
+            orders.push({ col, ascending: opts.ascending })
+            return q
+          },
+          range: (from: number, to: number) => {
+            state.ranges.push([from, to])
+            state.orders.push(orders.map((o) => `${o.col}.${o.ascending ? 'asc' : 'desc'}`))
+            if (state.selectError) return Promise.resolve({ data: null, error: state.selectError })
+            const rows = [...state.rows].sort((a, b) => {
+              for (const { col, ascending } of orders) {
+                const x = a[col] ?? ''
+                const y = b[col] ?? ''
+                if (x !== y) return (x < y ? -1 : 1) * (ascending ? 1 : -1)
+              }
+              return 0
+            })
+            // Zoals de echte API: hoogstens 1000 rijen per verzoek.
+            return Promise.resolve({ data: rows.slice(from, Math.min(to + 1, from + 1000)), error: null })
+          },
+        }
+        return q
+      },
       upsert: (rows: unknown, opts: unknown) => {
         state.upserts.push({ rows, opts })
         return Promise.resolve({ error: null })
@@ -59,8 +85,33 @@ beforeEach(() => {
   db.state.session = { user: { id: 'u1' } }
   db.state.rows = []
   db.state.selectError = null
+  db.state.ranges = []
+  db.state.orders = []
   db.state.upserts = []
   db.state.deletes = []
+})
+
+describe('laden uit je account', () => {
+  it('meer dan 5000 keuzes: de nieuwste 5000 (in pagina’s); op het apparaat de nieuwste 500', async () => {
+    const at = (i: number): string => new Date(Date.UTC(2026, 9, 20, 0, 0, i)).toISOString()
+    db.state.rows = Array.from({ length: 6000 }, (_, i) => ({ read_key: `k${String(i).padStart(4, '0')}`, card_key: `c${i}`, updated_at: at(i) }))
+    db.state.rows.push({ read_key: 'zh-cn|CSMC|4|dedenne', card_key: 'zh-tw/S12-045', updated_at: at(9999) })
+    const list = await withMemory(rec(), [cand('zh-cn/SV8-055', 3), cand('zh-tw/S12-045', 2)])
+    expect(list[0].key).toBe('zh-tw/S12-045')
+    expect(db.state.ranges).toEqual([
+      [0, 999],
+      [1000, 1999],
+      [2000, 2999],
+      [3000, 3999],
+      [4000, 4999],
+    ])
+    // Keuzes uit één batch hebben vaak dezelfde tijd: read_key maakt de volgorde uniek tussen pagina's.
+    expect(db.state.orders[0]).toEqual(['updated_at.desc', 'read_key.asc'])
+    const local = JSON.parse(localStorage.getItem('dexcrate:scan-memory:u1') ?? '[]') as [string, string][]
+    expect(local).toHaveLength(500)
+    expect(local[0]).toEqual(['k5501', 'c5501'])
+    expect(local.at(-1)).toEqual(['zh-cn|CSMC|4|dedenne', 'zh-tw/S12-045'])
+  })
 })
 
 describe('readKey', () => {
