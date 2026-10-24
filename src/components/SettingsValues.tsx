@@ -85,7 +85,7 @@ export function AccountSettings(): JSX.Element {
   }
   const setDefault = <K extends keyof NewCardDefaults>(key: K, value: NewCardDefaults[K]): void => edit((f) => ({ ...f, defaults: { ...f.defaults, [key]: value } }))
 
-  if (enabled === false) return <p className="notice">Account settings are not set up yet (run STAP7 in Supabase).</p>
+  if (enabled === false) return <p className="notice">Account settings are not available yet.</p>
   if (!form) return status?.kind === 'error' ? <p className="error" role="alert">{status.text}</p> : <Loading />
 
   // Ongeldige invoer: melden en niet bewaren.

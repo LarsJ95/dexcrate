@@ -95,19 +95,19 @@ export async function recognizeCards(img: PreparedImage, mode: ScanMode, { stron
     const ctx: unknown = error instanceof FunctionsHttpError ? error.context : null
     if (ctx instanceof Response) {
       // 404 van Supabase zelf: de functie is (nog) niet gedeployd.
-      if (ctx.status === 404) throw new Error('Scanning is not set up yet: the recognize-card function is missing in Supabase (see TODO.md, "Camera aanzetten").')
+      if (ctx.status === 404) throw new Error('Scanning is not available right now. Try again later.')
       const body: unknown = await ctx.json().catch(() => null)
       const msg = typeof body === 'object' && body !== null ? (body as { error?: unknown }).error : null
       if (typeof msg === 'string') throw new Error(msg)
     }
-    throw new Error('Recognition is unavailable. Is the recognize-card function installed?')
+    throw new Error('Recognition is not available right now. Try again later.')
   }
   // Oude functie negeert `strong` en geeft gewoon het goedkope resultaat: dat niet als tweede blik tonen.
   if (strong && !confirmsStrong(data)) throw new Error(LOOK_AGAIN_OUTDATED)
   return toScanResult(data)
 }
 
-export const LOOK_AGAIN_OUTDATED = '“Look again” needs the latest recognize-card function. Redeploy it in Supabase (see TODO.md).'
+export const LOOK_AGAIN_OUTDATED = '“Look again” is not available right now.'
 
 /** Antwoord van een functie die "Look again" kent (meldt `strong: true` terug). */
 export const confirmsStrong = (body: unknown): boolean => typeof body === 'object' && body !== null && (body as { strong?: unknown }).strong === true

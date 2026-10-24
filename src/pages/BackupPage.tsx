@@ -145,7 +145,8 @@ export function BackupPage(): JSX.Element {
       <div className="panel">
         <h2 className="panel-title">Download</h2>
         <p className="muted small">
-          A complete backup in one readable JSON file: cards, photos list, transactions, goals, wishlist, valuations and settings.
+          All your data in one readable JSON file: cards, photos list, transactions, goals, wishlist, valuations and settings. Your wishlist lists, Pack game, scan choices and
+          error reports are included too, but are not restored.
         </p>
         <label className="check">
           <input type="checkbox" checked={withFiles} onChange={(e) => setWithFiles(e.target.checked)} />

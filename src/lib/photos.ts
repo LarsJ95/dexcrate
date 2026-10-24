@@ -44,7 +44,7 @@ async function resize(source: Blob, maxEdge: number, quality: number): Promise<R
 /** Foutmelding begrijpelijk maken; ontbrekende tabel of bucket betekent dat STAP4 nog niet gedraaid is. */
 export function friendlyPhotoError(message: string): string {
   if (/bucket not found|card_photos|relation .* does not exist|schema cache/i.test(message)) {
-    return 'Photo storage is not set up yet (run STAP4 in Supabase).'
+    return 'Photo storage is not available right now.'
   }
   return message
 }

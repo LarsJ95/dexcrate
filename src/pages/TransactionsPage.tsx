@@ -75,7 +75,7 @@ export function TransactionsPage(): JSX.Element {
     return (
       <section className="page">
         <h1>Trades</h1>
-        <p className="notice">Purchases and sales are not set up yet (run STAP5 in Supabase).</p>
+        <p className="notice">Purchases and sales are not available yet.</p>
       </section>
     )
   }

@@ -30,7 +30,6 @@ import {
   listCrateCards,
   openPack as drawAndOpen,
   packCost,
-  packStep,
   packsByCost,
   syncCrate,
   tradeAllDuplicates,
@@ -360,7 +359,7 @@ export function CratePage(): JSX.Element {
     return (
       <section className="page">
         <h1>Pack game</h1>
-        <p className="notice">The Pack game is not set up yet: run STAP11 in Supabase.</p>
+        <p className="notice">The Pack game is not available yet.</p>
       </section>
     )
   }
@@ -478,7 +477,7 @@ export function CratePage(): JSX.Element {
               <strong className="crate-shop-title">{p.name}</strong>
               <span className="muted small crate-shop-text">{p.contents}</span>
               <div className="crate-shop-choice">
-                {cost === null && rulesLoaded && <span className="small muted">Not set up yet: run {packStep(kind)} in Supabase.</span>}
+                {cost === null && rulesLoaded && <span className="small muted">Not available yet.</span>}
                 {cost !== null && kind === 'daily' && (
                   <span className="small">
                     {daily ? `Today: ${daily.name}` : 'Loading today’s set…'}

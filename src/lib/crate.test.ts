@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('./supabase', () => ({ supabase: {} }))
-const { GREAT_SLOT, HIT_SLOT, MISSING_FIRST, OLD_RULES, packStep, RARE_SLOT, canAfford, craftClassOf, craftCost, crateSetProgress, packCost, packSlots, packsByCost, pickSetCard, setPackSlots, toRules, tradeValue } = await import('./crate')
+const { GREAT_SLOT, HIT_SLOT, MISSING_FIRST, OLD_RULES, RARE_SLOT, canAfford, craftClassOf, craftCost, crateSetProgress, packCost, packSlots, packsByCost, pickSetCard, setPackSlots, toRules, tradeValue } = await import('./crate')
 
 describe('Crate-pakje', () => {
   it('kansen per vak tellen op tot 1', () => {
@@ -106,7 +106,5 @@ describe('Crate-pakje', () => {
     expect(packsByCost(rules)).toEqual(['booster', 'set', 'lucky', 'great', 'daily', 'master'])
     expect(Object.keys(rules.packs)).not.toContain('pokemon')
     expect(canAfford(rules, 'lucky', 150, false)).toBe(true)
-    expect(packStep('daily')).toBe('STAP26')
-    expect(packStep('set')).toBe('STAP18')
   })
 })

@@ -284,7 +284,7 @@ export function Sky({ theme, night = false }: { theme: 'dark' | 'light'; night?:
         buzz(20)
         makeWish()
           .then((r) => {
-            if (r === null) setNote({ id: ++seq, text: 'You caught a falling star! (Wishes need STAP13.)', x, y })
+            if (r === null) setNote({ id: ++seq, text: 'You caught a falling star!', x, y })
             else if (r.gained > 0) {
               setNote({ id: ++seq, text: 'You made a wish! ✦', x, y })
               showMoment({ kind: 'points', amount: r.gained, reason: 'Wish on a falling star' })

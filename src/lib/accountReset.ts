@@ -101,7 +101,7 @@ export async function resetAccount(): Promise<ResetResult> {
   const { data, error } = await supabase.rpc('reset_my_account')
   if (error) {
     if (error.code === 'PGRST202' || /could not find the function/i.test(error.message)) {
-      throw new Error('Resetting is not set up yet: run STAP14 in Supabase first. Nothing was deleted.')
+      throw new Error('Resetting is not available right now. Nothing was deleted.')
     }
     throw new Error(`Resetting failed: ${error.message}. Nothing was deleted.`)
   }

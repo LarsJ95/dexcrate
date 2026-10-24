@@ -182,7 +182,7 @@ export function WishlistPage(): JSX.Element {
 
   function newManualList(): void {
     if (manualEnabled !== true) {
-      setListNotice('Lists you fill yourself are not set up yet: run STAP17 in Supabase.')
+      setListNotice('Lists you fill yourself are not available yet.')
       return
     }
     setListSheet('new-manual')
@@ -196,7 +196,7 @@ export function WishlistPage(): JSX.Element {
 
   function saveAsList(): void {
     if (listsEnabled !== true) {
-      setListNotice('Saving lists is not set up yet: run STAP10 in Supabase.')
+      setListNotice('Saving lists is not available yet.')
       return
     }
     setListSheet('new')
@@ -311,7 +311,7 @@ export function WishlistPage(): JSX.Element {
     return (
       <section className="page">
         <h1>Wishlist</h1>
-        <p className="notice">The wishlist is not set up yet (run STAP6 in Supabase).</p>
+        <p className="notice">The wishlist is not available yet.</p>
       </section>
     )
   }
