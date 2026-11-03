@@ -75,7 +75,7 @@ describe('parseCardmarket', () => {
   })
 
   it('cardmarketUrl: productpagina of zoekopdracht', () => {
-    const filters = 'sellerCountry=23&sellerType=0,1,2&sellerReputation=2&language=1&minCondition=3'
+    const filters = 'sellerCountry=23&sellerType=0,1,2&sellerReputation=2&language=1&minCondition=4'
     expect(cardmarketUrl(733746, 'Mew ex')).toBe(`https://www.cardmarket.com/en/Pokemon/Products?idProduct=733746&${filters}`)
     expect(cardmarketUrl(null, ' Mew ex 151 ')).toBe(
       `https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=Mew%20ex%20151&${filters}`,
@@ -85,7 +85,7 @@ describe('parseCardmarket', () => {
 
   it('cardmarketUrl: geen taalfilter bij niet-Engelse kaarten, overige filters blijven', () => {
     expect(cardmarketUrl(733746, 'Mew ex', 'ja')).toBe(
-      'https://www.cardmarket.com/en/Pokemon/Products?idProduct=733746&sellerCountry=23&sellerType=0,1,2&sellerReputation=2&minCondition=3',
+      'https://www.cardmarket.com/en/Pokemon/Products?idProduct=733746&sellerCountry=23&sellerType=0,1,2&sellerReputation=2&minCondition=4',
     )
     expect(cardmarketUrl(null, 'Pikachu', 'nl')).not.toContain('language=')
   })
