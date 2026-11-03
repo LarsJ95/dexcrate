@@ -165,7 +165,7 @@ describe('WishlistPage', () => {
     }
     expect(link('Dangerous Laser')).toContain('language=1')
     expect(link('Pikachu')).not.toContain('language=')
-    expect(link('Pikachu')).toContain('minCondition=3')
+    expect(link('Pikachu')).toContain('minCondition=4')
   })
 
   it('zonder STAP6: uitleg in plaats van een lege lijst', () => {
